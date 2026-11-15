@@ -1,0 +1,68 @@
+{
+  "$schema_version": "1.0",
+  "project": "mindreader.quest (Flutter mobile)",
+  "active_feature_or_sprint": "Phase 1-4 complete: docs, dataset, Digital Table, Camera, Almanac — final verification",
+  "status": "VERIFYING",
+  "context": {
+    "stack": [
+      "Flutter/Dart (Impeller)",
+      "provider (ChangeNotifier)",
+      "camera, image_picker, image, http, shared_preferences, google_fonts"
+    ],
+    "target_files": [
+      "lib/main.dart",
+      "lib/core/theme/*",
+      "lib/core/models/*",
+      "lib/core/data/tarot_deck_data.dart",
+      "lib/core/services/*",
+      "lib/state/spread_controller.dart",
+      "lib/features/shell/main_navigation_shell.dart",
+      "lib/features/digital_table/**",
+      "lib/features/camera_scan/**",
+      "lib/features/almanac/**",
+      "test/*",
+      "android/app/build.gradle.kts",
+      "ios/Runner/Info.plist"
+    ],
+    "hard_constraints": [
+      "Strict Zero-Knowledge: do NOT log raw PII/secrets to console or logs",
+      "Keep diffs atomic and clean",
+      "No legacy JS/Next.js code; pure Flutter only",
+      "120 FPS: Matrix4/Transform/CustomPaint only, no layout-property animation",
+      "No gold kitsch; Obsidian #09090D + Lavender #A78BFA design system"
+    ]
+  },
+  "execution_plan": {
+    "completed_tasks": [
+      "flutter create . --project-name mindreader (android,ios,linux)",
+      "Batch 1: TASK_STATE.json + ARCHITECTURE.md + DESIGN_SYSTEM.md + pubspec deps + minSdk 24 + iOS permissions",
+      "Batch 2: models + theme tokens + ThemeData",
+      "Batch 3: tarot_deck_data.dart — 78 cards (22 major + 56 minor) with keywords, upright/reversed meanings, Socratic questions",
+      "Batch 4: SpreadController (crypto Fisher-Yates shuffle, 156 states, deal/flip/scanned-face-up) + vision/oracle/storage services",
+      "Batch 5: domain tests (21) — deck integrity, shuffle permutation, deal order, flip, scanned load, dignity, synthesis",
+      "Batch 6: main.dart + 3-tab glass shell + TarotCard3D (600ms Matrix4 flip, procedural back, typographic face)",
+      "Batch 7: BoardPillarView (InteractiveViewer pinch-zoom) + ElementalThreadsPainter (pulsing bezier threads) + InteractiveDeckWidget (fan shuffle + swipe-down deal)",
+      "Batch 8: ReadingBottomSheet (context chips, Socratic prompt, typewriter synthesis, local save)",
+      "Batch 9: CameraScanScreen (camera/image_picker/mock, compress<=1024px, lock-on overlay, face-up handoff)",
+      "Batch 10: AlmanacScreen + CardDetailSheet (filters, search, element legend, 3D tiltable inspector)",
+      "Batch 11: widget smoke tests (6) — boot, deal+flip+sheet, spread switch, camera handoff, almanac detail",
+      "Batch 12: flutter analyze clean; all 27 tests green; apk debug build in progress"
+    ],
+    "current_task": "flutter build apk --debug (background) + final TASK_STATE update",
+    "pending_tasks": [
+      "Cloud CI for iOS (config kept clean; no xcodebuild on Linux)",
+      "Optional: drop real artwork into assets/cards/<id>.png",
+      "Optional: set VISION_API_URL/VISION_API_KEY dart-defines for live vision"
+    ]
+  },
+  "discovered_bugs_or_blockers": [
+    "FIXED: Dart Set identity equality broke elemental dignity — replaced with explicit pair comparison",
+    "FIXED: SingleTickerProviderStateMixin used with 2 controllers in the deck — switched to TickerProviderStateMixin",
+    "FIXED: mock scan fed garbage bytes into JPEG decoder — mock now skips re-compression",
+    "FIXED: widget tests must pump() once after starting a ticker so it captures its start time",
+    "Android SDK licenses: flutter doctor can't accept (no cmdline-tools); Gradle auto-installs Platform 35 during build",
+    "Linux desktop toolchain (clang/cmake) not installed — desktop preview unavailable"
+  ],
+  "latest_observation_summary": "flutter analyze: No issues found. 27/27 tests green (21 domain + 6 widget smoke covering deal→flip→sheet, camera→face-up handoff, almanac). APK debug build running in background."
+}
+
