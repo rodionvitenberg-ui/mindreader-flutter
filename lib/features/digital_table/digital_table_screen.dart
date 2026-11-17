@@ -13,6 +13,7 @@ import '../../core/theme/app_colors.dart';
 import '../../state/deck_pack_controller.dart';
 import '../../state/spread_controller.dart';
 import 'widgets/board_pillar_view.dart';
+import 'widgets/deal_lock_prompt.dart';
 import 'widgets/deck_picker_sheet.dart';
 import 'widgets/foil_glint.dart';
 import 'widgets/interactive_deck_widget.dart';
@@ -141,12 +142,13 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
   /// play ONE continuous flight from the release point into its slot.
   /// The camera does NOT follow — the user stays focused on the deck while
   /// pulling multiple cards and scrolls down manually whenever ready.
-  /// When the initial spread is full, the pull becomes a Clarifier (+1).
+  /// When the initial spread is full, the pull becomes a Clarifier (+1) —
+  /// but only while a clarifier question is armed.
   void _onDealRelease(DeckDealReleaseRequest request) {
     final ctrl = context.read<SpreadController>();
     final slotIndex = ctrl.dealCardAtOrClarifier(request.depth);
     if (slotIndex == null) {
-      HapticFeedback.heavyImpact(); // table is full and the deck is empty
+      showDealLockPrompt(context, ctrl);
       return;
     }
     _storeIntentionInto(ctrl, slotIndex);
@@ -211,12 +213,14 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
 
   /// Overview mode: tapping the compact mini-deck draws the next card into
   /// the spread with a single scaled flight from the deck to its slot.
-  /// Once the initial spread is full, the tap appends a Clarifier (+1).
+  /// Once the initial spread is full, the tap appends a Clarifier (+1) —
+  /// but only while a clarifier question is armed (the deck stays locked
+  /// otherwise).
   void _onOverviewDeckTap() {
     final ctrl = context.read<SpreadController>();
     final slotIndex = ctrl.dealNextCardOrClarifier();
     if (slotIndex == null) {
-      HapticFeedback.heavyImpact(); // table is full and the deck is empty
+      showDealLockPrompt(context, ctrl);
       return;
     }
     final stackBox =
@@ -843,9 +847,15 @@ class _DeckCounterBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final armed = ctrl.pendingClarifierQuestion != null;
+    final atMax = ctrl.dealtCount >= SpreadController.maxTableCards;
     final canReset = ctrl.nextEmptySlotIndex == null && onReset != null;
     final String label;
-    if (canReset) {
+    if (atMax) {
+      label = '${ctrl.remaining} · 10/10 TABLE FULL';
+    } else if (armed) {
+      label = '${ctrl.remaining} · PULL CLARIFIER ↓';
+    } else if (canReset) {
       label = '${ctrl.remaining} · TAP TO RESET · NEW SPREAD';
     } else if (ctrl.nextEmptySlotIndex != null) {
       label = '${ctrl.remaining} · $dealHint';
@@ -853,12 +863,18 @@ class _DeckCounterBadge extends StatelessWidget {
       label = '${ctrl.remaining} · IN DECK';
     }
     return GestureDetector(
-      onTap: canReset
+      onTap: armed && !atMax
           ? () {
+              // The badge toggles: dismiss the armed clarifier question.
               HapticFeedback.selectionClick();
-              onReset!();
+              ctrl.cancelClarifierScan();
             }
-          : null,
+          : canReset
+              ? () {
+                  HapticFeedback.selectionClick();
+                  onReset!();
+                }
+              : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(

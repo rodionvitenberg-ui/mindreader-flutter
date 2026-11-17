@@ -9,6 +9,7 @@ import '../../../core/models/tarot_deck_pack.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../state/deck_pack_controller.dart';
 import '../../../state/spread_controller.dart';
+import 'deal_lock_prompt.dart';
 import 'foil_glint.dart';
 import 'shuffle_physics.dart';
 import 'tarot_card_3d_widget.dart';
@@ -223,12 +224,20 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
     final layer = _grabbedLayer;
     if (layer == null || _returning) return;
     final velocity = d.velocity.pixelsPerSecond.dy;
+    final ctrl = context.read<SpreadController>();
+    if ((_dragDown > 60 || velocity > 450) && ctrl.isDealLocked) {
+      // The deck is locked (base spread complete, no clarifier armed):
+      // refuse the draw with a subtle haptic/visual prompt and spring the
+      // card back — the whole deck must never dump onto the table.
+      _springCardBack(velocity);
+      showDealLockPrompt(context, ctrl);
+      return;
+    }
     if (_dragDown > 60 || velocity > 450) {
       // Hand the TRUE top card of the shuffled deck to the parent: the
       // single continuous flight starts at the finger's release position
       // (no proxy, no pop). The exposed second card is promoted to the new
       // top: the dealt layer is buried at the back of the paint order.
-      final ctrl = context.read<SpreadController>();
       final remaining = ctrl.remaining;
       final visible = _visibleCount;
       final request = DeckDealReleaseRequest(
@@ -251,25 +260,30 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
       widget.onDealRelease?.call(request);
     } else {
       // Released below the threshold: spring the card back into its slot.
-      final start = _dragDelta;
-      setState(() => _returning = true);
-      _return
-          .animateWith(SpringSimulation(
-            spring,
-            1,
-            0,
-            velocity / (start.distance + 1),
-          ))
-          .whenCompleteOrCancel(() {
-        if (!mounted) return;
-        setState(() {
-          _returning = false;
-          _grabbedLayer = null;
-          _dragDelta = Offset.zero;
-          _dragDown = 0;
-        });
-      });
+      _springCardBack(velocity);
     }
+  }
+
+  /// The grabbed card slides back into the stack (un-dealt grab).
+  void _springCardBack(double velocity) {
+    final start = _dragDelta;
+    setState(() => _returning = true);
+    _return
+        .animateWith(SpringSimulation(
+          spring,
+          1,
+          0,
+          velocity / (start.distance + 1),
+        ))
+        .whenCompleteOrCancel(() {
+      if (!mounted) return;
+      setState(() {
+        _returning = false;
+        _grabbedLayer = null;
+        _dragDelta = Offset.zero;
+        _dragDown = 0;
+      });
+    });
   }
 
   // ---- rendering ----

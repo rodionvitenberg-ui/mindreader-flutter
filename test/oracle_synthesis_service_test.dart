@@ -100,7 +100,7 @@ void main() {
       final text = synthesizeSpread(slots, SpreadType.three,
           contextChip: 'Career & Path');
       expect(text, contains('The Fool'));
-      expect(text, contains('Current State'));
+      expect(text, contains('Current State / Essence'));
       expect(text, contains('Career & Path'));
       expect(text, contains('Between the cards'));
       expect(text, contains('The question to sit with'));

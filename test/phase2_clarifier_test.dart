@@ -52,19 +52,24 @@ void main() {
     });
   });
 
-  group('endless single-card clarifiers', () {
-    test('addClarifierSlot appends Card N+1 with the follow-up question',
+  group('locked +1 clarifier loop (sprint 3/3)', () {
+    test('deck locks after the base spread; arm unlocks exactly one card',
         () {
       final c = SpreadController(random: Random(2));
       for (var i = 0; i < 3; i++) {
         c.dealNextCard();
       }
       expect(c.remaining, 75);
-      final idx = c.addClarifierSlot(
-        question: 'What is the hidden obstacle?',
-      );
+      expect(c.isDealLocked, isTrue);
+      expect(c.dealNextCardOrClarifier(), isNull); // no question armed
+
+      expect(c.armClarifierQuestion('What is the hidden obstacle?'), isTrue);
+      expect(c.isDealLocked, isFalse); // exactly +1 unlocked
+      expect(c.allowedCardsLimit, 4);
+      expect(c.pendingClarifierQuestion, 'What is the hidden obstacle?');
+
+      final idx = c.dealNextCardOrClarifier();
       expect(idx, 3);
-      expect(c.slots.length, 4);
       final slot = c.slots[3];
       expect(slot.role, 'Clarifier 1');
       expect(slot.userContext, '"What is the hidden obstacle?"');
@@ -72,28 +77,47 @@ void main() {
       expect(slot.card, isNotNull);
       expect(c.remaining, 74);
       expect(c.ledgerTotal, 78); // the digital ledger holds
-      // Second clarifier continues the numbering.
-      final idx2 = c.addClarifierSlot(question: 'What step should I take?');
-      expect(idx2, 4);
-      expect(c.slots[4].role, 'Clarifier 2');
+      // The deck locks again immediately after the single draw.
+      expect(c.pendingClarifierQuestion, isNull);
+      expect(c.isDealLocked, isTrue);
+      expect(c.dealNextCardOrClarifier(), isNull);
     });
 
-    test('dealNextCardOrClarifier expands instead of refusing when full',
-        () {
+    test('armClarifierQuestion requires the base spread complete', () {
       final c = SpreadController(random: Random(3));
+      c.dealNextCard();
+      expect(c.armClarifierQuestion('Too early?'), isFalse);
+      expect(c.armClarifierQuestion('   '), isFalse);
+      expect(c.pendingClarifierQuestion, isNull);
+      c.dealNextCard();
+      c.dealNextCard();
+      expect(c.armClarifierQuestion('Now it is fine'), isTrue);
+    });
+
+    test('clarifier numbering continues across armed draws', () {
+      final c = SpreadController(random: Random(31));
       for (var i = 0; i < 3; i++) {
-        expect(c.dealNextCardOrClarifier(), i);
+        c.dealNextCard();
       }
-      // Initial spread is full → the next call appends a clarifier.
-      expect(c.dealNextCardOrClarifier(), 3);
-      expect(c.slots[3].role, 'Clarifier 1');
-      expect(c.dealtCount, 4);
+      c.armClarifierQuestion('What is hidden?');
+      c.dealNextCardOrClarifier();
+      c.armClarifierQuestion('What step should I take?');
+      final idx2 = c.dealNextCardOrClarifier();
+      expect(idx2, 4);
+      expect(c.slots[4].role, 'Clarifier 2');
     });
 
     test('dealCardAtOrClarifier refuses invalid depths', () {
       final c = SpreadController(random: Random(4));
       expect(c.dealCardAtOrClarifier(-1), isNull);
       expect(c.dealCardAtOrClarifier(999), isNull);
+      for (var i = 0; i < 3; i++) {
+        c.dealNextCard();
+      }
+      c.armClarifierQuestion('What is hidden?');
+      expect(c.dealCardAtOrClarifier(-1), isNull);
+      expect(c.dealCardAtOrClarifier(999), isNull);
+      expect(c.pendingClarifierQuestion, 'What is hidden?'); // still armed
     });
 
     test('clarifier slots survive setSpreadType (table reset)', () {
@@ -101,11 +125,13 @@ void main() {
       for (var i = 0; i < 3; i++) {
         c.dealNextCard();
       }
-      c.addClarifierSlot(question: 'What is hidden?');
+      c.armClarifierQuestion('What is hidden?');
+      c.dealNextCardOrClarifier();
       c.setSpreadType(SpreadType.one);
       expect(c.slots.length, 1);
       expect(c.slots.every((s) => s.state == SlotState.empty), isTrue);
       expect(c.remaining, 78);
+      expect(c.isDealLocked, isFalse); // fresh base spread, deck open
     });
 
     test('initialSpreadAllFaceUp ignores clarifier slots', () {
@@ -115,7 +141,8 @@ void main() {
         c.flipSlot(i);
       }
       expect(c.initialSpreadAllFaceUp, isTrue);
-      c.addClarifierSlot(question: 'What is hidden?');
+      c.armClarifierQuestion('What is hidden?');
+      c.dealNextCardOrClarifier();
       // The clarifier landed face-down — the gate must stay open.
       expect(c.initialSpreadAllFaceUp, isTrue);
     });
@@ -231,7 +258,8 @@ void main() {
         c.dealNextCard();
         c.flipSlot(i);
       }
-      c.addClarifierSlot(question: 'What is the hidden obstacle?');
+      c.armClarifierQuestion('What is the hidden obstacle?');
+      c.dealNextCardOrClarifier();
       final slot = c.slots[3];
       final text = await OracleSynthesisService().synthesizeClarifier(
         question: 'What is the hidden obstacle?',

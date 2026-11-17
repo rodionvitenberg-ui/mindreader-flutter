@@ -107,6 +107,72 @@ List<Element> missingElements(Map<Element, int> balance) => [
         if (balance[e] == 0) e,
     ];
 
+/// True when the slot role is the spread's "shadowy" position — the slot
+/// most likely to speak about resistance, blocks and hidden forces.
+bool _isShadowRole(String role) =>
+    role.contains('Hidden') ||
+    role.contains('Shadow') ||
+    role.contains('Block') ||
+    role.contains('Obstacle') ||
+    role.contains('Bridges');
+
+/// The AI's 2-3 spread-specific follow-up Clarifier Questions shown at the
+/// end of the synthesis (and after every Clarifier Reading until the
+/// 10-card ceiling). Pure and deterministic: each question dynamically
+/// references the ACTUAL cards and elemental tensions on the table.
+List<String> buildClarifierSuggestions(
+  List<DealtCardSlot> slots, {
+  int hardMax = 10,
+}) {
+  final faceUp = [for (final s in slots) if (s.card != null) s];
+  if (faceUp.isEmpty) return const [];
+  if (faceUp.length >= hardMax) return const [];
+
+  final suggestions = <String>[];
+
+  // 1. The sharp boundary: a reversed card (or the spread's shadow slot)
+  // carries the resistance to question.
+  final reversed = [for (final s in faceUp) if (s.isReversed) s];
+  final shadow = [for (final s in faceUp) if (_isShadowRole(s.role)) s];
+  final anchor = reversed.isNotEmpty
+      ? reversed.first
+      : (shadow.isNotEmpty ? shadow.first : faceUp.first);
+  suggestions.add(
+    "What is hidden behind ${anchor.card!.name}"
+    '${anchor.isReversed ? ' (Reversed)' : ''}\'s resistance?',
+  );
+
+  // 2. The elemental tension: a conflict thread between two concrete
+  // cards, or the dominant element pressing on the reading.
+  final conflict = [
+    for (final t in computeThreads(slots))
+      if (t.tone == ThreadTone.conflict) t,
+  ];
+  if (conflict.isNotEmpty) {
+    final t = conflict.first;
+    suggestions.add(
+      'What concrete action resolves the elemental tension between '
+      '${slots[t.from].card!.name} and ${slots[t.to].card!.name}?',
+    );
+  } else {
+    final dominant = dominantElements(elementalBalance(slots));
+    suggestions.add(
+      dominant.isEmpty
+          ? 'What concrete action steadies the balanced elements on the table?'
+          : 'What concrete action rebalances the '
+              '${dominant.first.label.toLowerCase()} weight of this reading?',
+    );
+  }
+
+  // 3. The last voice: the newest card keeps something unspoken.
+  final last = faceUp.last;
+  suggestions.add(
+    'What is ${last.card!.name}${last.isReversed ? ' (Reversed)' : ''} '
+    'not yet telling you about the next step?',
+  );
+  return suggestions;
+}
+
 /// Composes the Elemental Alchemy section from the balance + threads.
 String _alchemyText(List<DealtCardSlot> slots, List<ThreadInfo> threads) {
   final balance = elementalBalance(slots);

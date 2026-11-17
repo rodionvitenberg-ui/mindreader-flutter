@@ -19,9 +19,9 @@ void main() {
     // The hero deck is present.
     expect(find.byType(InteractiveDeckWidget), findsOneWidget);
     // No empty placeholder slots are rendered before dealing.
-    expect(find.text('Current State'), findsNothing);
-    expect(find.text('Hidden Barrier'), findsNothing);
-    expect(find.text('Action Vector'), findsNothing);
+    expect(find.text('Current State / Essence'), findsNothing);
+    expect(find.text('Hidden Shadow / Block'), findsNothing);
+    expect(find.text('Vector / Action'), findsNothing);
   });
 
   testWidgets('swipe down on the deck deals + depletes, tap flips the card',
@@ -78,9 +78,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     // No placeholders: the pillar stays empty after switching the spread.
-    expect(find.text('The Heart of the Matter'), findsNothing);
-    expect(find.text('The Outcome'), findsNothing);
-    expect(find.text('Current State'), findsNothing);
+    expect(find.text('Past'), findsNothing);
+    expect(find.text('Outcome'), findsNothing);
+    expect(find.text('Current State / Essence'), findsNothing);
     // The header subtitle now carries the new spread label.
     expect(find.textContaining('7 · DEEP SYNTHESIS'), findsOneWidget);
   });
@@ -109,8 +109,8 @@ void main() {
 
     // Back on the Digital Table with no empty placeholders left.
     expect(find.text('DIGITAL TABLE'), findsOneWidget);
-    expect(find.text('Current State'), findsNothing);
-    expect(find.text('Action Vector'), findsNothing);
+    expect(find.text('Current State / Essence'), findsNothing);
+    expect(find.text('Vector / Action'), findsNothing);
     // All 3 scanned cards are face-up already.
     expect(find.byType(TarotCard3DWidget), findsNWidgets(3));
   });
@@ -310,7 +310,7 @@ void main() {
 
     // Focus mode default: full-size tactile deck, no placeholder roles.
     expect(find.byType(InteractiveDeckWidget), findsOneWidget);
-    expect(find.text('CURRENT STATE'), findsNothing);
+    expect(find.text('CURRENT STATE / ESSENCE'), findsNothing);
 
     // Switch to Spread Overview.
     await tester.tap(find.text('SPREAD VIEW'));
@@ -325,9 +325,9 @@ void main() {
       tester.getSize(miniDeck),
       const Size(overviewDeckWidth, overviewDeckHeight),
     );
-    expect(find.text('CURRENT STATE'), findsOneWidget);
-    expect(find.text('HIDDEN BARRIER'), findsOneWidget);
-    expect(find.text('ACTION VECTOR'), findsOneWidget);
+    expect(find.text('CURRENT STATE / ESSENCE'), findsOneWidget);
+    expect(find.text('HIDDEN SHADOW / BLOCK'), findsOneWidget);
+    expect(find.text('VECTOR / ACTION'), findsOneWidget);
 
     // Tapping the mini-deck draws the next card into the spread.
     await tester.tap(miniDeck);
@@ -361,8 +361,8 @@ void main() {
     final deckRect = tester.getRect(find.byKey(const ValueKey('overview-deck')));
     expect(deckRect.left, lessThan(200));
     expect(deckRect.top, lessThan(150));
-    final firstSlot = tester.getRect(find.text('CURRENT STATE'));
-    final lastSlot = tester.getRect(find.text('ACTION VECTOR'));
+    final firstSlot = tester.getRect(find.text('CURRENT STATE / ESSENCE'));
+    final lastSlot = tester.getRect(find.text('VECTOR / ACTION'));
     expect(firstSlot.left, greaterThan(deckRect.right));
     expect(lastSlot.right, greaterThan(firstSlot.right));
   });

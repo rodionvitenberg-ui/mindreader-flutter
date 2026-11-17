@@ -55,8 +55,8 @@ void main() {
     c.setSpreadType(SpreadType.seven);
     expect(c.slots.length, 7);
     expect(c.slots.every((s) => s.state == SlotState.empty), isTrue);
-    expect(c.slots[0].role, 'The Heart of the Matter');
-    expect(c.slots[6].role, 'The Outcome');
+    expect(c.slots[0].role, 'Past');
+    expect(c.slots[6].role, 'Outcome');
   });
 
   test('loadScannedSpreadFaceUp materializes everything face-up', () {

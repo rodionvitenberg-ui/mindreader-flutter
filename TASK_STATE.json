@@ -1,8 +1,8 @@
 {
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
-  "active_feature_or_sprint": "SPRINT 2/3: Gemini-inspired 3-pane horizontal swipe architecture (Table ⇄ Oracle AI Chat ⇄ Spread History [PRO]), decluttered table UI & floating Gemini input capsule",
-  "status": "DONE",
+  "active_feature_or_sprint": "SPRINT 3/3: Authentic Tarot spread caps (1/3/4/7), Deck Deal Lock, AI-guided Clarifier Questions (+1 unlock) & hard 10-card table limit",
+  "status": "IN_PROGRESS",
   "context": {
     "stack": [
       "Flutter/Dart (Impeller)",
@@ -12,23 +12,16 @@
       "speech_to_text (capsule mic dictation)"
     ],
     "target_files": [
-      "lib/features/digital_table/table_workspace.dart (NEW — 3-pane PageView + pane indicator + capsule area)",
-      "lib/features/digital_table/oracle_chat_pane.dart (NEW — Pane 1)",
-      "lib/features/digital_table/spread_history_pane.dart (NEW — Pane 2, PRO badge, notebooks)",
-      "lib/features/digital_table/widgets/gemini_input_capsule.dart (NEW)",
-      "lib/features/digital_table/widgets/cosmos_send_burst.dart (NEW — Sent to Cosmos)",
-      "lib/features/digital_table/widgets/spread_selector_sheet.dart (NEW — header ▾ selector)",
-      "lib/features/digital_table/digital_table_screen.dart (decluttered)",
-      "lib/state/spread_controller.dart (sessionContextNotes, queueContext, restoreSpread)",
-      "lib/state/synthesis_session.dart (chat messages, restore)",
-      "lib/state/spread_session_snapshot.dart (NEW — full-session JSON round-trip)",
-      "lib/state/session_history_controller.dart (NEW — local-first archive)",
-      "lib/core/services/oracle_synthesis_service.dart (answerChat)",
-      "lib/core/services/local_storage_service.dart (spread_sessions_v2)",
-      "lib/core/models/chat_message.dart (NEW)",
-      "lib/core/data/intention_prompts.dart (tableContextChips)",
-      "lib/features/shell/main_navigation_shell.dart",
-      "test/*",
+      "lib/core/models/spread_type.dart (canonical slotRoles 1/3/4/7)",
+      "lib/state/spread_controller.dart (maxTableCards, baseCardLimit, allowedCardsLimit, isDealLocked, armClarifierQuestion, locked deal gate, camera ceiling guards)",
+      "lib/core/services/oracle_synthesis_service.dart (buildClarifierSuggestions)",
+      "lib/features/digital_table/widgets/deal_lock_prompt.dart (NEW — shared lock prompt)",
+      "lib/features/digital_table/widgets/interactive_deck_widget.dart (locked-deck spring-back + prompt)",
+      "lib/features/digital_table/widgets/gemini_input_capsule.dart (external controller/focusNode)",
+      "lib/features/digital_table/digital_table_screen.dart (deal refusal prompts, badge states)",
+      "lib/features/digital_table/table_workspace.dart (question-driven flow, clarifier banner, capsule wiring)",
+      "lib/features/digital_table/oracle_chat_pane.dart (AI question cards, +1 CARD FOR MY QUESTION)",
+      "test/spread_lock_test.dart (NEW), test/phase2_* , test/app_smoke_test.dart, test/spread_controller_test.dart, test/oracle_synthesis_service_test.dart",
       "ARCHITECTURE.md"
     ],
     "hard_constraints": [
@@ -38,23 +31,21 @@
       "Realism over max FPS: 40-60 FPS acceptable during active shuffling",
       "No gold kitsch; Obsidian #09090D + Lavender #A78BFA design system",
       "Ritual notifications: zero server retention",
-      "UI never blocks on local storage (in-memory first, background write)"
+      "UI never blocks on local storage (in-memory first, background write)",
+      "The whole deck must NEVER dump onto the table: lock at baseCardLimit, unlock exactly +1 per armed question, hard max 10"
     ]
   },
   "execution_plan": {
     "completed_tasks": [
       "SPRINT 1/3 (prior): lazy camera lifecycle, deck bar artifact removal, true top-card grab, 4x igniting elemental threads — 104/104 green",
-      "SPRINT 2/3.1 DOMAIN: ChatMessage model; SynthesisSession += messages/generatingAnswer/restore; SpreadController += sessionContextNotes, queueContext/consumePendingContext, restoreSpread (exact cards/orientations/roles face-up, camera-sync semantics); OracleSynthesisService.answerChat (dual chain + local fallback)",
-      "SPRINT 2/3.2 PERSISTENCE: SpreadSessionSnapshot (JSON round-trip: cards+contexts+synthesis+chapters+messages); LocalStorageService.spread_sessions_v2 upsert-by-timestamp; SessionHistoryController — load never blocks UI (loaded=true immediately, disk merge deduped by timestamp), upsert persists in background",
-      "SPRINT 2/3.3 DECLUTTER: removed BEFORE YOU DRAW intent bar above deck + IntentionPromptBar widget deleted; removed bottom spread carousel (_BottomControlBar/_SpreadPill/_GlassPill deleted); header subtitle now tappable with ▾ chevron → SpreadSelectorSheet (4 spreads, focus lines, active check); SynthesisPanel widget deleted",
-      "SPRINT 2/3.4 CAPSULE: GeminiInputCapsule (radius 28 obsidian pill, + / text / mic / circular send) shared by Table & Chat; table quick-context chips (✨ Relationships, ⚡ Crossroads, 🔮 Blind Draw); Sent to Cosmos = CosmosSendBurst deterministic stardust painter (IgnorePointer + RepaintBoundary); + sheet: chips, 📷 ATTACH CAMERA CARD, 🃏 PULL A CLARIFIER, ✦ NEW SPREAD",
-      "SPRINT 2/3.5 3-PANE PageView: TableWorkspace (PageView + pane indicator pills TABLE/ORACLE CHAT/HISTORY with ValueKeys, 420ms easeOutCubic slide); deck gesture isolation = deepest recognizer wins (riffle never pans, background/header/dealt cards pan); ✦ SYNTHESIZE IN CHAT → CTA above capsule when ready → synthesis → auto-slide to chat",
-      "SPRINT 2/3.6 CHAT PANE: pinned spread header strip (mini card glyphs + elemental badges, tap → table); structured synthesis as first message (1·/2·/3· sections); clarifier chapters as bubbles; fixed suggestion chips (+1 PULL / 📷 CAMERA); SingleChildScrollView stream + auto-jump to bottom; empty state with ✦ SYNTHESIZE NOW",
-      "SPRINT 2/3.7 HISTORY PANE: PRO badge, + NEW SPREAD · НОВЫЙ РАСКЛАД, notebook filters (All Readings/Relationships/Career & Path), session tiles (time, spread, notebook, snippet); 1-tap restore rebuilds BOTH pane 0 table AND pane 1 conversation; _sessionTimestamp identity keeps chat turns upserting one entry",
-      "SPRINT 2/3.8 TESTS: app_smoke updated (header selector, no intent bar offsets, carousel PageView.last); phase2_flow rewritten (capsule→cosmos→slot tag, CTA gate→chat pane, clarifiers in chat, Q&A, camera sync); NEW workspace_swipe_test (panes/swipes/pills, deck isolation, history save+restore); NEW session_snapshot_test; spread_controller_test += notes/queue/restore. 114/114 green ×2, analyze clean",
-      "KNOWN FIXED (p9): SharedPreferences.getInstance() never completes in widget tests (platform channel silent) — history load/upsert made non-blocking (UI-first, background write); this also removes disk-latency from the synthesis→pane slide path"
+      "SPRINT 2/3 (prior): 3-pane workspace (Table ⇄ Oracle Chat ⇄ History), decluttered table, Gemini capsule, local-first history — 114/114 green",
+      "SPRINT 3/3.1 DOMAIN: canonical slotRoles per spread (Core Daily Impulse / Current State-Essence, Hidden Shadow-Block, Vector-Action / Two Shores Cross / Horseshoe Past..Outcome); SpreadController += maxTableCards=10, baseCardLimit, allowedCardsLimit (=dealtCount+1 armed, clamped, ceiling-aware), isDealLocked, armClarifierQuestion (base-complete gate), dealCardAtOrClarifier as the single legal deal gate (armed question consumed into Clarifier N+1, relocks), pendingClarifierQuestion getter, camera ceiling guards; dealCardAt depth boundary fixed to live stack length",
+      "SPRINT 3/3.2 ORACLE: buildClarifierSuggestions — 2-3 deterministic probes dynamically naming reversed/shadow cards, conflict thread pairs, dominant element; empty at 10",
+      "SPRINT 3/3.3 LOCKED DECK UX: showDealLockPrompt (shared SnackBar + heavy haptic); tactile deck springs back on locked swipe; overview mini-deck tap prompts too; badge states (PULL CLARIFIER ↓ / 10/10 TABLE FULL / TAP TO RESET) with tap-to-dismiss armed question",
+      "SPRINT 3/3.4 CHAT LOOP: AI question cards in Pane 1 after synthesis & after each clarifier chapter (recomputed live); 🃏 +1 CARD FOR MY QUESTION chip reads the lifted capsule text (external controller + FocusNode) and arms the custom question; arming slides to Pane 0 with clarifier-banner; camera-sync mode routes the arm through the camera; 10-card ceiling note replaces suggestions",
+      "SPRINT 3/3.5 TESTS: NEW spread_lock_test (caps, lock lifecycle all spreads, +1 unlock/relock, cancel, restore-locked, ceiling at 10 incl. camera, suggestion dynamics); phase2_clarifier rewritten to locked loop; phase2_flow += AI question → unlock → pull → clarifier reading, custom question arming, locked-deck prompt; roles updated in app_smoke/spread_controller/oracle_synthesis tests. 133/133 green ×2, analyze clean"
     ],
-    "current_task": "SPRINT 2/3 DONE — analyze clean, 114/114 green ×2, debug APK built (app-debug.apk)",
+    "current_task": "Build final debug APK and commit",
     "pending_tasks": [
       "KNOWN (separate, pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on this low-end device (background process killed at 10:30) — consider lazy receiver or plugin update",
       "Optional: drop downloaded deck images into assets/decks/<id>/ (id-based 00.jpg..77.jpg or RWS naming)",
@@ -62,13 +53,13 @@
     ]
   },
   "discovered_bugs_or_blockers": [
-    "FIXED (p4): CardBackPainter._paintObsidian infinite loop — step=width*0.22 became 0 on the first 0x0 frame (device) → main thread 100% CPU, black screen. Guard: paint() returns early on Size.isEmpty.",
+    "FIXED (p9): SharedPreferences.getInstance() hangs forever in widget tests — SessionHistoryController made UI-first (in-memory + background persistence)",
+    "FIXED (p9): PageView snaps back in tests when the drag is < half viewport (800px test viewport vs 400px phone) — tests drag -600px; on-device swipes are unaffected",
+    "FIXED (p9): lazy ListView never built below-fold chat messages — chat stream switched to SingleChildScrollView+Column with exact jumpTo(maxScrollExtent)",
     "KNOWN: flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on the Redmi 12C (bg process killed) — pre-existing, separate from the launch hang",
     "KNOWN: flutter_timezone uses the legacy Kotlin Gradle plugin — warning only, build passes",
     "KNOWN: local timezone detection can fail on some devices — rituals fall back to UTC wall-clock (documented)",
-    "FIXED (p9): SharedPreferences.getInstance() hangs forever in widget tests — SessionHistoryController made UI-first (in-memory + background persistence)",
-    "FIXED (p9): PageView snaps back in tests when the drag is < half viewport (800px test viewport vs 400px phone) — tests drag -600px; on-device swipes are unaffected",
-    "FIXED (p9): lazy ListView never built below-fold chat messages — chat stream switched to SingleChildScrollView+Column with exact jumpTo(maxScrollExtent)"
+    "FIXED (p10): dealCardAt depth guard used the ORIGINAL deck size (78) instead of the live stack length — RangeError risk on deep grabs; boundary now pos >= _cardIds.length"
   ],
-  "latest_observation_summary": "SPRINT 2/3 complete and verified: flutter analyze clean, 114/114 tests green ×2, debug APK built. Committed."
+  "latest_observation_summary": "SPRINT 3/3 implemented: analyze clean, 133/133 tests green ×2 (spread caps, deal lock, +1 unlock loop, 10-card ceiling, AI clarifier suggestions all covered). Debug APK build pending."
 }

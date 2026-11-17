@@ -136,34 +136,112 @@ void main() {
     expect(find.text('CURRENT SPREAD'), findsOneWidget);
   });
 
-  testWidgets('endless clarifier loop lives inside the chat pane',
+  testWidgets(
+      'AI clarifier questions: tap → +1 unlock → pull → clarifier reading',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
     await dealFlipAndSynthesize(tester);
 
-    // The follow-up actions are offered as fixed suggestion chips.
-    final chip = find.text('+1 · PULL CLARIFIER');
-    expect(chip, findsOneWidget);
-    await tester.tap(chip);
-    await tester.pump();
-    await tester.pump(); // stream rebuilds and jumps to the bottom
-    expect(find.textContaining('A clarifier was dealt'), findsOneWidget);
+    // The synthesis ends with 3 AI-generated +1 CARD questions that
+    // dynamically reference the actual cards on the table.
+    final suggestions = find.textContaining('🃏 +1 CARD:');
+    expect(suggestions, findsNWidgets(3));
+    expect(
+      find.text('WOULD YOU LIKE TO DRAW A +1 CLARIFIER CARD TO UNCOVER:'),
+      findsOneWidget,
+    );
 
-    // Back to the table (1-tap pill) and flip the clarifier face-up.
-    await goToPane(tester, 0);
-    expect(find.byType(TarotCard3DWidget), findsNWidgets(4));
+    // Tap the first suggestion → the deck unlocks exactly ONE card and the
+    // workspace slides back to the Digital Table with the armed banner.
+    await tester.ensureVisible(suggestions.first);
+    await tester.pump();
+    await tester.tap(suggestions.first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700)); // pane slide
+    await tester.pump();
+    expect(find.text('DIGITAL TABLE'), findsOneWidget);
+    expect(find.byKey(const ValueKey('clarifier-banner')), findsOneWidget);
+
+    final ctrl = tester
+        .element(find.byType(InteractiveDeckWidget))
+        .read<SpreadController>();
+    expect(ctrl.isDealLocked, isFalse); // exactly one unlocked
+    expect(ctrl.allowedCardsLimit, 4);
+    final question = ctrl.pendingClarifierQuestion!;
+    expect(find.textContaining(question), findsWidgets); // banner shows it
+
+    // Pull the unlocked card and flip it face-up → the clarifier reading
+    // streams into the chat answering exactly that question.
+    await dealOne(tester);
+    expect(ctrl.slots.length, 4);
+    expect(ctrl.isDealLocked, isTrue); // relocked immediately
+    expect(find.byKey(const ValueKey('clarifier-banner')), findsNothing);
+
     await flipCard(tester, 3);
     await tester.pump();
     await tester.pump(const Duration(seconds: 1)); // chapter generation
     await tester.pump();
 
-    // The expansion chapter appeared in the chat stream.
     await goToPane(tester, 1);
     await tester.pump();
     await tester.pump();
     expect(find.text('CLARIFIER EXPANSION'), findsOneWidget);
-    expect(find.textContaining('What else does the table want'), findsWidgets);
+    expect(find.textContaining(question), findsWidgets);
+  });
+
+  testWidgets('custom question in the input bar arms a +1 card draw',
+      (tester) async {
+    await tester.pumpWidget(const MindreaderApp());
+    await tester.pump();
+    await dealFlipAndSynthesize(tester);
+
+    // Empty input → gentle prompt + keyboard focus, nothing armed.
+    await tester.tap(find.text('🃏 +1 CARD FOR MY QUESTION'));
+    await tester.pump();
+    expect(find.textContaining('Type your question'), findsOneWidget);
+    final ctrlEmpty = tester
+        .element(find.byKey(const ValueKey('pane-0')))
+        .read<SpreadController>();
+    expect(ctrlEmpty.pendingClarifierQuestion, isNull);
+
+    // A typed custom question arms the single +1 unlock and slides to the
+    // table with the banner.
+    await tester.enterText(
+      find.byKey(const ValueKey('oracle-input')),
+      'Should I change jobs?',
+    );
+    await tester.tap(find.text('🃏 +1 CARD FOR MY QUESTION'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700)); // pane slide
+    await tester.pump();
+    final ctrl = tester
+        .element(find.byKey(const ValueKey('pane-0')))
+        .read<SpreadController>();
+    expect(ctrl.pendingClarifierQuestion, 'Should I change jobs?');
+    expect(ctrl.allowedCardsLimit, 4);
+    expect(find.byKey(const ValueKey('clarifier-banner')), findsOneWidget);
+    expect(find.textContaining('Should I change jobs?'), findsWidgets);
+  });
+
+  testWidgets('locked deck refuses a 4th draw with the synthesis prompt',
+      (tester) async {
+    await tester.pumpWidget(const MindreaderApp());
+    await tester.pump();
+    for (var i = 0; i < 3; i++) {
+      await dealOne(tester);
+    }
+
+    // The base spread is complete and no question is armed: a swipe-down
+    // on the deck deals nothing and shows the subtle lock prompt.
+    await dealOne(tester);
+    final ctrl = tester
+        .element(find.byType(InteractiveDeckWidget))
+        .read<SpreadController>();
+    expect(ctrl.dealtCount, 3);
+    expect(ctrl.slots.length, 3);
+    expect(ctrl.isDealLocked, isTrue);
+    expect(find.textContaining('Flip all cards face-up'), findsOneWidget);
   });
 
   testWidgets(

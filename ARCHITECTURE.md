@@ -82,14 +82,56 @@ arena, so horizontal drags on it always riffle the deck; swiping anywhere else
 (background, header, dealt cards) pans the PageView.
 
 **Gemini input capsule** (shared Table/Chat, above the bottom nav dock):
-`+` action sheet (context chips / 📷 attach camera card / 🃏 pull clarifier /
-✦ new spread), expandable text field, mic dictation, circular accent send.
+`+` action sheet (context chips / 📷 attach camera card / ✦ new spread),
+expandable text field, mic dictation, circular accent send.
 On the table, submits play **"Sent to Cosmos"** — the thought rises from the
 capsule and dissolves into stardust (`CosmosSendBurst`, deterministic painter)
 and lands in `SpreadController.sessionContextNotes`; the next dealt card also
 inherits the pending context. Synthesis + chat turns upsert the session into
 `SessionHistoryController` (in-memory first, background `shared_preferences`
 write — the UI never waits on storage).
+
+## Sprint 3/3 — Authentic spread caps, Deal Lock & AI-guided +1 Clarifiers
+
+**Canonical spread caps & slot roles** (`SpreadType.cardCount` / `slotRoles`):
+
+- `1 • Daily Anchor` — 1 card (*Core Daily Impulse*).
+- `3 • Triad Flow` — 3 cards (*Current State / Essence, Hidden Shadow / Block,
+  Vector / Action*).
+- `4 • Target & Shadow` (Two Shores Cross) — 4 cards (*Your Shore,
+  The Other / Environment, What Bridges or Blocks, Turning Point*).
+- `7 • Deep Synthesis` (Horseshoe) — 7 cards (*Past, Present,
+  Hidden Influences, Obstacle, External Forces, Advice, Outcome*).
+
+**Deal Lock** (`SpreadController.isDealLocked` / `allowedCardsLimit`): as soon
+as `dealtCount == baseCardLimit` the deck refuses further draws — the whole
+deck can never be dumped onto the table. A swipe on the locked deck springs
+the card back and shows the subtle haptic/visual prompt
+*"Flip all cards face-up and synthesize in Chat before drawing a clarifier."*
+(`showDealLockPrompt`, shared by the tactile deck and the overview mini-deck).
+
+**AI-generated Clarifier Questions** (`buildClarifierSuggestions`): the
+synthesis in Pane 1 ends with 2–3 tappable probes
+(`🃏 +1 CARD: …`) that dynamically reference the actual cards and elemental
+tensions on the table — the sharpest reversed/shadow card's resistance, a
+concrete conflict thread pair, the dominant element. Pure + deterministic,
+recomputed from the live table after every clarifier flip.
+
+**The +1 unlock loop**: tapping an AI question (or typing a custom question
+in the input capsule and tapping `🃏 +1 CARD FOR MY QUESTION`) arms
+`pendingClarifierQuestion` and raises `allowedCardsLimit` to exactly
+`dealtCount + 1`. The PageView slides back to the table where the armed
+question shows as a banner (`clarifier-banner`; the deck badge reads
+`PULL CLARIFIER ↓` and toggles the arm off on tap). Pulling the single
+unlocked card consumes the question into `Clarifier N+1` and **relocks the
+deck immediately**. Flipping it face-up streams a `CLARIFIER EXPANSION`
+chapter answering exactly that question, followed by fresh follow-up
+prompts. In `physicalCameraSync` mode the same arm routes through the camera.
+
+**Hard 10-card ceiling** (`SpreadController.maxTableCards = 10`): at 10
+cards arming fails, every deal path returns null, and the chat shows
+*"MAXIMUM OF 10 CARDS REACHED FOR THIS READING — THE CONVERSATION STAYS
+OPEN"* while text/voice Q&A continues freely.
 
 ## Folder map
 
@@ -115,11 +157,13 @@ lib/
 ## Verification
 
 - `flutter analyze` — zero errors/warnings. ✅
-- `flutter test` — 114 tests green: domain (deck integrity, shuffle, deal,
-  flip, dignity, synthesis, session notes, snapshot round-trip, restore) +
-  widget (boot → deal → flip → reading sheet, workspace swipes & deck gesture
-  isolation, capsule → cosmos, synthesize → chat pane, clarifiers in chat,
-  camera sync, history save/restore). ✅
+- `flutter test` — 133 tests green: domain (deck integrity, shuffle, deal,
+  flip, dignity, synthesis, session notes, snapshot round-trip, restore,
+  spread caps, deal lock, +1 unlock loop, 10-card ceiling, AI clarifier
+  suggestions) + widget (boot → deal → flip → reading sheet, workspace
+  swipes & deck gesture isolation, capsule → cosmos, synthesize → chat pane,
+  AI question → unlock → pull → clarifier reading, custom-question arming,
+  locked-deck prompt, camera sync, history save/restore). ✅
 - `flutter build apk --debug` (Android SDK present on host; Gradle auto-installs Platform 35).
 - iOS: config kept clean (Info.plist permissions) for cloud CI; no local xcodebuild on Linux.
 

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/models/dealt_card_slot.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -12,23 +13,36 @@ import '../../state/synthesis_session.dart';
 /// Pane 1 — ORACLE AI CHAT: a full-width Gemini-style conversation. The
 /// pinned spread header strip (mini card icons + elemental badges) sits on
 /// top and slides back to the Digital Table on tap; below it streams the
-/// structured synthesis, the clarifier expansions and the free dialog.
+/// structured synthesis, the AI-generated +1 Clarifier questions, the
+/// clarifier expansions and the free dialog.
 class OracleChatPane extends StatefulWidget {
   const OracleChatPane({
     super.key,
     required this.session,
+    required this.capsuleText,
     required this.onBackToTable,
     required this.onSynthesize,
-    required this.onPullClarifier,
+    required this.onClarifierQuestion,
+    required this.onFocusInput,
     required this.onScanClarifier,
   });
 
   final SynthesisSession session;
+
+  /// The shared input capsule's text — the `+1 CARD FOR MY QUESTION` chip
+  /// reads the reader's own typed follow-up from it.
+  final TextEditingController capsuleText;
   final VoidCallback onBackToTable;
 
   /// Runs the AI synthesis (used by the empty-state call to action).
   final VoidCallback onSynthesize;
-  final VoidCallback onPullClarifier;
+
+  /// Arms the deck for ONE +1 Clarifier Card with the tapped AI question
+  /// or the reader's own question (then slides back to the table).
+  final ValueChanged<String> onClarifierQuestion;
+
+  /// Pulls the keyboard focus to the shared input capsule.
+  final VoidCallback onFocusInput;
   final VoidCallback onScanClarifier;
 
   @override
@@ -61,6 +75,33 @@ class _OracleChatPaneState extends State<OracleChatPane> {
     });
   }
 
+  /// The reader's own follow-up from the shared input capsule: arms the
+  /// deck for ONE +1 Clarifier Card with it. Empty input → gentle prompt
+  /// + keyboard focus on the capsule.
+  void _onCustomClarifierQuestion() {
+    final text = widget.capsuleText.text.trim();
+    if (text.isEmpty) {
+      HapticFeedback.heavyImpact();
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      if (messenger != null) {
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(
+            duration: Duration(seconds: 3),
+            backgroundColor: AppColors.surface,
+            content: Text(
+              'Type your question in the input bar first, then tap +1 CARD.',
+              style: TextStyle(color: Colors.white, fontSize: 12),
+            ),
+          ));
+      }
+      widget.onFocusInput();
+      return;
+    }
+    widget.capsuleText.clear();
+    widget.onClarifierQuestion(text);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
@@ -88,9 +129,11 @@ class _OracleChatPaneState extends State<OracleChatPane> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _ChatActionChip(
-                    label: '+1 · PULL CLARIFIER',
-                    onTap: widget.onPullClarifier,
+                  Flexible(
+                    child: _ChatActionChip(
+                      label: '🃏 +1 CARD FOR MY QUESTION',
+                      onTap: _onCustomClarifierQuestion,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   _ChatActionChip(
@@ -125,6 +168,15 @@ class _OracleChatPaneState extends State<OracleChatPane> {
           header: chapter.generating ? null : 'CLARIFIER EXPANSION',
         ),
       );
+    }
+    // The AI-generated follow-up Clarifier questions: attached right after
+    // the synthesis (or the latest clarifier reading) and recomputed from
+    // the live table — at the 10-card ceiling they become a lock note.
+    if (session.hasSynthesis && !session.generatingInitial) {
+      children.add(_ClarifierSuggestions(
+        slots: ctrl.slots,
+        onSelect: widget.onClarifierQuestion,
+      ));
     }
     for (final message in session.messages) {
       switch (message.role) {
@@ -507,6 +559,104 @@ class _SystemBubble extends StatelessWidget {
 }
 
 
+
+/// The AI-generated +1 Clarifier questions: 2-3 spread-specific probes
+/// that dynamically reference the ACTUAL cards and elemental tensions on
+/// the table. Tapping one arms the deck for exactly ONE card (the
+/// workspace slides back to the Digital Table). At the 10-card ceiling
+/// the block becomes a permanent lock note — the conversation stays open.
+class _ClarifierSuggestions extends StatelessWidget {
+  const _ClarifierSuggestions({required this.slots, required this.onSelect});
+
+  final List<DealtCardSlot> slots;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final dealtCount = slots.where((s) => s.card != null).length;
+    if (dealtCount >= SpreadController.maxTableCards) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Align(
+          alignment: Alignment.center,
+          child: Text(
+            'MAXIMUM OF 10 CARDS REACHED FOR THIS READING — '
+            'THE CONVERSATION STAYS OPEN',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 8.5,
+              letterSpacing: 1.4,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ),
+      );
+    }
+    final questions = buildClarifierSuggestions(slots);
+    if (questions.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'WOULD YOU LIKE TO DRAW A +1 CLARIFIER CARD TO UNCOVER:',
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 8.5,
+              letterSpacing: 1.4,
+              fontWeight: FontWeight.w700,
+              color: AppColors.lavender,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final q in questions) ...[
+            _SuggestionCard(
+              label: '🃏 +1 CARD: $q',
+              onTap: () => onSelect(q),
+            ),
+            const SizedBox(height: 6),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One tappable AI clarifier question card (full-width, left-aligned).
+class _SuggestionCard extends StatelessWidget {
+  const _SuggestionCard({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: AppColors.surface.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.55)),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            height: 1.35,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// The structured AI synthesis rendered as the first oracle message.
 class _SynthesisBubble extends StatelessWidget {

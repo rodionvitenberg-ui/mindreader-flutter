@@ -15,6 +15,7 @@ import 'digital_table_screen.dart';
 import 'oracle_chat_pane.dart';
 import 'spread_history_pane.dart';
 import 'widgets/cosmos_send_burst.dart';
+import 'widgets/deal_lock_prompt.dart';
 import 'widgets/gemini_input_capsule.dart';
 
 /// Pane indices of the 3-screen horizontal workspace.
@@ -62,6 +63,12 @@ class _TableWorkspaceState extends State<TableWorkspace>
   String _cosmosLabel = '';
   bool _cosmosVisible = false;
 
+  /// The shared input capsule's text + focus — owned here so the chat
+  /// pane's `+1 CARD FOR MY QUESTION` chip can read the typed question
+  /// and pull the keyboard focus programmatically.
+  final TextEditingController _capsuleText = TextEditingController();
+  final FocusNode _capsuleFocus = FocusNode();
+
   /// Identity of the in-progress session in the local archive (set on the
   /// first synthesis so later chat turns upsert the same entry).
   String? _sessionTimestamp;
@@ -79,6 +86,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
     _ctrl.removeListener(_onSpreadChanged);
     _paneController.dispose();
     _cosmosCtl.dispose();
+    _capsuleText.dispose();
+    _capsuleFocus.dispose();
     _synthesis.dispose();
     _history.dispose();
     super.dispose();
@@ -228,25 +237,34 @@ class _TableWorkspaceState extends State<TableWorkspace>
     HapticFeedback.mediumImpact();
   }
 
-  // ---- clarifiers ----
+  // ---- clarifiers (question-driven +1 unlock loop) ----
 
-  void _pullClarifier() {
-    final slotIndex = _ctrl.addClarifierSlot(
-      question: 'What else does the table want to show?',
-    );
-    if (slotIndex == null) {
-      HapticFeedback.heavyImpact();
+  /// Arms the deck for EXACTLY ONE +1 Clarifier Card with [question] (an
+  /// AI-suggested follow-up or the reader's own question) and slides back
+  /// to the Digital Table, where a subtle banner shows the armed question.
+  /// In physical-camera-sync mode the draw routes through the camera.
+  void _requestClarifierForQuestion(String question) {
+    if (!_ctrl.armClarifierQuestion(question)) {
+      showDealLockPrompt(context, _ctrl);
+      return;
+    }
+    if (_ctrl.sourceMode == TableSourceMode.physicalCameraSync) {
+      _ctrl.requestClarifierScan(question);
+      widget.onOpenCameraClarifier?.call();
       return;
     }
     _synthesis.addSystemMessage(
-      'A clarifier was dealt — flip it face-up on the table to hear it '
-      'speak.',
+      'Clarifier armed: "$question" — the deck unlocked exactly one card. '
+      'Pull it and flip it face-up to hear the answer.',
     );
-    HapticFeedback.selectionClick();
+    HapticFeedback.mediumImpact();
+    _goToPane(tablePane);
   }
 
   void _scanClarifier() {
-    _ctrl.requestClarifierScan('What else does the table want to show?');
+    _ctrl.requestClarifierScan(
+      _ctrl.pendingClarifierQuestion ?? 'What else does the table want to show?',
+    );
     widget.onOpenCameraClarifier?.call();
   }
 
@@ -291,7 +309,6 @@ class _TableWorkspaceState extends State<TableWorkspace>
   // ---- `+` action sheet (quick context chips / attach camera card) ----
 
   void _openPlusSheet() {
-    final hasSynthesis = _synthesis.hasSynthesis;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -366,16 +383,6 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 _scanClarifier();
               },
             ),
-            if (hasSynthesis) ...[
-              const SizedBox(height: 8),
-              _SheetAction(
-                label: '🃏 PULL A CLARIFIER',
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _pullClarifier();
-                },
-              ),
-            ],
             const SizedBox(height: 8),
             _SheetAction(
               label: '✦ NEW SPREAD',
@@ -409,9 +416,11 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 const DigitalTableScreen(),
                 OracleChatPane(
                   session: _synthesis,
+                  capsuleText: _capsuleText,
                   onBackToTable: () => _goToPane(tablePane),
                   onSynthesize: _runSynthesis,
-                  onPullClarifier: _pullClarifier,
+                  onClarifierQuestion: _requestClarifierForQuestion,
+                  onFocusInput: () => _capsuleFocus.requestFocus(),
                   onScanClarifier: _scanClarifier,
                 ),
                 SpreadHistoryPane(
@@ -429,10 +438,11 @@ class _TableWorkspaceState extends State<TableWorkspace>
   }
   /// The shared floating input capsule area: quick-context chips + the
   /// glowing SYNTHESIZE CTA (Table) or plain capsule (Chat), plus the
-  /// "Sent to Cosmos" overlay.
+  /// "Sent to Cosmos" overlay and the armed-clarifier banner.
   Widget _buildBottomArea(SpreadController ctrl) {
     final onTable = _pane == tablePane;
     final ready = ctrl.initialSpreadAllFaceUp;
+    final clarifier = ctrl.pendingClarifierQuestion;
     return Stack(
       alignment: Alignment.bottomCenter,
       clipBehavior: Clip.none,
@@ -442,6 +452,10 @@ class _TableWorkspaceState extends State<TableWorkspace>
           children: [
             if (onTable) ...[
               _QuickContextChips(onChipTap: _sendChipToEther),
+              const SizedBox(height: 2),
+            ],
+            if (onTable && clarifier != null) ...[
+              _ClarifierBanner(question: clarifier),
               const SizedBox(height: 2),
             ],
             if (onTable && ready) ...[
@@ -455,9 +469,11 @@ class _TableWorkspaceState extends State<TableWorkspace>
             GeminiInputCapsule(
               fieldKey: const ValueKey('oracle-input'),
               sendKey: const ValueKey('oracle-send'),
+              controller: _capsuleText,
+              focusNode: _capsuleFocus,
               hint: onTable
                   ? 'Add context or ask Oracle...'
-                  : 'Ask the Oracle about your spread...',
+                  : 'Ask the Oracle — or type a question for a +1 card...',
               onSend: onTable ? _sendToEther : _askOracle,
               onPlus: _openPlusSheet,
             ),
@@ -577,6 +593,49 @@ class _QuickContextChips extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// The subtle banner shown on the Digital Table while a clarifier question
+/// is armed: names the active question and reminds the reader that exactly
+/// ONE card is unlocked (tap the badge to dismiss).
+class _ClarifierBanner extends StatelessWidget {
+  const _ClarifierBanner({required this.question});
+
+  final String question;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('clarifier-banner'),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.lavender.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.lavender.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('🃏', style: TextStyle(fontSize: 13)),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              'CLARIFIER: "$question" — PULL THE UNLOCKED CARD',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 8.5,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w700,
+                color: AppColors.lavender,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -20,27 +20,35 @@ extension SpreadTypeX on SpreadType {
       };
 
   /// The role each slot plays in the reading, top to bottom.
+  /// Authentic canonical slot definitions per spread:
+  /// * Triad Flow — 1: Current State / Essence, 2: Hidden Shadow / Block,
+  ///   3: Vector / Action.
+  /// * Target & Shadow (Two Shores Cross) — 1: Your Shore,
+  ///   2: The Other / Environment, 3: What Bridges or Blocks,
+  ///   4: Turning Point.
+  /// * Deep Synthesis (Horseshoe) — Past, Present, Hidden Influences,
+  ///   Obstacle, External Forces, Advice, Outcome.
   List<String> get slotRoles => switch (this) {
-        SpreadType.one => const ['Daily Anchor'],
+        SpreadType.one => const ['Core Daily Impulse'],
         SpreadType.three => const [
-            'Current State',
-            'Hidden Barrier',
-            'Action Vector',
+            'Current State / Essence',
+            'Hidden Shadow / Block',
+            'Vector / Action',
           ],
         SpreadType.four => const [
-            'The Person / Target',
-            'Their Visible Stance',
-            'Their Hidden Shadow',
-            'The Path Forward',
+            'Your Shore',
+            'The Other / Environment',
+            'What Bridges or Blocks',
+            'Turning Point',
           ],
         SpreadType.seven => const [
-            'The Heart of the Matter',
-            'The Crossing Influence',
-            'The Root',
-            'The Recent Past',
-            'The Potential',
-            'The Near Future',
-            'The Outcome',
+            'Past',
+            'Present',
+            'Hidden Influences',
+            'Obstacle',
+            'External Forces',
+            'Advice',
+            'Outcome',
           ],
       };
 
@@ -51,9 +59,9 @@ extension SpreadTypeX on SpreadType {
         SpreadType.three =>
           'Where you stand, what quietly blocks you, and the move that unlocks it.',
         SpreadType.four =>
-          'The person on your mind, seen through three analytical lenses.',
+          'The Two Shores Cross: the person on your mind and the bridge between you.',
         SpreadType.seven =>
-          'A deep vertical synthesis of the forces moving through the situation.',
+          'The Horseshoe: a deep vertical synthesis of the forces moving through the situation.',
       };
 }
 

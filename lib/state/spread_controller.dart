@@ -21,6 +21,21 @@ class SpreadController extends ChangeNotifier {
   final Random _rng;
   final int _deckSize; // physical stack size (default 78 = full tarot deck)
 
+  /// Hard ceiling: no reading may ever hold more than 10 cards on the
+  /// table (base spread + clarifiers). Beyond it the deck refuses any
+  /// further draw while the Oracle AI Chat stays fully open.
+  static const maxTableCards = 10;
+
+  /// Subtle haptic/visual prompt shown when the reader swipes a locked
+  /// deck: the base spread is complete and no clarifier question is armed.
+  static const dealLockedPrompt =
+      'Flip all cards face-up and synthesize in Chat before drawing '
+      'a clarifier.';
+
+  /// The hard ceiling prompt once 10 cards lie on the table.
+  static const maxTableCardsPrompt =
+      'Maximum of 10 cards reached for this reading.';
+
   late List<int> _cardIds; // shuffled order of tarotDeck ids
   late List<bool> _isReversed; // parallel orientation flags → 156 states
   int _topIndex = 0; // next card to deal
@@ -37,6 +52,30 @@ class SpreadController extends ChangeNotifier {
   /// Number of slots in the ORIGINAL spread template (clarifier slots are
   /// appended on top of this count).
   int get initialSpreadCardCount => _spreadType.cardCount;
+
+  /// The authentic canonical slot count of the active spread (1/3/4/7) —
+  /// the deck locks for further dealing as soon as this many cards lie on
+  /// the table.
+  int get baseCardLimit => _spreadType.cardCount;
+
+  /// How many cards this reading may hold right now:
+  /// * base spread filling → the canonical [baseCardLimit];
+  /// * a clarifier question armed → exactly dealtCount + 1 (ONE unlocked
+  ///   card), clamped to [maxTableCards];
+  /// * hard ceiling → [maxTableCards], never less.
+  int get allowedCardsLimit {
+    if (dealtCount >= maxTableCards) return maxTableCards;
+    return min(
+      maxTableCards,
+      _pendingClarifierQuestion == null
+          ? baseCardLimit
+          : dealtCount + 1,
+    );
+  }
+
+  /// True when the deck refuses further draws: the base spread is complete
+  /// and no clarifier question is armed, or the 10-card ceiling is reached.
+  bool get isDealLocked => dealtCount >= allowedCardsLimit;
 
   late List<DealtCardSlot> _slots;
   List<DealtCardSlot> get slots => List.unmodifiable(_slots);
@@ -179,7 +218,7 @@ class SpreadController extends ChangeNotifier {
     final idx = nextEmptySlotIndex;
     if (idx == null) return null;
     final pos = _topIndex + depthFromTop;
-    if (depthFromTop < 0 || pos >= _deckSize) return null;
+    if (depthFromTop < 0 || pos >= _cardIds.length) return null;
     final card = tarotDeck[_cardIds[pos]];
     final reversed = _isReversed[pos];
     _cardIds.removeAt(pos);
@@ -221,32 +260,45 @@ class SpreadController extends ChangeNotifier {
     return false;
   }
 
-  // ---- endless single-card clarifiers -----------------------------------
+  // ---- locked clarifier loop (+1 Card, hard 10-card ceiling) ------------
 
   int _clarifierCount = 0;
 
-  /// Appends Clarifier slot `N+1` (role `Clarifier N`, intention = the
-  /// follow-up question) and immediately deals the next digital card into
-  /// it FACE DOWN. Returns the new slot index, or null when the deck is
-  /// depleted.
-  int? addClarifierSlot({required String question}) {
-    if (_topIndex >= _cardIds.length) return null;
-    final idx = _appendClarifierSlot(question);
-    dealCardAt(0); // fills the freshly appended empty slot
-    return idx;
+  /// Arms the deck for EXACTLY ONE +1 Clarifier Card with [question] (an
+  /// AI-suggested or the reader's own follow-up). Returns false when the
+  /// base spread is incomplete, the question is blank, or the hard
+  /// 10-card ceiling is reached.
+  bool armClarifierQuestion(String question) {
+    if (question.trim().isEmpty) return false;
+    if (dealtCount >= maxTableCards) return false;
+    if (dealtCount < baseCardLimit) return false;
+    _pendingClarifierQuestion = question;
+    notifyListeners();
+    return true;
   }
 
   /// Deals the next card; when the initial spread is already full this
-  /// appends a Clarifier slot instead of refusing (endless expansion).
-  int? dealNextCardOrClarifier() =>
-      dealNextCard() ?? addClarifierSlot(question: 'What else does the table want to show?');
+  /// consumes an armed clarifier question and appends Clarifier N+1
+  /// instead of refusing. Refuses (null) while the deck is locked.
+  int? dealNextCardOrClarifier() => dealCardAtOrClarifier(0);
 
-  /// Same, for the tactile deck grab path (any valid depth).
+  /// The single legal digital-deal gate (tactile grab AND overview tap):
+  /// * base slots fill freely up to the canonical limit;
+  /// * beyond it a card may only be drawn while a clarifier question is
+  ///   armed — exactly ONE, then the deck locks again;
+  /// * at [maxTableCards] the deck refuses permanently.
   int? dealCardAtOrClarifier(int depthFromTop) {
+    if (depthFromTop < 0 || depthFromTop >= remaining) return null;
+    if (dealtCount >= maxTableCards) return null;
     final direct = dealCardAt(depthFromTop);
     if (direct != null) return direct;
-    if (depthFromTop < 0 || depthFromTop >= _deckSize) return null;
-    return addClarifierSlot(question: 'What else does the table want to show?');
+    final question = _pendingClarifierQuestion;
+    if (question == null) return null; // deck locked: no question armed
+    final idx = _appendClarifierSlot(question);
+    _pendingClarifierQuestion = null; // ONE card, then the deck locks again
+    dealCardAt(depthFromTop);
+    notifyListeners();
+    return idx;
   }
 
   int _appendClarifierSlot(String question) {
@@ -264,13 +316,21 @@ class SpreadController extends ChangeNotifier {
 
   String? _pendingClarifierQuestion;
 
+  /// The armed clarifier question (AI-suggested or the reader's own) —
+  /// drives the unlocked +1 card AND the camera handoff. Null while the
+  /// deck is locked or no follow-up is requested.
+  String? get pendingClarifierQuestion => _pendingClarifierQuestion;
+
   /// True while the camera is expected to photograph ONE physical clarifier
   /// card that extends the current spread.
   bool get clarifierScanRequested => _pendingClarifierQuestion != null;
 
   /// Arms the clarifier camera scan with the follow-up question and marks
-  /// the session as a physical camera sync.
+  /// the session as a physical camera sync. Refuses beyond the hard
+  /// 10-card ceiling.
   void requestClarifierScan(String question) {
+    if (dealtCount >= maxTableCards) return;
+    if (question.trim().isEmpty) return;
     _pendingClarifierQuestion = question;
     _sourceMode = TableSourceMode.physicalCameraSync;
     notifyListeners();
@@ -278,10 +338,12 @@ class SpreadController extends ChangeNotifier {
 
   /// The camera recognized the photographed physical clarifier: append it
   /// FACE UP as Card N+1. The digital 78-card ledger is untouched — a real
-  /// card never decrements [remaining]. Returns the new slot index.
+  /// card never decrements [remaining]. Returns the new slot index, or
+  /// null when nothing is armed or the 10-card ceiling is reached.
   int? completeClarifierScan(TarotCard card, bool reversed) {
     final question = _pendingClarifierQuestion;
     if (question == null) return null;
+    if (dealtCount >= maxTableCards) return null;
     _pendingClarifierQuestion = null;
     final idx = _appendClarifierSlot(question);
     final slot = _slots[idx];

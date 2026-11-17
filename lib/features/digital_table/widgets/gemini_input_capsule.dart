@@ -20,6 +20,8 @@ class GeminiInputCapsule extends StatefulWidget {
     this.hint = 'Add context or ask Oracle...',
     this.sendKey,
     this.fieldKey,
+    this.controller,
+    this.focusNode,
   });
 
   final ValueChanged<String> onSend;
@@ -28,19 +30,29 @@ class GeminiInputCapsule extends StatefulWidget {
   final Key? sendKey;
   final Key? fieldKey;
 
+  /// Optional EXTERNAL controller (the workspace owns it so the clarifier
+  /// chip can read the typed question). When null the capsule manages its
+  /// own controller.
+  final TextEditingController? controller;
+
+  /// Optional external focus node — lets the chat pane pull keyboard
+  /// focus to the input bar programmatically.
+  final FocusNode? focusNode;
+
   @override
   State<GeminiInputCapsule> createState() => _GeminiInputCapsuleState();
 }
 
 class _GeminiInputCapsuleState extends State<GeminiInputCapsule> {
-  final TextEditingController _text = TextEditingController();
+  late final TextEditingController _text =
+      widget.controller ?? TextEditingController();
   bool _micListening = false;
   SpeechToText? _speech;
 
   @override
   void dispose() {
     _speech?.stop();
-    _text.dispose();
+    if (widget.controller == null) _text.dispose();
     super.dispose();
   }
 
@@ -123,6 +135,7 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule> {
             child: TextField(
               key: widget.fieldKey,
               controller: _text,
+              focusNode: widget.focusNode,
               minLines: 1,
               maxLines: 3,
               textInputAction: TextInputAction.send,
