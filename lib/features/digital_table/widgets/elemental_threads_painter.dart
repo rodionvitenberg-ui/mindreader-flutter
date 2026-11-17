@@ -85,7 +85,7 @@ List<ElementalThreadSegment> threadSegmentsFor(
       to: rectEdgeToward(rects[i + 1], rects[i].center, inset: 8.0),
       elementA: a.card!.element,
       elementB: b.card!.element,
-      tone: dignityBetween(a.card!, b.card!),
+      tone: dignityBetweenElements(a.card!.element, b.card!.element),
       pairKey: a.index,
     ));
   }

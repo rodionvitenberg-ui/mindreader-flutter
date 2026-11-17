@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/models/dealt_card_slot.dart';
+import '../../core/models/divination_card.dart';
+import '../../core/models/divination_system.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -355,12 +357,15 @@ class _SpreadHeaderStrip extends StatelessWidget {
 class _MiniCardGlyph extends StatelessWidget {
   const _MiniCardGlyph({required this.card, required this.reversed});
 
-  final TarotCard card;
+  final DivinationCard card;
   final bool reversed;
 
   @override
   Widget build(BuildContext context) {
     final accent = card.element.accent;
+    final glyph = card.system == DivinationSystem.runes
+        ? (card as RuneDivinationCard).stone.glyph
+        : card.element.glyph;
     return Container(
       width: 24,
       height: 38,
@@ -373,7 +378,13 @@ class _MiniCardGlyph extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(card.element.glyph, style: TextStyle(fontSize: 10, color: accent)),
+          Text(
+            glyph,
+            style: TextStyle(
+              fontSize: card.system == DivinationSystem.runes ? 13 : 10,
+              color: accent,
+            ),
+          ),
           if (reversed)
             Text('↓', style: TextStyle(fontSize: 7, color: accent)),
         ],

@@ -13,14 +13,28 @@ import '../../../state/deck_pack_controller.dart';
 import 'foil_glint.dart';
 
 /// Procedural card back — seven bespoke patterns (one per deck style), no
-/// image assets required. Palette follows the active deck pack.
+/// image assets required. Palette follows the active deck pack, or the
+/// explicit [styleOverride]/[accentOverride]/[secondaryOverride] triples
+/// (used by the Lenormand packs, which have no tarot pack object).
 class CardBackPainter extends CustomPainter {
-  const CardBackPainter({this.pack});
+  const CardBackPainter({
+    this.pack,
+    this.styleOverride,
+    this.accentOverride,
+    this.secondaryOverride,
+  });
 
   final TarotDeckPack? pack;
 
-  Color get _accent => Color(pack?.backAccentArgb ?? 0xFFA78BFA);
-  Color get _secondary => Color(pack?.backSecondaryArgb ?? 0xFF6366F1);
+  /// Replaces [pack]'s style (Lenormand backs reuse the tarot families).
+  final CardBackStyle? styleOverride;
+  final int? accentOverride;
+  final int? secondaryOverride;
+
+  Color get _accent =>
+      Color(accentOverride ?? pack?.backAccentArgb ?? 0xFFA78BFA);
+  Color get _secondary =>
+      Color(secondaryOverride ?? pack?.backSecondaryArgb ?? 0xFF6366F1);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -30,7 +44,8 @@ class CardBackPainter extends CustomPainter {
     // infinite loop on the main thread. Paint nothing until a real size
     // is laid out.
     if (size.isEmpty) return;
-    final style = pack?.backStyle ?? CardBackStyle.obsidian;
+    final style =
+        styleOverride ?? pack?.backStyle ?? CardBackStyle.obsidian;
     final r = RRect.fromRectAndRadius(
       Offset.zero & size,
       Radius.circular(size.width * 0.06),
@@ -339,6 +354,9 @@ class CardBack extends StatelessWidget {
     required this.width,
     required this.height,
     this.pack,
+    this.styleOverride,
+    this.accentOverride,
+    this.secondaryOverride,
     this.angleY = 0,
     this.angleX = 0,
     this.glint = false,
@@ -347,6 +365,13 @@ class CardBack extends StatelessWidget {
   final double width;
   final double height;
   final TarotDeckPack? pack;
+
+  /// Lenormand packs reuse the tarot back-pattern families via these
+  /// overrides (no tarot pack object exists for them).
+  final CardBackStyle? styleOverride;
+  final int? accentOverride;
+  final int? secondaryOverride;
+
   final double angleY;
   final double angleX;
   final bool glint;
@@ -355,7 +380,12 @@ class CardBack extends StatelessWidget {
   Widget build(BuildContext context) {
     final painter = CustomPaint(
       size: Size(width, height),
-      painter: CardBackPainter(pack: pack),
+      painter: CardBackPainter(
+        pack: pack,
+        styleOverride: styleOverride,
+        accentOverride: accentOverride,
+        secondaryOverride: secondaryOverride,
+      ),
     );
     // Real deck backs (pack.backAsset → back.jpg) replace the procedural
     // pattern when the asset exists; zero-crash fallback chain to painter.

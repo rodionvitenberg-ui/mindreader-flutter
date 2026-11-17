@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import '../../core/data/intention_prompts.dart' show tableContextChips;
 import '../../core/models/dealt_card_slot.dart';
-import '../../core/models/spread_type.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../state/session_history_controller.dart';
@@ -154,6 +153,9 @@ class _TableWorkspaceState extends State<TableWorkspace>
     final result = await OracleSynthesisService().synthesizeStructured(
       slots: _ctrl.slots,
       type: _ctrl.spreadType,
+      spreadLabel: _ctrl.spreadLabel,
+      focusLine: _ctrl.spreadFocusLine,
+      system: _ctrl.system,
       contextChip: _ctrl.sessionContextNotes.isEmpty
           ? null
           : _ctrl.sessionContextNotes.join(' · '),
@@ -198,6 +200,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
       question: question,
       slots: _ctrl.slots,
       type: _ctrl.spreadType,
+      spreadLabel: _ctrl.spreadLabel,
       history: _synthesis.messages,
     );
     if (!mounted) return;
@@ -289,7 +292,10 @@ class _TableWorkspaceState extends State<TableWorkspace>
   /// exact dealt cards/orientations/threads on Pane 0.
   Future<void> _restoreSession(SpreadSessionSnapshot snapshot) async {
     _ctrl.restoreSpread(
+      system: snapshot.system,
       type: snapshot.spreadType,
+      lenormandSpread: snapshot.lenormandSpread,
+      runeCast: snapshot.runeCast,
       cards: snapshot.toRestoreCards(),
       sessionNotes: snapshot.sessionNotes,
     );
@@ -410,6 +416,40 @@ class _TableWorkspaceState extends State<TableWorkspace>
       bottom: false,
       child: Column(
         children: [
+          // Slim physical-sync ribbon: the table hosts cards photographed
+          // from the reader's real deck (the header pill row was decluttered).
+          if (_pane == tablePane &&
+              ctrl.sourceMode == TableSourceMode.physicalCameraSync)
+            Container(
+              key: const ValueKey('physical-sync-ribbon'),
+              margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.harmonyCyan.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.harmonyCyan),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.photo_camera_front_outlined,
+                    size: 12,
+                    color: AppColors.harmonyCyan,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'PHYSICAL SYNC',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 8.5,
+                      letterSpacing: 1.4,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.harmonyCyan,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Expanded(
             child: PageView(
               controller: _paneController,
@@ -466,7 +506,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 synthesized: _synthesis.hasSynthesis,
                 generating: _synthesis.generatingInitial,
                 faceUp: _baseFaceUp(ctrl),
-                total: ctrl.spreadType.cardCount,
+                total: ctrl.spreadCardCount,
                 onTap: _runSynthesis,
               ),
             ] else ...[
@@ -505,9 +545,9 @@ class _TableWorkspaceState extends State<TableWorkspace>
   /// hint.
   int _baseFaceUp(SpreadController ctrl) {
     var n = 0;
-    final limit = ctrl.slots.length < ctrl.spreadType.cardCount
+    final limit = ctrl.slots.length < ctrl.spreadCardCount
         ? ctrl.slots.length
-        : ctrl.spreadType.cardCount;
+        : ctrl.spreadCardCount;
     for (var i = 0; i < limit; i++) {
       if (ctrl.slots[i].state == SlotState.faceUp) n++;
     }

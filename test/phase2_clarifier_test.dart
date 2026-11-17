@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/data/intention_prompts.dart';
 import 'package:mindreader/core/data/tarot_deck_data.dart';
 import 'package:mindreader/core/models/dealt_card_slot.dart';
+import 'package:mindreader/core/models/divination_card.dart';
 import 'package:mindreader/core/models/spread_type.dart';
 import 'package:mindreader/core/models/tarot_card_model.dart';
 import 'package:mindreader/core/services/oracle_synthesis_service.dart';
@@ -211,11 +212,11 @@ void main() {
     test('elementalBalance counts, dominant and missing elements', () {
       final slots = [
         DealtCardSlot(index: 0, role: 'A')
-          ..placeCardFaceUp(tarotDeck[22], false), // Ace of Wands — fire
+          ..placeCardFaceUp(TarotDivinationCard(tarotDeck[22]), false), // Ace of Wands — fire
         DealtCardSlot(index: 1, role: 'B')
-          ..placeCardFaceUp(tarotDeck[27], false), // Five of Wands — fire
+          ..placeCardFaceUp(TarotDivinationCard(tarotDeck[27]), false), // Five of Wands — fire
         DealtCardSlot(index: 2, role: 'C')
-          ..placeCardFaceUp(tarotDeck[0], false), // The Fool — air
+          ..placeCardFaceUp(TarotDivinationCard(tarotDeck[0]), false), // The Fool — air
       ];
       final balance = elementalBalance(slots);
       expect(balance[Element.fire], 2);

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/chat_message.dart';
 import '../models/dealt_card_slot.dart';
+import '../models/divination_system.dart';
 import '../models/spread_type.dart';
 import '../models/tarot_card_model.dart';
 
@@ -25,18 +26,23 @@ class ThreadInfo {
 bool _isPair(Element a, Element b, Element x, Element y) =>
     (a == x && b == y) || (a == y && b == x);
 
-/// Pure elemental dignity between two cards.
-ThreadTone dignityBetween(TarotCard a, TarotCard b) {
-  if (a.element == b.element) return ThreadTone.harmony;
-  if (_isPair(a.element, b.element, Element.water, Element.earth)) {
+/// Pure elemental dignity between two elements — the shared core behind
+/// every system's Fate Threads.
+ThreadTone dignityBetweenElements(Element a, Element b) {
+  if (a == b) return ThreadTone.harmony;
+  if (_isPair(a, b, Element.water, Element.earth)) {
     return ThreadTone.harmony;
   }
-  if (_isPair(a.element, b.element, Element.fire, Element.water) ||
-      _isPair(a.element, b.element, Element.air, Element.fire)) {
+  if (_isPair(a, b, Element.fire, Element.water) ||
+      _isPair(a, b, Element.air, Element.fire)) {
     return ThreadTone.conflict;
   }
   return ThreadTone.neutral;
 }
+
+/// Pure elemental dignity between two tarot cards (compat signature).
+ThreadTone dignityBetween(TarotCard a, TarotCard b) =>
+    dignityBetweenElements(a.element, b.element);
 
 /// Threads connect each pair of ADJACENT slots that are both face-up.
 List<ThreadInfo> computeThreads(List<DealtCardSlot> slots) {
@@ -46,7 +52,11 @@ List<ThreadInfo> computeThreads(List<DealtCardSlot> slots) {
     final b = slots[i + 1];
     final bothUp = a.state == SlotState.faceUp && b.state == SlotState.faceUp;
     if (bothUp && a.card != null && b.card != null) {
-      threads.add(ThreadInfo(from: i, to: i + 1, tone: dignityBetween(a.card!, b.card!)));
+      threads.add(ThreadInfo(
+        from: i,
+        to: i + 1,
+        tone: dignityBetweenElements(a.card!.element, b.card!.element),
+      ));
     }
   }
   return threads;
@@ -199,6 +209,21 @@ String _alchemyText(List<DealtCardSlot> slots, List<ThreadInfo> threads) {
   return b.toString();
 }
 
+/// The meaning that applies to this slot right now: the reversed reading
+/// when the card is reversed AND the system supports it, upright otherwise
+/// (Lenormand always upright, symmetrical runes always upright).
+String meaningFor(DealtCardSlot s) {
+  final c = s.card;
+  if (c == null) return '';
+  return s.isReversed && c.reversed != null ? c.reversed! : c.upright;
+}
+
+/// The orientation word per slot: 'reversed' / 'upright' / 'merkstave'.
+String orientationWord(DealtCardSlot s) {
+  if (!s.isReversed) return 'upright';
+  return s.card?.system == DivinationSystem.runes ? 'merkstave' : 'reversed';
+}
+
 /// Composes the Actionable Verdict from the last card + element context.
 String _verdictText(List<DealtCardSlot> slots, Map<Element, int> balance) {
   final faceUp = slots.where((s) => s.card != null).toList();
@@ -206,7 +231,7 @@ String _verdictText(List<DealtCardSlot> slots, Map<Element, int> balance) {
   final c = last.card!;
   final missing = missingElements(balance);
   final b = StringBuffer();
-  final action = c.socratic;
+  final action = c.reflection;
   b.writeln(
     '${last.role}: ${c.name} points at one move — ${c.upright.split(' — ').last}.',
   );
@@ -230,6 +255,26 @@ String synthesizeSpread(
   String? contextChip,
   Map<int, String>? slotContexts,
 }) {
+  return synthesizeSpreadFor(
+    slots,
+    system: DivinationSystem.tarot,
+    spreadLabel: type.label,
+    focusLine: type.focusLine,
+    contextChip: contextChip,
+    slotContexts: slotContexts,
+  );
+}
+
+/// The system-aware synthesis core — the tarot wrapper above delegates
+/// here, Lenormand and Rune casts call it directly.
+String synthesizeSpreadFor(
+  List<DealtCardSlot> slots, {
+  required DivinationSystem system,
+  required String spreadLabel,
+  required String focusLine,
+  String? contextChip,
+  Map<int, String>? slotContexts,
+}) {
   final faceUp = slots.where((s) => s.card != null).toList();
   if (faceUp.isEmpty) {
     return 'Flip at least one card to begin the synthesis.';
@@ -239,19 +284,18 @@ String synthesizeSpread(
   if (contextChip != null && contextChip.isNotEmpty) {
     b.writeln('Lens: $contextChip.');
   }
-  b.writeln(type.focusLine);
+  b.writeln('$spreadLabel — $focusLine');
   b.writeln();
 
   for (final s in faceUp) {
     final c = s.card!;
-    final meaning = s.isReversed ? c.reversed : c.upright;
     final held = slotContexts?[s.index];
     if (held != null && held.isNotEmpty) {
       b.writeln('You held before drawing: $held.');
     }
-    b.writeln(
-      '${s.role} — ${c.name} (${s.isReversed ? 'reversed' : 'upright'}): $meaning',
-    );
+    final orientation =
+        c.system == DivinationSystem.lenormand ? '' : ' (${orientationWord(s)})';
+    b.writeln('${s.role} — ${c.name}$orientation: ${meaningFor(s)}');
   }
 
   final threads = computeThreads(slots);
@@ -270,9 +314,10 @@ String synthesizeSpread(
   }
 
   b.writeln();
-  b.writeln('The question to sit with: ${faceUp.first.card!.socratic}');
+  b.writeln('The question to sit with: ${faceUp.first.card!.reflection}');
   return b.toString();
 }
+
 
 /// Remote synthesis with the same dual AI pipeline as vision:
 ///
@@ -317,19 +362,37 @@ class OracleSynthesisService {
 
   /// Cohesive spread synthesis: worker → Gemini Flash → local engine.
   /// Never throws; the local synthesis is the guaranteed result.
+  /// [type] is the tarot template; Lenormand/Rune casts pass [spreadLabel]
+  /// + [focusLine] + [system] instead.
   Future<String> synthesize({
     required List<DealtCardSlot> slots,
-    required SpreadType type,
+    SpreadType? type,
+    String? spreadLabel,
+    String? focusLine,
+    DivinationSystem system = DivinationSystem.tarot,
     String? contextChip,
     Map<int, String>? slotContexts,
   }) async {
-    final fallback = synthesizeSpread(
+    final resolvedLabel =
+        spreadLabel ?? (type ?? SpreadType.three).label;
+    final resolvedFocus =
+        focusLine ?? (type ?? SpreadType.three).focusLine;
+    final fallback = synthesizeSpreadFor(
       slots,
-      type,
+      system: system,
+      spreadLabel: resolvedLabel,
+      focusLine: resolvedFocus,
       contextChip: contextChip,
       slotContexts: slotContexts,
     );
-    final prompt = _buildPrompt(slots, type, contextChip, slotContexts);
+    final prompt = _buildPrompt(
+      slots,
+      system,
+      resolvedLabel,
+      resolvedFocus,
+      contextChip,
+      slotContexts,
+    );
     if (prompt == null) return fallback;
 
     if (hasPrimary) {
@@ -371,13 +434,19 @@ class OracleSynthesisService {
   /// from the pure domain data — deterministic and offline-proof.
   Future<StructuredSynthesis> synthesizeStructured({
     required List<DealtCardSlot> slots,
-    required SpreadType type,
+    SpreadType? type,
+    String? spreadLabel,
+    String? focusLine,
+    DivinationSystem system = DivinationSystem.tarot,
     String? contextChip,
     Map<int, String>? slotContexts,
   }) async {
     final narrative = await synthesize(
       slots: slots,
       type: type,
+      spreadLabel: spreadLabel,
+      focusLine: focusLine,
+      system: system,
       contextChip: contextChip,
       slotContexts: slotContexts,
     );
@@ -388,7 +457,7 @@ class OracleSynthesisService {
       narrative: narrative,
       elementalAlchemy: _alchemyText(slots, threads),
       verdict: _verdictText(slots, balance),
-      followUp: faceUp.last.card!.socratic,
+      followUp: faceUp.last.card!.reflection,
     );
   }
 
@@ -412,17 +481,17 @@ class OracleSynthesisService {
       final pc = s.card;
       if (pc == null) continue;
       b.writeln('- ${s.role}: ${pc.name} '
-          '${s.isReversed ? '(reversed)' : '(upright)'}, '
+          '(${orientationWord(s)}), '
           'element ${pc.element.label}');
     }
     b.writeln('The reader now asks a follow-up question: $question');
-    b.writeln('They pulled one clarifier card: ${c.name} '
-        '${newSlot.isReversed ? '(reversed)' : '(upright)'}, '
+    b.writeln('They pulled one clarifier ${c.system.unit}: ${c.name} '
+        '(${orientationWord(newSlot)}), '
         'element ${c.element.label}. '
-        '${newSlot.isReversed ? c.reversed : c.upright}');
+        '${meaningFor(newSlot)}');
     b.writeln('Write ONE short paragraph (3-5 sentences) that answers the '
-        'follow-up question through this card IN THE CONTEXT of the cards '
-        'already on the table, and close with one concrete step. '
+        'follow-up question through this ${c.system.unit} IN THE CONTEXT of '
+        'the cards already on the table, and close with one concrete step. '
         'Plain text only: no markdown, no lists.');
     try {
       if (hasPrimary) {
@@ -453,7 +522,7 @@ class OracleSynthesisService {
   }
 
   /// Offline clarifier chapter: the question + the card + the context of
-  /// the previous cards, closed with the card's own Socratic question.
+  /// the previous cards, closed with the card's own reflection question.
   String _clarifierFallback(
     String question,
     DealtCardSlot newSlot,
@@ -463,8 +532,8 @@ class OracleSynthesisService {
     final b = StringBuffer();
     b.writeln('You asked: $question');
     b.writeln(
-      '${c.name} (${newSlot.isReversed ? 'reversed' : 'upright'}) answers '
-      'with: ${newSlot.isReversed ? c.reversed : c.upright}',
+      '${c.name} (${orientationWord(newSlot)}) answers '
+      'with: ${meaningFor(newSlot)}',
     );
     final prevNames = [
       for (final s in previous)
@@ -472,14 +541,16 @@ class OracleSynthesisService {
     ];
     if (prevNames.isNotEmpty) {
       b.writeln('Read beside ${prevNames.join(', ')} already on the table, '
-          'this card tightens the reading rather than replacing it.');
+          'this ${c.system.unit} tightens the reading rather than replacing it.');
     }
-    b.writeln('The step to take: ${c.socratic}');
+    b.writeln('The step to take: ${c.reflection}');
     return b.toString();
   }
   static String? _buildPrompt(
     List<DealtCardSlot> slots,
-    SpreadType type,
+    DivinationSystem system,
+    String spreadLabel,
+    String focusLine,
     String? contextChip,
     Map<int, String>? slotContexts,
   ) {
@@ -489,10 +560,18 @@ class OracleSynthesisService {
     b.writeln('You are the mindreader.quest oracle: grounded, psychological, '
         'modern. No fortune-teller kitsch, no mysticism, no predictions — '
         'reflective insight only.');
-    b.writeln('Spread: ${type.label} (${type.cardCount} cards). '
-        '${type.focusLine}');
+    b.writeln('Spread: $spreadLabel (${faceUp.length} ${system.unit}s). '
+        '$focusLine');
     if (contextChip != null && contextChip.isNotEmpty) {
       b.writeln('Reader lens: $contextChip.');
+    }
+    if (system == DivinationSystem.lenormand) {
+      b.writeln('Lenormand cards are ALWAYS upright and are read in '
+          'pairs — weigh each card against the ones sitting beside it.');
+    }
+    if (system == DivinationSystem.runes) {
+      b.writeln('Runes land upright or merkstave (reversed); symmetrical '
+          'runes stay upright. Read them by their Aett and element.');
     }
     b.writeln('Cards in reading order:');
     for (final s in faceUp) {
@@ -502,9 +581,9 @@ class OracleSynthesisService {
         b.writeln('  The reader held in mind before drawing: $held.');
       }
       b.writeln('- ${s.role}: ${c.name} '
-          '${s.isReversed ? '(reversed)' : '(upright)'}, '
+          '(${orientationWord(s)}), '
           'element ${c.element.label}. '
-          '${s.isReversed ? c.reversed : c.upright}');
+          '${meaningFor(s)}');
     }
     b.writeln('Write a cohesive synthesis of 2-3 short paragraphs that '
         'weaves each card\'s meaning into its slot role AND weaves in what '
@@ -520,7 +599,8 @@ class OracleSynthesisService {
   Future<String> answerChat({
     required String question,
     required List<DealtCardSlot> slots,
-    required SpreadType type,
+    SpreadType? type,
+    String? spreadLabel,
     required List<ChatMessage> history,
   }) async {
     final fallback = _chatFallback(question, slots);
@@ -528,12 +608,12 @@ class OracleSynthesisService {
     final b = StringBuffer();
     b.writeln('You are the mindreader.quest oracle: grounded, psychological, '
         'modern. No kitsch, no mysticism.');
-    b.writeln('Spread: ${type.label}.');
+    b.writeln('Spread: ${spreadLabel ?? (type ?? SpreadType.three).label}.');
     for (final s in slots) {
       final c = s.card;
       if (c == null) continue;
       b.writeln('- ${s.role}: ${c.name} '
-          '${s.isReversed ? '(reversed)' : '(upright)'}');
+          '(${orientationWord(s)})');
     }
     if (history.isNotEmpty) {
       b.writeln('Dialog so far:');
@@ -573,7 +653,7 @@ class OracleSynthesisService {
   }
 
   /// Offline conversational answer: the dominant element axis + the
-  /// loudest card's Socratic question, closed toward the reader's question.
+  /// loudest card's reflection question, closed toward the reader's question.
   String _chatFallback(String question, List<DealtCardSlot> slots) {
     final faceUp = [for (final s in slots) if (s.card != null) s];
     if (faceUp.isEmpty) {
@@ -588,7 +668,7 @@ class OracleSynthesisService {
         : '${dominant.map((e) => e.trait.toLowerCase()).join(' and ')} '
             'keeps leading the reading';
     return 'Sitting with your question, $axis. '
-        '${last.name} stays the loudest voice on the table: ${last.socratic}';
+        '${last.name} stays the loudest voice on the table: ${last.reflection}';
   }
 
   /// OpenAI/Ollama-compatible chat request. No keys or prompts are logged.

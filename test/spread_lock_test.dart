@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/models/dealt_card_slot.dart';
+import 'package:mindreader/core/models/divination_card.dart';
+import 'package:mindreader/core/models/divination_system.dart';
 import 'package:mindreader/core/models/spread_type.dart';
 import 'package:mindreader/core/services/oracle_synthesis_service.dart';
 import 'package:mindreader/state/spread_controller.dart';
@@ -141,6 +143,7 @@ void main() {
           ),
       ];
       c.restoreSpread(
+        system: DivinationSystem.tarot,
         type: SpreadType.three,
         cards: cards,
         sessionNotes: const [],
@@ -206,7 +209,7 @@ void main() {
       c.requestClarifierScan('Physical one more?');
       expect(c.pendingClarifierQuestion, isNull); // refused at the ceiling
       // No armed question → no camera slot can be appended.
-      expect(c.completeClarifierScan(c.slots[0].card!, false), isNull);
+      expect(c.completeClarifierScan((c.slots[0].card! as TarotDivinationCard).card, false), isNull);
     });
   });
 

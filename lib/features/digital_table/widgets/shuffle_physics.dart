@@ -144,6 +144,16 @@ class FanLayerPose {
   final double dx;
   final double dy;
 
+  /// A neutral flat pose — used by the rune-stone cast flight.
+  static const flat = FanLayerPose(
+    dx: 0,
+    dy: 0,
+    depthZ: 0,
+    rotateY: 0,
+    rotateX: 0,
+    rotateZ: 0,
+  );
+
   /// Depth under perspective: deeper layers recede (translateZ).
   final double depthZ;
   final double rotateY;
@@ -285,21 +295,99 @@ class ShuffleMicroDamp extends Simulation {
 const overviewDeckWidth = 90.0;
 const overviewDeckHeight = 148.0;
 
-/// Number of card rows in the base spread geometry.
-int _spreadBaseRows(SpreadType type) => switch (type) {
-      SpreadType.one => 1,
-      SpreadType.three => 1,
-      SpreadType.four => 2,
-      SpreadType.seven => 3,
+/// Design-space size of the spread canvas for a spread of [count] cards —
+/// full 220×360 cards with [slotGapPx] gaps in their true table geometry.
+/// Layout is derived from the canonical count alone: 1 → single, 3 → row,
+/// 4 → 2×2, 5 → cross (3×3 with 5 stones/cards), 7 → 3-1-3, 9 → 3×3.
+/// The overview screen FittedBox-scales this canvas down so the whole
+/// spread fits the viewport.
+///
+/// When [totalSlots] exceeds the template's card count (endless clarifiers),
+/// the extra cards append as additional rows below the base geometry.
+Size spreadCanvasDesignSizeForCount(int count, {int? totalSlots}) {
+  final w = deckWidth;
+  final h = deckHeight;
+  final g = slotGapPx;
+  final base = switch (count) {
+    1 => Size(w, h),
+    3 => Size(3 * w + 2 * g, h),
+    4 => Size(2 * w + g, 2 * h + g),
+    5 => Size(3 * w + 2 * g, 3 * h + 2 * g),
+    7 => Size(3 * w + 2 * g, 3 * h + 2 * g),
+    9 => Size(3 * w + 2 * g, 3 * h + 2 * g),
+    _ => Size(3 * w + 2 * g, 3 * h + 2 * g),
+  };
+  final extra = (totalSlots ?? count) - count;
+  if (extra <= 0) return base;
+  final cols = _spreadColsForCount(count);
+  final rows = (extra + cols - 1) ~/ cols;
+  return Size(base.width, base.height + rows * (h + g));
+}
+
+/// Design-space top-left of slot [index] inside a spread of [count]
+/// canonical cards: Triad row / 2×2 / Cross-of-5 / 3-1-3 / 3×3 portrait
+/// box. Slots beyond the template ([totalSlots] > count) are clarifiers —
+/// they fill a new row below the base spread.
+Offset spreadSlotDesignTopLeftForCount(int count, int index,
+    {int? totalSlots}) {
+  final w = deckWidth;
+  final h = deckHeight;
+  final g = slotGapPx;
+  if (index < count) {
+    switch (count) {
+      case 1:
+        return Offset.zero;
+      case 3:
+        return Offset(index * (w + g), 0);
+      case 4:
+        return Offset((index % 2) * (w + g), (index ~/ 2) * (h + g));
+      case 5: // Thor's Cross / Cross of 5 — center + 4 arms
+        const order = [4, 5, 6, 7, 8]; // the 3×3 cell index of each arm
+        final cell = order[index];
+        return Offset((cell % 3) * (w + g), (cell ~/ 3) * (h + g));
+      case 7: // Heimdall's Bridge / Deep Synthesis — 3-1-3
+        if (index < 3) return Offset(index * (w + g), 0);
+        if (index == 3) return Offset(w + g, h + g);
+        return Offset((index - 4) * (w + g), 2 * (h + g));
+      case 9: // 3×3 portrait box — reading order left→right, top→bottom
+        return Offset((index % 3) * (w + g), (index ~/ 3) * (h + g));
+      default:
+        return Offset((index % 3) * (w + g), (index ~/ 3) * (h + g));
+    }
+  }
+  // Clarifier slot: a fresh row below the base spread.
+  final k = index - count;
+  final cols = _spreadColsForCount(count);
+  final baseRows = _spreadBaseRowsForCount(count);
+  return Offset(
+    (k % cols) * (w + g),
+    baseRows * (h + g) + (k ~/ cols) * (h + g),
+  );
+}
+
+/// Number of card rows in the base spread geometry for [count] cards.
+int _spreadBaseRowsForCount(int count) => switch (count) {
+      1 => 1,
+      3 => 1,
+      4 => 2,
+      5 => 3,
+      7 => 3,
+      9 => 3,
+      _ => 3,
     };
 
-/// Cards per row in the base spread geometry.
-int _spreadCols(SpreadType type) => switch (type) {
-      SpreadType.one => 1,
-      SpreadType.three => 3,
-      SpreadType.four => 2,
-      SpreadType.seven => 3,
+/// Cards per row in the base spread geometry for [count] cards.
+int _spreadColsForCount(int count) => switch (count) {
+      1 => 1,
+      3 => 3,
+      4 => 2,
+      5 => 3,
+      7 => 3,
+      9 => 3,
+      _ => 3,
     };
+
+// ---- SpreadType-based compat wrappers (tarot templates) -------------------
 
 /// Design-space size of the spread canvas for [type] — full 220×360 cards
 /// with [slotGapPx] gaps in their true table geometry. The overview screen
@@ -307,55 +395,17 @@ int _spreadCols(SpreadType type) => switch (type) {
 ///
 /// When [totalSlots] exceeds the template's card count (endless clarifiers),
 /// the extra cards append as additional rows below the base geometry.
-Size spreadCanvasDesignSize(SpreadType type, {int? totalSlots}) {
-  final w = deckWidth;
-  final h = deckHeight;
-  final g = slotGapPx;
-  final base = switch (type) {
-    SpreadType.one => Size(w, h),
-    SpreadType.three => Size(3 * w + 2 * g, h),
-    SpreadType.four => Size(2 * w + g, 2 * h + g),
-    SpreadType.seven => Size(3 * w + 2 * g, 3 * h + 2 * g),
-  };
-  final extra = (totalSlots ?? type.cardCount) - type.cardCount;
-  if (extra <= 0) return base;
-  final cols = _spreadCols(type);
-  final rows = (extra + cols - 1) ~/ cols;
-  return Size(base.width, base.height + rows * (h + g));
-}
+Size spreadCanvasDesignSize(SpreadType type, {int? totalSlots}) =>
+    spreadCanvasDesignSizeForCount(type.cardCount, totalSlots: totalSlots);
 
 /// Design-space top-left of slot [index] inside its true spread geometry:
 /// Triad = one horizontal row, Target & Shadow = 2×2, Deep Synthesis =
 /// 3-1-3 with the crossing card centered on the middle row. Slots beyond
 /// the template ([totalSlots] > card count) are clarifiers — they fill a
 /// new row below the base spread.
-Offset spreadSlotDesignTopLeft(SpreadType type, int index, {int? totalSlots}) {
-  final w = deckWidth;
-  final h = deckHeight;
-  final g = slotGapPx;
-  final base = type.cardCount;
-  if (index < base) {
-    switch (type) {
-      case SpreadType.one:
-        return Offset.zero;
-      case SpreadType.three:
-        return Offset(index * (w + g), 0);
-      case SpreadType.four:
-        return Offset((index % 2) * (w + g), (index ~/ 2) * (h + g));
-      case SpreadType.seven:
-        if (index < 3) return Offset(index * (w + g), 0);
-        if (index == 3) return Offset(w + g, h + g); // the crossing influence
-        return Offset((index - 4) * (w + g), 2 * (h + g));
-    }
-  }
-  // Clarifier slot: a fresh row below the base spread.
-  final k = index - base;
-  final cols = _spreadCols(type);
-  final baseRows = _spreadBaseRows(type);
-  return Offset(
-    (k % cols) * (w + g),
-    baseRows * (h + g) + (k ~/ cols) * (h + g),
-  );
-}
+Offset spreadSlotDesignTopLeft(SpreadType type, int index, {int? totalSlots}) =>
+    spreadSlotDesignTopLeftForCount(type.cardCount, index,
+        totalSlots: totalSlots);
+
 
 

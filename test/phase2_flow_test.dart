@@ -151,7 +151,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump();
-    expect(find.text('DIGITAL TABLE'), findsOneWidget); // still on the table
+    expect(find.text('TAROT'), findsOneWidget); // still on the table
     expect(find.text('1 · CORE NARRATIVE SYNTHESIS'), findsNothing);
 
     await flipCard(tester, 0);
@@ -209,7 +209,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700)); // pane slide
     await tester.pump();
-    expect(find.text('DIGITAL TABLE'), findsOneWidget);
+    expect(find.text('TAROT'), findsOneWidget);
     expect(find.byKey(const ValueKey('clarifier-banner')), findsOneWidget);
 
     final ctrl = tester

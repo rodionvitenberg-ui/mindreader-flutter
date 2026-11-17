@@ -5,6 +5,7 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/divination_system.dart';
 import '../../../core/models/tarot_deck_pack.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../state/deck_pack_controller.dart';
@@ -293,11 +294,13 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
   /// When [layer] is the grabbed card, the finger's drag translation is
   /// applied DIRECTLY to this same layer (lifted translateZ +26, lavender
   /// glow) — the actual top card moves, no proxy is ever spawned.
+  /// [tarotPack] is null while the LENORMAND system is active — the back
+  /// then uses the active Lenormand pack's procedural pattern.
   Widget _fanLayer(
     int layer,
     int visibleCount,
     double travel,
-    TarotDeckPack pack, {
+    TarotDeckPack? tarotPack, {
     required int remaining,
     required int totalCards,
   }) {
@@ -338,7 +341,10 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
                     ],
                   ),
                 ),
-              CardBack(width: deckWidth, height: deckHeight, pack: pack),
+              if (tarotPack == null)
+                _LenormandDeckBack()
+              else
+                CardBack(width: deckWidth, height: deckHeight, pack: tarotPack),
               Positioned.fill(
                 child: FoilGlint(
                   angleY: pose.rotateY,
@@ -356,7 +362,10 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
-    final pack = context.watch<DeckPackController>().activePack;
+    final packs = context.watch<DeckPackController>();
+    final tarotPack = ctrl.system == DivinationSystem.tarot
+        ? packs.activePack
+        : null;
     final remaining = ctrl.remaining;
 
     // Table reset detection: remaining jumps back up → regenerate the
@@ -417,7 +426,7 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
                         layer,
                         visibleCount,
                         travel,
-                        pack,
+                        tarotPack,
                         remaining: remaining,
                         totalCards: ctrl.totalCards,
                       ),
@@ -427,6 +436,24 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The active Lenormand pack's procedural back — reused by every fan layer
+/// while the LENORMAND system owns the table deck.
+class _LenormandDeckBack extends StatelessWidget {
+  const _LenormandDeckBack();
+
+  @override
+  Widget build(BuildContext context) {
+    final pack = context.watch<DeckPackController>().activeLenormandPack;
+    return CardBack(
+      width: deckWidth,
+      height: deckHeight,
+      styleOverride: pack.backStyle,
+      accentOverride: pack.backAccentArgb,
+      secondaryOverride: pack.backSecondaryArgb,
     );
   }
 }

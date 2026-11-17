@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/data/tarot_deck_data.dart';
 import 'package:mindreader/core/models/dealt_card_slot.dart';
+import 'package:mindreader/core/models/divination_system.dart';
 import 'package:mindreader/core/models/spread_type.dart';
 import 'package:mindreader/state/spread_controller.dart';
 
@@ -97,19 +98,19 @@ void main() {
     expect(c.remainingDeck.length, 77);
     // The dealt card left the physical stack.
     final dealtId = c.slots[0].card!.id;
-    expect(c.remainingDeck.any((t) => t.$1.id == dealtId), isFalse);
+    expect(c.remainingDeck.any((t) => t.id == dealtId), isFalse);
   });
 
   test('weaveShuffleRemaining permutes only the remaining stack', () {
     final c = SpreadController(random: Random(12));
     c.dealNextCard();
     final dealtId = c.slots[0].card!.id;
-    final before = [for (final t in c.remainingDeck) t.$1.id];
+    final before = [for (final t in c.remainingDeck) t.id];
 
     var changed = false;
     for (var i = 0; i < 40; i++) {
       c.weaveShuffleRemaining();
-      final after = [for (final t in c.remainingDeck) t.$1.id];
+      final after = [for (final t in c.remainingDeck) t.id];
       expect(after.toSet(), equals(before.toSet())); // same cards, new order
       if (!listEquals(after, before)) changed = true;
     }
@@ -148,7 +149,7 @@ void main() {
   test('dealCardAt honours depletion with reversed orientation', () {
     final c = SpreadController(random: Random(23));
     final depth = 2;
-    final grabbedReversed = c.remainingDeck[depth].$2;
+    final grabbedReversed = c.remainingReversalFlags[depth];
     c.dealCardAt(depth);
     expect(c.slots[0].isReversed, grabbedReversed);
   });
@@ -178,7 +179,7 @@ void main() {
     expect(c.remaining, 75);
     expect(c.dealtCount, 3);
     expect(c.ledgerTotal, 78); // invariant holds mid-spread
-    expect(c.remainingDeck.any((t) => dealtIds.contains(t.$1.id)), isFalse);
+    expect(c.remainingDeck.any((t) => dealtIds.contains(t.id)), isFalse);
 
     // ...and the badge reset physically re-inserts ALL of them.
     c.resetTable();
@@ -273,6 +274,7 @@ void main() {
       // Mess the table up completely first.
       c.setSpreadType(SpreadType.seven);
       c.restoreSpread(
+        system: DivinationSystem.tarot,
         type: SpreadType.three,
         cards: cards,
         sessionNotes: const ['my own words'],
@@ -304,6 +306,7 @@ void main() {
           ),
       ];
       c.restoreSpread(
+        system: DivinationSystem.tarot,
         type: SpreadType.three,
         cards: [
           ...cards,

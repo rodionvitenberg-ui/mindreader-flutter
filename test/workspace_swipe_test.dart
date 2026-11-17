@@ -78,7 +78,7 @@ void main() {
     await tester.pump();
 
     // Pane 0: the Digital Table.
-    expect(find.text('DIGITAL TABLE'), findsOneWidget);
+    expect(find.text('TAROT'), findsOneWidget);
     expect(find.text('NO READING YET'), findsNothing);
 
     // Swipe left on the table background (never on the deck) → Pane 1.
@@ -97,7 +97,7 @@ void main() {
 
     // Swipe right twice → back on the Digital Table.
     await goToPane(tester, 0);
-    expect(find.text('DIGITAL TABLE'), findsOneWidget);
+    expect(find.text('TAROT'), findsOneWidget);
   });
 
   testWidgets(
@@ -114,7 +114,7 @@ void main() {
 
     // Still on the Digital Table pane; the deck kept its full 220×388 box
     // (the PageView never stole the riffle gesture).
-    expect(find.text('DIGITAL TABLE'), findsOneWidget);
+    expect(find.text('TAROT'), findsOneWidget);
     expect(find.text('NO READING YET'), findsNothing);
     expect(tester.getSize(deck), const Size(deckWidth, deckBoxHeight));
 

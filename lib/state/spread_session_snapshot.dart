@@ -1,4 +1,7 @@
 import '../core/models/chat_message.dart';
+import '../core/models/divination_system.dart';
+import '../core/models/lenormand_spread.dart';
+import '../core/models/rune_cast.dart';
 import '../core/models/spread_type.dart';
 import '../core/services/oracle_synthesis_service.dart';
 import 'spread_controller.dart';
@@ -50,12 +53,25 @@ class SpreadSessionSnapshot {
     required this.synthesis,
     required this.chapters,
     required this.messages,
+    this.system = DivinationSystem.tarot,
+    this.lenormandSpread = LenormandSpread.three,
+    this.runeCast = RuneCast.three,
   });
 
   /// Identity + local persistence key (ISO-8601).
   final String timestamp;
 
+  /// The divination system this session was cast with.
+  final DivinationSystem system;
+
+  /// Tarot spread template (authoritative when [system] == tarot).
   final SpreadType spreadType;
+
+  /// Lenormand spread template (authoritative when [system] == lenormand).
+  final LenormandSpread lenormandSpread;
+
+  /// Rune cast template (authoritative when [system] == runes).
+  final RuneCast runeCast;
 
   /// Thematic notebook: 'All Readings' | 'Relationships' | 'Career & Path'.
   final String notebook;
@@ -76,7 +92,10 @@ class SpreadSessionSnapshot {
   }) {
     return SpreadSessionSnapshot(
       timestamp: timestamp,
+      system: ctrl.system,
       spreadType: ctrl.spreadType,
+      lenormandSpread: ctrl.lenormandSpread,
+      runeCast: ctrl.runeCast,
       notebook: notebook,
       cards: [
         for (final s in ctrl.slots)
@@ -112,7 +131,10 @@ class SpreadSessionSnapshot {
 
   Map<String, dynamic> toJson() => {
         'timestamp': timestamp,
+        'system': system.name,
         'spreadType': spreadType.name,
+        'lenormandSpread': lenormandSpread.name,
+        'runeCast': runeCast.name,
         'notebook': notebook,
         'cards': [for (final c in cards) c.toJson()],
         'sessionNotes': sessionNotes,
@@ -140,7 +162,26 @@ class SpreadSessionSnapshot {
     final synthesisJson = json['synthesis'] as Map<String, dynamic>?;
     return SpreadSessionSnapshot(
       timestamp: json['timestamp'] as String,
-      spreadType: SpreadType.values.byName(json['spreadType'] as String),
+      system: _enumOr<DivinationSystem>(
+        DivinationSystem.values,
+        json['system'] as String?,
+        DivinationSystem.tarot,
+      ),
+      spreadType: _enumOr<SpreadType>(
+        SpreadType.values,
+        json['spreadType'] as String?,
+        SpreadType.three,
+      ),
+      lenormandSpread: _enumOr<LenormandSpread>(
+        LenormandSpread.values,
+        json['lenormandSpread'] as String?,
+        LenormandSpread.three,
+      ),
+      runeCast: _enumOr<RuneCast>(
+        RuneCast.values,
+        json['runeCast'] as String?,
+        RuneCast.three,
+      ),
       notebook: json['notebook'] as String? ?? 'All Readings',
       cards: [
         for (final raw in (json['cards'] as List? ?? const []))
@@ -179,3 +220,15 @@ class SpreadSessionSnapshot {
     return chapter;
   }
 }
+
+/// Forgiving enum lookup for persisted JSON: unknown/missing keys fall
+/// back to [fallback] instead of throwing (forward compatibility with
+/// sessions saved before a field existed).
+T _enumOr<T extends Enum>(List<T> values, String? name, T fallback) {
+  if (name == null) return fallback;
+  for (final v in values) {
+    if (v.name == name) return v;
+  }
+  return fallback;
+}
+

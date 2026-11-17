@@ -3,13 +3,15 @@ import 'dart:math' as math;
 
 import 'dart:ui' show ImageFilter;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../core/models/dealt_card_slot.dart';
+import '../../../core/models/divination_card.dart';
+import '../../../core/models/divination_system.dart';
 import '../../../core/models/spread_type.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/services/local_storage_service.dart';
@@ -245,7 +247,9 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
                     _CardInspectorHeader(slot: slot, card: card),
                     const SizedBox(height: 18),
                     Text(
-                      slot.isReversed ? 'REVERSED MEANING' : 'UPRIGHT MEANING',
+                      slot.isReversed && card.reversed != null
+                          ? 'REVERSED MEANING'
+                          : 'UPRIGHT MEANING',
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 9,
                         letterSpacing: 2,
@@ -254,7 +258,7 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      slot.isReversed ? card.reversed : card.upright,
+                      meaningFor(slot),
                       style: const TextStyle(
                         fontSize: 14,
                         height: 1.6,
@@ -429,10 +433,12 @@ class _CardInspectorHeader extends StatelessWidget {
   const _CardInspectorHeader({required this.slot, required this.card});
 
   final DealtCardSlot slot;
-  final TarotCard card;
+  final DivinationCard card;
 
   @override
   Widget build(BuildContext context) {
+    final reverseWord =
+        card.system == DivinationSystem.runes ? 'MERKSTAVE' : 'REVERSED';
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -442,13 +448,16 @@ class _CardInspectorHeader extends StatelessWidget {
             children: [
               Text(
                 slot.isReversed
-                    ? '${card.name.toUpperCase()} · REVERSED'
+                    ? '${card.name.toUpperCase()} · $reverseWord'
                     : card.name.toUpperCase(),
                 style: Theme.of(context).textTheme.displayMedium,
               ),
               const SizedBox(height: 6),
               Text(
-                'SLOT ${slot.index + 1} · ${slot.role.toUpperCase()}',
+                'SLOT ${slot.index + 1} · ${slot.role.toUpperCase()} · '
+                '${card.categoryLabel}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 10,
                   letterSpacing: 2,

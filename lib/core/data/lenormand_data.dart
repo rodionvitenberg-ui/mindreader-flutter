@@ -1,0 +1,270 @@
+import '../models/lenormand_card.dart';
+import '../models/tarot_card_model.dart';
+
+/// The complete authentic 36-card Petit Lenormand dataset (1 Rider .. 36
+/// Cross) with traditional Blue Owl playing-card insets, suit categories,
+/// elemental affinities, keywords, one-sentence meanings, combinatory
+/// pair readings and timing notes. Lenormand cards NEVER use reversed
+/// orientations — every meaning below is upright by definition.
+const List<LenormandCard> lenormandDeck = [
+  LenormandCard(
+    number: 1, name: 'Rider', playingCard: PlayingCardSuit.hearts, inset: '9♥',
+    element: Element.air,
+    keywords: ['News', 'Arrival', 'Movement'],
+    meaning: 'News and momentum riding in — a message, a visitor, or a fresh impulse that sets things moving.',
+    combinations: ['With the Letter, the message arrives in writing.', 'With the Clover, lucky news comes quickly.', 'With the Ship, news arrives from far away.'],
+    timing: 'Soon — days, not weeks'),
+  LenormandCard(
+    number: 2, name: 'Clover', playingCard: PlayingCardSuit.diamonds, inset: '6♦',
+    element: Element.earth,
+    keywords: ['Luck', 'Chance', 'Lightness'],
+    meaning: 'A small stroke of luck and a lighter heart — seize the moment while the door stands open.',
+    combinations: ['With the Sun, luck grows into success.', 'With the Mice, luck slips away if you wait.', 'With the Rider, good news arrives by chance.'],
+    timing: 'Now — the window is brief'),
+  LenormandCard(
+    number: 3, name: 'Ship', playingCard: PlayingCardSuit.spades, inset: '10♠',
+    element: Element.water,
+    keywords: ['Journey', 'Distance', 'Trade'],
+    meaning: 'Movement across distance — travel, trade, or a longing that pulls you toward something far away.',
+    combinations: ['With the Anchor, a voyage ends in a safe harbor.', 'With the Rider, a trip is announced.', 'With the Mountain, the journey is delayed.'],
+    timing: 'Distant — in transit'),
+  LenormandCard(
+    number: 4, name: 'House', playingCard: PlayingCardSuit.hearts, inset: 'K♥',
+    element: Element.earth,
+    keywords: ['Home', 'Family', 'Stability'],
+    meaning: 'Home, family and the private sphere — safety, roots, and the structures that shelter your life.',
+    combinations: ['With the Stork, the household changes.', 'With the Mice, something at home quietly drains.', 'With the Ring, family bonds are sealed.'],
+    timing: 'Stable — long-lasting'),
+  LenormandCard(
+    number: 5, name: 'Tree', playingCard: PlayingCardSuit.hearts, inset: '7♥',
+    element: Element.earth,
+    keywords: ['Health', 'Growth', 'Roots'],
+    meaning: 'Slow organic growth and health — what is rooted deep grows strong over years, not days.',
+    combinations: ['With the Coffin, a cycle of health ends and another begins.', 'With the Sun, vitality returns.', 'With the Mountain, growth is blocked.'],
+    timing: 'Slow — months to years'),
+  LenormandCard(
+    number: 6, name: 'Clouds', playingCard: PlayingCardSuit.clubs, inset: 'K♣',
+    element: Element.air,
+    keywords: ['Confusion', 'Doubt', 'Storm'],
+    meaning: 'Confusion and uncertainty gather — wait for the fog to thin before you decide.',
+    combinations: ['With the Sun, clarity breaks through.', 'With the Moon, doubts deepen before they lift.', 'With the Stars, hope survives the storm.'],
+    timing: 'Uncertain — wait it out'),
+  LenormandCard(
+    number: 7, name: 'Snake', playingCard: PlayingCardSuit.clubs, inset: 'Q♣',
+    element: Element.water,
+    keywords: ['Detour', 'Seduction', 'Cunning'],
+    meaning: 'A detour, a temptation, or a clever rival — the straight path is not the one being offered.',
+    combinations: ['With the Fox, flattery hides a trick.', 'With the Key, you will see through the ruse.', 'With the Whip, an argument coils back.'],
+    timing: 'Twisting — indirect'),
+  LenormandCard(
+    number: 8, name: 'Coffin', playingCard: PlayingCardSuit.diamonds, inset: '9♦',
+    element: Element.earth,
+    keywords: ['Ending', 'Rest', 'Closure'],
+    meaning: 'An ending and a long rest — what is over must be laid down before anything new can begin.',
+    combinations: ['With the Stork, an ending opens into change.', 'With the Key, closure unlocks a door.', 'With the Stars, the end heals into hope.'],
+    timing: 'Ending now — then stillness'),
+  LenormandCard(
+    number: 9, name: 'Bouquet', playingCard: PlayingCardSuit.spades, inset: 'Q♠',
+    element: Element.air,
+    keywords: ['Gift', 'Grace', 'Appreciation'],
+    meaning: 'A gift, a compliment, or beauty offered freely — accept it without calculating the price.',
+    combinations: ['With the Heart, a gift becomes affection.', 'With the Sun, recognition arrives.', 'With the Ring, a proposal of devotion.'],
+    timing: 'Soon — a pleasant surprise'),
+  LenormandCard(
+    number: 10, name: 'Scythe', playingCard: PlayingCardSuit.diamonds, inset: 'J♦',
+    element: Element.air,
+    keywords: ['Sudden cut', 'Decision', 'Harvest'],
+    meaning: 'A sudden cut — one clean decision that severs what cannot continue and harvests what is ripe.',
+    combinations: ['With the Tree, health demands an urgent cut.', 'With the Coffin, the break is final.', 'With the Crossroads, the cut forces a choice.'],
+    timing: 'Sudden — right now'),
+  LenormandCard(
+    number: 11, name: 'Whip', playingCard: PlayingCardSuit.clubs, inset: 'J♣',
+    element: Element.fire,
+    keywords: ['Conflict', 'Repetition', 'Drive'],
+    meaning: 'Conflict or relentless repetition — the same friction returns until its source is named.',
+    combinations: ['With the Fox, the argument hides a lie.', 'With the Heart, passion and friction mix.', 'With the Scythe, the quarrel cuts ties.'],
+    timing: 'Repeating — again and again'),
+  LenormandCard(
+    number: 12, name: 'Birds', playingCard: PlayingCardSuit.diamonds, inset: '7♦',
+    element: Element.air,
+    keywords: ['Talk', 'Pair', 'Worry'],
+    meaning: 'Conversation, a pair, or a flutter of worry — much is said; listen for what is left unsaid.',
+    combinations: ['With the Letter, talk turns into a message.', 'With the Heart, a couple talks things through.', 'With the Clouds, gossip confuses the truth.'],
+    timing: 'Days — short talks'),
+  LenormandCard(
+    number: 13, name: 'Child', playingCard: PlayingCardSuit.spades, inset: 'J♠',
+    element: Element.earth,
+    keywords: ['Beginning', 'Innocence', 'Newness'],
+    meaning: 'Something small and new — a beginning, a child, or a fresh perspective that has not yet learned fear.',
+    combinations: ['With the Bouquet, a new gift or a child brings joy.', 'With the Stork, a new arrival or birth.', 'With the Mountain, the new thing grows slowly.'],
+    timing: 'Small — just beginning'),
+  LenormandCard(
+    number: 14, name: 'Fox', playingCard: PlayingCardSuit.clubs, inset: '9♣',
+    element: Element.fire,
+    keywords: ['Cunning', 'Work', 'Caution'],
+    meaning: 'Cunning and self-interest — someone (perhaps you) is being clever; check who profits.',
+    combinations: ['With the Snake, a scheme is coiled nearby.', 'With the Anchor, a stable job quietly advances.', 'With the Book, a secret motive is hidden.'],
+    timing: 'Cautious — watch closely'),
+  LenormandCard(
+    number: 15, name: 'Bear', playingCard: PlayingCardSuit.clubs, inset: '10♣',
+    element: Element.earth,
+    keywords: ['Strength', 'Authority', 'Protection'],
+    meaning: 'Strength and protective power — a patron, a leader, or your own quiet authority.',
+    combinations: ['With the Tower, institutional power protects.', 'With the Fish, financial strength grows.', 'With the Fox, power watches its own interest.'],
+    timing: 'Strong — enduring'),
+  LenormandCard(
+    number: 16, name: 'Stars', playingCard: PlayingCardSuit.hearts, inset: '6♥',
+    element: Element.air,
+    keywords: ['Hope', 'Guidance', 'Clarity'],
+    meaning: 'Clear guidance and quiet hope — the sky is readable again, and the direction is true.',
+    combinations: ['With the Moon, intuition and destiny align.', 'With the Key, hope finds its answer.', 'With the Clouds, hope outlasts the fog.'],
+    timing: 'Guided — trust the path'),
+  LenormandCard(
+    number: 17, name: 'Stork', playingCard: PlayingCardSuit.hearts, inset: 'Q♥',
+    element: Element.air,
+    keywords: ['Change', 'Migration', 'Renewal'],
+    meaning: 'Change and renewal — the stork migrates, and so will you; the new season is already in flight.',
+    combinations: ['With the Child, a new beginning arrives.', 'With the House, the household relocates or renews.', 'With the Ship, change comes from far away.'],
+    timing: 'Seasonal — a turning point'),
+  LenormandCard(
+    number: 18, name: 'Dog', playingCard: PlayingCardSuit.hearts, inset: '10♥',
+    element: Element.fire,
+    keywords: ['Loyalty', 'Friendship', 'Trust'],
+    meaning: 'Loyalty and friendship — the faithful companion who stays when the rest of the world leaves.',
+    combinations: ['With the Heart, a devoted love.', 'With the Anchor, a friendship that holds.', 'With the Fox, a false friend flatters.'],
+    timing: 'Steady — a friend’s time'),
+  LenormandCard(
+    number: 19, name: 'Tower', playingCard: PlayingCardSuit.spades, inset: '6♠',
+    element: Element.earth,
+    keywords: ['Institution', 'Boundary', 'Isolation'],
+    meaning: 'The long view from the tower — institutions, authority, and the solitude that comes with standing apart.',
+    combinations: ['With the Bear, official power protects.', 'With the Mountain, isolation deepens.', 'With the Key, the institution holds the answer.'],
+    timing: 'Long — institutional clock'),
+  LenormandCard(
+    number: 20, name: 'Garden', playingCard: PlayingCardSuit.spades, inset: '8♠',
+    element: Element.earth,
+    keywords: ['Public', 'Society', 'Gathering'],
+    meaning: 'The public sphere — gatherings, reputation, and the social circle where you are seen.',
+    combinations: ['With the Birds, public conversation circulates.', 'With the Bouquet, you are celebrated in company.', 'With the Clouds, public image blurs.'],
+    timing: 'Public — social calendar'),
+  LenormandCard(
+    number: 21, name: 'Mountain', playingCard: PlayingCardSuit.clubs, inset: '8♣',
+    element: Element.earth,
+    keywords: ['Obstacle', 'Delay', 'Endurance'],
+    meaning: 'A mountain stands in the way — the obstacle is real, but every ascent begins with a single step.',
+    combinations: ['With the Key, the obstacle can be unlocked.', 'With the Ship, the journey is blocked for now.', 'With the Sun, the summit is reachable.'],
+    timing: 'Slow — blocked for now'),
+  LenormandCard(
+    number: 22, name: 'Crossroads', playingCard: PlayingCardSuit.diamonds, inset: 'Q♦',
+    element: Element.fire,
+    keywords: ['Choice', 'Fork', 'Decision'],
+    meaning: 'A fork in the road — a real choice stands before you, and delay is itself an answer.',
+    combinations: ['With the Scythe, the decision cuts fast.', 'With the Moon, the choice is guided by intuition.', 'With the Fox, both paths serve someone’s cunning.'],
+    timing: 'Now — choose'),
+  LenormandCard(
+    number: 23, name: 'Mice', playingCard: PlayingCardSuit.clubs, inset: '7♣',
+    element: Element.earth,
+    keywords: ['Loss', 'Decline', 'Stress'],
+    meaning: 'Quiet loss and gnawing stress — something is being eaten away a little at a time; find the leak.',
+    combinations: ['With the Fish, money drains away.', 'With the Tree, health is nibbled by stress.', 'With the House, home matters quietly erode.'],
+    timing: 'Gradual — slow leak'),
+  LenormandCard(
+    number: 24, name: 'Heart', playingCard: PlayingCardSuit.hearts, inset: 'J♥',
+    element: Element.water,
+    keywords: ['Love', 'Affection', 'Warmth'],
+    meaning: 'Love and affection — the heart’s matters rise to the center of the reading.',
+    combinations: ['With the Ring, love commits.', 'With the Dog, a loving friendship.', 'With the Clouds, feelings blur and doubt.'],
+    timing: 'Emotional — matters of the heart'),
+  LenormandCard(
+    number: 25, name: 'Ring', playingCard: PlayingCardSuit.clubs, inset: 'A♣',
+    element: Element.earth,
+    keywords: ['Commitment', 'Contract', 'Cycle'],
+    meaning: 'Commitment and binding promises — a contract, a vow, or a cycle that ties two things together.',
+    combinations: ['With the Heart, engagement or marriage.', 'With the Anchor, a commitment that holds.', 'With the Scythe, a bond is cut.'],
+    timing: 'Binding — a full cycle'),
+  LenormandCard(
+    number: 26, name: 'Book', playingCard: PlayingCardSuit.diamonds, inset: '10♦',
+    element: Element.air,
+    keywords: ['Secret', 'Knowledge', 'Study'],
+    meaning: 'Hidden knowledge — a secret, a study, or a truth not yet opened to the light.',
+    combinations: ['With the Fox, a secret serves a scheme.', 'With the Key, the secret will be unlocked.', 'With the Moon, hidden intuition surfaces.'],
+    timing: 'Hidden — reveals in time'),
+  LenormandCard(
+    number: 27, name: 'Letter', playingCard: PlayingCardSuit.spades, inset: '7♠',
+    element: Element.air,
+    keywords: ['Message', 'Document', 'News'],
+    meaning: 'A written message — documents, invitations, and the news that travels on paper or screen.',
+    combinations: ['With the Rider, the message arrives fast.', 'With the Birds, written words are discussed.', 'With the Book, the document hides something.'],
+    timing: 'Days — in writing'),
+  LenormandCard(
+    number: 28, name: 'Gentleman', playingCard: PlayingCardSuit.hearts, inset: 'A♥',
+    element: Element.fire,
+    keywords: ['The man', 'The querent', 'Will'],
+    meaning: 'The Gentleman — the man in the question, or the querent himself acting with intention.',
+    combinations: ['With the Lady, the couple stands at the center.', 'With the Heart, his affection is true.', 'With the Tower, a man of authority.'],
+    timing: 'His time — the man’s season'),
+  LenormandCard(
+    number: 29, name: 'Lady', playingCard: PlayingCardSuit.spades, inset: 'A♠',
+    element: Element.water,
+    keywords: ['The woman', 'The querent', 'Receptivity'],
+    meaning: 'The Lady — the woman in the question, or the querent herself reading with intuition.',
+    combinations: ['With the Gentleman, the couple stands at the center.', 'With the Heart, her affection is true.', 'With the Moon, her intuition speaks.'],
+    timing: 'Her time — the woman’s season'),
+  LenormandCard(
+    number: 30, name: 'Lily', playingCard: PlayingCardSuit.spades, inset: 'K♠',
+    element: Element.fire,
+    keywords: ['Peace', 'Maturity', 'Purity'],
+    meaning: 'Peace and mature calm — the quiet dignity that comes after the noise has been outlived.',
+    combinations: ['With the Sun, peaceful success.', 'With the Tower, a respected elder or authority.', 'With the Coffin, a peaceful ending.'],
+    timing: 'Mature — the long view'),
+  LenormandCard(
+    number: 31, name: 'Sun', playingCard: PlayingCardSuit.diamonds, inset: 'A♦',
+    element: Element.fire,
+    keywords: ['Success', 'Vitality', 'Joy'],
+    meaning: 'Success and radiant vitality — the sun clears the reading and everything it touches flourishes.',
+    combinations: ['With the Fish, financial success.', 'With the Stars, triumph after hope.', 'With the House, the home prospers.'],
+    timing: 'Summer — bright season'),
+  LenormandCard(
+    number: 32, name: 'Moon', playingCard: PlayingCardSuit.hearts, inset: '8♥',
+    element: Element.water,
+    keywords: ['Intuition', 'Recognition', 'Dreams'],
+    meaning: 'Intuition, dreams and quiet recognition — the night-light by which the unconscious becomes visible.',
+    combinations: ['With the Stars, intuition meets destiny.', 'With the Book, dreams hide a secret.', 'With the Heart, feelings speak at night.'],
+    timing: 'Night — a lunar cycle'),
+  LenormandCard(
+    number: 33, name: 'Key', playingCard: PlayingCardSuit.diamonds, inset: '8♦',
+    element: Element.fire,
+    keywords: ['Answer', 'Opening', 'Certainty'],
+    meaning: 'The key — the answer, the opening, the certain solution that fits the lock you have been carrying.',
+    combinations: ['With the Book, the answer is revealed.', 'With the Mountain, the obstacle is unlocked.', 'With the Fish, wealth opens up.'],
+    timing: 'Certain — the answer is at hand'),
+  LenormandCard(
+    number: 34, name: 'Fish', playingCard: PlayingCardSuit.diamonds, inset: 'K♦',
+    element: Element.water,
+    keywords: ['Money', 'Flow', 'Abundance'],
+    meaning: 'Money and flow — commerce, resources, and the abundance that swims toward the open net.',
+    combinations: ['With the Sun, wealth succeeds.', 'With the Mice, money leaks away.', 'With the Anchor, income is steady.'],
+    timing: 'Flowing — income season'),
+  LenormandCard(
+    number: 35, name: 'Anchor', playingCard: PlayingCardSuit.spades, inset: '9♠',
+    element: Element.water,
+    keywords: ['Stability', 'Holding', 'Security'],
+    meaning: 'Stability and holding fast — the anchor that keeps you steady while the sea moves around you.',
+    combinations: ['With the Fish, steady income.', 'With the Ring, a bond that holds.', 'With the Ship, stability returns after travel.'],
+    timing: 'Held — long and steady'),
+  LenormandCard(
+    number: 36, name: 'Cross', playingCard: PlayingCardSuit.clubs, inset: '6♣',
+    element: Element.fire,
+    keywords: ['Burden', 'Fate', 'Meaning'],
+    meaning: 'The burden and the meaning — what must be carried, and the purpose that carrying it reveals.',
+    combinations: ['With the Coffin, the burden ends.', 'With the Stars, the burden has meaning.', 'With the Mountain, the load feels heaviest.'],
+    timing: 'Fated — until it is carried through'),
+];
+
+/// Lookup by id (0..35); null for unknown ids.
+LenormandCard? lenormandCardById(int id) {
+  for (final c in lenormandDeck) {
+    if (c.id == id) return c;
+  }
+  return null;
+}

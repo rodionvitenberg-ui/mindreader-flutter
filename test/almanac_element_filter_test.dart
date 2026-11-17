@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart' hide Element;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mindreader/core/data/tarot_deck_data.dart';
-import 'package:mindreader/core/models/tarot_card_model.dart';
 import 'package:mindreader/main.dart';
 
 /// Sprint 6 — Almanac fixes (screenshot 1000049372):
@@ -34,23 +32,27 @@ void main() {
     expect(find.text('MAJOR ARCANA'), findsNothing);
     expect(find.text('▽ WATER'), findsNothing);
 
-    // Water filter narrows the grid to exactly the water cards.
-    final waterCount =
-        tarotDeck.where((c) => c.element == Element.water).length;
+    // The old "N OF 78" header counter is gone — the system switcher and
+    // the All (78) pill replaced it.
+    expect(find.text('All (78)'), findsOneWidget);
+    expect(find.text('TAROT'), findsOneWidget);
+
+    // Water filter narrows the grid to exactly the water cards: the water
+    // High Priestess stays, the air Fool disappears.
     await tester.tap(find.byKey(const ValueKey('element-filter-water')));
     await tester.pump();
-    expect(find.text('$waterCount OF 78'), findsOneWidget);
+    expect(find.text('THE HIGH PRIESTESS'), findsWidgets);
+    expect(find.text('THE FOOL'), findsNothing);
 
     // Fire filter switches the single active element.
-    final fireCount =
-        tarotDeck.where((c) => c.element == Element.fire).length;
     await tester.tap(find.byKey(const ValueKey('element-filter-fire')));
     await tester.pump();
-    expect(find.text('$fireCount OF 78'), findsOneWidget);
+    expect(find.text('THE EMPEROR'), findsWidgets);
+    expect(find.text('THE HIGH PRIESTESS'), findsNothing);
 
     // Tapping the active element clears the filter.
     await tester.tap(find.byKey(const ValueKey('element-filter-fire')));
     await tester.pump();
-    expect(find.text('78 OF 78'), findsOneWidget);
+    expect(find.text('THE FOOL'), findsWidgets);
   });
 }

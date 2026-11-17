@@ -3,12 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/divination_system.dart';
+import '../../../core/models/lenormand_spread.dart';
+import '../../../core/models/rune_cast.dart';
 import '../../../core/models/spread_type.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../state/spread_controller.dart';
 
-/// Compact spread switcher opened from the tappable header subtitle
-/// (`3 · TRIAD FLOW · 78 IN DECK ▾`) — replaces the old bottom carousel.
+/// Compact spread switcher opened from the header's spread picker pill
+/// (`3 · TRIAD FLOW ▾`) — the options are ALWAYS the active system's
+/// canonical spreads: 4 tarot templates, 4 Lenormand spreads or 4 rune
+/// casts. Replaces the old bottom carousel.
 class SpreadSelectorSheet extends StatelessWidget {
   const SpreadSelectorSheet({super.key});
 
@@ -24,6 +29,11 @@ class SpreadSelectorSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
+    final title = switch (ctrl.system) {
+      DivinationSystem.tarot => 'SPREAD METHOD',
+      DivinationSystem.lenormand => 'LENORMAND SPREAD',
+      DivinationSystem.runes => 'RUNE CAST',
+    };
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
       decoration: BoxDecoration(
@@ -47,7 +57,7 @@ class SpreadSelectorSheet extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'SPREAD METHOD',
+            title,
             style: GoogleFonts.jetBrainsMono(
               fontSize: 9,
               letterSpacing: 2.2,
@@ -55,13 +65,64 @@ class SpreadSelectorSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          for (var i = 0; i < SpreadType.values.length; i++) ...[
-            _SpreadOption(
-              type: SpreadType.values[i],
-              active: SpreadType.values[i] == ctrl.spreadType,
-            ),
-            if (i < SpreadType.values.length - 1) const SizedBox(height: 8),
-          ],
+          ...switch (ctrl.system) {
+            DivinationSystem.tarot => [
+                for (var i = 0; i < SpreadType.values.length; i++) ...[
+                  _SpreadOption(
+                    count: SpreadType.values[i].cardCount,
+                    label: SpreadType.values[i].label,
+                    focusLine: SpreadType.values[i].focusLine,
+                    active: SpreadType.values[i] == ctrl.spreadType,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      context
+                          .read<SpreadController>()
+                          .setSpreadType(SpreadType.values[i]);
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  if (i < SpreadType.values.length - 1)
+                    const SizedBox(height: 8),
+                ],
+              ],
+            DivinationSystem.lenormand => [
+                for (var i = 0; i < LenormandSpread.values.length; i++) ...[
+                  _SpreadOption(
+                    count: LenormandSpread.values[i].cardCount,
+                    label: LenormandSpread.values[i].label,
+                    focusLine: LenormandSpread.values[i].focusLine,
+                    active: LenormandSpread.values[i] == ctrl.lenormandSpread,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      context.read<SpreadController>().setLenormandSpread(
+                          LenormandSpread.values[i]);
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  if (i < LenormandSpread.values.length - 1)
+                    const SizedBox(height: 8),
+                ],
+              ],
+            DivinationSystem.runes => [
+                for (var i = 0; i < RuneCast.values.length; i++) ...[
+                  _SpreadOption(
+                    count: RuneCast.values[i].cardCount,
+                    label: RuneCast.values[i].label,
+                    focusLine: RuneCast.values[i].focusLine,
+                    active: RuneCast.values[i] == ctrl.runeCast,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      context
+                          .read<SpreadController>()
+                          .setRuneCast(RuneCast.values[i]);
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  if (i < RuneCast.values.length - 1)
+                    const SizedBox(height: 8),
+                ],
+              ],
+          },
         ],
       ),
     );
@@ -69,20 +130,25 @@ class SpreadSelectorSheet extends StatelessWidget {
 }
 
 class _SpreadOption extends StatelessWidget {
-  const _SpreadOption({required this.type, required this.active});
+  const _SpreadOption({
+    required this.count,
+    required this.label,
+    required this.focusLine,
+    required this.active,
+    required this.onTap,
+  });
 
-  final SpreadType type;
+  final int count;
+  final String label;
+  final String focusLine;
   final bool active;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.selectionClick();
-        context.read<SpreadController>().setSpreadType(type);
-        Navigator.of(context).pop();
-      },
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
@@ -97,7 +163,7 @@ class _SpreadOption extends StatelessWidget {
         child: Row(
           children: [
             Text(
-              '${type.cardCount} •',
+              '$count •',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -110,7 +176,7 @@ class _SpreadOption extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    type.label.toUpperCase(),
+                    label.toUpperCase(),
                     style: GoogleFonts.jetBrainsMono(
                       fontSize: 11,
                       letterSpacing: 1.4,
@@ -121,7 +187,7 @@ class _SpreadOption extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${type.cardCount} CARDS · ${type.focusLine}',
+                    '$count CARDS · $focusLine',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
@@ -144,3 +210,4 @@ class _SpreadOption extends StatelessWidget {
     );
   }
 }
+

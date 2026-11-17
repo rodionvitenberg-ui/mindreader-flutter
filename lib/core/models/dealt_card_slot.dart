@@ -1,23 +1,23 @@
-import 'tarot_card_model.dart';
+import 'divination_card.dart';
 
 /// Lifecycle of one slot on the vertical board.
 enum SlotState { empty, faceDown, faceUp }
 
 /// Where the cards on the table came from.
 ///
-/// * [digitalDeck] — dealt from the on-screen 78-card tactile deck (the
+/// * [digitalDeck] — dealt from the on-screen tactile deck/cluster (the
 ///   digital ledger tracks every extraction).
 /// * [physicalCameraSync] — photographed from the user's real physical deck
 ///   via the camera pipeline. These cards exist OUTSIDE the digital
-///   78-card ledger: they never decrement [remaining].
+///   ledger: they never decrement [remaining].
 enum TableSourceMode { digitalDeck, physicalCameraSync }
 
 class DealtCardSlot {
   final int index;
-  final String role; // from SpreadType.slotRoles / 'Clarifier N'
+  final String role; // from the active spread's slotRoles / 'Clarifier N'
 
   SlotState state;
-  TarotCard? card;
+  DivinationCard? card;
   bool isReversed;
 
   /// Pre-draw intention: the selected context chip and/or the typed/spoken
@@ -25,7 +25,7 @@ class DealtCardSlot {
   String? userContext;
 
   /// True when this card was photographed from a real physical deck —
-  /// it never left the digital 78-card ledger.
+  /// it never left the digital ledger.
   bool fromPhysicalCard;
 
   DealtCardSlot({required this.index, required this.role})
@@ -35,14 +35,14 @@ class DealtCardSlot {
         fromPhysicalCard = false;
 
   /// Manual deal: lands FACE DOWN; orientation is known but hidden.
-  void placeCardFaceDown(TarotCard c, bool reversed) {
+  void placeCardFaceDown(DivinationCard c, bool reversed) {
     card = c;
     isReversed = reversed;
     state = SlotState.faceDown;
   }
 
   /// Scanned spread: materializes already FACE UP.
-  void placeCardFaceUp(TarotCard c, bool reversed) {
+  void placeCardFaceUp(DivinationCard c, bool reversed) {
     card = c;
     isReversed = reversed;
     state = SlotState.faceUp;
@@ -68,3 +68,4 @@ class DealtCardSlot {
     fromPhysicalCard = false;
   }
 }
+

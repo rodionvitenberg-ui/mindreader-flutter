@@ -5,7 +5,7 @@ import '../../../core/models/dealt_card_slot.dart';
 import '../../../state/spread_controller.dart';
 import 'elemental_threads_painter.dart';
 import 'shuffle_physics.dart';
-import 'tarot_card_3d_widget.dart';
+import 'slotted_divination_card.dart';
 
 /// "The Pillar" — a strictly vertical column of DEALT cards inside the
 /// unified table scroll view. Every card is 1:1 with the hero deck
@@ -133,13 +133,10 @@ class _BoardPillarViewState extends State<BoardPillarView>
   }
 
   Widget _buildCard(BuildContext context, DealtCardSlot slot) {
-    return TarotCard3DWidget(
+    return SlottedDivinationCard(
       // Key changes on state flip → the widget remounts with the face
       // already revealed at rotateY(0), visually continuous with the flip.
-      key: ValueKey('slot-${slot.index}-${slot.state}'),
-      card: slot.card!,
-      isReversed: slot.isReversed,
-      state: slot.state,
+      slot: slot,
       width: cardWidth,
       height: cardHeight,
       onFlip: () => context.read<SpreadController>().flipSlot(slot.index),

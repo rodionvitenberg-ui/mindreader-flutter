@@ -1,13 +1,16 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/data/runes_data.dart';
 import '../../core/models/dealt_card_slot.dart';
-import '../../core/models/spread_type.dart';
+import '../../core/models/divination_system.dart';
+import '../../core/models/rune_stone.dart';
+import '../../core/models/tarot_card_model.dart';
 import '../../core/models/tarot_deck_pack.dart';
 import '../../core/theme/app_colors.dart';
 import '../../state/deck_pack_controller.dart';
@@ -17,15 +20,19 @@ import 'widgets/deal_lock_prompt.dart';
 import 'widgets/deck_picker_sheet.dart';
 import 'widgets/foil_glint.dart';
 import 'widgets/interactive_deck_widget.dart';
+import 'widgets/interactive_rune_stones_widget.dart';
 import 'widgets/reading_bottom_sheet.dart';
-import 'widgets/ritual_settings_sheet.dart';
+import 'widgets/rune_stone_3d_widget.dart';
 import 'widgets/shuffle_physics.dart';
+import 'widgets/slotted_divination_card.dart';
 import 'widgets/spread_selector_sheet.dart';
 import 'widgets/spread_threads_layer.dart';
 import 'widgets/tarot_card_3d_widget.dart';
 
-/// Fixed header above the table canvas (title + deck/ritual/view pills).
-const _headerHeight = 84.0;
+/// Fixed header above the table canvas: three clean balanced rows —
+/// Row 1 the FOCUS/SPREAD toggle, Row 2 the TAROT|LENORMAND|RUNES system
+/// selector, Row 3 the pack + spread picker pills (Expanded, no overflow).
+const _headerHeight = 118.0;
 
 /// The two switchable view modes of the Digital Table.
 enum TableViewMode {
@@ -157,6 +164,30 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     );
   }
 
+  /// The rune cluster handed us a cast stone: deal the top stone and fly
+  /// it from the release point into its slot.
+  void _onRuneCastRelease(RuneCastReleaseRequest request) {
+    final ctrl = context.read<SpreadController>();
+    final slotIndex = ctrl.dealCardAtOrClarifier(0);
+    if (slotIndex == null) {
+      showDealLockPrompt(context, ctrl);
+      return;
+    }
+    _storeIntentionInto(ctrl, slotIndex);
+    final deckBox = _deckKey.currentContext?.findRenderObject() as RenderBox?;
+    final contentBox =
+        _contentKey.currentContext?.findRenderObject() as RenderBox?;
+    if (deckBox == null || contentBox == null) return;
+    final start = deckBox.localToGlobal(Offset.zero, ancestor: contentBox) +
+        request.stoneOffsetLocal;
+    _flyCardToSlot(
+      slotIndex,
+      start: start,
+      pose: FanLayerPose.flat,
+      velocity: request.releaseVelocityPx,
+    );
+  }
+
   /// Stores the pending capsule context into the freshly dealt slot (the
   /// queue lives in [SpreadController] — shared with the workspace).
   void _storeIntentionInto(SpreadController ctrl, int slotIndex) {
@@ -239,25 +270,24 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     TarotDeckPack pack,
     BoxConstraints constraints,
   ) {
-    final design =
-        spreadCanvasDesignSize(ctrl.spreadType, totalSlots: ctrl.slots.length);
+    final design = spreadCanvasDesignSizeForCount(
+      ctrl.spreadCardCount,
+      totalSlots: ctrl.slots.length,
+    );
     final isLandscape =
         MediaQuery.orientationOf(context) == Orientation.landscape;
 
     final dealt = [for (final s in ctrl.slots) if (s.card != null) s];
+    Offset slotTopLeft(int i) => spreadSlotDesignTopLeftForCount(
+          ctrl.spreadCardCount,
+          i,
+          totalSlots: ctrl.slots.length,
+        );
     final rects = [
       for (var i = 0; i < ctrl.slots.length; i++)
         Rect.fromLTWH(
-          spreadSlotDesignTopLeft(
-            ctrl.spreadType,
-            i,
-            totalSlots: ctrl.slots.length,
-          ).dx,
-          spreadSlotDesignTopLeft(
-            ctrl.spreadType,
-            i,
-            totalSlots: ctrl.slots.length,
-          ).dy,
+          slotTopLeft(i).dx,
+          slotTopLeft(i).dy,
           deckWidth,
           deckHeight,
         ),
@@ -273,16 +303,8 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
           SpreadThreadsLayer(dealt: dealt, rects: rects),
           for (var i = 0; i < ctrl.slots.length; i++)
             Positioned(
-              left: spreadSlotDesignTopLeft(
-                ctrl.spreadType,
-                i,
-                totalSlots: ctrl.slots.length,
-              ).dx,
-              top: spreadSlotDesignTopLeft(
-                ctrl.spreadType,
-                i,
-                totalSlots: ctrl.slots.length,
-              ).dy,
+              left: slotTopLeft(i).dx,
+              top: slotTopLeft(i).dy,
               width: deckWidth,
               height: deckHeight,
               child: _OverviewSlot(
@@ -302,6 +324,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
 
     if (isLandscape) {
       final miniDeck = _OverviewDeck(
+        system: ctrl.system,
         pack: pack,
         width: overviewDeckWidth,
         height: overviewDeckHeight,
@@ -350,6 +373,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     final deckW = (slotW * 1.12).clamp(overviewDeckWidth, 200.0);
     final deckH = deckW * deckHeight / deckWidth;
     final miniDeck = _OverviewDeck(
+      system: ctrl.system,
       pack: pack,
       width: deckW,
       height: deckH,
@@ -390,9 +414,40 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
   /// The flight card (FOCUS mode only — the overview materializes in-slot),
   /// positioned in the active body Stack's local coordinates: it flies from
   /// the release pose to the exact slot rect, landing pixel-perfectly on the
-  /// already-materialized slot card.
-  Widget _flightOverlay(TarotDeckPack pack, _CardFlight flight, double t) {
+  /// already-materialized slot card. Runes fly as a face-down carved stone.
+  Widget _flightOverlay(
+    DivinationSystem system,
+    TarotDeckPack? tarotPack,
+    _CardFlight flight,
+    double t,
+  ) {
     final pos = Offset.lerp(flight.start, flight.target, t)!;
+    final flyingPiece = switch (system) {
+      DivinationSystem.tarot => CardBack(
+          width: deckWidth,
+          height: deckHeight,
+          pack: tarotPack,
+        ),
+      DivinationSystem.lenormand => CardBack(
+          width: deckWidth,
+          height: deckHeight,
+          styleOverride:
+              context.read<DeckPackController>().activeLenormandPack.backStyle,
+          accentOverride:
+              context.read<DeckPackController>().activeLenormandPack.backAccentArgb,
+          secondaryOverride: context
+              .read<DeckPackController>()
+              .activeLenormandPack
+              .backSecondaryArgb,
+        ),
+      DivinationSystem.runes => const Center(
+          child: SizedBox(
+            width: 150,
+            height: 178,
+            child: _FlightStone(),
+          ),
+        ),
+    };
     return Positioned(
       left: pos.dx,
       top: pos.dy,
@@ -405,14 +460,15 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
             height: deckHeight,
             child: Stack(
               children: [
-                CardBack(width: deckWidth, height: deckHeight, pack: pack),
-                Positioned.fill(
-                  child: FoilGlint(
-                    angleY: flight.pose.rotateY * (1 - t),
-                    angleX: flight.pose.rotateX,
-                    intensity: 0.8,
+                flyingPiece,
+                if (system != DivinationSystem.runes)
+                  Positioned.fill(
+                    child: FoilGlint(
+                      angleY: flight.pose.rotateY * (1 - t),
+                      angleX: flight.pose.rotateX,
+                      intensity: 0.8,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -464,14 +520,20 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
                             children: [
                               const SizedBox(height: tableTopPad),
                               // Clean space above the deck — the decluttered
-                              // table (no BEFORE YOU DRAW box).
+                              // table (no BEFORE YOU DRAW box). Runes swap
+                              // the paper deck for the 3D stone cluster.
                               SizedBox(
                                 width: deckWidth,
                                 height: deckBoxHeight,
-                                child: InteractiveDeckWidget(
-                                  key: _deckKey,
-                                  onDealRelease: _onDealRelease,
-                                ),
+                                child: ctrl.system == DivinationSystem.runes
+                                    ? InteractiveRuneStonesWidget(
+                                        key: _deckKey,
+                                        onCastRelease: _onRuneCastRelease,
+                                      )
+                                    : InteractiveDeckWidget(
+                                        key: _deckKey,
+                                        onDealRelease: _onDealRelease,
+                                      ),
                               ),
                               const SizedBox(height: deckToPillarGap),
                               BoardPillarView(
@@ -494,7 +556,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
                             child: _DeckCounterBadge(
                               ctrl: ctrl,
                               onReset: _resetTable,
-                              dealHint: 'SWIPE ↓ TO DEAL',
+                              dealHint: ctrl.system.dealHint,
                             ),
                           ),
                         ),
@@ -502,7 +564,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
                           AnimatedBuilder(
                             animation: _flightCtl!,
                             builder: (context, _) => _flightOverlay(
-                                pack, flight, _flightCtl!.value),
+                                ctrl.system, pack, flight, _flightCtl!.value),
                           ),
                       ],
                     ),
@@ -534,65 +596,103 @@ class _TableHeader extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            'DIGITAL TABLE',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 13,
-              letterSpacing: 2.4,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
+          // Row 1 — the [ FOCUS VIEW | SPREAD VIEW ] segmented toggle,
+          // top-center where the old static title used to sit.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: _ViewModeToggle(mode: mode, onChanged: onModeChanged),
           ),
-          const SizedBox(height: 3),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => SpreadSelectorSheet.show(context),
+          const SizedBox(height: 4),
+          // Row 2 — the 3-system segmented selector.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: _SystemSelector(ctrl: ctrl),
+          ),
+          const SizedBox(height: 6),
+          // Row 3 — pack picker + spread picker, two balanced pills.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  '${ctrl.spreadType.label.toUpperCase()} · '
-                  '${ctrl.remaining} IN DECK',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 8.5,
-                    letterSpacing: 1.4,
-                    color: AppColors.textMuted,
+                const Expanded(child: _SystemPackPill()),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    key: const ValueKey('spread-selector-pill'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => SpreadSelectorSheet.show(context),
+                    child: Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              ctrl.spreadLabel.toUpperCase(),
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 8.5,
+                                letterSpacing: 1.4,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.lavender,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.keyboard_arrow_down,
+                            size: 13,
+                            color: AppColors.lavender,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 3),
-                const Icon(
-                  Icons.keyboard_arrow_down,
-                  size: 13,
-                  color: AppColors.lavender,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 6),
-          // The pill row NEVER overflows on narrow 360px screens: it is
-          // scaled down as one unit instead of spilling off the edge.
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const _DeckPackPill(),
-                  const SizedBox(width: 8),
-                  const _BellPill(),
-                  const SizedBox(width: 8),
-                  if (ctrl.sourceMode == TableSourceMode.physicalCameraSync) ...[
-                    const _PhysicalSyncPill(),
-                    const SizedBox(width: 8),
-                  ],
-                  _ViewModeToggle(mode: mode, onChanged: onModeChanged),
-                ],
-              ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The TAROT | LENORMAND | RUNES segmented system selector (header Row 2).
+class _SystemSelector extends StatelessWidget {
+  const _SystemSelector({required this.ctrl});
+
+  final SpreadController ctrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final system in DivinationSystem.values)
+            _SystemSegment(
+              key: ValueKey('system-segment-${system.name}'),
+              label: system.label,
+              active: ctrl.system == system,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                context.read<SpreadController>().setSystem(system);
+              },
             ),
-          ),
         ],
       ),
     );
@@ -673,55 +773,68 @@ class _ModeSegment extends StatelessWidget {
   }
 }
 
-/// Physical-sync badge: shown while the table hosts cards photographed
-/// from the user's real deck.
-class _PhysicalSyncPill extends StatelessWidget {
-  const _PhysicalSyncPill();
+/// One segment of the system selector.
+class _SystemSegment extends StatelessWidget {
+  const _SystemSegment({
+    super.key,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.harmonyCyan.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.harmonyCyan),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.photo_camera_front_outlined,
-            size: 12,
-            color: AppColors.harmonyCyan,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: active
+              ? AppColors.lavender.withValues(alpha: 0.16)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.jetBrainsMono(
+            fontSize: 9,
+            letterSpacing: 1.4,
+            fontWeight: FontWeight.w700,
+            color: active ? AppColors.lavender : AppColors.textMuted,
           ),
-          const SizedBox(width: 6),
-          Text(
-            'PHYSICAL SYNC',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8.5,
-              letterSpacing: 1.4,
-              fontWeight: FontWeight.w700,
-              color: AppColors.harmonyCyan,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// Deck switcher pill — opens the 3D carousel picker.
-class _DeckPackPill extends StatelessWidget {
-  const _DeckPackPill();
+/// The pack picker pill (header Row 3 left) — filtered strictly to packs
+/// of the ACTIVE divination system (DeckPickerSheet branches on it).
+class _SystemPackPill extends StatelessWidget {
+  const _SystemPackPill();
 
   @override
   Widget build(BuildContext context) {
-    final pack = context.watch<DeckPackController>().activePack;
+    final ctrl = context.watch<SpreadController>();
+    final packs = context.watch<DeckPackController>();
+    final label = switch (ctrl.system) {
+      DivinationSystem.tarot => packs.activePack.name.toUpperCase(),
+      DivinationSystem.lenormand => packs.activeLenormandPack.name.toUpperCase(),
+      DivinationSystem.runes => packs.activeRunePack.name.toUpperCase(),
+    };
     return GestureDetector(
-      onTap: () => DeckPickerSheet.show(context),
+      key: const ValueKey('system-pack-pill'),
+      behavior: HitTestBehavior.opaque,
+      onTap: () => DeckPickerSheet.show(context, system: ctrl.system),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: AppColors.surface.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(14),
@@ -730,54 +843,28 @@ class _DeckPackPill extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.style_outlined,
-                size: 12, color: AppColors.lavender),
-            const SizedBox(width: 6),
             Text(
-              pack.name.toUpperCase(),
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8.5,
-                letterSpacing: 1.4,
-                fontWeight: FontWeight.w700,
-                color: AppColors.lavender,
+              ctrl.system.packGlyph,
+              style: const TextStyle(fontSize: 11),
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 8.5,
+                  letterSpacing: 1.4,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.lavender,
+                ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Ritual bell — opens the daily ritual settings sheet.
-class _BellPill extends StatelessWidget {
-  const _BellPill();
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => RitualSettingsSheet.show(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.notifications_none_outlined,
-                size: 12, color: AppColors.textMuted),
-            const SizedBox(width: 6),
-            Text(
-              'RITUAL',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8.5,
-                letterSpacing: 1.4,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textMuted,
-              ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              size: 13,
+              color: AppColors.lavender,
             ),
           ],
         ),
@@ -808,17 +895,19 @@ class _DeckCounterBadge extends StatelessWidget {
     final armed = ctrl.pendingClarifierQuestion != null;
     final atMax = ctrl.dealtCount >= SpreadController.maxTableCards;
     final canReset = ctrl.nextEmptySlotIndex == null && onReset != null;
+    // NO deck-size prefixes — the pill shows only the action (the old
+    // "78 ·" counter and "IN DECK" text are gone by design).
     final String label;
     if (atMax) {
-      label = '${ctrl.remaining} · 10/10 TABLE FULL';
+      label = '10/10 TABLE FULL';
     } else if (armed) {
-      label = '${ctrl.remaining} · PULL CLARIFIER ↓';
+      label = 'PULL CLARIFIER ↓';
     } else if (canReset) {
-      label = '${ctrl.remaining} · TAP TO RESET · NEW SPREAD';
+      label = 'TAP TO RESET · NEW SPREAD';
     } else if (ctrl.nextEmptySlotIndex != null) {
-      label = '${ctrl.remaining} · $dealHint';
+      label = dealHint;
     } else {
-      label = '${ctrl.remaining} · IN DECK';
+      label = 'IN DECK';
     }
     return GestureDetector(
       onTap: armed && !atMax
@@ -860,12 +949,14 @@ class _DeckCounterBadge extends StatelessWidget {
 /// proportional to the spread's slot cards.
 class _OverviewDeck extends StatefulWidget {
   const _OverviewDeck({
+    required this.system,
     required this.pack,
     required this.width,
     required this.height,
     required this.onTap,
   });
 
+  final DivinationSystem system;
   final TarotDeckPack pack;
   final double width;
   final double height;
@@ -911,9 +1002,33 @@ class _OverviewDeckState extends State<_OverviewDeck>
               key: const ValueKey('overview-deck'),
               width: w,
               height: h,
-              // Only the rounded card itself is rendered — no static backing
-              // strip/rectangle above it (same artifact class as the hero deck).
-              child: CardBack(width: w, height: h, pack: widget.pack),
+              // Only the rounded card / stone pile itself is rendered — no
+              // static backing strip above it (same artifact class as the
+              // hero deck).
+              child: switch (widget.system) {
+                DivinationSystem.tarot => CardBack(
+                    width: w,
+                    height: h,
+                    pack: widget.pack,
+                  ),
+                DivinationSystem.lenormand => CardBack(
+                    width: w,
+                    height: h,
+                    styleOverride: context
+                        .watch<DeckPackController>()
+                        .activeLenormandPack
+                        .backStyle,
+                    accentOverride: context
+                        .watch<DeckPackController>()
+                        .activeLenormandPack
+                        .backAccentArgb,
+                    secondaryOverride: context
+                        .watch<DeckPackController>()
+                        .activeLenormandPack
+                        .backSecondaryArgb,
+                  ),
+                DivinationSystem.runes => const _OverviewStonePile(),
+              },
             ),
           );
         },
@@ -996,10 +1111,8 @@ class _OverviewSlotState extends State<_OverviewSlot>
               opacity: v,
               child: Transform.scale(
                 scale: 0.88 + 0.12 * v,
-                child: TarotCard3DWidget(
-                  card: card,
-                  isReversed: slot.isReversed,
-                  state: slot.state,
+                child: SlottedDivinationCard(
+                  slot: slot,
                   width: deckWidth,
                   height: deckHeight,
                   onFlip: () =>
@@ -1026,6 +1139,63 @@ class _OverviewSlotState extends State<_OverviewSlot>
           ],
         );
       },
+    );
+  }
+}
+
+/// The face-down carved stone used by the rune cast flight overlay.
+class _FlightStone extends StatelessWidget {
+  const _FlightStone();
+
+  @override
+  Widget build(BuildContext context) {
+    return RuneStone3DWidget(
+      stone: const RuneStone(
+        id: 0,
+        name: 'Fehu',
+        glyph: 'ᚠ',
+        phonetic: 'F',
+        aett: RuneAett.freyr,
+        element: Element.fire,
+        keywords: ['Wealth'],
+        upright: '',
+        lore: '',
+      ),
+      isMerkstave: false,
+      state: SlotState.faceDown,
+      width: 150,
+      height: 178,
+      interactive: false,
+    );
+  }
+}
+
+/// The mini stone pile shown in the overview deck corner for RUNES — a
+/// small heap of face-down stones instead of a paper card deck.
+class _OverviewStonePile extends StatelessWidget {
+  const _OverviewStonePile();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        for (var i = 0; i < 5; i++)
+          Positioned(
+            left: 4.0 + i * 5,
+            top: 10.0 - i * 4,
+            child: CustomPaint(
+              size: const Size(48, 57),
+              painter: RuneStonePainter(
+                stone: elderFuthark[0],
+                pack: context.watch<DeckPackController>().activeRunePack,
+                faceUp: false,
+                ignite: 0,
+                seed: 21 + i,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

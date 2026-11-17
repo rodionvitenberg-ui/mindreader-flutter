@@ -11,10 +11,13 @@ void main() {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    expect(find.text('DIGITAL TABLE'), findsOneWidget);
-    // The live 78-counter: header subtitle + deck badge.
-    expect(find.textContaining('78'), findsWidgets);
-    expect(find.textContaining('SWIPE'), findsOneWidget);
+    // The old static title is gone — the FOCUS/SPREAD toggle sits in its
+    // place, with the TAROT|LENORMAND|RUNES selector below it.
+    expect(find.text('FOCUS VIEW'), findsOneWidget);
+    expect(find.text('TAROT'), findsOneWidget);
+    expect(find.text('LENORMAND'), findsOneWidget);
+    expect(find.text('RUNES'), findsOneWidget);
+    expect(find.text('SWIPE ↓ TO DEAL'), findsOneWidget);
     // The hero deck is present.
     expect(find.byType(InteractiveDeckWidget), findsOneWidget);
     // No empty placeholder slots are rendered before dealing.
@@ -39,7 +42,8 @@ void main() {
     // First slot is now a face-down board card; badge dropped to 77.
     final boardCards = find.byType(TarotCard3DWidget);
     expect(boardCards, findsOneWidget);
-    expect(find.textContaining('77'), findsWidgets);
+    // No deck-size counter prefixes remain on the deal pill.
+    expect(find.text('SWIPE ↓ TO DEAL'), findsOneWidget);
 
     // The pillar card may sit below the viewport fold — scroll it into view
     // and tap a guaranteed-visible point near its top edge.
@@ -75,7 +79,7 @@ void main() {
     await tester.pump();
 
     // Sprint 2/3: the tappable header subtitle opens the compact selector.
-    await tester.tap(find.textContaining('3 · TRIAD FLOW · 78 IN DECK'));
+    await tester.tap(find.textContaining('3 · TRIAD FLOW'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('SPREAD METHOD'), findsOneWidget);
@@ -115,7 +119,7 @@ void main() {
     await tester.pump();
 
     // Back on the Digital Table with no empty placeholders left.
-    expect(find.text('DIGITAL TABLE'), findsOneWidget);
+    expect(find.text('TAROT'), findsOneWidget);
     expect(find.text('Current State / Essence'), findsNothing);
     expect(find.text('Vector / Action'), findsNothing);
     // All 3 scanned cards are face-up already.
@@ -144,7 +148,7 @@ void main() {
     Future<void> scrollBackToDeck() async {
       final area = tester.getRect(find.byType(SingleChildScrollView).first);
       // Sprint 4: no pane indicator — the deck rests under the header.
-      final resting = 84 + tableTopPad;
+      final resting = 118 + tableTopPad;
       final delta = resting - tester.getTopLeft(deck).dy;
       if (delta > 4) {
         await tester.dragFrom(
@@ -185,8 +189,8 @@ void main() {
     expect(find.textContaining('SWIPE'), findsOneWidget);
     expect(tester.getSize(deck).width, deckWidth);
     // The dealt cards were physically re-inserted into the deck: the
-    // live counter jumped back up to the full 78 (no lost cards).
-    expect(find.textContaining('78'), findsWidgets);
+    // The pill shows the fresh deal hint (counters were removed by design).
+    expect(find.text('SWIPE ↓ TO DEAL'), findsOneWidget);
   });
 
   testWidgets(
@@ -196,7 +200,7 @@ void main() {
     await tester.pump();
 
     final deck = find.byType(InteractiveDeckWidget);
-    final resting = 84 + tableTopPad;
+    final resting = 118 + tableTopPad;
     expect(tester.getTopLeft(deck).dy, closeTo(resting, 0.1));
 
     await tester.dragFrom(tester.getCenter(deck), const Offset(0, 100));
@@ -249,7 +253,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump();
     expect(find.byType(TarotCard3DWidget), findsOneWidget);
-    expect(find.textContaining('77'), findsWidgets);
+    expect(find.text('SWIPE ↓ TO DEAL'), findsOneWidget);
   });
 
   testWidgets('deck switcher carousel changes the active pack on the fly',
@@ -296,12 +300,12 @@ void main() {
     await tester.pump();
 
     expect(find.text('All (78)'), findsOneWidget);
-    // The Fool appears on the tile face AND on the tile caption.
-    expect(find.text('The Fool'), findsWidgets);
+    // The Fool appears as the uppercase tile caption.
+    expect(find.text('THE FOOL'), findsWidgets);
 
-    await tester.ensureVisible(find.text('The Fool').last);
+    await tester.ensureVisible(find.text('THE FOOL').last);
     await tester.pump();
-    await tester.tap(find.text('The Fool').last); // tile caption
+    await tester.tap(find.text('THE FOOL').last); // tile caption
     await tester.pump(); // start the modal route ticker
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('UPRIGHT'), findsOneWidget);
@@ -346,7 +350,7 @@ void main() {
     await tester.pump(); // slot materializes
     await tester.pump(const Duration(milliseconds: 600)); // entrance
     await tester.pump();
-    expect(find.textContaining('77'), findsWidgets);
+    expect(find.text('TAP DECK TO DEAL'), findsOneWidget);
     final dealt = find.byType(TarotCard3DWidget);
     expect(dealt, findsOneWidget);
 

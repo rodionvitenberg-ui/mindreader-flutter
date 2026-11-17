@@ -1,22 +1,29 @@
 import 'dart:ui' show ImageFilter;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/models/dealt_card_slot.dart';
+import '../../core/models/divination_card.dart';
+import '../../core/models/divination_system.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/theme/app_colors.dart';
+import '../../state/deck_pack_controller.dart';
+import '../digital_table/widgets/lenormand_card_3d_widget.dart';
+import '../digital_table/widgets/rune_stone_3d_widget.dart';
 import '../digital_table/widgets/tarot_card_3d_widget.dart';
 
-/// Interactive 3D tiltable card inspector: upright vs reversed meanings,
-/// archetype keywords, element badge, Socratic question.
+/// Interactive inspector for one piece of ANY divination system: upright
+/// vs reversed/merkstave meanings, keywords, element badge, the reflection
+/// question and (Lenormand) the combinatory pair readings.
 class CardDetailSheet extends StatefulWidget {
   const CardDetailSheet({super.key, required this.card});
 
-  final TarotCard card;
+  final DivinationCard card;
 
-  static Future<void> show(BuildContext context, TarotCard card) {
+  static Future<void> show(BuildContext context, DivinationCard card) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -35,9 +42,14 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
   bool _dragging = false;
   Offset _tilt = Offset.zero;
 
+  bool get _canReverse => widget.card.reversed != null;
+
   @override
   Widget build(BuildContext context) {
     final card = widget.card;
+    final isRune = card.system == DivinationSystem.runes;
+    final isLenormand = card.system == DivinationSystem.lenormand;
+    final reverseLabel = isRune ? 'MERKSTAVE' : 'REVERSED';
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: BackdropFilter(
@@ -80,109 +92,66 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${card.positionLabel} \u00b7 ${card.arcana == Arcana.major ? 'MAJOR ARCANA' : card.suit!.label.toUpperCase()}',
+                              '${card.shortLabel} · ${card.categoryLabel}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.jetBrainsMono(
                                 fontSize: 10,
                                 letterSpacing: 2,
                                 color: AppColors.textMuted,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: [
-                                for (final k in card.keywords)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 5,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.surface
-                                          .withValues(alpha: 0.7),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border:
-                                          Border.all(color: AppColors.border),
-                                    ),
-                                    child: Text(
-                                      k.toLowerCase(),
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: AppColors.textMuted,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: card.element.accent.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(14),
+                          color:
+                              card.element.accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: card.element.accent.withValues(alpha: 0.5),
-                          ),
+                              color:
+                                  card.element.accent.withValues(alpha: 0.6)),
                         ),
-                        child: Column(
-                          children: [
-                            Text(
-                              card.element.glyph,
-                              style: TextStyle(
-                                fontSize: 20,
-                                color: card.element.accent,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              card.element.label.toUpperCase(),
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 8,
-                                letterSpacing: 1.2,
-                                color: card.element.accent,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          '${card.element.label.toUpperCase()} '
+                          '${card.element.glyph}',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 10,
+                            letterSpacing: 1.2,
+                            fontWeight: FontWeight.w700,
+                            color: card.element.accent,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 14),
                   Center(
                     child: GestureDetector(
-                      onPanUpdate: (d) => setState(() {
-                        _dragging = true;
-                        _tilt += Offset(d.delta.dx, d.delta.dy);
-                      }),
+                      onPanStart: (_) => setState(() => _dragging = true),
+                      onPanUpdate: (d) => setState(
+                        () => _tilt = Offset(
+                          (_tilt.dx + d.delta.dx).clamp(-14.0, 14.0),
+                          (_tilt.dy + d.delta.dy).clamp(-10.0, 10.0),
+                        ),
+                      ),
                       onPanEnd: (_) => setState(() {
                         _dragging = false;
                         _tilt = Offset.zero;
                       }),
-                      child: TweenAnimationBuilder<Offset>(
-                        tween: Tween(end: _tilt),
-                        duration: _dragging
-                            ? Duration.zero
-                            : const Duration(milliseconds: 350),
-                        curve: Curves.easeOutBack,
-                        builder: (context, value, _) => Transform(
-                          alignment: Alignment.center,
-                          transform: Matrix4.identity()
-                            ..setEntry(3, 2, perspectiveEntry)
-                            ..rotateX(value.dy * 0.004)
-                            ..rotateY(value.dx * 0.004),
-                          child: TarotCard3DWidget(
-                            card: card,
-                            isReversed: _reversed,
-                            state: SlotState.faceUp,
-                            width: 170,
-                            height: 283,
-                            tilt: false,
-                          ),
-                        ),
+                      child: AnimatedContainer(
+                        duration: Duration(
+                            milliseconds: _dragging ? 0 : 420),
+                        curve: Curves.easeOutCubic,
+                        transform: Matrix4.identity()
+                          ..setEntry(3, 2, 0.0012)
+                          ..rotateX(_tilt.dy * 0.01)
+                          ..rotateY(_tilt.dx * 0.015),
+                        child: _Preview(card: card),
                       ),
                     ),
                   ),
@@ -197,26 +166,96 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                           setState(() => _reversed = false);
                         },
                       ),
-                      const SizedBox(width: 8),
-                      _MeaningToggle(
-                        label: 'REVERSED',
-                        active: _reversed,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _reversed = true);
-                        },
-                      ),
+                      if (_canReverse) ...[
+                        const SizedBox(width: 8),
+                        _MeaningToggle(
+                          label: reverseLabel,
+                          active: _reversed,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _reversed = true);
+                          },
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    _reversed ? card.reversed : card.upright,
+                    _reversed && card.reversed != null
+                        ? card.reversed!
+                        : card.upright,
                     style: const TextStyle(
                       fontSize: 14,
                       height: 1.6,
                       color: AppColors.textPrimary,
                     ),
                   ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'KEYWORDS',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 9,
+                      letterSpacing: 2,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    card.keywords.map((k) => k.toUpperCase()).join(' · '),
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 10,
+                      letterSpacing: 1.4,
+                      color: AppColors.lavender,
+                    ),
+                  ),
+                  if (isLenormand) ...[
+                    const SizedBox(height: 18),
+                    Text(
+                      'COMBINATIONS',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 9,
+                        letterSpacing: 2,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    for (final combo
+                        in (card as LenormandDivinationCard)
+                            .card
+                            .combinations)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          '· $combo',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            height: 1.45,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                  ],
+                  if (isRune) ...[
+                    const SizedBox(height: 18),
+                    Text(
+                      'LORE',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 9,
+                        letterSpacing: 2,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      (card as RuneDivinationCard).stone.lore,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
+                        height: 1.5,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 18),
                   Text(
                     'THE QUESTION TO SIT WITH',
@@ -228,7 +267,7 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    card.socratic,
+                    card.reflection,
                     style: const TextStyle(
                       fontSize: 13,
                       fontStyle: FontStyle.italic,
@@ -243,6 +282,50 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
         ),
       ),
     );
+  }
+}
+
+/// The tiltable preview — each system renders its own artifact.
+class _Preview extends StatelessWidget {
+  const _Preview({required this.card});
+
+  final DivinationCard card;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (card.system) {
+      DivinationSystem.tarot => TarotCard3DWidget(
+          card: (card as TarotDivinationCard).card,
+          isReversed: false,
+          state: SlotState.faceUp,
+          width: 170,
+          height: 283,
+          tilt: false,
+          interactive: false,
+        ),
+      DivinationSystem.lenormand => LenormandCard3DWidget(
+          card: (card as LenormandDivinationCard).card,
+          isReversed: false,
+          state: SlotState.faceUp,
+          width: 170,
+          height: 283,
+          tilt: false,
+          interactive: false,
+        ),
+      DivinationSystem.runes => SizedBox(
+          width: 170,
+          height: 200,
+          child: CustomPaint(
+            painter: RuneStonePainter(
+              stone: (card as RuneDivinationCard).stone,
+              pack: context.watch<DeckPackController>().activeRunePack,
+              faceUp: true,
+              ignite: 1,
+              seed: card.id + 9,
+            ),
+          ),
+        ),
+    };
   }
 }
 

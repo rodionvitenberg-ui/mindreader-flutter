@@ -1,7 +1,7 @@
 {
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
-  "active_feature_or_sprint": "SPRINT 6: Uncropped full-bleed card art (no text bars over illustrated decks), taut slow elemental strings, redesigned Card Inspector sheet, fixed chat/history/almanac pill layouts (screenshots 1000049361-1000049372)",
+  "active_feature_or_sprint": "SPRINT 1/2 MULTI-SYSTEM: Tarot(78) | Lenormand(36) | Runes(24), 3D tactile rune stones, 36-card Lenormand engine, redesigned Table/Almanac headers (1000049375.jpg / 1000049372.jpg)",
   "status": "DONE",
   "context": {
     "stack": [
@@ -12,17 +12,14 @@
       "speech_to_text (capsule mic dictation)"
     ],
     "target_files": [
-      "lib/core/models/tarot_deck_pack.dart (+ isIllustrated)",
-      "lib/core/data/deck_packs_registry.dart (7 illustrated decks)",
-      "lib/features/digital_table/widgets/tarot_card_3d_widget.dart (_CardFace full-bleed art, no header/footer bars)",
-      "lib/features/digital_table/widgets/elemental_threads_painter.dart (taut 3.0px cord, 4.5-5.0s wall-clock breathing)",
-      "lib/features/digital_table/widgets/reading_bottom_sheet.dart (Card Inspector Sheet)",
-      "lib/state/spread_controller.dart (+updateSlotUserContext)",
-      "lib/features/digital_table/table_workspace.dart (_ChatContextChips single-select, no chat spam)",
-      "lib/features/digital_table/spread_history_pane.dart (no double +, Expanded filter pills)",
-      "lib/features/almanac/almanac_screen.dart (clickable element filter bar, no ELEMENTS label)",
-      "lib/core/models/tarot_card_model.dart (earth glyph ▫)",
-      "test/* (app_smoke, workspace_layout, phase2_flow, workspace_swipe, NEW almanac_element_filter_test)"
+      "lib/core/models/divination_system.dart, divination_card.dart, lenormand_card.dart, rune_stone.dart, lenormand_spread.dart, rune_cast.dart, lenormand_pack.dart, rune_pack.dart",
+      "lib/core/data/lenormand_data.dart (36), runes_data.dart (24), lenormand_packs_registry.dart, rune_packs_registry.dart",
+      "lib/state/spread_controller.dart (multi-system), deck_pack_controller.dart (per-system packs), spread_session_snapshot.dart (system field)",
+      "lib/core/services/oracle_synthesis_service.dart (system-aware prompts)",
+      "lib/features/digital_table/digital_table_screen.dart (3-row header, rune deck swap, count-based geometry)",
+      "lib/features/digital_table/widgets/: lenormand_card_3d_widget.dart, rune_stone_3d_widget.dart, interactive_rune_stones_widget.dart, slotted_divination_card.dart, deck_picker_sheet.dart, spread_selector_sheet.dart, shuffle_physics.dart (+ForCount geometry)",
+      "lib/features/almanac/almanac_screen.dart + card_detail_sheet.dart (3-system redesign)",
+      "test/divination_system_switch_test.dart, lenormand_runes_data_test.dart, multi_system_table_test.dart (NEW)"
     ],
     "hard_constraints": [
       "Strict Zero-Knowledge: do NOT log raw PII/secrets to console or logs",
@@ -37,31 +34,21 @@
   },
   "execution_plan": {
     "completed_tasks": [
-      "SPRINT 1/3 (prior): lazy camera lifecycle, deck bar artifact removal, true top-card grab, 4x igniting elemental threads — 104/104 green",
-      "SPRINT 2/3 (prior): 3-pane workspace (Table ⇄ Oracle Chat ⇄ History), decluttered table, Gemini capsule, local-first history — 114/114 green",
-      "SPRINT 3/3.1 DOMAIN: canonical slotRoles per spread (Core Daily Impulse / Current State-Essence, Hidden Shadow-Block, Vector-Action / Two Shores Cross / Horseshoe Past..Outcome); SpreadController += maxTableCards=10, baseCardLimit, allowedCardsLimit (=dealtCount+1 armed, clamped, ceiling-aware), isDealLocked, armClarifierQuestion (base-complete gate), dealCardAtOrClarifier as the single legal deal gate (armed question consumed into Clarifier N+1, relocks), pendingClarifierQuestion getter, camera ceiling guards; dealCardAt depth boundary fixed to live stack length",
-      "SPRINT 3/3.2 ORACLE: buildClarifierSuggestions — 2-3 deterministic probes dynamically naming reversed/shadow cards, conflict thread pairs, dominant element; empty at 10",
-      "SPRINT 3/3.3 LOCKED DECK UX: showDealLockPrompt (shared SnackBar + heavy haptic); tactile deck springs back on locked swipe; overview mini-deck tap prompts too; badge states (PULL CLARIFIER ↓ / 10/10 TABLE FULL / TAP TO RESET) with tap-to-dismiss armed question",
-      "SPRINT 3/3.4 CHAT LOOP: AI question cards in Pane 1 after synthesis & after each clarifier chapter (recomputed live); 🃏 +1 CARD FOR MY QUESTION chip reads the lifted capsule text (external controller + FocusNode) and arms the custom question; arming slides to Pane 0 with clarifier-banner; camera-sync mode routes the arm through the camera; 10-card ceiling note replaces suggestions",
-      "SPRINT 3/3.5 TESTS: NEW spread_lock_test (caps, lock lifecycle all spreads, +1 unlock/relock, cancel, restore-locked, ceiling at 10 incl. camera, suggestion dynamics); phase2_clarifier rewritten to locked loop; phase2_flow += AI question → unlock → pull → clarifier reading, custom question arming, locked-deck prompt; roles updated in app_smoke/spread_controller/oracle_synthesis tests. 133/133 green ×2, analyze clean",
-      "SPRINT 4.1 CLEAN TABLE: top 3-pill nav (TABLE • ORACLE CHAT • HISTORY) deleted; horizontal swiping remains the only pane switch; header pill row wrapped in FittedBox(scaleDown) — no more 9.3px overflow on 360px screens; debugShowCheckedModeBanner: false confirmed in MaterialApp",
-      "SPRINT 4.2 PANE PURITY: Pane 0 stripped of the chip row AND the GeminiInputCapsule; Pane 1 now exclusively hosts the chips (filled #A78BFA selected state + ✓ + haptic + chat confirmation 'Context woven into the reading') and the capsule",
-      "SPRINT 4.3 SYNTHESIZE CTA: new widgets/synthesize_chat_cta.dart — permanently anchored on Pane 0; dormant (opacity 0.42, muted slate border, progress label FLIP ALL CARDS / N OF M FACE-UP, gentle haptic on tap) → ignited the moment the base spread is fully face-up (0.95→1.04→1.0 ignition burst + flash + continuous starlight sparkle border/aura CustomPainter via super(repaint:)); tap slides to Pane 1",
-      "SPRINT 4.4 LIVING THREADS: ElementalThreadsPainter now takes super(repaint: pulse) — repaints every tick (the AnimatedBuilder in BoardPillarView created structurally identical painters, so shouldRepaint never fired — the cords were frozen); amplitude raised to 10.0–14.0px with two harmonics sin(t·2π)+cos(t·4π); 4 traveling particles",
-      "SPRINT 4.5 CLEAN FLIP: removed the 3D edge-bevel side strips (cardEdgeStripX/cardEdgeSlices/cardFlipThicknessPx/cardEdgeBody/cardEdgeRimGold) from TarotCard3DWidget — ZERO protruding side bars during rotateY; 680ms flip + FoilGlint only",
-      "SPRINT 4.6 TESTS: workspace_layout_test (NEW) — capsule/chips exclusively Pane 1, dormant CTA permanently on Pane 0, chip ✓ toggle; card_edge_bevel_test rewritten for the clean flip; workspace_swipe/phase2_flow/app_smoke updated to swipe-only navigation (PageView ballistic settle loop — the drag fling's BallisticScrollActivity ignores pointers until it settles); 134/134 green, flutter analyze clean",
-      "SPRINT 6.1 FULL-BLEED ART: TarotDeckPack.isIllustrated (true for the 7 real decks) + _CardFace renders the historical scan edge-to-edge inside the rounded ClipRRect border with ZERO header/footer text bars (Nine / ▽ WATER / CUPS · WATER / MAJOR ARCANA) on the Digital Table and in the Almanac grid; obsidian_minimal keeps the typographic bars; missing scans still fall back to the typographic face",
-      "SPRINT 6.2 TAUT SLOW THREADS: ElementalThreadsPainter — transverse deviation capped at 3.0 logical px (tautAmplitude), single gentle sine (no 2-harmonic rubber-noodle S-curves); wave period is exact WALL-CLOCK seconds via a shared static Stopwatch — 5.0s harmony / 4.75s neutral / 4.5s conflict (~3x slower); 4 luminous particles glide the full cord in the same period; aura breathes on a 6s sine",
-      "SPRINT 6.3 CARD INSPECTOR SHEET: ReadingBottomSheet(cardIndex) redesigned — large title + · REVERSED orientation, element badge (EARTH ▫ / WATER ▽ / FIRE △ / AIR ◇), SLOT N · ROLE line, drawn-orientation meaning + keywords, 3 single-select resonance pills (Resonates/Challenging/Unclear), compact text+mic note field auto-saving into slot.userContext (NEW SpreadController.updateSlotUserContext); READING CONTEXT chips and SYNTHESIZE SPREAD REMOVED from the card modal (Live Reading sheet unchanged)",
-      "SPRINT 6.4 CHAT PILLS: _ChatContextChips — single-select radio (one active pill, tap again deselects), Row of Expanded equal-width pills (8px gaps, 16px screen padding, FittedBox scaleDown) = zero size change + zero overflow; selection = lavender tint 22% + 1.2px lavender border, NO ✓ icon; _toggleContextChip no longer appends 'Context woven into the reading' chat lines and dedupes session notes",
-      "SPRINT 6.5 HISTORY PILLS: _NewSpreadButton double + fixed ('+ NEW SPREAD · НОВЫЙ РАСКЛАД' → 'NEW SPREAD · НОВЫЙ РАСКЛАД'); ALL READINGS / RELATIONSHIPS / CAREER & PATH moved from a scrolling Row into an equal-width Expanded row with FittedBox labels — no right-edge clipping",
-      "SPRINT 6.6 ALMANAC FILTERS: _ElementLegendBanner (static ELEMENTS label + scrollable badges) replaced by _ElementFilterBar — 4 equal-width interactive buttons (△ Fire · ▽ Water · ◇ Air · ▫ Earth) with soft elemental glow; tapping filters the grid by element, tapping the active one clears; Earth glyph □ → ▫",
-      "SPRINT 6.7 TESTS: almanac_element_filter_test.dart NEW (no ELEMENTS label, 4 filter keys, no MAJOR ARCANA/▽ WATER bars on illustrated tiles, water/fire counts, tap-again clears); app_smoke/workspace_layout/phase2_flow updated to the inspector + single-select pill contract (no ✓, active-key assertions, no 'Context woven'); workspace_swipe updated to the single + label — 137/137 green, flutter analyze clean"
+      "SPRINT 1/2.1 DOMAIN: DivinationSystem enum (tarot 78 / lenormand 36 / runes 24), sealed DivinationCard union (Tarot/Lenormand/Rune), LenormandCard (Blue Owl insets 9 per suit, pair-combinations, timing, no reversals), RuneStone (3 Aetts x 8, 8 symmetrical without merkstave), LenormandSpread (1/3/5/9) + RuneCast (1/3/5/7) enums, LenormandPack + RunePack models",
+      "SPRINT 1/2.2 DATA: lenormand_data.dart 36 canonical cards, runes_data.dart 24 Elder Futhark runes, 3 Lenormand packs (antique_petit/obsidian_gilded/botanical_noir) + 3 rune sets (obsidian_lavender/nordic_bone/blood_jasper) registries, asset folders assets/lenormand/<id>/ and assets/runes/<id>/ registered in pubspec",
+      "SPRINT 1/2.3 STATE: SpreadController multi-system (setSystem rebuilds 78/36/24 stack, per-system spreads, dealCardAt = orientation authority: lenormand always upright, symmetrical runes never merkstave), DealtCardSlot holds DivinationCard, DeckPackController persists a pack per system, SpreadSessionSnapshot stores system + all 3 spread enums (backward-compatible _enumOr)",
+      "SPRINT 1/2.4 ORACLE: dignityBetweenElements core, meaningFor/orientationWord helpers, synthesizeSpreadFor + per-system prompt builders (pair-reading hint for lenormand, merkstave wording for runes), answerChat/synthesizeClarifier/fallbacks system-aware",
+      "SPRINT 1/2.5 TABLE UI: 3-row header (Row1 FOCUS/SPREAD toggle, Row2 TAROT|LENORMAND|RUNES selector, Row3 system-filtered pack pill + concise spread pill), RITUAL + '78 IN DECK' + '78 •' counters removed, physical-sync ribbon moved above the table, count-based spread geometry (5-cross and 3x3 layouts), SlottedDivinationCard dispatcher in pillar/overview, lenormand deck back via CardBackPainter overrides",
+      "SPRINT 1/2.6 RUNES 3D: RuneStonePainter (organic pebble silhouette, radial rock shader, chiseled rim light, specular glint, deep shadow, ignition glow, merkstave rotation), InteractiveRuneStonesWidget cluster (swirl/clatter + mediumImpact haptics + ledger re-weave, downward top-stone cast >60px/>450px/s), rune cast flight overlay, stone pile in overview deck",
+      "SPRINT 1/2.7 LENORMAND: LenormandCard3DWidget (engraved procedural face with inset+title+keywords, asset fallback chain, 750ms materialization, always upright), same 36-card 3D shuffle/deal physics, pack-filtered DeckPickerSheet (tarot/lenormand/rune carousels), system-aware SpreadSelectorSheet",
+      "SPRINT 1/2.8 ALMANAC: system switcher synced with the table, search + pack pill row, per-system filters (tarot: elements+arcana/suits; lenormand: playing suits 9/9/9/9; runes: elements+aetts 8/8/8), per-system grid tiles, CardDetailSheet union (MERKSTAVE toggle for runes, COMBINATIONS for lenormand, LORE for runes), Card Inspector per-system",
+      "SPRINT 1/2.9 TESTS: NEW divination_system_switch_test (16), lenormand_runes_data_test (8), multi_system_table_test (5); updated app_smoke/workspace_swipe/phase2_flow/almanac_element_filter/session_snapshot/spread_controller/spread_lock/oracle_synthesis/phase2_clarifier to the new header contract and union API — 165/165 green, flutter analyze ZERO issues, flutter build apk --debug CLEAN"
     ],
-    "current_task": "SPRINT 6.7 DONE — all 7 screenshot-driven fixes shipped and verified (137/137 tests green, analyze clean); commit pending",
+    "current_task": "SPRINT 1/2 DONE — all 4 workstreams shipped and verified (165/165 tests, analyze clean, debug APK built); commit pending",
     "pending_tasks": [
-      "KNOWN (separate, pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on low-end devices",
-      "OPTIONAL: on-device visual pass on Redmi 12C for the full-bleed art and the slow threads"
+      "SPRINT 2/2 (next): Ritual button re-homing to the bottom dock / Astral space, rune stone custom-texture loading (assets/runes/<id>/<rune_id>.png) already scaffolded, on-device visual pass",
+      "KNOWN (pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on low-end devices",
+      "OPTIONAL: on-device visual pass on Redmi 12C for the rune cluster and the new 3-row header"
     ]
   },
   "discovered_bugs_or_blockers": [
@@ -81,5 +68,5 @@
     "KNOWN: local timezone detection can fail on some devices — rituals fall back to UTC wall-clock (documented)",
     "FIXED (p10): dealCardAt depth guard used the ORIGINAL deck size (78) instead of the live stack length — RangeError risk on deep grabs; boundary now pos >= _cardIds.length"
   ],
-  "latest_observation_summary": "SPRINT 6 shipped: 7 screenshot-driven fixes (1000049361-1000049372) — full-bleed illustrated card art with zero text bars, taut 3.0px elemental threads with 4.5-5.0s wall-clock breathing, redesigned Card Inspector sheet (meaning+keywords, resonance pills, auto-saving text+mic note), single-select no-growth no-spam chat context pills, history double-+ and clipping fixed, Almanac clickable element filters without the ELEMENTS label. Verified: flutter analyze clean, 137/137 tests green (incl. NEW almanac_element_filter_test)."
+  "latest_observation_summary": "SPRINT 1/2 shipped: 3 divination systems (Tarot 78 / Lenormand 36 / Runes 24) across Table, Oracle Chat, History and Almanac; redesigned 3-row table header (no DIGITAL TABLE title / RITUAL / deck counters); 3D tactile rune stone cluster with swirl+cast physics; Lenormand engine on the same 3D card physics; verified flutter analyze ZERO issues, 165/165 tests, flutter build apk --debug clean."
 }

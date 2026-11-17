@@ -9,6 +9,8 @@ class LocalStorageService {
   static const _maxEntries = 50;
 
   static const _deckIdKey = 'active_deck_id';
+  static const _lenormandPackKey = 'active_lenormand_pack_id';
+  static const _runePackKey = 'active_rune_pack_id';
   static const _ritualEnabledKey = 'ritual_enabled';
   static const _ritualMorningKey = 'ritual_morning_minutes';
   static const _ritualEveningKey = 'ritual_evening_minutes';
@@ -63,7 +65,7 @@ class LocalStorageService {
     await prefs.remove(_sessionsKey);
   }
 
-  // ---- active deck pack ----
+  // ---- active deck packs (one per divination system) ----
 
   Future<String?> loadDeckId() async {
     final prefs = await SharedPreferences.getInstance();
@@ -73,6 +75,26 @@ class LocalStorageService {
   Future<void> saveDeckId(String id) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_deckIdKey, id);
+  }
+
+  Future<String?> loadLenormandPackId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_lenormandPackKey);
+  }
+
+  Future<void> saveLenormandPackId(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_lenormandPackKey, id);
+  }
+
+  Future<String?> loadRunePackId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_runePackKey);
+  }
+
+  Future<void> saveRunePackId(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_runePackKey, id);
   }
 
   // ---- daily ritual (local notifications, zero server retention) ----

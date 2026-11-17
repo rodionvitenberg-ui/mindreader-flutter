@@ -41,3 +41,13 @@ flutter:
     - assets/decks/visconti_sforza/
     - assets/decks/vieville/
     - assets/decks/soimoi/
+    # Lenormand packs: drop 01.jpg..36.jpg into assets/lenormand/<pack_id>/.
+    - assets/lenormand/
+    - assets/lenormand/antique_petit/
+    - assets/lenormand/obsidian_gilded/
+    - assets/lenormand/botanical_noir/
+    # Rune stone textures: drop <rune_id>.png into assets/runes/<pack_id>/.
+    - assets/runes/
+    - assets/runes/obsidian_lavender/
+    - assets/runes/nordic_bone/
+    - assets/runes/blood_jasper/

@@ -50,7 +50,10 @@ void main() {
     // And the captured cards rebuild the exact table.
     final ctrl2 = SpreadController(random: Random(2));
     ctrl2.restoreSpread(
+      system: restored.system,
       type: restored.spreadType,
+      lenormandSpread: restored.lenormandSpread,
+      runeCast: restored.runeCast,
       cards: restored.toRestoreCards(),
       sessionNotes: restored.sessionNotes,
     );

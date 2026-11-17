@@ -2,13 +2,21 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/data/lenormand_data.dart';
+import '../core/data/runes_data.dart';
 import '../core/data/tarot_deck_data.dart';
 import '../core/models/dealt_card_slot.dart';
+import '../core/models/divination_card.dart';
+import '../core/models/divination_system.dart';
+import '../core/models/lenormand_spread.dart';
+import '../core/models/rune_cast.dart';
 import '../core/models/spread_type.dart';
 import '../core/models/tarot_card_model.dart';
 
 /// Single source of truth for the Digital Table AND the Camera handoff.
 /// Pure domain logic — the UI only reads state and calls these methods.
+/// Hosts all three divination systems (Tarot 78 / Lenormand 36 / Runes 24)
+/// behind one unified [DivinationCard] interface.
 class SpreadController extends ChangeNotifier {
   SpreadController({Random? random, int totalCards = 78})
       : _rng = random ?? Random.secure(),
@@ -19,7 +27,10 @@ class SpreadController extends ChangeNotifier {
   }
 
   final Random _rng;
-  final int _deckSize; // physical stack size (default 78 = full tarot deck)
+
+  /// Physical stack size of the ACTIVE system (78/36/24); a custom
+  /// [totalCards] only ever shrinks the tarot stack (test/scan setup).
+  late int _deckSize;
 
   /// Hard ceiling: no reading may ever hold more than 10 cards on the
   /// table (base spread + clarifiers). Beyond it the deck refuses any
@@ -36,12 +47,66 @@ class SpreadController extends ChangeNotifier {
   static const maxTableCardsPrompt =
       'Maximum of 10 cards reached for this reading.';
 
-  late List<int> _cardIds; // shuffled order of tarotDeck ids
-  late List<bool> _isReversed; // parallel orientation flags → 156 states
+  late List<int> _cardIds; // shuffled order of the active system's cards
+  late List<bool> _isReversed; // parallel orientation flags
   int _topIndex = 0; // next card to deal
+
+  // ---- active divination system ------------------------------------------
+
+  DivinationSystem _system = DivinationSystem.tarot;
+  DivinationSystem get system => _system;
+
+  /// The full ordered dataset of the active system, wrapped in the
+  /// unified [DivinationCard] union.
+  List<DivinationCard> get activeSystemCards => switch (_system) {
+        DivinationSystem.tarot =>
+          [for (final c in tarotDeck) TarotDivinationCard(c)],
+        DivinationSystem.lenormand =>
+          [for (final c in lenormandDeck) LenormandDivinationCard(c)],
+        DivinationSystem.runes =>
+          [for (final r in elderFuthark) RuneDivinationCard(r)],
+      };
+
+  // ---- spreads (one enum per system, one decision per place) --------------
 
   SpreadType _spreadType = SpreadType.three;
   SpreadType get spreadType => _spreadType;
+
+  LenormandSpread _lenormandSpread = LenormandSpread.three;
+  LenormandSpread get lenormandSpread => _lenormandSpread;
+
+  RuneCast _runeCast = RuneCast.three;
+  RuneCast get runeCast => _runeCast;
+
+  /// Canonical slot count of the ACTIVE system's spread (1/3/4/7 tarot,
+  /// 1/3/5/9 lenormand, 1/3/5/7 runes).
+  int get spreadCardCount => switch (_system) {
+        DivinationSystem.tarot => _spreadType.cardCount,
+        DivinationSystem.lenormand => _lenormandSpread.cardCount,
+        DivinationSystem.runes => _runeCast.cardCount,
+      };
+
+  /// Concise pill label, e.g. '3 · Triad Flow', '9 · 3×3 Portrait Box',
+  /// '7 · Heimdall’s Bridge'.
+  String get spreadLabel => switch (_system) {
+        DivinationSystem.tarot => _spreadType.label,
+        DivinationSystem.lenormand => _lenormandSpread.label,
+        DivinationSystem.runes => _runeCast.label,
+      };
+
+  /// The role each slot plays in the reading, top to bottom.
+  List<String> get spreadSlotRoles => switch (_system) {
+        DivinationSystem.tarot => _spreadType.slotRoles,
+        DivinationSystem.lenormand => _lenormandSpread.slotRoles,
+        DivinationSystem.runes => _runeCast.slotRoles,
+      };
+
+  /// What the reading focuses on (used by the oracle synthesis).
+  String get spreadFocusLine => switch (_system) {
+        DivinationSystem.tarot => _spreadType.focusLine,
+        DivinationSystem.lenormand => _lenormandSpread.focusLine,
+        DivinationSystem.runes => _runeCast.focusLine,
+      };
 
   /// How the cards on the table were produced. The camera handoff flips
   /// this to [TableSourceMode.physicalCameraSync]; spread switches and
@@ -51,12 +116,11 @@ class SpreadController extends ChangeNotifier {
 
   /// Number of slots in the ORIGINAL spread template (clarifier slots are
   /// appended on top of this count).
-  int get initialSpreadCardCount => _spreadType.cardCount;
+  int get initialSpreadCardCount => spreadCardCount;
 
-  /// The authentic canonical slot count of the active spread (1/3/4/7) —
-  /// the deck locks for further dealing as soon as this many cards lie on
-  /// the table.
-  int get baseCardLimit => _spreadType.cardCount;
+  /// The authentic canonical slot count of the active spread — the deck
+  /// locks for further dealing as soon as this many cards lie on the table.
+  int get baseCardLimit => spreadCardCount;
 
   /// How many cards this reading may hold right now:
   /// * base spread filling → the canonical [baseCardLimit];
@@ -83,8 +147,8 @@ class SpreadController extends ChangeNotifier {
   /// Every slot of the initial spread template holds a FACE-UP card — the
   /// gate for the ceremonial `SYNTHESIZE READING` action.
   bool get initialSpreadAllFaceUp {
-    final base = _slots.take(_spreadType.cardCount).toList();
-    return base.isNotEmpty &&
+    final base = _slots.take(spreadCardCount).toList();
+    return base.length == spreadCardCount &&
         base.every((s) => s.state == SlotState.faceUp);
   }
 
@@ -110,20 +174,20 @@ class SpreadController extends ChangeNotifier {
   int get ledgerTotal => remaining + dealtCount;
 
   /// The next few cards on the stack — for the tactile deck fan display.
-  List<(TarotCard, bool)> get deckTop {
+  List<DivinationCard> get deckTop {
     final n = min(4, remaining);
     return [
       for (var i = 0; i < n; i++)
-        (tarotDeck[_cardIds[_topIndex + i]], _isReversed[_topIndex + i]),
+        activeSystemCards[_cardIds[_topIndex + i]],
     ];
   }
 
   /// The full physical stack still lying on the table (top of the deck is
-  /// the FIRST entry). Drives the 78-layer 3D thickness and the live badge.
-  List<(TarotCard, bool)> get remainingDeck {
+  /// the FIRST entry). Drives the layer thickness and the live badge.
+  List<DivinationCard> get remainingDeck {
     return [
       for (var i = _topIndex; i < _cardIds.length; i++)
-        (tarotDeck[_cardIds[i]], _isReversed[i]),
+        activeSystemCards[_cardIds[i]],
     ];
   }
 
@@ -137,6 +201,12 @@ class SpreadController extends ChangeNotifier {
   /// Current shuffled order of card ids (0..77). Exposed for tests.
   List<int> get deckOrder => List.unmodifiable(_cardIds);
 
+  /// Parallel orientation flags of the cards still lying in the stack —
+  /// exposed for tests (advisory until the deal resolves the orientation).
+  List<bool> get remainingReversalFlags => List.unmodifiable(
+        [for (var i = _topIndex; i < _cardIds.length; i++) _isReversed[i]],
+      );
+
   void _resetDeck() {
     // Growable: `dealCardAt` physically removes extracted cards from the
     // middle of the stack (pick ANY exposed layer).
@@ -148,8 +218,8 @@ class SpreadController extends ChangeNotifier {
 
   void _resetSlots() {
     _slots = List.generate(
-      _spreadType.cardCount,
-      (i) => DealtCardSlot(index: i, role: _spreadType.slotRoles[i]),
+      spreadCardCount,
+      (i) => DealtCardSlot(index: i, role: spreadSlotRoles[i]),
     );
     _clarifierCount = 0;
     _pendingClarifierQuestion = null;
@@ -195,12 +265,48 @@ class SpreadController extends ChangeNotifier {
   }
 
   /// Picking a spread resets the table with a freshly shuffled FULL deck:
-  /// every dealt card is re-inserted into the 78-card physical stack, so
+  /// every dealt card is re-inserted into the physical stack, so
   /// `remaining + dealtCount` always equals [totalCards] — no card is ever
   /// lost from the ledger.
   void setSpreadType(SpreadType type) {
+    if (_system != DivinationSystem.tarot) return;
     if (type == _spreadType) return;
     _spreadType = type;
+    _resetSlots();
+    _resetDeck();
+    shuffleDeck();
+  }
+
+  void setLenormandSpread(LenormandSpread spread) {
+    if (_system != DivinationSystem.lenormand) return;
+    if (spread == _lenormandSpread) return;
+    _lenormandSpread = spread;
+    _resetSlots();
+    _resetDeck();
+    shuffleDeck();
+  }
+
+  void setRuneCast(RuneCast cast) {
+    if (_system != DivinationSystem.runes) return;
+    if (cast == _runeCast) return;
+    _runeCast = cast;
+    _resetSlots();
+    _resetDeck();
+    shuffleDeck();
+  }
+
+  /// Switches the active divination system (TAROT | LENORMAND | RUNES).
+  /// Resets the table AND the physical stack to the new system's full
+  /// canonical deck size. Camera-sync state does not survive the switch —
+  /// a scanned physical spread is tarot by definition.
+  void setSystem(DivinationSystem system) {
+    if (system == _system) return;
+    _system = system;
+    _deckSize = switch (system) {
+      DivinationSystem.tarot => tarotDeck.length,
+      DivinationSystem.lenormand => lenormandDeck.length,
+      DivinationSystem.runes => elderFuthark.length,
+    };
     _resetSlots();
     _resetDeck();
     shuffleDeck();
@@ -214,13 +320,21 @@ class SpreadController extends ChangeNotifier {
   /// it, ...) from the shuffled physical stack and deals it FACE DOWN into
   /// the first empty slot. Returns the slot index, or null when the spread
   /// is full or the depth is out of range.
+  ///
+  /// Orientation is authoritative HERE: Lenormand cards never reverse, and
+  /// the 8 symmetrical runes always land upright — the parallel
+  /// `_isReversed` flag is only advisory for those systems.
   int? dealCardAt(int depthFromTop) {
     final idx = nextEmptySlotIndex;
     if (idx == null) return null;
     final pos = _topIndex + depthFromTop;
     if (depthFromTop < 0 || pos >= _cardIds.length) return null;
-    final card = tarotDeck[_cardIds[pos]];
-    final reversed = _isReversed[pos];
+    final card = activeSystemCards[_cardIds[pos]];
+    var reversed = _isReversed[pos];
+    if (_system == DivinationSystem.lenormand) reversed = false;
+    if (_system == DivinationSystem.runes && !card.supportsReversal) {
+      reversed = false;
+    }
     _cardIds.removeAt(pos);
     _isReversed.removeAt(pos);
     _slots[idx].placeCardFaceDown(card, reversed);
@@ -357,7 +471,7 @@ class SpreadController extends ChangeNotifier {
     final idx = _appendClarifierSlot(question);
     final slot = _slots[idx];
     slot.fromPhysicalCard = true;
-    slot.placeCardFaceUp(card, reversed);
+    slot.placeCardFaceUp(TarotDivinationCard(card), reversed);
     notifyListeners();
     return idx;
   }
@@ -370,9 +484,11 @@ class SpreadController extends ChangeNotifier {
 
   /// Camera handoff: rebuilds the table with the exact scanned spread,
   /// every card materialized FACE UP with threads ready. The session
-  /// switches to [TableSourceMode.physicalCameraSync].
+  /// switches to [TableSourceMode.physicalCameraSync] and to the TAROT
+  /// system — the phygital scanner photographs a physical tarot deck.
   void loadScannedSpreadFaceUp(List<(TarotCard, bool)> cards) {
     if (cards.isEmpty) return;
+    _system = DivinationSystem.tarot;
     _spreadType = spreadTypeForCount(cards.length);
     _clarifierCount = 0;
     _pendingClarifierQuestion = null;
@@ -383,9 +499,11 @@ class SpreadController extends ChangeNotifier {
     _slots = List.generate(cards.length, (i) {
       final slot = DealtCardSlot(index: i, role: _spreadType.slotRoles[i]);
       slot.fromPhysicalCard = true;
-      slot.placeCardFaceUp(cards[i].$1, cards[i].$2);
+      slot.placeCardFaceUp(TarotDivinationCard(cards[i].$1), cards[i].$2);
       return slot;
     });
+    _resetDeck();
+    shuffleDeck();
     notifyListeners();
   }
 
@@ -450,15 +568,26 @@ class SpreadController extends ChangeNotifier {
 
   /// 1-tap session restore (Pane 2): rebuilds the table with the exact
   /// saved cards, orientations, roles and intentions — all FACE UP with
-  /// threads ready. The physical stack refreshes to a full shuffled 78:
-  /// restored cards are a snapshot (camera-sync semantics) that never
-  /// touches the digital ledger.
+  /// threads ready. The physical stack refreshes to a full shuffle of the
+  /// saved system: restored cards are a snapshot (camera-sync semantics)
+  /// that never touches the digital ledger.
   void restoreSpread({
-    required SpreadType type,
+    required DivinationSystem system,
+    SpreadType? type,
+    LenormandSpread? lenormandSpread,
+    RuneCast? runeCast,
     required List<({int cardId, bool reversed, String role, String? userContext})> cards,
     required List<String> sessionNotes,
   }) {
-    _spreadType = type;
+    _system = system;
+    _spreadType = type ?? SpreadType.three;
+    _lenormandSpread = lenormandSpread ?? LenormandSpread.three;
+    _runeCast = runeCast ?? RuneCast.three;
+    _deckSize = switch (system) {
+      DivinationSystem.tarot => tarotDeck.length,
+      DivinationSystem.lenormand => lenormandDeck.length,
+      DivinationSystem.runes => elderFuthark.length,
+    };
     _clarifierCount =
         cards.where((c) => c.role.startsWith('Clarifier')).length;
     _pendingClarifierQuestion = null;
@@ -482,8 +611,8 @@ class SpreadController extends ChangeNotifier {
     shuffleDeck();
   }
 
-  TarotCard? _cardById(int id) {
-    for (final c in tarotDeck) {
+  DivinationCard? _cardById(int id) {
+    for (final c in activeSystemCards) {
       if (c.id == id) return c;
     }
     return null;
@@ -496,13 +625,18 @@ class SpreadController extends ChangeNotifier {
   }) {
     return {
       'timestamp': DateTime.now().toIso8601String(),
+      'system': _system.name,
       'spreadType': _spreadType.name,
+      'lenormandSpread': _lenormandSpread.name,
+      'runeCast': _runeCast.name,
       'contextChip': contextChip,
       'synthesis': synthesis,
       'cards': [
         for (final s in _slots)
-          {'name': s.card!.name, 'isReversed': s.isReversed, 'role': s.role},
+          if (s.card != null)
+            {'name': s.card!.name, 'isReversed': s.isReversed, 'role': s.role},
       ],
     };
   }
 }
+

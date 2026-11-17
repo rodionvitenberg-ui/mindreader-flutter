@@ -4,25 +4,41 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/data/deck_packs_registry.dart';
+import '../../../core/data/lenormand_data.dart';
+import '../../../core/data/lenormand_packs_registry.dart';
+import '../../../core/data/rune_packs_registry.dart';
+import '../../../core/data/runes_data.dart';
+import '../../../core/models/dealt_card_slot.dart';
+import '../../../core/models/divination_system.dart';
+import '../../../core/models/lenormand_pack.dart';
+import '../../../core/models/rune_pack.dart';
 import '../../../core/models/tarot_deck_pack.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../state/deck_pack_controller.dart';
+import 'lenormand_card_3d_widget.dart';
+import 'rune_stone_3d_widget.dart';
 import 'tarot_card_3d_widget.dart';
 
-/// Horizontal 3D carousel bottom sheet: preview and switch between all
-/// registered deck packs on the fly. The selection persists via
-/// [DeckPackController] / SharedPreferences.
+/// Horizontal 3D carousel bottom sheet: preview and switch between the
+/// registered packs of ONE divination system — filtered strictly by
+/// [system] (Tarot decks, Lenormand packs or Rune stone sets). The
+/// selection persists via [DeckPackController] / SharedPreferences.
 class DeckPickerSheet extends StatefulWidget {
-  const DeckPickerSheet({super.key});
+  const DeckPickerSheet({super.key, required this.system});
 
-  static Future<void> show(BuildContext context) {
+  final DivinationSystem system;
+
+  static Future<void> show(
+    BuildContext context, {
+    DivinationSystem system = DivinationSystem.tarot,
+  }) {
     HapticFeedback.selectionClick();
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.55),
-      builder: (_) => const DeckPickerSheet(),
+      builder: (_) => DeckPickerSheet(system: system),
     );
   }
 
@@ -42,7 +58,38 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<DeckPackController>();
-    final active = ctrl.activePack;
+    final (title, subtitle, tiles, activeName) = switch (widget.system) {
+      DivinationSystem.tarot => (
+          'DECK SELECTOR',
+          '${deckPacksRegistry.length} PACKS · ACTIVE: '
+              '${ctrl.activePack.name.toUpperCase()}',
+          [
+            for (final p in deckPacksRegistry)
+              _PackTile.tarot(p, ctrl.activePack.id == p.id),
+          ],
+          ctrl.activePack.name.toUpperCase(),
+        ),
+      DivinationSystem.lenormand => (
+          'LENORMAND PACKS',
+          '${lenormandPacksRegistry.length} PACKS · ACTIVE: '
+              '${ctrl.activeLenormandPack.name.toUpperCase()}',
+          [
+            for (final p in lenormandPacksRegistry)
+              _PackTile.lenormand(p, ctrl.activeLenormandPack.id == p.id),
+          ],
+          ctrl.activeLenormandPack.name.toUpperCase(),
+        ),
+      DivinationSystem.runes => (
+          'RUNE STONE SETS',
+          '${runePacksRegistry.length} SETS · ACTIVE: '
+              '${ctrl.activeRunePack.name.toUpperCase()}',
+          [
+            for (final p in runePacksRegistry)
+              _PackTile.rune(p, ctrl.activeRunePack.id == p.id),
+          ],
+          ctrl.activeRunePack.name.toUpperCase(),
+        ),
+    };
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: Container(
@@ -63,13 +110,9 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
                   ),
                 ),
                 const SizedBox(height: 14),
+                Text(title, style: Theme.of(context).textTheme.displayMedium),
                 Text(
-                  'DECK SELECTOR',
-                  style: Theme.of(context).textTheme.displayMedium,
-                ),
-                Text(
-                  '${deckPacksRegistry.length} PACKS · ACTIVE: '
-                  '${active.name.toUpperCase()}',
+                  subtitle,
                   style: GoogleFonts.jetBrainsMono(
                     fontSize: 9,
                     letterSpacing: 2,
@@ -81,14 +124,13 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
                   height: 230,
                   child: PageView.builder(
                     controller: _page,
-                    itemCount: deckPacksRegistry.length,
-                    itemBuilder: (context, i) =>
-                        _DeckCarouselTile(pack: deckPacksRegistry[i]),
+                    itemCount: tiles.length,
+                    itemBuilder: (context, i) => tiles[i],
                   ),
                 ),
                 const SizedBox(height: 14),
                 _PrimaryAction(
-                  label: 'USE ${active.name.toUpperCase()}',
+                  label: 'USE $activeName',
                   onTap: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -100,62 +142,99 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
   }
 }
 
-/// One carousel tile: 3D-tilted procedural back of the pack + metadata.
-class _DeckCarouselTile extends StatelessWidget {
-  const _DeckCarouselTile({required this.pack});
+/// One carousel tile — tarot card back, Lenormand engraved face or a
+/// carved rune stone, selected by the pack of the active system.
+class _PackTile extends StatelessWidget {
+  const _PackTile.tarot(this.pack, this.selected) : lenormand = null, rune = null;
+  const _PackTile.lenormand(this.lenormand, this.selected)
+      : pack = null,
+        rune = null;
+  const _PackTile.rune(this.rune, this.selected)
+      : pack = null,
+        lenormand = null;
 
-  final TarotDeckPack pack;
+  final TarotDeckPack? pack;
+  final LenormandPack? lenormand;
+  final RunePack? rune;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
-    final ctrl = context.watch<DeckPackController>();
-    final selected = ctrl.activePack.id == pack.id;
+    final name = pack?.name ?? lenormand?.name ?? rune!.name;
+    final subtitle = pack?.subtitle ?? lenormand?.subtitle ?? rune!.subtitle;
+    final license = pack?.license ?? lenormand?.license ?? rune!.license;
+    final Widget preview;
+    if (pack != null) {
+      preview = CardBack(
+        width: 150,
+        height: 245,
+        pack: pack,
+        angleY: 0.22,
+        angleX: 0.10,
+        glint: true,
+      );
+    } else if (lenormand != null) {
+      preview = LenormandCard3DWidget(
+        card: lenormandDeck[0],
+        isReversed: false,
+        state: SlotState.faceUp,
+        width: 150,
+        height: 245,
+        tilt: false,
+        interactive: false,
+      );
+    } else {
+      preview = CustomPaint(
+        size: const Size(150, 178),
+        painter: RuneStonePainter(
+          stone: elderFuthark[0],
+          pack: rune!,
+          faceUp: true,
+          ignite: 1,
+          seed: 3,
+        ),
+      );
+    }
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
-        context.read<DeckPackController>().setActivePack(pack.id);
+        if (pack != null) {
+          context.read<DeckPackController>().setActivePack(pack!.id);
+        } else if (lenormand != null) {
+          context.read<DeckPackController>().setActiveLenormandPack(lenormand!.id);
+        } else {
+          context.read<DeckPackController>().setActiveRunePack(rune!.id);
+        }
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 240),
-        curve: Curves.easeOutCubic,
+      child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: selected ? 0.95 : 0.6),
-          borderRadius: BorderRadius.circular(18),
+          color: selected
+              ? AppColors.lavender.withValues(alpha: 0.14)
+              : AppColors.surface.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? AppColors.lavender : AppColors.border,
-            width: selected ? 1.4 : 1,
+            width: 1.2,
           ),
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Expanded(
-              child: Center(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.0012)
-                    ..rotateY(0.22)
-                    ..rotateX(0.06),
-                  child: CardBack(
-                    width: 110,
-                    height: 180,
-                    pack: pack,
-                    glint: true,
-                    angleY: 0.22,
-                    angleX: 0.06,
-                  ),
-                ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: preview,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Flexible(
                   child: Text(
-                    pack.name.toUpperCase(),
+                    name.toUpperCase(),
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.jetBrainsMono(
                       fontSize: 10,
@@ -167,30 +246,11 @@ class _DeckCarouselTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (pack.isPro) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.indigo.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'PRO',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 7.5,
-                        letterSpacing: 1.2,
-                        color: AppColors.lavender,
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
             const SizedBox(height: 2),
             Text(
-              pack.subtitle,
+              subtitle,
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -202,7 +262,7 @@ class _DeckCarouselTile extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              pack.license.toUpperCase(),
+              license.toUpperCase(),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -254,4 +314,3 @@ class _PrimaryAction extends StatelessWidget {
     );
   }
 }
-

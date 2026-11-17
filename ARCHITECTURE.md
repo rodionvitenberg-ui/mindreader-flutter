@@ -2,26 +2,48 @@
 
 Pure Flutter/Dart mobile app (Android APK + iOS). No legacy JS. Impeller renderer target: 60–120 FPS game-feel on touch.
 
+## SPRINT 1/2 — Multi-System Divination (Tarot | Lenormand | Runes)
+
+The Digital Table, Oracle Chat, Session History and Almanac now host **three authentic divination systems** behind one unified domain:
+
+| System | Deck size | Pieces | Reversals | Canonical spreads |
+|--------|-----------|--------|-----------|-------------------|
+| `DivinationSystem.tarot` | 78 | `TarotDivinationCard` | reversed allowed | 1 Daily Anchor · 3 Triad Flow · 4 Target & Shadow · 7 Deep Synthesis |
+| `DivinationSystem.lenormand` | 36 | `LenormandDivinationCard` | **never** (tradition) | 1 Daily Sign · 3 Lenormand Line · 5 Cross of 5 · 9 3×3 Portrait Box |
+| `DivinationSystem.runes` | 24 | `RuneDivinationCard` | merkstave only for non-symmetrical runes (Gebo/Isa/Hagalaz/Jera/Eihwaz/Sowilo/Ingwaz/Dagaz stay upright) | 1 Odin's Rune · 3 Three Norns · 5 Thor's Cross · 7 Heimdall's Bridge |
+
+Core pieces:
+
+- **`DivinationCard` sealed union** (`lib/core/models/divination_card.dart`) — one interface (`id`, `name`, `shortLabel`, `categoryLabel`, `element`, `keywords`, `upright`, `reversed?`, `reflection`, `supportsReversal`) consumed by threads, oracle, history and inspectors.
+- **Datasets:** `lenormand_data.dart` — the canonical 36 Petit Lenormand cards (Rider..Cross) with Blue Owl playing-card insets (9 per suit ♥♦♣♠), elemental affinities, pair-combinatory meanings and timing; `runes_data.dart` — all 24 Elder Futhark runes across the 3 Aetts with glyph/phonetic/element/upright/merkstave/lore.
+- **Packs:** 3 Lenormand packs (Antique Petit / Obsidian Gilded / Botanical Noir) + 3 rune stone sets (Obsidian & Lavender Quartz / Nordic Carved Bone & Gold / Blood Jasper & Runic Fire), each with procedural fallbacks and drop-in asset folders `assets/lenormand/<id>/NN.jpg` and `assets/runes/<id>/<rune_id>.png`.
+- **SpreadController** holds `system` + one spread enum per system; `setSystem()` resets the table AND the physical stack to the system's canonical size. `dealCardAt()` is the single orientation authority: Lenormand always upright, symmetrical runes always upright.
+- **3D tactile rune stones:** `InteractiveRuneStonesWidget` replaces the paper deck for RUNES — an organic pebble heap (radial rock shader, chiseled rim light, specular glint, deep shadows); horizontal drag swirls/clatters with `mediumImpact` haptics + ledger re-weaves, downward drag grabs the top stone and casts it past 60 px / 450 px/s; tapping a face-down cast stone etches the glowing glyph (650 ms ignite).
+- **Digital Table header (3 rows):** Row 1 `[FOCUS VIEW | SPREAD VIEW]`, Row 2 `[TAROT | LENORMAND | RUNES]`, Row 3 system-filtered pack pill + concise spread pill. The RITUAL button and the "78 IN DECK" / "78 •" counters are removed (ritual moves to the Astral dock later). The physical-sync badge moved to a slim ribbon above the table.
+- **Almanac:** Row 1 system switcher (synced with the table), Row 2 search + pack pill, Rows 3/4 context-aware filters (Tarot: elements + arcana/suits; Lenormand: playing-card suits; Runes: elements + Aetts).
+- **Oracle & history compatibility:** `synthesizeSpreadFor`/prompt builders are system-aware (pair-reading hint for Lenormand, merkstave wording for runes); `SpreadSessionSnapshot` persists `system` + all three spread enums and restores any of the 3 systems 1-tap.
+
 ## The 3 Pillars (3-Tab Bottom Navigation)
 
 | Tab | Feature | Core loop |
 |-----|---------|-----------|
 | 0 | Camera Scanner | Physical spread → vision detect → handoff to Table (cards already face-up) |
-| 1 | Digital Table (default, core) | Tactile deck, shuffle, deal, flip, elemental threads, live reading |
-| 2 | Almanac | Offline searchable 78-card RWS library + element legend |
+| 1 | Digital Table (default, core) | Tactile deck/stones, shuffle, deal, flip, elemental threads, live reading |
+| 2 | Almanac | Offline searchable library: 78 tarot + 36 Lenormand + 24 runes |
 
 ## State architecture
 
 - Single `SpreadController` (`ChangeNotifier`, injected via `provider`) is the SSOT for both Camera and Table flows.
-- Domain logic is pure and testable: shuffle (Fisher–Yates, `Random.secure()`, 156 states = 78 cards × `isReversed`), dealing, flipping, elemental dignity, synthesis text.
+- Domain logic is pure and testable: shuffle (Fisher–Yates, `Random.secure()`), dealing, flipping, elemental dignity, synthesis text.
 - Local-first: completed readings persist via `shared_preferences`. No accounts, no cloud required.
 
 ```
 SpreadController
-├── deck: 78 TarotCard + isReversed (156 states)
-├── spreadType: SpreadType.one|three|four|seven
+├── system: DivinationSystem.tarot|lenormand|runes
+├── deck: active system's 78/36/24 DivinationCard + isReversed
+├── spreads: spreadType (1/3/4/7) | lenormandSpread (1/3/5/9) | runeCast (1/3/5/7)
 ├── slots: List<DealtCardSlot> (empty → faceDown → faceUp)
-├── dealNextCard() / flipSlot() / loadScannedSpreadFaceUp()
+├── dealNextCard() / flipSlot() / setSystem() / loadScannedSpreadFaceUp()
 └── threads: computed dignity per adjacent face-up pair (pure fn in oracle service)
 ```
 
