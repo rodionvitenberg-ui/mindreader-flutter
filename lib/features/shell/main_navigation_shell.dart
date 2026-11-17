@@ -3,11 +3,12 @@ import 'package:flutter/services.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../almanac/almanac_screen.dart';
+import '../astral/astral_screen.dart';
 import '../camera_scan/camera_scan_screen.dart';
 import '../digital_table/table_workspace.dart';
 
-/// 3-Tab shell: Camera (0) | Table Workspace (1, default) | Almanac (2).
-/// The Table tab hosts the 3-pane horizontal workspace
+/// 4-Tab shell: Camera (0) | Table Workspace (1, default) | Almanac (2) |
+/// Astral (3). The Table tab hosts the 3-pane horizontal workspace
 /// (Digital Table ⇄ Oracle AI Chat ⇄ Spread History).
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key});
@@ -37,6 +38,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           ),
           TableWorkspace(onOpenCameraClarifier: () => _switchTo(0)),
           const AlmanacScreen(),
+          const AstralScreen(),
         ],
       ),
       bottomNavigationBar: _GlassNavBar(index: _index, onTap: _switchTo),
@@ -54,6 +56,7 @@ class _GlassNavBar extends StatelessWidget {
     (Icons.camera_alt_outlined, 'CAMERA'),
     (Icons.style_outlined, 'TABLE'),
     (Icons.menu_book_outlined, 'ALMANAC'),
+    (Icons.auto_awesome_outlined, 'ASTRAL'),
   ];
 
   @override

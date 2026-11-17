@@ -18,6 +18,12 @@ class LocalStorageService {
   static const _sessionsKey = 'spread_sessions_v2';
   static const _maxSessions = 100;
 
+  static const _astralProfilesKey = 'astral_profiles';
+  static const _astralTotalChartsKey = 'astral_total_charts_generated';
+  static const _astralProKey = 'astral_is_pro_unlocked';
+  static const _astralActiveProfileKey = 'astral_active_profile_index';
+  static const _astralHouseSystemKey = 'astral_default_house_system';
+
   Future<List<Map<String, dynamic>>> loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_historyKey);
@@ -141,6 +147,61 @@ class LocalStorageService {
   Future<List<String>> loadReadingDays() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getStringList(_readingDaysKey) ?? const <String>[];
+  }
+
+  // ---- ASTRAL natal profiles (Phase 2) ----
+
+  /// Saved natal profiles, oldest first (JSON payloads).
+  Future<List<Map<String, dynamic>>> loadAstralProfiles() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_astralProfilesKey);
+    if (raw == null) return const [];
+    return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> saveAstralProfiles(List<Map<String, dynamic>> profiles) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_astralProfilesKey, jsonEncode(profiles));
+  }
+
+  Future<int> loadAstralTotalChartsGenerated() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_astralTotalChartsKey) ?? 0;
+  }
+
+  Future<void> saveAstralTotalChartsGenerated(int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_astralTotalChartsKey, count);
+  }
+
+  Future<bool> loadAstralProUnlocked() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_astralProKey) ?? false;
+  }
+
+  Future<void> saveAstralProUnlocked(bool unlocked) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_astralProKey, unlocked);
+  }
+
+  Future<int> loadAstralActiveProfileIndex() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_astralActiveProfileKey) ?? 0;
+  }
+
+  Future<void> saveAstralActiveProfileIndex(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_astralActiveProfileKey, index);
+  }
+
+  Future<String?> loadAstralHouseSystem() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_astralHouseSystemKey);
+  }
+
+  Future<void> saveAstralHouseSystem(String system) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_astralHouseSystemKey, system);
   }
 }
 

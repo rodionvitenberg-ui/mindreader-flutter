@@ -188,20 +188,46 @@ retrograde 2024-08, JSON round-trip, horoscope invariants, city catalog.
 
 ---
 
-## Phase 2: Multi-Profile State + 4th Nav Tab (next session)
+## Phase 2 (DONE — multi-profile state + 4th nav tab, gated 2026-11-17): Multi-Profile State + 4th Nav Tab
 - `AstralController` (ChangeNotifier, UI-first persistence like
   `SessionHistoryController`): profile CRUD, `maxFreeProfiles = 2`,
   3rd chart gated behind `PRO`, selected profile, last horoscope cache.
 - 4th bottom nav tab `ASTRAL` in `main_navigation_shell.dart`
-  (no wheel UI yet — data/profile screens only).
+  (wheel UI is a Phase 3 placeholder — data/profile screens only).
+
+### Phase 2 gate (hard stop) — PASSED
+- [x] `flutter analyze` -> 0 issues (`No issues found!`)
+- [x] `flutter test` -> all green (`test/astral_controller_test.dart` 6/6,
+  full suite 227/227)
+- [x] `PLAN.md` Phase 2 marked `[x] DONE`, `TASK_STATE.json` updated -> **STOP**
+
+### Phase 2 execution status (DONE, 2026-11-17)
+- [x] `lib/state/astral_controller.dart` — `AstralGenerateResult`
+  (`generated` / `proGateBlocked`), `maxFreeProfiles = 2`,
+  `generateChart` / `setActiveProfile` / `setHouseSystem` / `unlockPro` /
+  `deleteProfile` / `load`, non-destructive disk merge, fire-and-forget
+  persistence.
+- [x] `lib/core/services/local_storage_service.dart` — astral keys:
+  profiles JSON, lifetime generation count, PRO flag, active index,
+  default house system.
+- [x] `lib/main.dart` — `ChangeNotifierProvider(AstralController)`.
+- [x] `lib/features/shell/main_navigation_shell.dart` — 4th `ASTRAL` tab +
+  `AstralScreen` in the `IndexedStack`.
+- [x] `lib/features/astral/astral_screen.dart` + `widgets/` — cosmic bar
+  (moon phase, streak, rituals re-home), profile switcher, house-system
+  selector, PRO paywall, birth-data form, horoscope summary and a
+  `ValueKey('natal-wheel-placeholder')` slot for Phase 3.
+- [x] `test/astral_controller_test.dart` — free-tier 2 profiles, PRO gate,
+  PRO unlock, in-place Placidus→Koch→Whole Sign without re-generation,
+  profile switch horoscope refresh, 4-tab nav test.
 
 ## Phase 3: Real-Time Animated Natal Wheel (next sessions)
 - `NatalWheelWidget` + `NatalWheelPainter`: 3-stage calibration/orbit/
   aspect-flash animation (SpringSimulation 320/24), continuous particle
   flow, `RepaintBoundary` isolation, 120 FPS Impeller contract.
-- House-system switcher `PLACIDUS | KOCH | WHOLE SIGN` (uses
-  `recalculateWithHouseSystem`), planet/aspect tap inspector,
-  haptics on snap thresholds.
+- Planet/aspect tap inspector, haptics on snap thresholds. (The
+  `PLACIDUS | KOCH | WHOLE SIGN` switcher already shipped in Phase 2 via
+  `recalculateWithHouseSystem`.)
 
 ## Phase 4: Detail Page, Transit Feed, Rituals Re-homing, Synastry (final)
 - Full profile detail page, daily horoscope & transit feed UI,

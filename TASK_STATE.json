@@ -1,7 +1,7 @@
 {
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
-  "active_feature_or_sprint": "ASTRAL PHASE 1/4 DONE: Offline Astrological Ephemeris Engine (NatalCalculatorService: Placidus/Koch/Whole Sign, 10 planets + ASC/MC, natal aspects, daily horoscope transits, offline city DB) — 56/56 engine tests, 221/221 full suite, analyze 0; next = Phase 2 (profiles + ASTRAL tab)",
+  "active_feature_or_sprint": "ASTRAL PHASE 2/4 DONE: Multi-Profile State & 4-Tab Shell (AstralController with 2-profile free tier + PRO gate, UI-first persistence, ASTRAL tab, screen scaffold with profile switcher / house selector / birth form / paywall, Phase 3 wheel placeholder) — new 6/6 tests, full suite 227/227, analyze 0; next = Phase 3 (animated natal wheel)",
   "status": "IN_PROGRESS",
   "context": {
     "stack": [
@@ -20,6 +20,13 @@
       "tool/gen_ephemeris_tables.py (NEW — reproducible table generator, PyMeeus 0.5.12)",
       "lib/core/data/astro_cities_data.dart (NEW — 96 cities + searchAstroCities)",
       "test/natal_calculator_test.dart (NEW — 56 tests, swetest 2.10.04 / Meeus / NASA anchors)",
+      "lib/state/astral_controller.dart (NEW — AstralGenerateResult, maxFreeProfiles=2, PRO gate, UI-first persistence, house switch, horoscope cache)",
+      "lib/core/services/local_storage_service.dart (UPDATED — astral profiles/count/pro/active-index/house-system keys)",
+      "lib/main.dart (UPDATED — AstralController provider)",
+      "lib/features/shell/main_navigation_shell.dart (UPDATED — 4th ASTRAL tab + IndexedStack child)",
+      "lib/features/astral/astral_screen.dart (NEW — ASTRAL screen scaffold)",
+      "lib/features/astral/widgets/ (NEW — cosmic bar, profile bar, house selector, gradient button, paywall, birth form, summary card, wheel placeholder)",
+      "test/astral_controller_test.dart (NEW — 6 tests: free tier, PRO gate, PRO unlock, in-place house switch, profile switch, 4-tab nav)",
       "PREVIOUS SPRINT 1/2 files (done): divination_system.dart, divination_card.dart, lenormand_data.dart, runes_data.dart, spread_controller.dart, oracle_synthesis_service.dart, digital_table_screen.dart, almanac_screen.dart + tests"
     ],
     "hard_constraints": [
@@ -55,13 +62,17 @@
       "ASTRAL P1.5 TESTS WRITTEN: test/natal_calculator_test.dart — 56 tests with swetest 2.10.04 anchors (2000-01-01 lat52.5 + Bishkek 1988-06-15 + 68N fallback), Meeus book anchors (Sun 1992-10-13, Moon 1992-04-12, Pluto 1992-10-13), NASA moon phases 2000, Mercury retrograde 2024-08, JSON round-trip, horoscope invariants, city catalog",
       "ASTRAL P1.6 VERIFY PARTIAL: flutter analyze = ZERO issues; flutter test = 47/56 green (Sun/Moon/Mercury..Saturn vs swetest PASS, Placidus/Koch/Whole + 68N Porphyry fallback PASS, aspects PASS, Meeus Sun/Moon/Pluto-1992 PASS, GMST/RAMC PASS, horoscope PASS, JSON/cities/models PASS)",
       "ASTRAL P1.7 FIXES: ascendant() switched to the swehouse Asc1 quadrant dispatch (`_asc1(ramc + 90, lat, sin ε, cos ε)`) — raw atan2 returned ASC + 180° (ASC house 7→1, whole-sign start now correct on both anchors); moon illumination sign corrected to (1 − cos e)/2 (new 0.000 / full 1.000 at NASA instants); Pluto frame mismatch resolved — Meeus ch.37 is J2000-referred while VSOP87D/the Sun/houses are date-referred, so the Pluto geocentric path now applies the general precession in longitude (Meeus 21.5: 1.3969713T + 0.0003086T²) instead of loosening the tolerance (1988 residual 0.1617° → 0.004°, 2000 residual unchanged at Sun-ch.25 precision 0.005°); test-side: trueObliquity tolerance 2e-6 → 1e-5 (main-term Δε vs swetest full nutation = 0.013\"), whole-sign Bishkek expectation 180° → 240° (ASC 263.23° = Sagittarius)",
-      "ASTRAL P1.8 GATE PASSED: flutter analyze = No issues found; test/natal_calculator_test.dart = 56/56 green; full `flutter test` = 221/221 green; PLAN.md Phase 1 marked [x] DONE; atomic session stopped"
+      "ASTRAL P1.8 GATE PASSED: flutter analyze = No issues found; test/natal_calculator_test.dart = 56/56 green; full `flutter test` = 221/221 green; PLAN.md Phase 1 marked [x] DONE; atomic session stopped",
+      "ASTRAL P2 STATE: lib/state/astral_controller.dart — AstralGenerateResult enum, maxFreeProfiles=2, generateChart (proGateBlocked on 3rd free chart), setActiveProfile, setHouseSystem (instant recalculateWithHouseSystem, never increments the generation counter), unlockPro, deleteProfile (cap not resettable), load() non-destructive merge, fire-and-forget LocalStorageService writes",
+      "ASTRAL P2 STORAGE: LocalStorageService astral keys — astral_profiles (JSON), astral_total_charts_generated, astral_is_pro_unlocked, astral_active_profile_index, astral_default_house_system",
+      "ASTRAL P2 UI: 4th ASTRAL tab in MainNavigationShell IndexedStack; AstralScreen with cosmic bar (moon phase/streak/RITUALS re-home), profile switcher pills, PLACIDUS|KOCH|WHOLE SIGN selector, birth-data form sheet (city search, date/time pickers, time-known switch), PRO paywall sheet, horoscope summary and ValueKey('natal-wheel-placeholder') for Phase 3",
+      "ASTRAL P2 TESTS: test/astral_controller_test.dart — 6/6 (profiles 1&2 free, 3rd blocked, PRO unlock allows 3rd, in-place house switch keeps counts, profile switch refreshes horoscope, 4th nav tab renders AstralScreen)",
+      "ASTRAL P2 GATE PASSED: flutter analyze = No issues found; full `flutter test` = 227/227 green; PLAN.md Phase 2 marked [x] DONE; atomic session stopped (Phase 3 not started)"
     ],
-    "current_task": "ASTRAL PHASE 2 (next session only, per atomic protocol): AstralController (ChangeNotifier, UI-first persistence: profile CRUD, maxFreeProfiles = 2, PRO gate on the 3rd chart, selected profile, last horoscope cache) + 4th bottom nav tab ASTRAL in main_navigation_shell.dart (data/profile screens only, no wheel yet)",
+    "current_task": "ASTRAL PHASE 3 (next session only, per atomic protocol): NatalWheelWidget + NatalWheelPainter (3-stage calibration/orbit/aspect-flash animation, continuous particle flow, RepaintBoundary isolation, 120 FPS Impeller) replacing the ValueKey('natal-wheel-placeholder') slot, plus planet/aspect tap inspector",
     "pending_tasks": [
-      "ASTRAL PHASE 2 (next session): AstralController (maxFreeProfiles=2, PRO gate on 3rd, UI-first persistence), 4th bottom nav tab ASTRAL in main_navigation_shell.dart (data/profile screens, no wheel yet)",
-      "ASTRAL PHASE 3: NatalWheelWidget + NatalWheelPainter (3-stage calibration/orbit/aspect-flash animation, particle flow, RepaintBoundary, 120 FPS), house-system switcher PLACIDUS|KOCH|WHOLE SIGN via recalculateWithHouseSystem, planet/aspect tap inspector",
-      "ASTRAL PHASE 4: profile detail page, daily horoscope & transit feed UI, Rituals Hub re-homing (dock done in Sprint 2/2), 2-chart synastry, Oracle Chat handoff",
+      "ASTRAL PHASE 3: NatalWheelWidget + NatalWheelPainter (3-stage calibration/orbit/aspect-flash animation, particle flow, RepaintBoundary, 120 FPS), planet/aspect tap inspector (house switcher already shipped in Phase 2)",
+      "ASTRAL PHASE 4: profile detail page, daily horoscope & transit feed UI, Rituals Hub re-homing (dock done in Sprint 2/2, RITUALS pill done in Phase 2), 2-chart synastry, Oracle Chat handoff",
       "KNOWN (pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on low-end devices",
       "OPTIONAL: on-device visual pass on Redmi 12C for the rune cluster and the 3-row header"
     ]
@@ -88,5 +99,5 @@
     "KNOWN: local timezone detection can fail on some devices — rituals fall back to UTC wall-clock (documented)",
     "FIXED (p10): dealCardAt depth guard used the ORIGINAL deck size (78) instead of the live stack length — RangeError risk on deep grabs; boundary now pos >= _cardIds.length"
   ],
-  "latest_observation_summary": "ASTRAL Phase 1 (offline ephemeris engine) DONE and gated. Engine: Meeus Sun ch.25 / Moon ch.47 / VSOP87 ch.32 / Pluto ch.37 + swehouse.c Placidus/Koch/Whole Sign/Porphyry, ASC/MC, natal aspects, moon phase, daily horoscope transits, 96-city catalog, reproducible table generator. All 5 open issues resolved at the root cause (ASC via _asc1, illumination sign, Pluto J2000→date precession, 2 test-side fixes). Gate: flutter analyze = No issues found, engine test file 56/56, full flutter test 221/221 → PLAN.md Phase 1 [x] DONE, session stopped per atomic protocol. Next session: Phase 2 (AstralController profiles + ASTRAL nav tab)."
+  "latest_observation_summary": "ASTRAL Phase 2 (multi-profile state + 4th nav tab) DONE and gated. AstralController ships the 2-profile free tier with a PRO gate on the 3rd lifetime chart, UI-first non-destructive persistence (profiles/count/pro/index/house system), instant in-place Placidus→Koch→Whole Sign switching via recalculateWithHouseSystem (never bumps the generation counter) and a cached daily horoscope. UI: 4th ASTRAL tab in the IndexedStack, cosmic bar (moon phase + streak + RITUALS re-home), profile switcher pills, house selector, birth-data form sheet with offline city search, PRO paywall sheet, horoscope summary and a ValueKey('natal-wheel-placeholder') slot reserved for Phase 3. Gate: flutter analyze = No issues found, new test/astral_controller_test.dart 6/6, full flutter test 227/227 → PLAN.md Phase 2 [x] DONE, session stopped per atomic protocol. Phase 3 (animated natal wheel) not started."
 }
