@@ -2,7 +2,7 @@
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
   "active_feature_or_sprint": "SPRINT 3/3: Authentic Tarot spread caps (1/3/4/7), Deck Deal Lock, AI-guided Clarifier Questions (+1 unlock) & hard 10-card table limit",
-  "status": "IN_PROGRESS",
+  "status": "DONE",
   "context": {
     "stack": [
       "Flutter/Dart (Impeller)",
@@ -45,7 +45,7 @@
       "SPRINT 3/3.4 CHAT LOOP: AI question cards in Pane 1 after synthesis & after each clarifier chapter (recomputed live); 🃏 +1 CARD FOR MY QUESTION chip reads the lifted capsule text (external controller + FocusNode) and arms the custom question; arming slides to Pane 0 with clarifier-banner; camera-sync mode routes the arm through the camera; 10-card ceiling note replaces suggestions",
       "SPRINT 3/3.5 TESTS: NEW spread_lock_test (caps, lock lifecycle all spreads, +1 unlock/relock, cancel, restore-locked, ceiling at 10 incl. camera, suggestion dynamics); phase2_clarifier rewritten to locked loop; phase2_flow += AI question → unlock → pull → clarifier reading, custom question arming, locked-deck prompt; roles updated in app_smoke/spread_controller/oracle_synthesis tests. 133/133 green ×2, analyze clean"
     ],
-    "current_task": "Build final debug APK and commit",
+    "current_task": "SPRINT 3/3 DONE — analyze clean, 133/133 tests green ×2, debug APK built (app-debug.apk), committed locally (no git remote configured in this workspace)",
     "pending_tasks": [
       "KNOWN (separate, pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on this low-end device (background process killed at 10:30) — consider lazy receiver or plugin update",
       "Optional: drop downloaded deck images into assets/decks/<id>/ (id-based 00.jpg..77.jpg or RWS naming)",
@@ -61,5 +61,5 @@
     "KNOWN: local timezone detection can fail on some devices — rituals fall back to UTC wall-clock (documented)",
     "FIXED (p10): dealCardAt depth guard used the ORIGINAL deck size (78) instead of the live stack length — RangeError risk on deep grabs; boundary now pos >= _cardIds.length"
   ],
-  "latest_observation_summary": "SPRINT 3/3 implemented: analyze clean, 133/133 tests green ×2 (spread caps, deal lock, +1 unlock loop, 10-card ceiling, AI clarifier suggestions all covered). Debug APK build pending."
+  "latest_observation_summary": "SPRINT 3/3 complete and verified: flutter analyze clean, 133/133 tests green ×2 (spread caps, deal lock, +1 unlock loop, 10-card ceiling, AI clarifier suggestions covered). Debug APK built (app-debug.apk). Committed 708041f on local master (no remote configured — same as prior sprints)."
 }
