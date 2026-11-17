@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import '../data/astro_ephemeris_tables.dart';
 import '../models/natal_chart.dart';
+import '../models/tarot_card_model.dart' show Element;
 
 /// ASTRAL Phase 1 — the 100% offline, deterministic ephemeris engine.
 ///
@@ -773,6 +774,49 @@ class NatalCalculatorService {
     return aspects;
   }
 
+  /// Cross-chart aspects between two profiles (synastry): every point in
+  /// [a] is paired against every point in [b], tightest orb first, with
+  /// [NatalAspect.bodyA] always from profile A and [bodyB] from profile B.
+  static List<NatalAspect> computeSynastryAspects(NatalChart a, NatalChart b) {
+    final aspects = <NatalAspect>[];
+    for (final pa in a.planets) {
+      for (final pb in b.planets) {
+        var angle = (pa.longitude - pb.longitude).abs() % 360.0;
+        if (angle > 180) angle = 360 - angle;
+        for (final type in AspectType.values) {
+          final deviation = (angle - type.baseAngle).abs();
+          if (deviation <= type.maxOrb) {
+            aspects.add(
+              NatalAspect(
+                bodyA: pa.planet,
+                bodyB: pb.planet,
+                type: type,
+                exactAngle: angle,
+                orb: deviation,
+                strength: 1 - deviation / type.maxOrb,
+                synthesis: _aspectSynthesis(pa.planet, pb.planet, type),
+              ),
+            );
+          }
+        }
+      }
+    }
+    aspects.sort((x, y) => x.orb.compareTo(y.orb));
+    return aspects;
+  }
+
+  /// Elemental balance across both profiles' ten moving bodies — the basis
+  /// of the synastry "compare our charts" elemental reading.
+  static Map<Element, int> synastryElementBalance(NatalChart a, NatalChart b) {
+    final balance = {for (final e in Element.values) e: 0};
+    for (final p in [...a.planets, ...b.planets]) {
+      if (p.planet.isBody) {
+        balance[p.sign.element] = balance[p.sign.element]! + 1;
+      }
+    }
+    return balance;
+  }
+
   /// Instantly recompute house cusps & placements for another system —
   /// birth data is re-read from the chart, nothing else changes.
   static NatalChart recalculateWithHouseSystem(
@@ -876,6 +920,7 @@ class NatalCalculatorService {
               'Natal ${c.natal.planet.title}',
           orb: c.orb,
           advice: _transitAdvice(c),
+          harmony: c.type.harmony,
         ),
     ];
 
@@ -942,6 +987,9 @@ class NatalCalculatorService {
     'friends, community and the future you join',
     'solitude, endings and the inner sanctuary',
   ];
+
+  /// The grounded theme of a natal house, 1..12 (clamped).
+  static String houseTheme(int house) => _houseThemes[house.clamp(1, 12) - 1];
 
   static String _positionInterpretation(
     PlanetId planet,

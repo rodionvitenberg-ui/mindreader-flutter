@@ -1,8 +1,8 @@
 {
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
-  "active_feature_or_sprint": "ASTRAL PHASE 2/4 DONE: Multi-Profile State & 4-Tab Shell (AstralController with 2-profile free tier + PRO gate, UI-first persistence, ASTRAL tab, screen scaffold with profile switcher / house selector / birth form / paywall, Phase 3 wheel placeholder) — new 6/6 tests, full suite 227/227, analyze 0; next = Phase 3 (animated natal wheel)",
-  "status": "IN_PROGRESS",
+  "active_feature_or_sprint": "ASTRAL PHASE 4 DONE: Daily Horoscope card + Full Natal Profile detail sheet + 2-profile Synastry + Oracle Chat handoff — 14 new tests, full suite 248/248, analyze 0. ASTRAL feature complete (Phases 1-4).",
+  "status": "DONE",
   "context": {
     "stack": [
       "Flutter/Dart (Impeller)",
@@ -27,7 +27,26 @@
       "lib/features/astral/astral_screen.dart (NEW — ASTRAL screen scaffold)",
       "lib/features/astral/widgets/ (NEW — cosmic bar, profile bar, house selector, gradient button, paywall, birth form, summary card, wheel placeholder)",
       "test/astral_controller_test.dart (NEW — 6 tests: free tier, PRO gate, PRO unlock, in-place house switch, profile switch, 4-tab nav)",
-      "PREVIOUS SPRINT 1/2 files (done): divination_system.dart, divination_card.dart, lenormand_data.dart, runes_data.dart, spread_controller.dart, oracle_synthesis_service.dart, digital_table_screen.dart, almanac_screen.dart + tests"
+      "lib/features/astral/widgets/natal_wheel_geometry.dart (NEW — Phase 3 pure geometry: wheelRadius, radial factors, chartScreenAngle, pointOnCircle, shortestAngleDelta, norm360, resolveCollisions, lerpLongitude/lerpCusps)",
+      "lib/features/astral/widgets/natal_wheel_painter.dart (NEW — Phase 3 NatalWheelPainter: backdrop/zodiac ring + 1°-5°-10° ticks/house spokes sweep/planet nodes with collision nudge/aspect chords with bolt flash + drifting particles/transits overlay/center HUD with LAT-LON-SID calibration, super(repaint: merge))",
+      "lib/features/astral/widgets/natal_wheel_widget.dart (NEW — Phase 3 NatalWheelWidget: 2200 ms 4-stage choreography, haptic thresholds at 0.30 + each aspect flash, 450 ms house morph via didUpdateWidget, tap hit-test on the planet track, chips, replay/transits pills)",
+      "lib/features/astral/widgets/natal_wheel_controls.dart (NEW — NatalWheelPill glass pill, NatalPlanetChip glyph chip, NatalWheelHeader (title + location/house-system line + REPLAY / LIVE TRANSITS pills), NatalPlanetChipBar (ten bodies driving the inspector))",
+      "lib/features/astral/widgets/planet_aspect_inspector_card.dart (NEW — ValueKey('planet-inspector-card'): planet glyph/sign/house/degree, interpretation, top-4 aspects with orb + strength, Rx badge, close)",
+      "lib/features/astral/astral_screen.dart (UPDATED — wheel slot now NatalWheelWidget(chart) for profiles, placeholder only when no chart)",
+      "test/natal_wheel_widget_test.dart (NEW — 7 tests: full choreography paint path, chip inspector open/close, transits overlay toggle, house morph without replay, ASC pinned to 9 o'clock, aspect flash ordering, collision nudge)",
+      "PREVIOUS SPRINT 1/2 files (done): divination_system.dart, divination_card.dart, lenormand_data.dart, runes_data.dart, spread_controller.dart, oracle_synthesis_service.dart, digital_table_screen.dart, almanac_screen.dart + tests",
+      "lib/core/models/oracle_handoff.dart (NEW — cross-tab OracleHandoff DTO)",
+      "lib/core/models/natal_chart.dart (UPDATED — DailyTransitItem.harmony + JSON)",
+      "lib/core/services/natal_calculator_service.dart (UPDATED — computeSynastryAspects, synastryElementBalance, houseTheme; transit harmony)",
+      "lib/core/services/oracle_synthesis_service.dart (UPDATED — buildNatalPrompt, buildSynastryPrompt, synthesizeNatalReading, _natalReadingFallback)",
+      "lib/features/astral/widgets/daily_horoscope_card.dart (NEW — cosmic weather, moon house, energy badge, register-tinted transits)",
+      "lib/features/astral/natal_profile_detail_sheet.dart (NEW — Big Three, live house switch, placement ledger, filterable aspect matrix)",
+      "lib/features/astral/synastry_summary_sheet.dart (NEW — Moon match, elemental balance, cross-chart aspects, Oracle CTA)",
+      "lib/features/astral/widgets/astral_summary_card.dart (UPDATED — slimmed to birth meta + Big Three + OPEN FULL PROFILE)",
+      "lib/features/astral/astral_screen.dart (UPDATED — daily card, detail sheet, synastry sheet, onOpenOracle)",
+      "lib/features/shell/main_navigation_shell.dart (UPDATED — ValueNotifier<OracleHandoff?> + _openOracle)",
+      "lib/features/digital_table/table_workspace.dart (UPDATED — astralHandoff listener -> _runAstralReading)",
+      "test/astral_horoscope_and_oracle_test.dart (NEW — 14 tests)"
     ],
     "hard_constraints": [
       "Strict Zero-Knowledge: do NOT log raw PII/secrets to console or logs",
@@ -67,12 +86,21 @@
       "ASTRAL P2 STORAGE: LocalStorageService astral keys — astral_profiles (JSON), astral_total_charts_generated, astral_is_pro_unlocked, astral_active_profile_index, astral_default_house_system",
       "ASTRAL P2 UI: 4th ASTRAL tab in MainNavigationShell IndexedStack; AstralScreen with cosmic bar (moon phase/streak/RITUALS re-home), profile switcher pills, PLACIDUS|KOCH|WHOLE SIGN selector, birth-data form sheet (city search, date/time pickers, time-known switch), PRO paywall sheet, horoscope summary and ValueKey('natal-wheel-placeholder') for Phase 3",
       "ASTRAL P2 TESTS: test/astral_controller_test.dart — 6/6 (profiles 1&2 free, 3rd blocked, PRO unlock allows 3rd, in-place house switch keeps counts, profile switch refreshes horoscope, 4th nav tab renders AstralScreen)",
-      "ASTRAL P2 GATE PASSED: flutter analyze = No issues found; full `flutter test` = 227/227 green; PLAN.md Phase 2 marked [x] DONE; atomic session stopped (Phase 3 not started)"
+      "ASTRAL P2 GATE PASSED: flutter analyze = No issues found; full `flutter test` = 227/227 green; PLAN.md Phase 2 marked [x] DONE; atomic session stopped (Phase 3 not started)",
+      "ASTRAL P3 GEOMETRY: natal_wheel_geometry.dart — ASC pinned to the 9 o'clock horizon (chartScreenAngle(long, long) === pi), radial tracks (ring 0.845 / transit 0.825 / house reach 0.79 / H-captions 0.70 / planets 0.60 / chord circle 0.52 / core 0.28), deterministic 7° collision relaxation with ring wrap, shortest-path longitude lerp for the house morph",
+      "ASTRAL P3 PAINTER: NatalWheelPainter with `super(repaint: Listenable.merge([choreography, pulse, houseMorph]))` — Stage 1 ring calibration (per-sign element bands, 360 degree ticks in 3 paths, 30° spin-in, LAT/LON/SID HUD + CALIBRATING %), Stage 2 house spokes sweeping from pi to their cusps with ASC/IC/DSC/MC captions, Stage 3 planet nodes igniting on the orbit with halo pulse + Rx + true-longitude ticks, Stage 4 aspect chords as gradient core + blurred aura + bolt-head flash + 3 drifting particles, optional transit hairline ring, breathing core with ASC/degree/house-system readout",
+      "ASTRAL P3 WIDGET: NatalWheelWidget — 2200 ms choreography replayable via ValueKey('natal-wheel-replay'); HapticFeedback.mediumImpact at t=0.30 and selectionClick per aspect flash; 450 ms easeOutCubic house morph driven by didUpdateWidget (same chart id) while a new profile id replays the choreography; opaque tap hit-test on the planet track (26 px) feeding the inspector; ValueKey('natal-wheel-transits') overlay computed once via NatalCalculatorService.computeEclipticLongitude; RepaintBoundary + CustomPaint only (no layout animation)",
+      "ASTRAL P3 INSPECTOR/UI: planet glyph chips open PlanetAspectInspectorCard (sign/house/degree, interpretation, top-4 aspects with orb + strength, Rx badge); astral_screen.dart now mounts NatalWheelWidget for every profile, placeholder only when no chart",
+      "ASTRAL P3 GATE PASSED: flutter analyze = No issues found; test/natal_wheel_widget_test.dart 7/7; full `flutter test` = 234/234 green; session stopped per atomic protocol",
+      "ASTRAL P4 DOMAIN: DailyTransitItem.harmony (AspectHarmony) + JSON round-trip; NatalCalculatorService.computeSynastryAspects (A×B cross-chart, tightest first), synastryElementBalance (20-body combined), houseTheme(int)",
+      "ASTRAL P4 ORACLE: OracleHandoff DTO; OracleSynthesisService.buildNatalPrompt / buildSynastryPrompt / synthesizeNatalReading / _natalReadingFallback (worker->cloud->offline)",
+      "ASTRAL P4 UI: DailyHoroscopeCard (harmony-tinted transit tiles); NatalProfileDetailSheet (Big Three, live house switch, full ledger, ALL/HARMONY/TENSION aspect matrix); SynastrySummarySheet (Moon match, elemental bars, cross aspects, Oracle CTA); AstralSummaryCard slimmed",
+      "ASTRAL P4 HANDOFF: MainNavigationShell ValueNotifier<OracleHandoff?> + _openOracle(switch to Table); TableWorkspace._onAstralHandoff -> _runAstralReading streams synthesizeNatalReading into Oracle Chat Pane 1",
+      "ASTRAL P4 GATE PASSED: flutter analyze = No issues found; test/astral_horoscope_and_oracle_test.dart 14/14; full `flutter test` = 248/248 green; PLAN/ARCHITECTURE/TASK_STATE updated -> ASTRAL feature complete",
+      "DEPLOY 2026-11-17 23:19: release arm64 APK rebuilt from the current working tree (build/app/outputs/flutter-apk/app-release.apk, 63.1 MB, debug keystore per android/app/build.gradle.kts), installed with adb install -r on 2310FPCA4G (Redmi 12C, Android 13 / API 33), MainActivity resumed, Impeller OpenGLES backend, clean logcat (no FATAL/AndroidRuntime errors)"
     ],
-    "current_task": "ASTRAL PHASE 3 (next session only, per atomic protocol): NatalWheelWidget + NatalWheelPainter (3-stage calibration/orbit/aspect-flash animation, continuous particle flow, RepaintBoundary isolation, 120 FPS Impeller) replacing the ValueKey('natal-wheel-placeholder') slot, plus planet/aspect tap inspector",
+    "current_task": "Manual on-device QA by the user (release build deployed)",
     "pending_tasks": [
-      "ASTRAL PHASE 3: NatalWheelWidget + NatalWheelPainter (3-stage calibration/orbit/aspect-flash animation, particle flow, RepaintBoundary, 120 FPS), planet/aspect tap inspector (house switcher already shipped in Phase 2)",
-      "ASTRAL PHASE 4: profile detail page, daily horoscope & transit feed UI, Rituals Hub re-homing (dock done in Sprint 2/2, RITUALS pill done in Phase 2), 2-chart synastry, Oracle Chat handoff",
       "KNOWN (pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on low-end devices",
       "OPTIONAL: on-device visual pass on Redmi 12C for the rune cluster and the 3-row header"
     ]
@@ -99,5 +127,5 @@
     "KNOWN: local timezone detection can fail on some devices — rituals fall back to UTC wall-clock (documented)",
     "FIXED (p10): dealCardAt depth guard used the ORIGINAL deck size (78) instead of the live stack length — RangeError risk on deep grabs; boundary now pos >= _cardIds.length"
   ],
-  "latest_observation_summary": "ASTRAL Phase 2 (multi-profile state + 4th nav tab) DONE and gated. AstralController ships the 2-profile free tier with a PRO gate on the 3rd lifetime chart, UI-first non-destructive persistence (profiles/count/pro/index/house system), instant in-place Placidus→Koch→Whole Sign switching via recalculateWithHouseSystem (never bumps the generation counter) and a cached daily horoscope. UI: 4th ASTRAL tab in the IndexedStack, cosmic bar (moon phase + streak + RITUALS re-home), profile switcher pills, house selector, birth-data form sheet with offline city search, PRO paywall sheet, horoscope summary and a ValueKey('natal-wheel-placeholder') slot reserved for Phase 3. Gate: flutter analyze = No issues found, new test/astral_controller_test.dart 6/6, full flutter test 227/227 → PLAN.md Phase 2 [x] DONE, session stopped per atomic protocol. Phase 3 (animated natal wheel) not started."
+  "latest_observation_summary": "ASTRAL Phase 4 (daily horoscope, full profile sheet, synastry, Oracle handoff) DONE and gated. The horoscope now classifies every live transit by AspectHarmony (DailyTransitItem.harmony) and renders it in DailyHoroscopeCard. NatalProfileDetailSheet shows the Big Three, a live house-system switch (local recalculateWithHouseSystem + persisted on the active profile), the full 12-point placement ledger (degree, house chip, Rx) and a filterable aspect matrix with strength bars. SynastrySummarySheet compares the two free profiles: Moon compatibility, combined elemental-balance bars (computeSynastryAspects + synastryElementBalance) and the tightest cross-chart aspects. The ASTRAL -> Table handoff is wired through a shell-owned ValueNotifier<OracleHandoff?>; TableWorkspace consumes it, slides to Oracle Chat Pane 1 and streams a psychological reading from OracleSynthesisService.synthesizeNatalReading (worker -> cloud -> deterministic offline fallback). Gate: flutter analyze = No issues found, new test/astral_horoscope_and_oracle_test.dart 14/14, full flutter test 248/248 green. ASTRAL Phases 1-4 are complete."
 }

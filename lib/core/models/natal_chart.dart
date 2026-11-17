@@ -409,6 +409,7 @@ class DailyTransitItem {
     required this.transitLabel,
     required this.orb,
     required this.advice,
+    required this.harmony,
   });
 
   /// Short headline, e.g. 'Mars stirs your Moon'.
@@ -423,11 +424,15 @@ class DailyTransitItem {
   /// Grounded psychological advice for today.
   final String advice;
 
+  /// Emotional register (Harmony cyan / Tension rose / Intense lavender).
+  final AspectHarmony harmony;
+
   Map<String, dynamic> toJson() => {
     'title': title,
     'transitLabel': transitLabel,
     'orb': orb,
     'advice': advice,
+    'harmony': harmony.name,
   };
 
   static DailyTransitItem fromJson(Map<String, dynamic> json) =>
@@ -436,6 +441,7 @@ class DailyTransitItem {
         transitLabel: json['transitLabel'] as String,
         orb: (json['orb'] as num).toDouble(),
         advice: json['advice'] as String,
+        harmony: AspectHarmony.values.byName(json['harmony'] as String),
       );
 }
 

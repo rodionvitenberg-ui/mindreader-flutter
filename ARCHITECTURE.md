@@ -247,3 +247,16 @@ lib/
 - **Endless clarifiers**: `SpreadController.addClarifierSlot` appends Card N+1 (role `Clarifier N`, question stored in `userContext`) without ever locking the spread; flipping it auto-appends a "Clarifier Expansion" chapter via `synthesizeClarifier`. Suggested follow-ups: hidden obstacle / concrete step / own question. Spread geometry functions accept `totalSlots` so clarifiers append rows below the base layout.
 - **Phygital camera-to-table sync** (`TableSourceMode.physicalCameraSync`): the camera handoff marks the session; the table shows the PHYSICAL SYNC pill, lets the user tag photographed cards with context chips/text/voice, synthesizes identically, and offers `📷 Photograph Next Physical Card` (camera armed for ONE card → `completeClarifierScan` appends it face-up, digital 78-ledger untouched) or `🃏 Draw from Digital Deck`.
 - Tests: 95 green (`phase2_clarifier_test.dart` domain + `phase2_flow_test.dart` e2e flows), `flutter analyze` clean.
+
+## ASTRAL — Offline Natal Astrology (Phases 1-4, DONE)
+
+A 4th bottom-nav tab (`ASTRAL`) backed by a pure-Dart, 100% offline engine.
+
+- **Engine** (`lib/core/services/natal_calculator_service.dart`): Meeus ephemeris (Sun/Moon/VSOP87/Pluto), swehouse-ported Placidus/Koch/Whole Sign (+ Porphyry polar fallback), ASC/MC, aspects, moon phase and `computeDailyHoroscope`. Phase 4 adds `computeSynastryAspects` (cross-chart A x B, tightest orb first), `synastryElementBalance` (combined 20-body element count on the shared `Element` enum) and `houseTheme(int)`.
+- **State** (`lib/state/astral_controller.dart`): multi-profile with `maxFreeProfiles = 2` + the PRO gate, UI-first persistence, instant house-system re-map and the cached horoscope.
+- **Wheel** (Phase 3): `NatalWheelWidget` + `NatalWheelPainter` — a 2200 ms 4-stage choreography (ring calibration -> house spokes -> planets -> aspect chords) driven entirely by paint (`RepaintBoundary` + `AnimationController`, no layout animation), tap-to-inspect, 450 ms house morph, live transits ring.
+- **Daily horoscope** (Phase 4): `DailyTransitItem.harmony` (Harmony cyan / Tension rose / Intense lavender) and `DailyHoroscopeCard` — cosmic-weather header, moon-house strip, day theme, energy score and register-tinted transit tiles.
+- **Full profile sheet** (Phase 4): `NatalProfileDetailSheet` — Big Three spotlight, live house-system switch (local `recalculateWithHouseSystem` + persisted on the active profile), the complete placement ledger (degree, house chip, Rx) and a filterable aspect matrix (ALL / HARMONY / TENSION with strength bars).
+- **Synastry** (Phase 4): `SynastrySummarySheet` — Moon compatibility, combined elemental-balance bars and the tightest cross-chart aspects, closed with a one-tap Oracle handoff.
+- **Oracle Chat handoff** (Phase 4): `OracleHandoff` DTO + `OracleSynthesisService.buildNatalPrompt` / `buildSynastryPrompt` / `synthesizeNatalReading` (worker -> cloud -> local fallback). `MainNavigationShell` owns a `ValueNotifier<OracleHandoff?>`; `TableWorkspace` listens, slides to Pane 1 and streams the reading into the Oracle Chat pane.
+- **Tests:** `test/astral_horoscope_and_oracle_test.dart` (14) — synastry aspects/balance, horoscope harmony, prompts + offline fallbacks, the daily card, the detail sheet for both free profiles, the synastry handoff and the cross-tab Oracle integration.

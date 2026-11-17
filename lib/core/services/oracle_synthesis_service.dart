@@ -6,8 +6,10 @@ import 'package:http/http.dart' as http;
 import '../models/chat_message.dart';
 import '../models/dealt_card_slot.dart';
 import '../models/divination_system.dart';
+import '../models/natal_chart.dart';
 import '../models/spread_type.dart';
 import '../models/tarot_card_model.dart';
+import 'natal_calculator_service.dart';
 
 /// How two adjacent face-up cards relate, elementally.
 enum ThreadTone { harmony, conflict, neutral }
@@ -707,5 +709,208 @@ class OracleSynthesisService {
     final choices = data['choices'] as List;
     final content = (choices.first as Map)['message']['content'] as String;
     return content.replaceAll('```', '').trim();
+  }
+
+  // ---------------------------------------------------------------------
+  // ASTRAL handoff — natal / synastry psychological readings
+  // ---------------------------------------------------------------------
+
+  static NatalPlanetPosition _find(NatalChart chart, PlanetId planet) =>
+      chart.planets.firstWhere((p) => p.planet == planet);
+
+  static String _describe(NatalPlanetPosition p) =>
+      '${p.planet.title} ${p.sign.glyph} ${p.sign.title} ${p.formattedDegree} '
+      'in house ${p.house}';
+
+  static Element _dominantElementOf(NatalChart chart) {
+    final counts = {for (final e in Element.values) e: 0};
+    for (final p in chart.planets) {
+      if (p.planet.isBody) counts[p.sign.element] = counts[p.sign.element]! + 1;
+    }
+    var best = Element.fire;
+    for (final e in Element.values) {
+      if (counts[e]! > counts[best]!) best = e;
+    }
+    return best;
+  }
+
+  /// A structured, reader-facing summary of a natal chart and today's sky —
+  /// used both as the user message and as the AI prompt for the handoff.
+  static String buildNatalPrompt(
+    NatalChart chart,
+    DailyHoroscopeReport? horoscope,
+  ) {
+    final sun = _find(chart, PlanetId.sun);
+    final moon = _find(chart, PlanetId.moon);
+    final asc = _find(chart, PlanetId.ascendant);
+    final sharp = chart.aspects.isEmpty ? null : chart.aspects.first;
+    final buf = StringBuffer();
+    buf.writeln(
+      'Natal profile: ${chart.profileName} '
+      '(${chart.birthLocalDay.toString().padLeft(2, '0')}. '
+      '${chart.birthLocalMonth.toString().padLeft(2, '0')}.'
+      '${chart.birthLocalYear}, ${chart.cityName}).',
+    );
+    buf.writeln(
+      'Big Three: ${_describe(sun)} · ${_describe(moon)} · ${_describe(asc)}.',
+    );
+    buf.writeln(
+      'House system: ${chart.houseSystem.label}. '
+      'Dominant element: ${_dominantElementOf(chart).label}.',
+    );
+    if (sharp != null) {
+      buf.writeln(
+        'Sharpest natal aspect: ${sharp.bodyA.title} ${sharp.type.glyph} '
+        '${sharp.bodyB.title} (orb ${sharp.orb.toStringAsFixed(1)}°).',
+      );
+    }
+    if (horoscope != null) {
+      buf.writeln(
+        'Today: ${horoscope.overallTheme} Moon in house '
+        '${horoscope.transitingMoonHouse} '
+        '(${horoscope.transitingMoonSign.title}).',
+      );
+      for (final t in horoscope.transits.take(3)) {
+        buf.writeln('- ${t.transitLabel} · orb ${t.orb.toStringAsFixed(1)}°.');
+      }
+    }
+    return buf.toString().trim();
+  }
+
+  /// A structured synastry summary for the compare-two-charts handoff.
+  static String buildSynastryPrompt(NatalChart a, NatalChart b) {
+    final buf = StringBuffer();
+    buf.writeln('Synastry: ${a.profileName} × ${b.profileName}.');
+    buf.writeln(
+      '${a.profileName} Big Three: ${_describe(_find(a, PlanetId.sun))} · '
+      '${_describe(_find(a, PlanetId.moon))} · '
+      '${_describe(_find(a, PlanetId.ascendant))}.',
+    );
+    buf.writeln(
+      '${b.profileName} Big Three: ${_describe(_find(b, PlanetId.sun))} · '
+      '${_describe(_find(b, PlanetId.moon))} · '
+      '${_describe(_find(b, PlanetId.ascendant))}.',
+    );
+    final aspects = NatalCalculatorService.computeSynastryAspects(a, b);
+    buf.writeln('Tightest cross-chart aspects:');
+    for (final aspect in aspects.take(5)) {
+      buf.writeln(
+        '- ${a.profileName} ${aspect.bodyA.title} ${aspect.type.glyph} '
+        '${b.profileName} ${aspect.bodyB.title} '
+        '(orb ${aspect.orb.toStringAsFixed(1)}°).',
+      );
+    }
+    return buf.toString().trim();
+  }
+
+  /// Deep psychological natal or synastry reading for the ASTRAL to Oracle
+  /// handoff. Same dual pipeline (worker, cloud, local) with a deterministic
+  /// offline fallback composed from the chart and today's transits.
+  Future<String> synthesizeNatalReading({
+    required String prompt,
+    NatalChart? chart,
+    NatalChart? otherChart,
+    DailyHoroscopeReport? horoscope,
+    required List<ChatMessage> history,
+  }) async {
+    final fallback = _natalReadingFallback(chart, otherChart, horoscope);
+    if (!hasPrimary && !hasCloud) return fallback;
+    final buf = StringBuffer();
+    buf.writeln(
+      'You are the mindreader.quest oracle: grounded, psychological, modern. '
+      'No kitsch, no mysticism.',
+    );
+    buf.writeln('The reader brings their natal astrology data.');
+    buf.writeln(prompt);
+    if (history.isNotEmpty) {
+      buf.writeln('Dialog so far:');
+      for (final m in history) {
+        buf.writeln('  ${m.role}: ${m.text}');
+      }
+    }
+    buf.writeln(
+      'Give a deep, non-fatalistic psychological reading of the chart and '
+      'transits. Answer in 3-5 short sentences. Plain text only: no markdown, '
+      'no lists.',
+    );
+    try {
+      if (hasPrimary) {
+        final text = await _chat(
+          url: primaryWorkerUrl,
+          key: primaryWorkerKey,
+          model: primaryChatModel,
+          timeout: primaryTimeout,
+          prompt: buf.toString(),
+        );
+        if (text.isNotEmpty) return text;
+      }
+      if (hasCloud) {
+        final text = await _chat(
+          url: cloudUrl,
+          key: cloudKey,
+          model: cloudModel,
+          timeout: cloudTimeout,
+          prompt: buf.toString(),
+        );
+        if (text.isNotEmpty) return text;
+      }
+    } catch (e) {
+      debugPrint(
+        'oracle: natal endpoints failed (${e.runtimeType}), local reading',
+      );
+    }
+    return fallback;
+  }
+
+  /// Offline natal or synastry reading: the Big Three, the sharpest aspect
+  /// and today's loudest transit, closed into grounded guidance.
+  String _natalReadingFallback(
+    NatalChart? chart,
+    NatalChart? otherChart,
+    DailyHoroscopeReport? horoscope,
+  ) {
+    if (chart != null && otherChart != null) {
+      final aspects = NatalCalculatorService.computeSynastryAspects(
+        chart,
+        otherChart,
+      );
+      final sharp = aspects.isEmpty ? null : aspects.first;
+      final moonA = _find(chart, PlanetId.moon);
+      final moonB = _find(otherChart, PlanetId.moon);
+      final shared = moonA.sign.element == moonB.sign.element
+          ? 'your Moons share the ${moonA.sign.element.label} element, so '
+              'emotional rhythms tend to match'
+          : 'your Moons sit in ${moonA.sign.title} and ${moonB.sign.title}, '
+              'so emotional languages differ and need translation';
+      final sharpLine = sharp == null
+          ? 'no very tight cross-chart aspect stands out — the bond is built '
+              'from temperament, not friction'
+          : '${chart.profileName} ${sharp.bodyA.title} ${sharp.type.glyph} '
+              '${otherChart.profileName} ${sharp.bodyB.title} is the '
+              'sharpest point of contact: ${sharp.type.dynamicLine}.';
+      return 'Comparing your charts: $shared. $sharpLine '
+          'Work with the harmony where it flows and name the friction where '
+          'it asks to be named.';
+    }
+    if (chart == null) return 'Bring your natal chart and I will read it.';
+    final sun = _find(chart, PlanetId.sun);
+    final moon = _find(chart, PlanetId.moon);
+    final asc = _find(chart, PlanetId.ascendant);
+    final sharp = chart.aspects.isEmpty ? null : chart.aspects.first;
+    final base =
+        'Reading the chart of ${chart.profileName}: a ${sun.sign.title} Sun, '
+        'a ${moon.sign.title} Moon and a ${asc.sign.title} Ascendant set the '
+        'inner and outer weather.';
+    final aspectLine = sharp == null
+        ? ''
+        : ' The sharpest natal aspect is ${sharp.bodyA.title} '
+            '${sharp.type.glyph} ${sharp.bodyB.title}: '
+            '${sharp.type.dynamicLine}.';
+    final transitLine = (horoscope == null || horoscope.transits.isEmpty)
+        ? ''
+        : ' Today, ${horoscope.transits.first.transitLabel.toLowerCase()} '
+            '(${horoscope.transits.first.orb.toStringAsFixed(1)}°) is the '
+            'loudest live transit — ${horoscope.transits.first.advice}';
+    return '$base$aspectLine$transitLine';
   }
 }

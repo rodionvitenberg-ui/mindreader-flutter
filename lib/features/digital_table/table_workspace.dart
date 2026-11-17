@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/data/intention_prompts.dart' show tableContextChips;
 import '../../core/models/dealt_card_slot.dart';
+import '../../core/models/oracle_handoff.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../state/session_history_controller.dart';
@@ -34,11 +35,19 @@ const historyPane = 2;
 /// wins); swiping anywhere else — background, header, dealt cards — pans
 /// the PageView between panes.
 class TableWorkspace extends StatefulWidget {
-  const TableWorkspace({super.key, this.onOpenCameraClarifier});
+  const TableWorkspace({
+    super.key,
+    this.onOpenCameraClarifier,
+    this.astralHandoff,
+  });
 
   /// Shell callback: switches to the Camera tab armed for a single-card
   /// physical clarifier scan (phygital camera-to-table sync).
   final VoidCallback? onOpenCameraClarifier;
+
+  /// Cross-tab handoff published by the ASTRAL tab; the workspace consumes
+  /// it and streams a natal or synastry reading from the Oracle.
+  final ValueNotifier<OracleHandoff?>? astralHandoff;
 
   @override
   State<TableWorkspace> createState() => _TableWorkspaceState();
@@ -75,12 +84,14 @@ class _TableWorkspaceState extends State<TableWorkspace>
     super.initState();
     _ctrl.addListener(_onSpreadChanged);
     _cosmosCtl.addStatusListener(_onCosmosStatus);
+    widget.astralHandoff?.addListener(_onAstralHandoff);
     _history.load();
   }
 
   @override
   void dispose() {
     _ctrl.removeListener(_onSpreadChanged);
+    widget.astralHandoff?.removeListener(_onAstralHandoff);
     _paneController.dispose();
     _cosmosCtl.dispose();
     _capsuleText.dispose();
@@ -100,6 +111,31 @@ class _TableWorkspaceState extends State<TableWorkspace>
     if (!mounted) return;
     setState(() {});
     _maybeExpandClarifiers();
+  }
+
+  // ---- ASTRAL cross-tab handoff (natal / synastry to Oracle Chat) ----
+
+  void _onAstralHandoff() {
+    final handoff = widget.astralHandoff?.value;
+    if (handoff == null) return;
+    widget.astralHandoff!.value = null;
+    _runAstralReading(handoff);
+  }
+
+  Future<void> _runAstralReading(OracleHandoff handoff) async {
+    _synthesis.addUserMessage(handoff.prompt);
+    _synthesis.beginAnswer();
+    _goToPane(chatPane);
+    final answer = await OracleSynthesisService().synthesizeNatalReading(
+      prompt: handoff.prompt,
+      chart: handoff.chart,
+      otherChart: handoff.otherChart,
+      horoscope: handoff.horoscope,
+      history: _synthesis.messages,
+    );
+    if (!mounted) return;
+    _synthesis.addOracleMessage(answer);
+    _synthesis.finishAnswer();
   }
 
   // ---- clarifier expansion (moved from the old synthesis panel) ----

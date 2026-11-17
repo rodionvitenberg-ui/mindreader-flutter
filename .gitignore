@@ -46,3 +46,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+.cache/
+
+# Upstream art/QC workspace (separate 2 GB source repo, not part of the app)
+/TarotCards/

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/models/oracle_handoff.dart';
 import '../../core/theme/app_colors.dart';
 import '../almanac/almanac_screen.dart';
 import '../astral/astral_screen.dart';
@@ -20,10 +21,27 @@ class MainNavigationShell extends StatefulWidget {
 class _MainNavigationShellState extends State<MainNavigationShell> {
   int _index = 1; // Digital Table is the core tab
 
+  /// Cross-tab ASTRAL to Table handoff: ASTRAL publishes a reading request
+  /// here; the Oracle Chat pane consumes it and streams the answer.
+  final ValueNotifier<OracleHandoff?> _handoff = ValueNotifier<OracleHandoff?>(
+    null,
+  );
+
+  @override
+  void dispose() {
+    _handoff.dispose();
+    super.dispose();
+  }
+
   void _switchTo(int index) {
     if (index == _index) return;
     HapticFeedback.selectionClick();
     setState(() => _index = index);
+  }
+
+  void _openOracle(OracleHandoff handoff) {
+    _handoff.value = handoff;
+    _switchTo(1);
   }
 
   @override
@@ -36,9 +54,12 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             isActiveTab: _index == 0,
             onHandoff: () => _switchTo(1),
           ),
-          TableWorkspace(onOpenCameraClarifier: () => _switchTo(0)),
+          TableWorkspace(
+            onOpenCameraClarifier: () => _switchTo(0),
+            astralHandoff: _handoff,
+          ),
           const AlmanacScreen(),
-          const AstralScreen(),
+          AstralScreen(onOpenOracle: _openOracle),
         ],
       ),
       bottomNavigationBar: _GlassNavBar(index: _index, onTap: _switchTo),

@@ -5,21 +5,23 @@ import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
 import 'astral_gradient_button.dart';
 
-/// Live summary for the active profile: birth metadata plus today's
-/// horoscope (moon phase, transiting house and the tightest transits).
+/// Live summary for the active profile: birth metadata, the Big Three and a
+/// shortcut into the full natal profile sheet.
 class AstralSummaryCard extends StatelessWidget {
   const AstralSummaryCard({
     required this.chart,
-    required this.report,
+    required this.onOpenProfile,
     super.key,
   });
 
   final NatalChart chart;
-  final DailyHoroscopeReport? report;
+  final VoidCallback onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
-    final r = report;
+    final sun = chart.planets.firstWhere((p) => p.planet == PlanetId.sun);
+    final moon = chart.planets.firstWhere((p) => p.planet == PlanetId.moon);
+    final asc = chart.planets.firstWhere((p) => p.planet == PlanetId.ascendant);
     final day = chart.birthLocalDay.toString().padLeft(2, '0');
     final month = chart.birthLocalMonth.toString().padLeft(2, '0');
     return Container(
@@ -46,64 +48,79 @@ class AstralSummaryCard extends StatelessWidget {
               color: AppColors.textMuted,
             ),
           ),
-          if (r != null) ...[
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Text(r.moonPhaseGlyph, style: const TextStyle(fontSize: 18)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'MOON IN HOUSE ${r.transitingMoonHouse} · '
-                    '${r.transitingMoonSign.title.toUpperCase()}',
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _BigThreeChip(label: 'SUN', pos: sun),
+              const SizedBox(width: 8),
+              _BigThreeChip(label: 'MOON', pos: moon),
+              const SizedBox(width: 8),
+              _BigThreeChip(label: 'RISING', pos: asc),
+            ],
+          ),
+          const SizedBox(height: 14),
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: onOpenProfile,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Text(
+                    'OPEN FULL PROFILE',
                     style: GoogleFonts.jetBrainsMono(
                       fontSize: 9,
-                      letterSpacing: 1.2,
+                      letterSpacing: 1.6,
                       color: AppColors.lavender,
                     ),
                   ),
-                ),
-                Text(
-                  '${r.energyScore}/100',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 9,
-                    letterSpacing: 1.2,
-                    color: AppColors.textPrimary,
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 14,
+                    color: AppColors.lavender,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              r.overallTheme,
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                height: 1.45,
-                color: AppColors.textPrimary,
+                ],
               ),
             ),
-            for (final transit in r.transits.take(3))
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('✦ ',
-                        style: TextStyle(color: AppColors.lavender)),
-                    Expanded(
-                      child: Text(
-                        '${transit.title} — ${transit.advice}',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          height: 1.4,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BigThreeChip extends StatelessWidget {
+  const _BigThreeChip({required this.label, required this.pos});
+
+  final String label;
+  final NatalPlanetPosition pos;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 8,
+              letterSpacing: 1.4,
+              color: AppColors.textMuted,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${pos.sign.glyph} ${pos.sign.title}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
         ],
       ),
     );
