@@ -2,7 +2,7 @@
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
   "active_feature_or_sprint": "SPRINT 5: Meditative arcane card reveal (no rotateY), centered proportional Spread Overview (no giant flying card), 7 real open-source decks from TarotCards/tarot/",
-  "status": "IN_PROGRESS",
+  "status": "DONE",
   "context": {
     "stack": [
       "Flutter/Dart (Impeller)",
@@ -51,9 +51,8 @@
       "SPRINT 4.5 CLEAN FLIP: removed the 3D edge-bevel side strips (cardEdgeStripX/cardEdgeSlices/cardFlipThicknessPx/cardEdgeBody/cardEdgeRimGold) from TarotCard3DWidget — ZERO protruding side bars during rotateY; 680ms flip + FoilGlint only",
       "SPRINT 4.6 TESTS: workspace_layout_test (NEW) — capsule/chips exclusively Pane 1, dormant CTA permanently on Pane 0, chip ✓ toggle; card_edge_bevel_test rewritten for the clean flip; workspace_swipe/phase2_flow/app_smoke updated to swipe-only navigation (PageView ballistic settle loop — the drag fling's BallisticScrollActivity ignores pointers until it settles); 134/134 green, flutter analyze clean"
     ],
-    "current_task": "SPRINT 5.6 VERIFY: analyze clean (0 issues), 136/136 tests green, debug APK build in progress",
+    "current_task": "SPRINT 5 DONE — analyze clean (0 issues), 136/136 tests green, debug APK built with all 485 deck images bundled, committed 5f1d325",
     "pending_tasks": [
-      "VERIFY APK: confirm build/app/outputs/flutter-apk/app-debug.apk exists and asset bundle includes assets/decks/<id>/NN.jpg",
       "KNOWN (separate, pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on low-end devices"
     ]
   },
@@ -74,5 +73,5 @@
     "KNOWN: local timezone detection can fail on some devices — rituals fall back to UTC wall-clock (documented)",
     "FIXED (p10): dealCardAt depth guard used the ORIGINAL deck size (78) instead of the live stack length — RangeError risk on deep grabs; boundary now pos >= _cardIds.length"
   ],
-  "latest_observation_summary": "SPRINT 5 in progress: asset mapper tool/map_decks.py written (per-deck resolvers, JPEG <=520px, back.jpg from Cover). Next: run mapper, then registry/reveal/spread-view edits."
+  "latest_observation_summary": "SPRINT 5 complete: meditative 750ms arcane materialization reveal (zero rotateY, breathing lift, obsidian dissolve, radial face emergence + FoilGlint sweep); spread overview centered with proportional deck (~1.12x slot) and 550ms materialize-in-slot (no flying 220x360 card); 7 real decks bundled (485 images, 38.5MB, JPEG <=450px) with real scan backs and framed artwork; flutter analyze clean, 136/136 tests green, debug APK built and verified. Committed 5f1d325."
 }
