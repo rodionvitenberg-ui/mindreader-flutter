@@ -2,7 +2,7 @@
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
   "active_feature_or_sprint": "SPRINT 4: Clean Digital Table UI — remove top pill nav, fix header overflow, chat/chips exclusive to Pane 1, always-present igniting Synthesize CTA, living elemental threads, flip artifact cleanup",
-  "status": "IN_PROGRESS",
+  "status": "DONE",
   "context": {
     "stack": [
       "Flutter/Dart (Impeller)",
@@ -51,7 +51,7 @@
       "SPRINT 4.5 CLEAN FLIP: removed the 3D edge-bevel side strips (cardEdgeStripX/cardEdgeSlices/cardFlipThicknessPx/cardEdgeBody/cardEdgeRimGold) from TarotCard3DWidget — ZERO protruding side bars during rotateY; 680ms flip + FoilGlint only",
       "SPRINT 4.6 TESTS: workspace_layout_test (NEW) — capsule/chips exclusively Pane 1, dormant CTA permanently on Pane 0, chip ✓ toggle; card_edge_bevel_test rewritten for the clean flip; workspace_swipe/phase2_flow/app_smoke updated to swipe-only navigation (PageView ballistic settle loop — the drag fling's BallisticScrollActivity ignores pointers until it settles); 134/134 green, flutter analyze clean"
     ],
-    "current_task": "SPRINT 4 VERIFY & BUILD: flutter analyze clean (0 issues), 134/134 tests green, debug APK building",
+    "current_task": "SPRINT 4 DONE — analyze clean, 134/134 tests green, debug APK built (app-debug.apk), committed c277b11 on local master (no git remote configured in this workspace)",
     "pending_tasks": [
       "KNOWN (separate, pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on this low-end device (background process killed at 10:30) — consider lazy receiver or plugin update",
       "Optional: drop downloaded deck images into assets/decks/<id>/ (id-based 00.jpg..77.jpg or RWS naming)",
