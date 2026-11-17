@@ -97,7 +97,8 @@
       "ASTRAL P4 UI: DailyHoroscopeCard (harmony-tinted transit tiles); NatalProfileDetailSheet (Big Three, live house switch, full ledger, ALL/HARMONY/TENSION aspect matrix); SynastrySummarySheet (Moon match, elemental bars, cross aspects, Oracle CTA); AstralSummaryCard slimmed",
       "ASTRAL P4 HANDOFF: MainNavigationShell ValueNotifier<OracleHandoff?> + _openOracle(switch to Table); TableWorkspace._onAstralHandoff -> _runAstralReading streams synthesizeNatalReading into Oracle Chat Pane 1",
       "ASTRAL P4 GATE PASSED: flutter analyze = No issues found; test/astral_horoscope_and_oracle_test.dart 14/14; full `flutter test` = 248/248 green; PLAN/ARCHITECTURE/TASK_STATE updated -> ASTRAL feature complete",
-      "DEPLOY 2026-11-17 23:19: release arm64 APK rebuilt from the current working tree (build/app/outputs/flutter-apk/app-release.apk, 63.1 MB, debug keystore per android/app/build.gradle.kts), installed with adb install -r on 2310FPCA4G (Redmi 12C, Android 13 / API 33), MainActivity resumed, Impeller OpenGLES backend, clean logcat (no FATAL/AndroidRuntime errors)"
+      "DEPLOY 2026-11-17 23:19: release arm64 APK rebuilt from the current working tree (build/app/outputs/flutter-apk/app-release.apk, 63.1 MB, debug keystore per android/app/build.gradle.kts), installed with adb install -r on 2310FPCA4G (Redmi 12C, Android 13 / API 33), MainActivity resumed, Impeller OpenGLES backend, clean logcat (no FATAL/AndroidRuntime errors)",
+      "PUBLISH 2026-11-17: repository published to https://github.com/rodionvitenberg-ui/mindreader-flutter (public, default branch master, 685 files incl. 493 assets). .gitignore now excludes the 2 GB TarotCards/ art-workspace; no secrets tracked (Gemini/Vision keys come from --dart-define). Pre-push gates: flutter analyze clean, flutter test 248/248."
     ],
     "current_task": "Manual on-device QA by the user (release build deployed)",
     "pending_tasks": [
