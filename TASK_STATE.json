@@ -1,25 +1,26 @@
 {
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
-  "active_feature_or_sprint": "SPRINT 1/2 MULTI-SYSTEM: Tarot(78) | Lenormand(36) | Runes(24), 3D tactile rune stones, 36-card Lenormand engine, redesigned Table/Almanac headers (1000049375.jpg / 1000049372.jpg)",
-  "status": "DONE",
+  "active_feature_or_sprint": "ASTRAL PHASE 1/4 DONE: Offline Astrological Ephemeris Engine (NatalCalculatorService: Placidus/Koch/Whole Sign, 10 planets + ASC/MC, natal aspects, daily horoscope transits, offline city DB) — 56/56 engine tests, 221/221 full suite, analyze 0; next = Phase 2 (profiles + ASTRAL tab)",
+  "status": "IN_PROGRESS",
   "context": {
     "stack": [
       "Flutter/Dart (Impeller)",
       "provider (ChangeNotifier)",
+      "dart:math — pure offline astronomy (Meeus: Sun ch.25, Moon ch.47, VSOP87 ch.32, Pluto ch.37; swehouse.c house algorithms)",
       "camera 0.12.2, image_picker, image, http, shared_preferences, google_fonts",
       "flutter_local_notifications + timezone + flutter_timezone (rituals)",
       "speech_to_text (capsule mic dictation)"
     ],
     "target_files": [
-      "lib/core/models/divination_system.dart, divination_card.dart, lenormand_card.dart, rune_stone.dart, lenormand_spread.dart, rune_cast.dart, lenormand_pack.dart, rune_pack.dart",
-      "lib/core/data/lenormand_data.dart (36), runes_data.dart (24), lenormand_packs_registry.dart, rune_packs_registry.dart",
-      "lib/state/spread_controller.dart (multi-system), deck_pack_controller.dart (per-system packs), spread_session_snapshot.dart (system field)",
-      "lib/core/services/oracle_synthesis_service.dart (system-aware prompts)",
-      "lib/features/digital_table/digital_table_screen.dart (3-row header, rune deck swap, count-based geometry)",
-      "lib/features/digital_table/widgets/: lenormand_card_3d_widget.dart, rune_stone_3d_widget.dart, interactive_rune_stones_widget.dart, slotted_divination_card.dart, deck_picker_sheet.dart, spread_selector_sheet.dart, shuffle_physics.dart (+ForCount geometry)",
-      "lib/features/almanac/almanac_screen.dart + card_detail_sheet.dart (3-system redesign)",
-      "test/divination_system_switch_test.dart, lenormand_runes_data_test.dart, multi_system_table_test.dart (NEW)"
+      "PLAN.md (NEW — 4-phase ASTRAL plan + execution status)",
+      "lib/core/models/natal_chart.dart (NEW — HouseSystem/ZodiacSign/PlanetId/AspectType + positions/aspects/horoscope/chart models, JSON)",
+      "lib/core/services/natal_calculator_service.dart (NEW — Meeus engine, swehouse port, aspects, moon phase, daily horoscope)",
+      "lib/core/data/astro_ephemeris_tables.dart (NEW — generated VSOP87/Moon/Pluto const tables)",
+      "tool/gen_ephemeris_tables.py (NEW — reproducible table generator, PyMeeus 0.5.12)",
+      "lib/core/data/astro_cities_data.dart (NEW — 96 cities + searchAstroCities)",
+      "test/natal_calculator_test.dart (NEW — 56 tests, swetest 2.10.04 / Meeus / NASA anchors)",
+      "PREVIOUS SPRINT 1/2 files (done): divination_system.dart, divination_card.dart, lenormand_data.dart, runes_data.dart, spread_controller.dart, oracle_synthesis_service.dart, digital_table_screen.dart, almanac_screen.dart + tests"
     ],
     "hard_constraints": [
       "Strict Zero-Knowledge: do NOT log raw PII/secrets to console or logs",
@@ -29,7 +30,9 @@
       "No gold kitsch; Obsidian #09090D + Lavender #A78BFA design system",
       "Ritual notifications: zero server retention",
       "UI never blocks on local storage (in-memory first, background write)",
-      "The whole deck must NEVER dump onto the table: lock at baseCardLimit, unlock exactly +1 per armed question, hard max 10"
+      "The whole deck must NEVER dump onto the table: lock at baseCardLimit, unlock exactly +1 per armed question, hard max 10",
+      "ASTRAL engine: 100% offline, deterministic, pure Dart (no plugins, no network)",
+      "ASTRAL atomic sessions: one phase per session, gate = analyze 0 + tests green + state files updated, then STOP"
     ]
   },
   "execution_plan": {
@@ -42,16 +45,33 @@
       "SPRINT 1/2.6 RUNES 3D: RuneStonePainter (organic pebble silhouette, radial rock shader, chiseled rim light, specular glint, deep shadow, ignition glow, merkstave rotation), InteractiveRuneStonesWidget cluster (swirl/clatter + mediumImpact haptics + ledger re-weave, downward top-stone cast >60px/>450px/s), rune cast flight overlay, stone pile in overview deck",
       "SPRINT 1/2.7 LENORMAND: LenormandCard3DWidget (engraved procedural face with inset+title+keywords, asset fallback chain, 750ms materialization, always upright), same 36-card 3D shuffle/deal physics, pack-filtered DeckPickerSheet (tarot/lenormand/rune carousels), system-aware SpreadSelectorSheet",
       "SPRINT 1/2.8 ALMANAC: system switcher synced with the table, search + pack pill row, per-system filters (tarot: elements+arcana/suits; lenormand: playing suits 9/9/9/9; runes: elements+aetts 8/8/8), per-system grid tiles, CardDetailSheet union (MERKSTAVE toggle for runes, COMBINATIONS for lenormand, LORE for runes), Card Inspector per-system",
-      "SPRINT 1/2.9 TESTS: NEW divination_system_switch_test (16), lenormand_runes_data_test (8), multi_system_table_test (5); updated app_smoke/workspace_swipe/phase2_flow/almanac_element_filter/session_snapshot/spread_controller/spread_lock/oracle_synthesis/phase2_clarifier to the new header contract and union API — 165/165 green, flutter analyze ZERO issues, flutter build apk --debug CLEAN"
+      "SPRINT 1/2.9 TESTS: NEW divination_system_switch_test (16), lenormand_runes_data_test (8), multi_system_table_test (5); updated app_smoke/workspace_swipe/phase2_flow/almanac_element_filter/session_snapshot/spread_controller/spread_lock/oracle_synthesis/phase2_clarifier to the new header contract and union API — 165/165 green, flutter analyze ZERO issues, flutter build apk --debug CLEAN",
+      "SPRINT 2/2 DONE (confirmed by user): Ritual button re-homed to the bottom dock / Astral space, rune stone custom-texture loading (assets/runes/<id>/<rune_id>.png), on-device visual pass completed",
+      "ASTRAL P1.0 PLAN: PLAN.md created — 4 atomic phases + global design decisions (Meeus ch.25/32/37/47, swehouse.c port, UT time scale, swetest 2.10.04 anchors, no new dependencies)",
+      "ASTRAL P1.1 MODELS: lib/core/models/natal_chart.dart — HouseSystem(+RU subtitles), ZodiacSign (12, glyph/element/modality/ruler/trait, fromLongitude), PlanetId (10+ASC/MC, glyphs, archetypes), NatalPlanetPosition (formattedDegree), AspectType (5, orbs 8/5/7/7/8, harmony, dynamicLine), NatalAspect, MoonPhase, DailyTransitItem, DailyHoroscopeReport, NatalChart — all with toJson/fromJson",
+      "ASTRAL P1.2 TABLES: tool/gen_ephemeris_tables.py (downloads PyMeeus 0.5.12 from PyPI, parses VSOP87 L/B/R for 7 planets, Moon ch.47 LR/B, Pluto ch.37, trims |A|>=1000/5000) -> lib/core/data/astro_ephemeris_tables.dart (1049 lines, generated, reproducible)",
+      "ASTRAL P1.3 ENGINE: lib/core/services/natal_calculator_service.dart — julianDay/T, IAU2006 mean obliquity + Meeus nutation (main terms), GMST/GAST/RAMC, MC, Sun ch.25 coarse, Moon ch.47, VSOP87 Horner assembly + geocentric conversion with light-time, Pluto ch.37, retrograde detection, computeHouseCusps (Placidus iterative / Koch direct / Whole Sign / Porphyry high-lat fallback), calculateNatalChart, computeAspects (sorted by orb, strength 1-orb/max), recalculateWithHouseSystem, computeMoonPhase, computeDailyHoroscope (Sun..Saturn transits vs natal+ASC, deterministic energy score, non-fatalistic texts)",
+      "ASTRAL P1.4 CITIES: lib/core/data/astro_cities_data.dart — 96 cities (Kyrgyzstan/CIS/world) + searchAstroCities (prefix-first, case-insensitive)",
+      "ASTRAL P1.5 TESTS WRITTEN: test/natal_calculator_test.dart — 56 tests with swetest 2.10.04 anchors (2000-01-01 lat52.5 + Bishkek 1988-06-15 + 68N fallback), Meeus book anchors (Sun 1992-10-13, Moon 1992-04-12, Pluto 1992-10-13), NASA moon phases 2000, Mercury retrograde 2024-08, JSON round-trip, horoscope invariants, city catalog",
+      "ASTRAL P1.6 VERIFY PARTIAL: flutter analyze = ZERO issues; flutter test = 47/56 green (Sun/Moon/Mercury..Saturn vs swetest PASS, Placidus/Koch/Whole + 68N Porphyry fallback PASS, aspects PASS, Meeus Sun/Moon/Pluto-1992 PASS, GMST/RAMC PASS, horoscope PASS, JSON/cities/models PASS)",
+      "ASTRAL P1.7 FIXES: ascendant() switched to the swehouse Asc1 quadrant dispatch (`_asc1(ramc + 90, lat, sin ε, cos ε)`) — raw atan2 returned ASC + 180° (ASC house 7→1, whole-sign start now correct on both anchors); moon illumination sign corrected to (1 − cos e)/2 (new 0.000 / full 1.000 at NASA instants); Pluto frame mismatch resolved — Meeus ch.37 is J2000-referred while VSOP87D/the Sun/houses are date-referred, so the Pluto geocentric path now applies the general precession in longitude (Meeus 21.5: 1.3969713T + 0.0003086T²) instead of loosening the tolerance (1988 residual 0.1617° → 0.004°, 2000 residual unchanged at Sun-ch.25 precision 0.005°); test-side: trueObliquity tolerance 2e-6 → 1e-5 (main-term Δε vs swetest full nutation = 0.013\"), whole-sign Bishkek expectation 180° → 240° (ASC 263.23° = Sagittarius)",
+      "ASTRAL P1.8 GATE PASSED: flutter analyze = No issues found; test/natal_calculator_test.dart = 56/56 green; full `flutter test` = 221/221 green; PLAN.md Phase 1 marked [x] DONE; atomic session stopped"
     ],
-    "current_task": "SPRINT 1/2 DONE — all 4 workstreams shipped and verified (165/165 tests, analyze clean, debug APK built); commit pending",
+    "current_task": "ASTRAL PHASE 2 (next session only, per atomic protocol): AstralController (ChangeNotifier, UI-first persistence: profile CRUD, maxFreeProfiles = 2, PRO gate on the 3rd chart, selected profile, last horoscope cache) + 4th bottom nav tab ASTRAL in main_navigation_shell.dart (data/profile screens only, no wheel yet)",
     "pending_tasks": [
-      "SPRINT 2/2 (next): Ritual button re-homing to the bottom dock / Astral space, rune stone custom-texture loading (assets/runes/<id>/<rune_id>.png) already scaffolded, on-device visual pass",
+      "ASTRAL PHASE 2 (next session): AstralController (maxFreeProfiles=2, PRO gate on 3rd, UI-first persistence), 4th bottom nav tab ASTRAL in main_navigation_shell.dart (data/profile screens, no wheel yet)",
+      "ASTRAL PHASE 3: NatalWheelWidget + NatalWheelPainter (3-stage calibration/orbit/aspect-flash animation, particle flow, RepaintBoundary, 120 FPS), house-system switcher PLACIDUS|KOCH|WHOLE SIGN via recalculateWithHouseSystem, planet/aspect tap inspector",
+      "ASTRAL PHASE 4: profile detail page, daily horoscope & transit feed UI, Rituals Hub re-homing (dock done in Sprint 2/2), 2-chart synastry, Oracle Chat handoff",
       "KNOWN (pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on low-end devices",
-      "OPTIONAL: on-device visual pass on Redmi 12C for the rune cluster and the new 3-row header"
+      "OPTIONAL: on-device visual pass on Redmi 12C for the rune cluster and the 3-row header"
     ]
   },
   "discovered_bugs_or_blockers": [
+    "FIXED (ASTRAL P1): ASC was +180° on every chart — ascendant() used the raw atan2 form of the swehouse triangle; replaced with the Asc1 quadrant dispatch _asc1(ramc + 90, lat, sin epsilon, cos epsilon) → 186.9377° vs swetest 186.9378° (lat 52.5) and 263.2330° vs 263.2330° (Bishkek); ASC house is 1 again and whole-sign cusps start in the ASC sign",
+    "FIXED (ASTRAL P1): moon illumination was inverted — (1 + cos e)/2 gave 1.0 at new moon; now (1 − cos e)/2 → NASA 2000 instants give new 0.000, quarters 0.500, full 1.000",
+    "FIXED (ASTRAL P1, test-side): trueObliquity tolerance 2e-6 → 1e-5 — the main 4-term Δε differs from swetest's full nutation by 0.013\" (3.7e-6°)",
+    "FIXED (ASTRAL P1, test-side): whole-sign expectation for the Bishkek chart 180° → 240° (ASC 263.23° = Sagittarius); the 180° list belongs to the lat-52.5 chart",
+    "FIXED (ASTRAL P1): Pluto +0.162° at 1988-06-15 — root cause was a frame mismatch, not the ch.37 transcription: ch.37 output is J2000-referred (PyMeeus Pluto.geocentric_position converts it with J2000 obliquity and Sun J2000 coordinates) while VSOP87D, the Sun and the house frame are date-referred. The Pluto geocentric path now precesses the heliocentric longitude to the mean equinox of date (Meeus 21.5) → residual 0.004° (1988) and 0.005° (2000, limited by the ch.25 Sun), inside the 0.05° engine target; no tolerance loosening. plutoHeliocentricPosition stays J2000 (matches Meeus 37.a)",
     "FIXED (Sprint 5): mapper missed RWS minors (Cups01.jpg has no numeric prefix) — suit-prefix fallback added",
     "FIXED (Sprint 5): default 800x600 test viewport is LANDSCAPE (w>h) — overview test pinned to a portrait viewport",
     "KNOWN: tester.getSize inside FittedBox returns layout size, not painted size — tests compare deck height against the canvas box",
@@ -68,5 +88,5 @@
     "KNOWN: local timezone detection can fail on some devices — rituals fall back to UTC wall-clock (documented)",
     "FIXED (p10): dealCardAt depth guard used the ORIGINAL deck size (78) instead of the live stack length — RangeError risk on deep grabs; boundary now pos >= _cardIds.length"
   ],
-  "latest_observation_summary": "SPRINT 1/2 shipped: 3 divination systems (Tarot 78 / Lenormand 36 / Runes 24) across Table, Oracle Chat, History and Almanac; redesigned 3-row table header (no DIGITAL TABLE title / RITUAL / deck counters); 3D tactile rune stone cluster with swirl+cast physics; Lenormand engine on the same 3D card physics; verified flutter analyze ZERO issues, 165/165 tests, flutter build apk --debug clean."
+  "latest_observation_summary": "ASTRAL Phase 1 (offline ephemeris engine) DONE and gated. Engine: Meeus Sun ch.25 / Moon ch.47 / VSOP87 ch.32 / Pluto ch.37 + swehouse.c Placidus/Koch/Whole Sign/Porphyry, ASC/MC, natal aspects, moon phase, daily horoscope transits, 96-city catalog, reproducible table generator. All 5 open issues resolved at the root cause (ASC via _asc1, illumination sign, Pluto J2000→date precession, 2 test-side fixes). Gate: flutter analyze = No issues found, engine test file 56/56, full flutter test 221/221 → PLAN.md Phase 1 [x] DONE, session stopped per atomic protocol. Next session: Phase 2 (AstralController profiles + ASTRAL nav tab)."
 }
