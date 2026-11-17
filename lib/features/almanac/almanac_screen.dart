@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/data/tarot_deck_data.dart';
 import '../../core/models/dealt_card_slot.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/theme/app_colors.dart';
+import '../../state/deck_pack_controller.dart';
+import '../digital_table/widgets/deck_picker_sheet.dart';
 import '../digital_table/widgets/tarot_card_3d_widget.dart';
 import 'card_detail_sheet.dart';
 
@@ -70,6 +73,8 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
                     color: AppColors.textMuted,
                   ),
                 ),
+                const Spacer(),
+                _AlmanacDeckPill(),
               ],
             ),
           ),
@@ -309,3 +314,42 @@ class _ElementLegendBanner extends StatelessWidget {
     );
   }
 }
+
+/// Deck pill in the Almanac header — same switcher as the Digital Table.
+class _AlmanacDeckPill extends StatelessWidget {
+  const _AlmanacDeckPill();
+
+  @override
+  Widget build(BuildContext context) {
+    final pack = context.watch<DeckPackController>().activePack;
+    return GestureDetector(
+      onTap: () => DeckPickerSheet.show(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.surface.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.style_outlined,
+                size: 12, color: AppColors.lavender),
+            const SizedBox(width: 6),
+            Text(
+              pack.name.toUpperCase(),
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 8.5,
+                letterSpacing: 1.4,
+                fontWeight: FontWeight.w700,
+                color: AppColors.lavender,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 
@@ -14,21 +15,40 @@ class DetectedCard {
   const DetectedCard(this.card, this.isReversed);
 }
 
-/// Image compression + spread detection.
+/// Image compression + spread detection with a dual AI pipeline:
 ///
-/// Set `--dart-define=VISION_API_URL=... --dart-define=VISION_API_KEY=...`
-/// to enable the OpenAI-compatible vision endpoint. Without them the service
-/// runs a fast, deterministic offline mock — the full scan flow is testable
-/// before any API keys exist.
+/// 1. PRIMARY — local/tunneled RTX 3080 worker: OpenAI/Ollama-compatible
+///    vision endpoint (`PRIMARY_WORKER_URL` dart-define), 3500 ms timeout.
+/// 2. FALLBACK — Gemini Flash cloud endpoint (`VISION_API_URL` /
+///    `VISION_API_KEY`), used when the worker is offline, times out or
+///    errors (PC off, power outage, …).
+/// 3. OFFLINE SAFETY NET — deterministic local mock so the scan flow never
+///    crashes without any network/key.
 class VisionScannerService {
-  VisionScannerService({http.Client? client}) : _client = client ?? http.Client();
+  VisionScannerService({http.Client? client})
+      : _client = client ?? http.Client();
 
-  static const apiUrl = String.fromEnvironment('VISION_API_URL');
-  static const apiKey = String.fromEnvironment('VISION_API_KEY');
+  static const primaryWorkerUrl = String.fromEnvironment('PRIMARY_WORKER_URL');
+  static const primaryWorkerKey = String.fromEnvironment('PRIMARY_WORKER_KEY');
+  static const primaryWorkerModel = String.fromEnvironment(
+    'PRIMARY_WORKER_VISION_MODEL',
+    defaultValue: 'qwen2.5vl',
+  );
+  static const cloudUrl = String.fromEnvironment('VISION_API_URL');
+  static const cloudKey = String.fromEnvironment('VISION_API_KEY');
+  static const cloudModel = String.fromEnvironment(
+    'VISION_API_MODEL',
+    defaultValue: 'gemini-2.5-flash',
+  );
+
+  static const primaryTimeout = Duration(milliseconds: 3500);
+  static const cloudTimeout = Duration(seconds: 20);
 
   final http.Client _client;
 
-  bool get isMock => apiUrl.isEmpty || apiKey.isEmpty;
+  bool get hasPrimary => primaryWorkerUrl.isNotEmpty;
+  bool get hasCloud => cloudUrl.isNotEmpty && cloudKey.isNotEmpty;
+  bool get isMock => !hasPrimary && !hasCloud;
 
   /// Decodes and re-encodes the capture as a ≤[maxDim] px JPEG (quality 80).
   Future<Uint8List> compressJpeg(Uint8List bytes, {int maxDim = 1024}) async {
@@ -48,6 +68,7 @@ class VisionScannerService {
   }
 
   /// Detects [cardCount] cards (card + orientation) in a compressed JPEG.
+  /// Worker → Gemini Flash → offline mock. Only throws on invalid args.
   Future<List<DetectedCard>> detectSpread({
     required Uint8List jpeg,
     required int cardCount,
@@ -55,8 +76,41 @@ class VisionScannerService {
     if (cardCount < 1 || cardCount > tarotDeck.length) {
       throw ArgumentError.value(cardCount, 'cardCount', 'must be 1..78');
     }
-    if (isMock) return _mockDetect(jpeg, cardCount);
-    return _remoteDetect(jpeg, cardCount);
+    // 1) Local RTX 3080 worker first.
+    if (hasPrimary) {
+      try {
+        return await _detectOpenAi(
+          url: primaryWorkerUrl,
+          key: primaryWorkerKey,
+          model: primaryWorkerModel,
+          timeout: primaryTimeout,
+          jpeg: jpeg,
+          cardCount: cardCount,
+        );
+      } catch (e) {
+        // PC off / power outage / timeout / bad response — fall through.
+        debugPrint('vision: primary worker unreachable '
+            '(${e.runtimeType}), falling back to cloud');
+      }
+    }
+    // 2) Gemini Flash cloud fallback.
+    if (hasCloud) {
+      try {
+        return await _detectOpenAi(
+          url: cloudUrl,
+          key: cloudKey,
+          model: cloudModel,
+          timeout: cloudTimeout,
+          jpeg: jpeg,
+          cardCount: cardCount,
+        );
+      } catch (e) {
+        debugPrint('vision: cloud endpoint failed '
+            '(${e.runtimeType}), offline mode');
+      }
+    }
+    // 3) Offline deterministic safety net.
+    return _mockDetect(jpeg, cardCount);
   }
 
   /// Deterministic per image: the same photo always yields the same spread.
@@ -73,21 +127,28 @@ class VisionScannerService {
     ];
   }
 
-  Future<List<DetectedCard>> _remoteDetect(
-    Uint8List jpeg,
-    int cardCount,
-  ) async {
+  /// OpenAI/Ollama-compatible chat-completions vision request. Never logs
+  /// keys or image payloads (Zero-Knowledge).
+  Future<List<DetectedCard>> _detectOpenAi({
+    required String url,
+    required String key,
+    required String model,
+    required Duration timeout,
+    required Uint8List jpeg,
+    required int cardCount,
+  }) async {
     final b64 = base64Encode(jpeg);
     final cardNames = tarotDeck.map((c) => c.name).join(', ');
     final response = await _client
         .post(
-          Uri.parse(apiUrl),
+          Uri.parse(url),
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer $apiKey',
+            if (key.isNotEmpty) 'Authorization': 'Bearer $key',
           },
           body: jsonEncode({
-            'model': 'gpt-4o-mini',
+            'model': model,
+            'stream': false,
             'messages': [
               {
                 'role': 'user',
@@ -108,10 +169,10 @@ class VisionScannerService {
             ],
           }),
         )
-        .timeout(const Duration(seconds: 30));
+        .timeout(timeout);
 
     if (response.statusCode != 200) {
-      throw Exception('Vision API responded ${response.statusCode}');
+      throw Exception('vision endpoint responded ${response.statusCode}');
     }
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final choices = data['choices'] as List;

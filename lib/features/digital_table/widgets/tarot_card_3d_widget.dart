@@ -3,63 +3,221 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/tarot_card_model.dart';
+import '../../../core/models/tarot_deck_pack.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../state/deck_pack_controller.dart';
+import 'foil_glint.dart';
 
-/// Procedural dark-lavender geometric card back — no image assets required.
+/// Procedural card back — seven bespoke patterns (one per deck style), no
+/// image assets required. Palette follows the active deck pack.
 class CardBackPainter extends CustomPainter {
-  const CardBackPainter();
+  const CardBackPainter({this.pack});
+
+  final TarotDeckPack? pack;
+
+  Color get _accent => Color(pack?.backAccentArgb ?? 0xFFA78BFA);
+  Color get _secondary => Color(pack?.backSecondaryArgb ?? 0xFF6366F1);
 
   @override
   void paint(Canvas canvas, Size size) {
+    // The very first frame on a real device can arrive with a 0x0 surface
+    // ("FlutterRenderer: Width is zero"). Several back styles derive loop
+    // steps from size.width, so a zero width produces step 0 and an
+    // infinite loop on the main thread. Paint nothing until a real size
+    // is laid out.
+    if (size.isEmpty) return;
+    final style = pack?.backStyle ?? CardBackStyle.obsidian;
     final r = RRect.fromRectAndRadius(
       Offset.zero & size,
       Radius.circular(size.width * 0.06),
     );
     canvas.drawRRect(r, Paint()..color = AppColors.surface);
 
-    // Hairline inner frame.
-    canvas.drawRRect(
-      r.deflate(size.width * 0.05),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = AppColors.border,
-    );
+    final frame = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = _accent.withValues(alpha: 0.5);
+    canvas.drawRRect(r.deflate(size.width * 0.05), frame);
 
-    // Diagonal lattice.
+    switch (style) {
+      case CardBackStyle.obsidian:
+        _paintObsidian(canvas, size);
+      case CardBackStyle.marseille:
+        _paintMarseille(canvas, size);
+      case CardBackStyle.hermetic:
+        _paintHermetic(canvas, size);
+      case CardBackStyle.botanical:
+        _paintBotanical(canvas, size);
+      case CardBackStyle.visconti:
+        _paintVisconti(canvas, size);
+      case CardBackStyle.shadow:
+        _paintShadow(canvas, size);
+      case CardBackStyle.cyber:
+        _paintCyber(canvas, size);
+    }
+  }
+
+  void _paintObsidian(Canvas canvas, Size size) {
     final step = size.width * 0.22;
     final lattice = Paint()
       ..strokeWidth = 0.6
-      ..color = AppColors.border;
+      ..color = _accent.withValues(alpha: 0.16);
     for (double x = -size.height; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), lattice);
-      canvas.drawLine(Offset(x + size.height, 0), Offset(x, size.height), lattice);
+      canvas.drawLine(
+          Offset(x, 0), Offset(x + size.height, size.height), lattice);
+      canvas.drawLine(
+          Offset(x + size.height, 0), Offset(x, size.height), lattice);
     }
+    _paintSigil(canvas, size);
+  }
 
-    // Center sigil: glowing ring + indigo diamond.
+  void _paintMarseille(Canvas canvas, Size size) {
+    final inner = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = _accent.withValues(alpha: 0.7);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(size.width * 0.09, size.height * 0.09,
+            size.width * 0.82, size.height * 0.82),
+        Radius.circular(size.width * 0.03),
+      ),
+      inner,
+    );
+    final hatch = Paint()
+      ..strokeWidth = 0.6
+      ..color = _secondary.withValues(alpha: 0.22);
+    const gap = 14.0;
+    for (double y = size.height * 0.12; y < size.height * 0.88; y += gap) {
+      canvas.drawLine(Offset(size.width * 0.12, y),
+          Offset(size.width * 0.88, y), hatch);
+    }
+    for (double x = size.width * 0.12; x < size.width * 0.88; x += gap) {
+      canvas.drawLine(Offset(x, size.height * 0.12),
+          Offset(x, size.height * 0.88), hatch);
+    }
+    _paintSigil(canvas, size, diamond: true);
+  }
+
+  void _paintHermetic(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width * 0.26;
+    final radius = size.width * 0.30;
+    final line = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.1
+      ..color = _accent.withValues(alpha: 0.8);
+    canvas.drawCircle(center, radius, line);
+    final r1 = radius * 0.92;
+    final path = Path();
+    for (var k = 0; k < 2; k++) {
+      final start = -math.pi / 2 + k * math.pi / 3;
+      for (var v = 0; v <= 3; v++) {
+        final a = start + v * 2 * math.pi / 3;
+        final p = Offset(
+            center.dx + r1 * math.cos(a), center.dy + r1 * math.sin(a));
+        v == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
+      }
+    }
+    canvas.drawPath(path, line);
     canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4
-        ..color = AppColors.indigo.withValues(alpha: 0.35)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
-    );
+        center, radius * 0.08, Paint()..color = _secondary);
+    final dot = Paint()..color = _secondary.withValues(alpha: 0.7);
+    for (final c in [
+      Offset(size.width * 0.16, size.height * 0.16),
+      Offset(size.width * 0.84, size.height * 0.16),
+      Offset(size.width * 0.16, size.height * 0.84),
+      Offset(size.width * 0.84, size.height * 0.84),
+    ]) {
+      canvas.drawCircle(c, 2.4, dot);
+    }
+  }
+
+  void _paintBotanical(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * 0.58);
+    final stem = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = _accent.withValues(alpha: 0.75);
+    // Stem arcs fanning out like a fern.
+    for (var i = -3; i <= 3; i++) {
+      final rect = Rect.fromCircle(
+        center: center,
+        radius: size.width * 0.10 * (4 - i.abs()),
+      );
+      canvas.drawArc(
+        rect.translate(
+            -size.width * 0.22 * i.abs(), -size.height * 0.08 * i.abs()),
+        math.pi * (0.9 + 0.05 * i),
+        math.pi * 0.5,
+        false,
+        stem,
+      );
+      canvas.drawArc(
+        rect.translate(
+            size.width * 0.22 * i.abs(), -size.height * 0.08 * i.abs()),
+        math.pi * (0.55 + 0.05 * i),
+        math.pi * 0.5,
+        false,
+        stem,
+      );
+    }
+    canvas.drawLine(
+        Offset(center.dx, size.height * 0.3),
+        Offset(center.dx, size.height * 0.86),
+        Paint()
+          ..strokeWidth = 1
+          ..color = _secondary.withValues(alpha: 0.6));
+    final dot = Paint()..color = _secondary.withValues(alpha: 0.7);
+    for (var i = 0; i < 12; i++) {
+      final a = i * math.pi * 2 / 12;
+      canvas.drawCircle(
+        Offset(center.dx + size.width * 0.3 * math.cos(a),
+            center.dy + size.height * 0.18 * math.sin(a) - size.height * 0.08),
+        1.8,
+        dot,
+      );
+    }
+  }
+
+  void _paintVisconti(Canvas canvas, Size size) {
+    final dot = Paint()..color = _secondary.withValues(alpha: 0.18);
+    const gap = 18.0;
+    for (double y = 0; y < size.height; y += gap) {
+      for (double x = 0; x < size.width; x += gap) {
+        canvas.drawCircle(Offset(x, y), 0.9, dot);
+      }
+    }
+    final center = Offset(size.width / 2, size.height / 2);
+    final ring = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3
+      ..color = _accent.withValues(alpha: 0.85);
+    for (final f in [0.30, 0.22, 0.14]) {
+      canvas.drawCircle(center, size.width * f, ring);
+    }
+    final petal = Paint()..color = _accent.withValues(alpha: 0.8);
+    for (var i = 0; i < 12; i++) {
+      final a = i * math.pi * 2 / 12;
+      canvas.drawCircle(
+        Offset(center.dx + size.width * 0.26 * math.cos(a),
+            center.dy + size.width * 0.26 * math.sin(a)),
+        2.2,
+        petal,
+      );
+    }
     canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = AppColors.lavender.withValues(alpha: 0.75),
-    );
-    final d = radius * 0.55;
+        center, size.width * 0.045, Paint()..color = _secondary);
+  }
+
+
+
+  void _paintShadow(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final d = size.width * 0.20;
     final diamond = Path()
       ..moveTo(center.dx, center.dy - d)
       ..lineTo(center.dx + d, center.dy)
@@ -68,43 +226,203 @@ class CardBackPainter extends CustomPainter {
       ..close();
     canvas.drawPath(
       diamond,
-      Paint()..color = AppColors.indigo.withValues(alpha: 0.85),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = _accent.withValues(alpha: 0.9),
     );
-    final dot = radius * 0.2;
+    canvas.drawLine(
+      Offset(center.dx, center.dy - d * 0.55),
+      Offset(center.dx, center.dy + d * 0.55),
+      Paint()
+        ..strokeWidth = 1
+        ..color = _secondary.withValues(alpha: 0.8),
+    );
+    final slash = Paint()
+      ..strokeWidth = 0.8
+      ..color = _secondary.withValues(alpha: 0.35);
+    canvas.drawLine(Offset(size.width * 0.16, size.height * 0.16),
+        Offset(size.width * 0.84, size.height * 0.84), slash);
+    canvas.drawLine(Offset(size.width * 0.84, size.height * 0.16),
+        Offset(size.width * 0.16, size.height * 0.84), slash);
+  }
+
+  void _paintCyber(Canvas canvas, Size size) {
+    final trace = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.1
+      ..color = _accent.withValues(alpha: 0.8);
+    final via = Paint()..color = _secondary.withValues(alpha: 0.9);
+    final segs = [
+      (Offset(size.width * 0.16, size.height * 0.22),
+          Offset(size.width * 0.40, size.height * 0.22),
+          Offset(size.width * 0.40, size.height * 0.40)),
+      (Offset(size.width * 0.84, size.height * 0.78),
+          Offset(size.width * 0.60, size.height * 0.78),
+          Offset(size.width * 0.60, size.height * 0.60)),
+      (Offset(size.width * 0.16, size.height * 0.78),
+          Offset(size.width * 0.40, size.height * 0.78),
+          Offset(size.width * 0.40, size.height * 0.60)),
+      (Offset(size.width * 0.84, size.height * 0.22),
+          Offset(size.width * 0.60, size.height * 0.22),
+          Offset(size.width * 0.60, size.height * 0.40)),
+    ];
+    for (final s in segs) {
+      canvas.drawLine(s.$1, s.$2, trace);
+      canvas.drawLine(s.$2, s.$3, trace);
+      canvas.drawCircle(s.$2, 2.2, via);
+    }
+    final center = Offset(size.width / 2, size.height / 2);
+    canvas.drawCircle(center, 3.2, via);
+    for (var i = 0; i < 8; i++) {
+      final a = i * math.pi * 2 / 8;
+      final p = Offset(center.dx + size.width * 0.22 * math.cos(a),
+          center.dy + size.width * 0.22 * math.sin(a));
+      canvas.drawLine(
+          center,
+          p,
+          Paint()
+            ..strokeWidth = 0.8
+            ..color = _accent.withValues(alpha: 0.5));
+      canvas.drawCircle(p, 1.6, via);
+    }
+  }
+
+  void _paintSigil(Canvas canvas, Size size, {bool diamond = false}) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width * 0.26;
     canvas.drawCircle(
       center,
-      dot,
-      Paint()..color = AppColors.lavender.withValues(alpha: 0.9),
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..color = _secondary.withValues(alpha: 0.35)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
+    );
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = _accent.withValues(alpha: 0.75),
+    );
+    final d = radius * (diamond ? 0.7 : 0.55);
+    final path = Path()
+      ..moveTo(center.dx, center.dy - d)
+      ..lineTo(center.dx + d, center.dy)
+      ..lineTo(center.dx, center.dy + d)
+      ..lineTo(center.dx - d, center.dy)
+      ..close();
+    canvas.drawPath(
+      path,
+      Paint()..color = _secondary.withValues(alpha: 0.85),
+    );
+    canvas.drawCircle(
+      center,
+      radius * 0.2,
+      Paint()..color = _accent.withValues(alpha: 0.9),
     );
   }
 
   @override
-  bool shouldRepaint(covariant CardBackPainter oldDelegate) => false;
+  bool shouldRepaint(covariant CardBackPainter oldDelegate) =>
+      oldDelegate.pack?.id != pack?.id;
 }
 
-/// RepaintBoundary-wrapped procedural card back.
+/// RepaintBoundary-wrapped procedural card back with an optional specular
+/// glint that slides with the card's 3D angle.
 class CardBack extends StatelessWidget {
-  const CardBack({super.key, required this.width, required this.height});
+  const CardBack({
+    super.key,
+    required this.width,
+    required this.height,
+    this.pack,
+    this.angleY = 0,
+    this.angleX = 0,
+    this.glint = false,
+  });
 
   final double width;
   final double height;
+  final TarotDeckPack? pack;
+  final double angleY;
+  final double angleX;
+  final bool glint;
 
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(width * 0.06),
-        child: CustomPaint(
-          size: Size(width, height),
-          painter: const CardBackPainter(),
+        child: Stack(
+          children: [
+            CustomPaint(
+              size: Size(width, height),
+              painter: CardBackPainter(pack: pack),
+            ),
+            if (glint)
+              Positioned.fill(
+                child: FoilGlint(
+                  angleY: angleY,
+                  angleX: angleX,
+                  intensity: 0.6,
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// A single 3D tarot card: 2.5D perspective, isometric tilt, 600ms
-/// `rotateY(π)` flip with a haptic at the 90° midpoint.
+/// A single 3D tarot card: 2.5D perspective, isometric tilt, 680ms
+/// `rotateY(π)` flip on `Curves.easeInOutCubic` (deliberate, heavy,
+/// ceremonial) with a haptic at the 90° midpoint, plus a layered 3D
+/// card-edge bevel (4 px, dark obsidian with a muted-gold rim) that
+/// becomes visible while the card passes through 45°–135°.
+
+/// Flip duration: 680ms — +40% heavier than the old snappy 600ms flip.
+const cardFlipDuration = Duration(milliseconds: 680);
+
+/// Physical thickness of the card's edge/rim (spec: 4.0 px).
+const cardFlipThicknessPx = 4.0;
+
+/// Number of stacked bevel strips composing the 3D edge.
+const cardEdgeSlices = 5;
+
+/// Per-strip width: [cardFlipThicknessPx] / [cardEdgeSlices].
+const cardEdgeStripWidth = cardFlipThicknessPx / cardEdgeSlices;
+
+/// Dark obsidian body of the card edge.
+const cardEdgeBody = Color(0xFF1B1B24);
+
+/// Muted antique-gold rim of the card edge (no kitsch — just a hairline).
+const cardEdgeRimGold = Color(0xFF9C8A66);
+
+/// Screen-space X of the k-th stacked edge strip (the card's own left edge
+/// is 0) while the card flips at [angle] rad around Y.
+///
+/// The strips cluster along the card's TURNING edge and spread to the full
+/// [cardFlipThicknessPx] as the card passes edge-on (±π/2), so the 3D rim
+/// is clearly visible through 45°–135° and collapses behind the face at
+/// 0/π. [leadingSign] = +1 while the front face turns away, -1 while the
+/// back face turns in.
+double cardEdgeStripX({
+  required double angle,
+  required double width,
+  required double leadingSign,
+  required int k,
+}) {
+  final sinA = math.sin(angle).abs();
+  final cosA = math.cos(angle).abs();
+  final turningEdge = leadingSign * (cosA * width / 2);
+  final spread =
+      (k / (cardEdgeSlices - 1) - 0.5) * cardFlipThicknessPx * sinA;
+  return width / 2 + turningEdge + spread;
+}
+
 class TarotCard3DWidget extends StatefulWidget {
   const TarotCard3DWidget({
     super.key,
@@ -137,8 +455,14 @@ class _TarotCard3DWidgetState extends State<TarotCard3DWidget>
     with SingleTickerProviderStateMixin {
   late final AnimationController _flip = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 600),
+    duration: cardFlipDuration,
   )..addListener(_onFlipTick);
+
+  /// The ceremonial timing curve: heavy start, heavy stop, graceful middle.
+  late final CurvedAnimation _flipCurve = CurvedAnimation(
+    parent: _flip,
+    curve: Curves.easeInOutCubic,
+  );
 
   bool _flipping = false;
   double _lastValue = 0;
@@ -153,6 +477,7 @@ class _TarotCard3DWidgetState extends State<TarotCard3DWidget>
 
   @override
   void dispose() {
+    _flipCurve.dispose();
     _flip.dispose();
     super.dispose();
   }
@@ -174,11 +499,12 @@ class _TarotCard3DWidgetState extends State<TarotCard3DWidget>
 
   @override
   Widget build(BuildContext context) {
+    final pack = context.watch<DeckPackController>().activePack;
     final content = RepaintBoundary(
       child: AnimatedBuilder(
         animation: _flip,
         builder: (context, _) {
-          final v = _flip.value;
+          final v = _flipCurve.value;
           final showFace =
               widget.state == SlotState.faceUp || (_flipping && v >= 0.5);
           var angle = 0.0;
@@ -189,17 +515,62 @@ class _TarotCard3DWidgetState extends State<TarotCard3DWidget>
             ..setEntry(3, 2, perspectiveEntry)
             ..rotateX(widget.tilt ? slotTiltRadians : 0)
             ..rotateY(angle);
-          return Transform(
-            alignment: Alignment.center,
-            transform: matrix,
-            child: showFace
-                ? _CardFace(
-                    card: widget.card,
-                    isReversed: widget.isReversed,
-                    width: widget.width,
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // 3D card-edge bevel: stacked 0.8px strips along the turning
+              // edge — dark obsidian body, muted-gold rim. They spread to
+              // the full 4px thickness as the card passes edge-on (π/2).
+              if (_flipping)
+                for (var k = 0; k < cardEdgeSlices; k++)
+                  Positioned(
+                    left: cardEdgeStripX(
+                          angle: angle,
+                          width: widget.width,
+                          leadingSign: v < 0.5 ? 1 : -1,
+                          k: k,
+                        ) -
+                        cardEdgeStripWidth / 2,
+                    top: 0,
+                    width: cardEdgeStripWidth,
                     height: widget.height,
-                  )
-                : CardBack(width: widget.width, height: widget.height),
+                    child: ColoredBox(
+                      color: k == 0 || k == cardEdgeSlices - 1
+                          ? cardEdgeRimGold
+                          : cardEdgeBody,
+                    ),
+                  ),
+              Transform(
+                alignment: Alignment.center,
+                transform: matrix,
+                child: Stack(
+                  children: [
+                    showFace
+                        ? _CardFace(
+                            card: widget.card,
+                            isReversed: widget.isReversed,
+                            width: widget.width,
+                            height: widget.height,
+                            pack: pack,
+                          )
+                        : CardBack(
+                            width: widget.width,
+                            height: widget.height,
+                            pack: pack,
+                          ),
+                    // Specular sheen slides across the card mid-flip.
+                    if (_flipping)
+                      Positioned.fill(
+                        child: FoilGlint(
+                          angleY: angle,
+                          angleX: widget.tilt ? slotTiltRadians : 0,
+                          intensity: 0.55,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -219,43 +590,73 @@ class _CardFace extends StatelessWidget {
     required this.isReversed,
     required this.width,
     required this.height,
+    required this.pack,
   });
 
   final TarotCard card;
   final bool isReversed;
   final double width;
   final double height;
+  final TarotDeckPack pack;
+
+  /// Smart asset resolver with zero-crash fallback: legacy bundled artwork
+  /// → active pack candidates (`<id>.jpg/png`, `00.jpg`, RWS names) → the
+  /// bespoke procedural face in the pack's palette.
+  Widget _faceArt() {
+    final candidates = pack.cardAssetCandidates(card);
+    Widget fallback() => _TypographicFace(card: card, width: width, pack: pack);
+    Widget build(int i) => i >= candidates.length
+        ? fallback()
+        : Image.asset(
+            candidates[i],
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => build(i + 1),
+          );
+    return Image.asset(
+      'assets/cards/${card.id}.png',
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => build(0),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final faceSec = Color(pack.faceSecondaryArgb);
+    final faceAccent = Color(pack.faceAccentArgb);
     final face = Container(
       width: width,
       height: height,
       padding: EdgeInsets.all(width * 0.055),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1A1A24), AppColors.surface],
+          colors: [
+            Color.lerp(faceSec, Colors.black, 0.45)!,
+            AppColors.surface,
+          ],
         ),
         borderRadius: BorderRadius.circular(width * 0.06),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: faceAccent.withValues(alpha: 0.35)),
       ),
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                card.positionLabel,
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: width * 0.07,
-                  letterSpacing: 1.4,
-                  color: AppColors.textMuted,
+              Expanded(
+                child: Text(
+                  card.positionLabel,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: width * 0.07,
+                    letterSpacing: 1.4,
+                    color: faceAccent.withValues(alpha: 0.9),
+                  ),
                 ),
               ),
               Text(
                 '${card.element.glyph} ${card.element.label.toUpperCase()}',
+                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: width * 0.055,
                   letterSpacing: 1.2,
@@ -264,16 +665,7 @@ class _CardFace extends StatelessWidget {
               ),
             ],
           ),
-          Expanded(
-            child: Image.asset(
-              'assets/cards/${card.id}.png',
-              fit: BoxFit.cover,
-              // Drop artwork into assets/cards/<id>.png to replace the
-              // built-in typographic face.
-              errorBuilder: (_, _, _) =>
-                  _TypographicFace(card: card, width: width),
-            ),
-          ),
+          Expanded(child: _faceArt()),
           Text(
             card.arcana == Arcana.major
                 ? 'MAJOR ARCANA'
@@ -292,20 +684,26 @@ class _CardFace extends StatelessWidget {
 }
 
 class _TypographicFace extends StatelessWidget {
-  const _TypographicFace({required this.card, required this.width});
+  const _TypographicFace({
+    required this.card,
+    required this.width,
+    required this.pack,
+  });
 
   final TarotCard card;
   final double width;
+  final TarotDeckPack pack;
 
   @override
   Widget build(BuildContext context) {
+    final accent = Color(pack.faceAccentArgb);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             card.element.glyph,
-            style: TextStyle(fontSize: width * 0.16, color: card.element.accent),
+            style: TextStyle(fontSize: width * 0.16, color: accent),
           ),
           const SizedBox(height: 4),
           Text(

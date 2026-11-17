@@ -29,8 +29,11 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       body: IndexedStack(
         index: _index,
         children: [
-          CameraScanScreen(onHandoff: () => _switchTo(1)),
-          const DigitalTableScreen(),
+          CameraScanScreen(
+            isActiveTab: _index == 0,
+            onHandoff: () => _switchTo(1),
+          ),
+          DigitalTableScreen(onOpenCameraClarifier: () => _switchTo(0)),
           const AlmanacScreen(),
         ],
       ),

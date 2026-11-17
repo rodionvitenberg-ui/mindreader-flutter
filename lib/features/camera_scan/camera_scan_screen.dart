@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -15,10 +17,22 @@ import '../../state/spread_controller.dart';
 /// simulated viewfinder + mock scan on desktop/emulator, dynamic lavender
 /// lock-on frames, then a seamless handoff to the Digital Table with every
 /// detected card already FACE UP.
+///
+/// LAZY CAMERA LIFECYCLE: the [CameraController] is initialized ONLY while
+/// [isActiveTab] is true (the CAMERA tab is open) and is disposed the
+/// instant the user switches away — the green OS privacy indicator must
+/// never stay on while the TABLE or ALMANAC tab is visible.
 class CameraScanScreen extends StatefulWidget {
-  const CameraScanScreen({super.key, required this.onHandoff});
+  const CameraScanScreen({
+    super.key,
+    required this.onHandoff,
+    this.isActiveTab = true,
+  });
 
   final VoidCallback onHandoff; // shell switches to the Digital Table
+
+  /// False while another shell tab is active: the camera stays OFF.
+  final bool isActiveTab;
 
   @override
   State<CameraScanScreen> createState() => _CameraScanScreenState();
@@ -47,12 +61,28 @@ class _CameraScanScreenState extends State<CameraScanScreen>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    if (_mobileCameraAvailable) _initCamera();
+    // The camera opens ONLY when this tab is actually active.
+    if (_mobileCameraAvailable && widget.isActiveTab) _initCamera();
+  }
+
+  @override
+  void didUpdateWidget(covariant CameraScanScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActiveTab == oldWidget.isActiveTab) return;
+    if (widget.isActiveTab) {
+      if (_camera == null && _mobileCameraAvailable) _initCamera();
+    } else {
+      // Leaving the CAMERA tab kills the hardware camera IMMEDIATELY —
+      // the green OS privacy indicator goes dark right away.
+      _releaseCamera();
+    }
   }
 
   Future<void> _initCamera() async {
     try {
       final cameras = await availableCameras();
+      // The user may have left the tab while the hardware was opening.
+      if (!mounted || !widget.isActiveTab) return;
       if (cameras.isEmpty) {
         setState(() => _initError = true);
         return;
@@ -61,21 +91,50 @@ class _CameraScanScreenState extends State<CameraScanScreen>
         (c) => c.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
-      _camera = CameraController(
+      final controller = CameraController(
         back,
         ResolutionPreset.high,
         enableAudio: false,
       );
-      await _camera!.initialize();
-      if (mounted) setState(() {});
+      await controller.initialize();
+      if (!mounted || !widget.isActiveTab) {
+        // Tab left mid-initialization: drop the hardware immediately.
+        await controller.dispose();
+        return;
+      }
+      _camera = controller;
+      if (mounted) setState(() => _initError = false);
     } catch (_) {
-      if (mounted) setState(() => _initError = true);
+      if (mounted && widget.isActiveTab) setState(() => _initError = true);
+    }
+  }
+
+  /// Disposes the hardware camera and resets all capture UI state. Safe to
+  /// call repeatedly — an already-disposed controller is ignored.
+  Future<void> _releaseCamera() async {
+    final camera = _camera;
+    _camera = null;
+    if (camera != null) {
+      try {
+        await camera.dispose();
+      } catch (_) {
+        // Already disposed — nothing to release.
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _flashOn = false;
+        _busy = false;
+        _lockOn = false;
+      });
     }
   }
 
   @override
   void dispose() {
-    _camera?.dispose();
+    final camera = _camera;
+    _camera = null;
+    if (camera != null) unawaited(camera.dispose());
     _lockOnAnim.dispose();
     super.dispose();
   }
@@ -90,15 +149,18 @@ class _CameraScanScreenState extends State<CameraScanScreen>
   /// Compress, detect, lock-on animation, then face-up handoff to the
   /// Table. [bytes] == null runs the deterministic mock scan (desktop) —
   /// mock bytes are a probe payload and skip JPEG re-compression.
+  /// When the table armed a single-card clarifier scan, only ONE card is
+  /// detected and appended as Card N+1 instead of replacing the spread.
   Future<void> _scan(Uint8List? bytes) async {
     if (_busy) return;
     final ctrl = context.read<SpreadController>();
+    final clarifierScan = ctrl.clarifierScanRequested;
     setState(() => _busy = true);
     try {
       final jpeg = bytes == null
           ? Uint8List.fromList(List.generate(256, (i) => i & 0xff))
           : await VisionScannerService().compressJpeg(bytes);
-      final count = ctrl.spreadType.cardCount;
+      final count = clarifierScan ? 1 : ctrl.spreadType.cardCount;
       final cards = await VisionScannerService().detectSpread(
         jpeg: jpeg,
         cardCount: count,
@@ -111,9 +173,13 @@ class _CameraScanScreenState extends State<CameraScanScreen>
       });
       _lockOnAnim.forward(from: 0).whenComplete(() {
         if (!mounted) return;
-        ctrl.loadScannedSpreadFaceUp(
-          [for (final d in cards) (d.card, d.isReversed)],
-        );
+        if (clarifierScan) {
+          ctrl.completeClarifierScan(cards.first.card, cards.first.isReversed);
+        } else {
+          ctrl.loadScannedSpreadFaceUp(
+            [for (final d in cards) (d.card, d.isReversed)],
+          );
+        }
         widget.onHandoff();
       });
     } catch (_) {
@@ -193,11 +259,15 @@ class _CameraScanScreenState extends State<CameraScanScreen>
               ),
               const SizedBox(height: 14),
               Text(
-                'POINT AT YOUR SPREAD ON THE TABLE',
+                ctrl.clarifierScanRequested
+                    ? 'PHOTOGRAPH YOUR NEXT PHYSICAL CARD'
+                    : 'POINT AT YOUR SPREAD ON THE TABLE',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 9.5,
                   letterSpacing: 2.2,
-                  color: AppColors.textMuted,
+                  color: ctrl.clarifierScanRequested
+                      ? AppColors.lavender
+                      : AppColors.textMuted,
                 ),
               ),
               const Spacer(),

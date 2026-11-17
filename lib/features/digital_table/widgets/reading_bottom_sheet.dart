@@ -63,22 +63,26 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
     setState(() => _contextChip = _contextChip == chip ? null : chip);
   }
 
-  void _startSynthesis() {
+  Future<void> _startSynthesis() async {
     final ctrl = context.read<SpreadController>();
-    final text = synthesizeSpread(
-      ctrl.slots,
-      ctrl.spreadType,
-      contextChip: _contextChip,
-    );
     _timer?.cancel();
     setState(() {
-      _fullText = text;
+      _fullText = '';
       _revealed = '';
       _synthesizing = true;
       _saved = false;
     });
+    // Dual AI pipeline: RTX 3080 worker → Gemini Flash → local engine.
+    // Never throws — the local synthesis is the guaranteed fallback.
+    final text = await OracleSynthesisService().synthesize(
+      slots: ctrl.slots,
+      type: ctrl.spreadType,
+      contextChip: _contextChip,
+    );
+    if (!mounted) return;
+    setState(() => _fullText = text);
     HapticFeedback.mediumImpact();
-    // Typewriter reveal: streaming feel, fully offline.
+    // Typewriter reveal: streaming feel for both remote and local text.
     _timer = Timer.periodic(const Duration(milliseconds: 14), (t) {
       if (!mounted) {
         t.cancel();
@@ -99,12 +103,19 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
 
   Future<void> _save() async {
     final ctrl = context.read<SpreadController>();
-    await LocalStorageService().saveSpread(
+    final storage = LocalStorageService();
+    await storage.saveSpread(
       ctrl.buildHistoryEntry(
         synthesis: _fullText,
         contextChip: _contextChip,
       ),
     );
+    // Ritual streak: today counts as a day with a completed reading.
+    try {
+      await storage.recordReadingDay();
+    } catch (_) {
+      // Streak bookkeeping is best-effort.
+    }
     if (!mounted) return;
     HapticFeedback.selectionClick();
     setState(() => _saved = true);
@@ -230,6 +241,20 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
                           fontSize: 13,
                           color: AppColors.textMuted,
                           height: 1.5,
+                        ),
+                      ),
+                    )
+                  else if (_synthesizing && _revealed.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.lavender,
+                          ),
                         ),
                       ),
                     )

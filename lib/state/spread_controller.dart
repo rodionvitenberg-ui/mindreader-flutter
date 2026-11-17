@@ -10,13 +10,16 @@ import '../core/models/tarot_card_model.dart';
 /// Single source of truth for the Digital Table AND the Camera handoff.
 /// Pure domain logic — the UI only reads state and calls these methods.
 class SpreadController extends ChangeNotifier {
-  SpreadController({Random? random}) : _rng = random ?? Random.secure() {
+  SpreadController({Random? random, int totalCards = 78})
+      : _rng = random ?? Random.secure(),
+        _deckSize = totalCards.clamp(1, tarotDeck.length) {
     _resetDeck();
     _resetSlots();
     shuffleDeck();
   }
 
   final Random _rng;
+  final int _deckSize; // physical stack size (default 78 = full tarot deck)
 
   late List<int> _cardIds; // shuffled order of tarotDeck ids
   late List<bool> _isReversed; // parallel orientation flags → 156 states
@@ -25,15 +28,47 @@ class SpreadController extends ChangeNotifier {
   SpreadType _spreadType = SpreadType.three;
   SpreadType get spreadType => _spreadType;
 
+  /// How the cards on the table were produced. The camera handoff flips
+  /// this to [TableSourceMode.physicalCameraSync]; spread switches and
+  /// table resets return to the digital deck.
+  TableSourceMode _sourceMode = TableSourceMode.digitalDeck;
+  TableSourceMode get sourceMode => _sourceMode;
+
+  /// Number of slots in the ORIGINAL spread template (clarifier slots are
+  /// appended on top of this count).
+  int get initialSpreadCardCount => _spreadType.cardCount;
+
   late List<DealtCardSlot> _slots;
   List<DealtCardSlot> get slots => List.unmodifiable(_slots);
 
-  int get remaining => tarotDeck.length - _topIndex;
+  /// Every slot of the initial spread template holds a FACE-UP card — the
+  /// gate for the ceremonial `SYNTHESIZE READING` action.
+  bool get initialSpreadAllFaceUp {
+    final base = _slots.take(_spreadType.cardCount).toList();
+    return base.isNotEmpty &&
+        base.every((s) => s.state == SlotState.faceUp);
+  }
+
+  /// Configured physical stack size (78 by default).
+  int get totalCards => _deckSize;
+
+  /// Cards still lying in the physical stack. Extracted cards are removed
+  /// from the list entirely (`dealCardAt`), so the live length is the
+  /// source of truth.
+  int get remaining => _cardIds.length - _topIndex;
 
   bool get allDealt => _slots.every((s) => s.state != SlotState.empty);
   bool get allFaceUp =>
       _slots.isNotEmpty && _slots.every((s) => s.state == SlotState.faceUp);
   int get faceUpCount => _slots.where((s) => s.state == SlotState.faceUp).length;
+
+  /// Cards currently lying on the table (any slot that holds a card).
+  int get dealtCount => _slots.where((s) => s.card != null).length;
+
+  /// Ledger invariant: physical stack + dealt cards == the full deck.
+  /// MUST always equal [totalCards] — resetting re-inserts every dealt
+  /// card back into the stack instead of losing it.
+  int get ledgerTotal => remaining + dealtCount;
 
   /// The next few cards on the stack — for the tactile deck fan display.
   List<(TarotCard, bool)> get deckTop {
@@ -41,6 +76,15 @@ class SpreadController extends ChangeNotifier {
     return [
       for (var i = 0; i < n; i++)
         (tarotDeck[_cardIds[_topIndex + i]], _isReversed[_topIndex + i]),
+    ];
+  }
+
+  /// The full physical stack still lying on the table (top of the deck is
+  /// the FIRST entry). Drives the 78-layer 3D thickness and the live badge.
+  List<(TarotCard, bool)> get remainingDeck {
+    return [
+      for (var i = _topIndex; i < _cardIds.length; i++)
+        (tarotDeck[_cardIds[i]], _isReversed[i]),
     ];
   }
 
@@ -55,8 +99,11 @@ class SpreadController extends ChangeNotifier {
   List<int> get deckOrder => List.unmodifiable(_cardIds);
 
   void _resetDeck() {
-    _cardIds = List<int>.generate(tarotDeck.length, (i) => i);
-    _isReversed = List<bool>.filled(tarotDeck.length, false);
+    // Growable: `dealCardAt` physically removes extracted cards from the
+    // middle of the stack (pick ANY exposed layer).
+    _cardIds =
+        List<int>.generate(_deckSize, (i) => i, growable: true);
+    _isReversed = List<bool>.filled(_deckSize, false, growable: true);
     _topIndex = 0;
   }
 
@@ -65,10 +112,14 @@ class SpreadController extends ChangeNotifier {
       _spreadType.cardCount,
       (i) => DealtCardSlot(index: i, role: _spreadType.slotRoles[i]),
     );
+    _clarifierCount = 0;
+    _pendingClarifierQuestion = null;
+    _sourceMode = TableSourceMode.digitalDeck;
   }
 
   /// Fisher–Yates shuffle with a cryptographically secure RNG; orientation is
   /// re-rolled per card so every one of the 156 states is reachable.
+  /// Resets depletion — used by spread switching and initial setup.
   void shuffleDeck() {
     for (var i = _cardIds.length - 1; i > 0; i--) {
       final j = _rng.nextInt(i + 1);
@@ -82,22 +133,54 @@ class SpreadController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Picking a spread resets the table with a freshly shuffled deck.
+  /// One riffle/weave pass: cryptographically permutes ONLY the cards still
+  /// lying in the stack ([remaining] cards) without touching already dealt
+  /// cards or the depletion counter — called on every shuffle weave tick.
+  void weaveShuffleRemaining({int swaps = 1}) {
+    final count = _cardIds.length - _topIndex;
+    if (count < 2) return;
+    for (var s = 0; s < swaps; s++) {
+      final a = _topIndex + _rng.nextInt(count);
+      final b = _topIndex + _rng.nextInt(count);
+      final tmpId = _cardIds[a];
+      _cardIds[a] = _cardIds[b];
+      _cardIds[b] = tmpId;
+      final tmpRev = _isReversed[a];
+      _isReversed[a] = _isReversed[b];
+      _isReversed[b] = tmpRev;
+    }
+    notifyListeners();
+  }
+
+  /// Picking a spread resets the table with a freshly shuffled FULL deck:
+  /// every dealt card is re-inserted into the 78-card physical stack, so
+  /// `remaining + dealtCount` always equals [totalCards] — no card is ever
+  /// lost from the ledger.
   void setSpreadType(SpreadType type) {
     if (type == _spreadType) return;
     _spreadType = type;
     _resetSlots();
+    _resetDeck();
     shuffleDeck();
   }
 
   /// Deals the next card FACE DOWN into the first empty slot.
   /// Returns the slot index, or null when the spread is full.
-  int? dealNextCard() {
+  int? dealNextCard() => dealCardAt(0);
+
+  /// Extracts the card at [depthFromTop] (0 = top card, 1 = the card under
+  /// it, ...) from the shuffled physical stack and deals it FACE DOWN into
+  /// the first empty slot. Returns the slot index, or null when the spread
+  /// is full or the depth is out of range.
+  int? dealCardAt(int depthFromTop) {
     final idx = nextEmptySlotIndex;
-    if (idx == null || _topIndex >= _cardIds.length) return null;
-    final card = tarotDeck[_cardIds[_topIndex]];
-    final reversed = _isReversed[_topIndex];
-    _topIndex++;
+    if (idx == null) return null;
+    final pos = _topIndex + depthFromTop;
+    if (depthFromTop < 0 || pos >= _deckSize) return null;
+    final card = tarotDeck[_cardIds[pos]];
+    final reversed = _isReversed[pos];
+    _cardIds.removeAt(pos);
+    _isReversed.removeAt(pos);
     _slots[idx].placeCardFaceDown(card, reversed);
     notifyListeners();
     return idx;
@@ -111,21 +194,130 @@ class SpreadController extends ChangeNotifier {
     }
   }
 
+  /// Stores the pre-draw intention (chip and/or typed/spoken note) on the
+  /// slot that just received card [index].
+  void setSlotUserContext(int index, {String? chip, String? text}) {
+    if (index < 0 || index >= _slots.length) return;
+    final slot = _slots[index];
+    if (slot.userContext == null) {
+      slot.setUserContext(chip: chip, text: text);
+      notifyListeners();
+    }
+  }
+
+  /// Camera-sync helper: attaches the context to the first FACE-UP slot
+  /// that has no intention yet. Returns false when every card is tagged.
+  bool attachContextToNextUntagged({String? chip, String? text}) {
+    for (final s in _slots) {
+      if (s.card != null && s.userContext == null) {
+        s.setUserContext(chip: chip, text: text);
+        notifyListeners();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // ---- endless single-card clarifiers -----------------------------------
+
+  int _clarifierCount = 0;
+
+  /// Appends Clarifier slot `N+1` (role `Clarifier N`, intention = the
+  /// follow-up question) and immediately deals the next digital card into
+  /// it FACE DOWN. Returns the new slot index, or null when the deck is
+  /// depleted.
+  int? addClarifierSlot({required String question}) {
+    if (_topIndex >= _cardIds.length) return null;
+    final idx = _appendClarifierSlot(question);
+    dealCardAt(0); // fills the freshly appended empty slot
+    return idx;
+  }
+
+  /// Deals the next card; when the initial spread is already full this
+  /// appends a Clarifier slot instead of refusing (endless expansion).
+  int? dealNextCardOrClarifier() =>
+      dealNextCard() ?? addClarifierSlot(question: 'What else does the table want to show?');
+
+  /// Same, for the tactile deck grab path (any valid depth).
+  int? dealCardAtOrClarifier(int depthFromTop) {
+    final direct = dealCardAt(depthFromTop);
+    if (direct != null) return direct;
+    if (depthFromTop < 0 || depthFromTop >= _deckSize) return null;
+    return addClarifierSlot(question: 'What else does the table want to show?');
+  }
+
+  int _appendClarifierSlot(String question) {
+    _clarifierCount++;
+    final slot = DealtCardSlot(
+      index: _slots.length,
+      role: 'Clarifier $_clarifierCount',
+    );
+    slot.setUserContext(text: question);
+    _slots.add(slot);
+    return slot.index;
+  }
+
+  // ---- phygital camera-to-table sync ------------------------------------
+
+  String? _pendingClarifierQuestion;
+
+  /// True while the camera is expected to photograph ONE physical clarifier
+  /// card that extends the current spread.
+  bool get clarifierScanRequested => _pendingClarifierQuestion != null;
+
+  /// Arms the clarifier camera scan with the follow-up question and marks
+  /// the session as a physical camera sync.
+  void requestClarifierScan(String question) {
+    _pendingClarifierQuestion = question;
+    _sourceMode = TableSourceMode.physicalCameraSync;
+    notifyListeners();
+  }
+
+  /// The camera recognized the photographed physical clarifier: append it
+  /// FACE UP as Card N+1. The digital 78-card ledger is untouched — a real
+  /// card never decrements [remaining]. Returns the new slot index.
+  int? completeClarifierScan(TarotCard card, bool reversed) {
+    final question = _pendingClarifierQuestion;
+    if (question == null) return null;
+    _pendingClarifierQuestion = null;
+    final idx = _appendClarifierSlot(question);
+    final slot = _slots[idx];
+    slot.fromPhysicalCard = true;
+    slot.placeCardFaceUp(card, reversed);
+    notifyListeners();
+    return idx;
+  }
+
+  void cancelClarifierScan() {
+    if (_pendingClarifierQuestion == null) return;
+    _pendingClarifierQuestion = null;
+    notifyListeners();
+  }
+
   /// Camera handoff: rebuilds the table with the exact scanned spread,
-  /// every card materialized FACE UP with threads ready.
+  /// every card materialized FACE UP with threads ready. The session
+  /// switches to [TableSourceMode.physicalCameraSync].
   void loadScannedSpreadFaceUp(List<(TarotCard, bool)> cards) {
     if (cards.isEmpty) return;
     _spreadType = spreadTypeForCount(cards.length);
+    _clarifierCount = 0;
+    _pendingClarifierQuestion = null;
+    _sourceMode = TableSourceMode.physicalCameraSync;
     _slots = List.generate(cards.length, (i) {
       final slot = DealtCardSlot(index: i, role: _spreadType.slotRoles[i]);
+      slot.fromPhysicalCard = true;
       slot.placeCardFaceUp(cards[i].$1, cards[i].$2);
       return slot;
     });
     notifyListeners();
   }
 
+  /// Clears the table AND physically returns every dealt card into the
+  /// 78-card stack (fresh `_resetDeck` + full shuffle), so the live counter
+  /// jumps back up to [totalCards] — the dealt cards are never lost.
   void resetTable() {
     _resetSlots();
+    _resetDeck();
     shuffleDeck();
   }
 

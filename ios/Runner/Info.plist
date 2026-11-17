@@ -22,6 +22,10 @@
 	<string>Mindreader uses the camera to scan your physical tarot spread.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Mindreader can import a photo of your spread from your library.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Mindreader listens while you speak your intention for the card.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Mindreader transcribes your spoken intention onto the table.</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>

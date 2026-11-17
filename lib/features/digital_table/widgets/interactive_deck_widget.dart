@@ -5,16 +5,54 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/models/tarot_deck_pack.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../state/deck_pack_controller.dart';
 import '../../../state/spread_controller.dart';
+import 'foil_glint.dart';
+import 'shuffle_physics.dart';
 import 'tarot_card_3d_widget.dart';
 
-/// The tactile deck. All gestures are touch-scoped to THIS widget only
-/// (`HitTestBehavior.opaque`): horizontal drag fans and cryptographically
-/// shuffles the deck (2.5D, haptic ticks), downward drag deals the top card
-/// into the pillar along a curved flight path.
+/// The hero 3D deck: a real 78-layer physical stack, touch-scoped
+/// (`HitTestBehavior.opaque`) so its gestures never fight the unified table
+/// scroll view:
+///
+/// * horizontal drag → uncompromised multi-card riffle: up to 20 REAL card
+///   layers individually articulated in 3D under the permanent isometric
+///   table camera (perspective 0.0014 + rotateX 0.16), staggered sine
+///   phases, cascading and interleaving. Haptic + `Random.secure()`
+///   permutation every 18 px;
+/// * release → the exact finger-release pose is BAKED as the new permanent
+///   rest state in the same frame (at most an 80ms ease-out micro-damp
+///   FORWARD along the release velocity) — the cards NEVER spring/roll
+///   backward toward a previous pose, and the interleaved layer order is
+///   kept;
+/// * every card layer carries a persistent lived-in resting imperfection
+///   (`CardRestPose`: dx ±6, dy ±3, rotZ ±0.045 rad) so even an untouched
+///   deck sits unevenly, with individual edges peeking out;
+/// * vertical drag → TRUE TOP-CARD EXTRACTION: the finger translation is
+///   applied DIRECTLY to the topmost rendered card layer
+///   ([topVisibleLayer] = the last visible entry of the paint order,
+///   starting from its exact shuffled rest pose) — no spawned proxy card.
+///   Pulling it down immediately exposes the card beneath. Released past
+///   the deal threshold, the true top card of the shuffled deck
+///   (depth 0) is handed off via [onDealRelease], the exposed second card
+///   is promoted to the new top of the paint order, and the rendered stack
+///   sinks proportionally (`deckTopCardDy(remaining/78)`), so the user
+///   physically sees and feels the deck thinning with every draw.
 class InteractiveDeckWidget extends StatefulWidget {
-  const InteractiveDeckWidget({super.key});
+  const InteractiveDeckWidget({
+    super.key,
+    this.onDealRelease,
+    this.randomSeed,
+  });
+
+  /// Fired when a grabbed card is released past the deal threshold. The
+  /// parent plays the single continuous flight into the target slot.
+  final void Function(DeckDealReleaseRequest request)? onDealRelease;
+
+  /// Test-only: pins the organic rest-pose RNG for deterministic layouts.
+  final int? randomSeed;
 
   @override
   State<InteractiveDeckWidget> createState() => _InteractiveDeckWidgetState();
@@ -22,116 +60,280 @@ class InteractiveDeckWidget extends StatefulWidget {
 
 class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
     with TickerProviderStateMixin {
-  static const _miniW = 52.0;
-  static const _miniH = 87.0;
+  late final math.Random _visualRng = math.Random(widget.randomSeed);
 
-  double _fan = 0;
-  bool _settling = false;
-  bool _dealing = false;
-  double _dragDown = 0;
+  /// Persistent lived-in imperfection of every visible layer — generated
+  /// once and regenerated only when the table is reset.
+  late final List<CardRestPose> _restPoses =
+      generateOrganicRestPoses(count: fanLayerCount, rng: _visualRng);
+
+  // ---- persistent shuffle state ----
+  double _travel = 0; // signed drag travel (at rest after the last release)
+  double _restTravel = 0; // frozen messy fan — NEVER resets to zero
+  double _sign = 1;
   int _lastTick = 0;
+  bool _shuffling = false; // finger is down
+  bool _settling = false; // settling into the NEW organic arrangement
+
+  /// Paint order of the fan layers (first = back). Weave ticks swap
+  /// adjacent entries so cards visibly interleave; the interleaved order
+  /// persists across releases — the exact shuffled arrangement stays.
+  final List<int> _layerOrder = List.generate(fanLayerCount, (i) => i);
+
+  // ---- grab/deal state ----
+  int? _grabbedLayer; // physical layer index under the finger (null = none)
+  Offset _dragDelta = Offset.zero; // finger-driven offset, deck-local
+  double _dragDown = 0; // total downward travel of the current grab
+  bool _returning = false; // un-dealt card springing back into the stack
 
   late final AnimationController _settle = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 700),
+    duration: microDampDuration,
   );
-  late final AnimationController _flight = AnimationController(
+  late final AnimationController _return = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 520),
+    duration: const Duration(milliseconds: 240),
   );
+
+  int _lastRemaining = -1;
 
   @override
   void dispose() {
     _settle.dispose();
-    _flight.dispose();
+    _return.dispose();
     super.dispose();
   }
 
-  double get _fanValue => _settling ? _settle.value : _fan;
+  /// One weave tick: two adjacent fan layers exchange render depths (the
+  /// visible interleave) and the underlying remaining deck is permuted
+  /// with `Random.secure()` in the controller.
+  void _interleave() {
+    if (_layerOrder.length < 2) return;
+    final a = _visualRng.nextInt(_layerOrder.length - 1);
+    final tmp = _layerOrder[a];
+    _layerOrder[a] = _layerOrder[a + 1];
+    _layerOrder[a + 1] = tmp;
+    context.read<SpreadController>().weaveShuffleRemaining();
+  }
 
-  void _onFanDrag(DragUpdateDetails d) {
-    setState(() => _fan += d.delta.dx);
-    final tick = _fan.abs() ~/ 24;
+  int get _visibleCount {
+    final remaining = context.read<SpreadController>().remaining;
+    return math.max(0, math.min(fanLayerCount, remaining));
+  }
+
+  /// Effective pose of one layer: fan choreography + its organic rest pose.
+  FanLayerPose _poseOf(int layer, int visibleCount, double travel) =>
+      FanLayerPose.of(
+        layer: layer,
+        count: visibleCount,
+        travel: travel,
+        sign: _sign,
+      ).withRest(_restPoses[layer % _restPoses.length]);
+
+  // ---- shuffle gestures (touch-scoped to the deck only) ----
+
+  void _onShuffleStart(DragStartDetails d) {
+    if (_grabbedLayer != null || _returning) return;
+    _settle.stop();
+    setState(() {
+      // Interrupting a running micro-damp: bake its current pose first so
+      // the fan never teleports back to a stale value.
+      if (_settling) _travel = _restTravel;
+      _shuffling = true;
+      _settling = false;
+      _lastTick = _travel.abs() ~/ weaveTickPx;
+    });
+  }
+
+  void _onShuffleUpdate(DragUpdateDetails d) {
+    if (!_shuffling) return;
+    setState(() => _travel += d.delta.dx);
+    final tick = _travel.abs() ~/ weaveTickPx;
     if (tick != _lastTick) {
       _lastTick = tick;
-      HapticFeedback.selectionClick(); // continuous subtle shuffle ticks
+      HapticFeedback.selectionClick(); // weave tick every 18 px
+      _interleave();
     }
   }
 
-  void _onFanEnd(DragEndDetails d) {
-    if (_fan.abs() > 40) {
-      context.read<SpreadController>().shuffleDeck();
+  void _onShuffleEnd(DragEndDetails d) {
+    if (!_shuffling) return;
+    _shuffling = false;
+    // BAKE THE EXACT FINGER-RELEASE POSE as the new permanent rest state.
+    // No reverse/settle spring toward the old pose — where the finger lifts
+    // is where the cards stay. At most an 80ms ease-out micro-damp drifts
+    // the fan FORWARD along the release velocity; it never moves backward.
+    final velocityX = d.velocity.pixelsPerSecond.dx;
+    final forwardDrift =
+        velocityX * _sign > 0 ? (velocityX.abs() * 0.08).clamp(0.0, 18.0) : 0.0;
+    final target = (_travel + _sign * forwardDrift)
+        .clamp(-fullSeparationPx, fullSeparationPx);
+    _sign = dragSignOf(_travel);
+    final from = separationOf(_travel);
+    final to = separationOf(target);
+    if (to > from) {
+      _restTravel = target;
+      setState(() => _settling = true);
       HapticFeedback.mediumImpact();
-    }
-    _lastTick = 0;
-    setState(() => _settling = true);
-    _settle.stop();
-    // Spring snap-back: the fan returns with the shared game-feel spring.
-    _settle
-        .animateWith(SpringSimulation(spring, _fan, 0, 0))
-        .whenCompleteOrCancel(() {
-      if (mounted) {
+      _settle
+          .animateWith(ShuffleMicroDamp(from: from, to: to))
+          .whenCompleteOrCancel(() {
+        if (!mounted) return;
         setState(() {
           _settling = false;
-          _fan = 0;
+          _travel = _restTravel; // the baked pose becomes the new rest
         });
-      }
-    });
+      });
+    } else {
+      // Exact bake in the same frame — zero animation, zero rollback.
+      _restTravel = _travel;
+      setState(() {});
+      HapticFeedback.mediumImpact();
+    }
   }
 
-  void _onDealDrag(DragUpdateDetails d) {
-    _dragDown += d.delta.dy;
-    if (_dragDown > 60) _tryDeal();
-  }
+  // ---- true top-card extraction (vertical drag, touch-scoped) ----
 
-  void _onDealEnd(DragEndDetails d) {
-    if (d.primaryVelocity != null && d.primaryVelocity! > 450) _tryDeal();
-    _dragDown = 0;
-  }
-
-  void _tryDeal() {
-    if (_dealing) return;
-    final ctrl = context.read<SpreadController>();
-    if (ctrl.nextEmptySlotIndex == null || ctrl.remaining == 0) {
-      HapticFeedback.heavyImpact(); // table is full
+  void _onGrabStart(DragStartDetails d) {
+    if (_shuffling || _settling || _grabbedLayer != null || _returning) {
       return;
     }
+    final visible = _visibleCount;
+    if (visible <= 0) return;
+    // The finger ALWAYS lifts the actual top card: the topmost rendered
+    // layer in the paint order. No hit-test picking, no proxy spawn.
+    final layer = topVisibleLayer(_layerOrder, visible);
     setState(() {
-      _dealing = true;
+      _grabbedLayer = layer;
+      _dragDelta = Offset.zero;
       _dragDown = 0;
     });
-    HapticFeedback.mediumImpact();
-    _flight.forward(from: 0).whenComplete(() {
-      context.read<SpreadController>().dealNextCard();
-      if (mounted) setState(() => _dealing = false);
+    HapticFeedback.selectionClick();
+  }
+
+  void _onGrabUpdate(DragUpdateDetails d) {
+    if (_grabbedLayer == null || _returning) return;
+    setState(() {
+      _dragDelta += d.delta; // 1:1 finger tracking
+      _dragDown += d.delta.dy;
     });
   }
 
-  Widget _fanCard(int i, int count, double fan) {
-    final depth = count - 1 - i; // 0 = top card
-    final cx = depth - (count - 1) / 2;
-    return Transform.translate(
-      offset: Offset(fan * 0.22 * cx + cx * 2, -depth * 5 + fan.abs() * 0.05),
-      child: Transform.rotate(
-        angle: fan * 0.0008 * cx + cx * 0.04,
-        child: const CardBack(width: _miniW, height: _miniH),
-      ),
-    );
+  void _onGrabEnd(DragEndDetails d) {
+    final layer = _grabbedLayer;
+    if (layer == null || _returning) return;
+    final velocity = d.velocity.pixelsPerSecond.dy;
+    if (_dragDown > 60 || velocity > 450) {
+      // Hand the TRUE top card of the shuffled deck to the parent: the
+      // single continuous flight starts at the finger's release position
+      // (no proxy, no pop). The exposed second card is promoted to the new
+      // top: the dealt layer is buried at the back of the paint order.
+      final ctrl = context.read<SpreadController>();
+      final remaining = ctrl.remaining;
+      final visible = _visibleCount;
+      final request = DeckDealReleaseRequest(
+        depth: 0, // the actual top card
+        cardOffsetLocal:
+            Offset(0, deckTopCardDy(remaining, totalCards: ctrl.totalCards) +
+                    layer * layerThicknessPx) +
+                _dragDelta,
+        pose: _poseOf(layer, visible, _travel),
+        releaseVelocityPx: velocity,
+      );
+      setState(() {
+        _layerOrder.remove(layer);
+        _layerOrder.insert(0, layer);
+        _grabbedLayer = null;
+        _dragDelta = Offset.zero;
+        _dragDown = 0;
+      });
+      HapticFeedback.mediumImpact();
+      widget.onDealRelease?.call(request);
+    } else {
+      // Released below the threshold: spring the card back into its slot.
+      final start = _dragDelta;
+      setState(() => _returning = true);
+      _return
+          .animateWith(SpringSimulation(
+            spring,
+            1,
+            0,
+            velocity / (start.distance + 1),
+          ))
+          .whenCompleteOrCancel(() {
+        if (!mounted) return;
+        setState(() {
+          _returning = false;
+          _grabbedLayer = null;
+          _dragDelta = Offset.zero;
+          _dragDown = 0;
+        });
+      });
+    }
   }
 
-  Widget _flightProxy() {
-    final t = Curves.easeOutCubic.transform(_flight.value);
-    // shortcut: the proxy flies on a curved path toward the pillar region
-    // (the deck sits directly below the board); the slot fills at the end.
-    final dy = -MediaQuery.sizeOf(context).height * 0.38 * t;
-    final sway = math.sin(math.pi * t) * 44;
+  // ---- rendering ----
+
+  /// One individually articulated fan layer under the permanent table
+  /// camera: real card + specular glint over its resting stack offset.
+  /// When [layer] is the grabbed card, the finger's drag translation is
+  /// applied DIRECTLY to this same layer (lifted translateZ +26, lavender
+  /// glow) — the actual top card moves, no proxy is ever spawned.
+  Widget _fanLayer(
+    int layer,
+    int visibleCount,
+    double travel,
+    TarotDeckPack pack, {
+    required int remaining,
+    required int totalCards,
+  }) {
+    final pose = _poseOf(layer, visibleCount, travel);
+    final baseDy = deckTopCardDy(remaining, totalCards: totalCards) +
+        layer * layerThicknessPx;
+    final grabbed = layer == _grabbedLayer;
+    final drag = grabbed
+        ? (_returning ? _dragDelta * _return.value : _dragDelta)
+        : Offset.zero;
+    final glintK = 0.35 + 0.65 * (1 - layer / visibleCount);
     return Transform.translate(
-      offset: Offset(sway, dy),
-      child: Transform.rotate(
-        angle: t * 0.35,
-        child: Transform.scale(
-          scale: 1 + t * 1.6,
-          child: const CardBack(width: _miniW, height: _miniH),
+      offset: Offset(0, baseDy) + drag,
+      child: Transform(
+        alignment: Alignment.center,
+        transform: fanMatrixWithCamera(pose, liftZ: grabbed ? 26 : 0),
+        child: RepaintBoundary(
+          child: Stack(
+            children: [
+              if (grabbed)
+                // Subtle glow + drop shadow under the lifted card.
+                Container(
+                  width: deckWidth,
+                  height: deckHeight,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(deckWidth * 0.06),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.lavender.withValues(alpha: 0.35),
+                        blurRadius: 26,
+                        spreadRadius: 2,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        blurRadius: 18,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                ),
+              CardBack(width: deckWidth, height: deckHeight, pack: pack),
+              Positioned.fill(
+                child: FoilGlint(
+                  angleY: pose.rotateY,
+                  angleX: pose.rotateX,
+                  intensity: glintK,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -139,50 +341,77 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
 
   @override
   Widget build(BuildContext context) {
-    final top = context.watch<SpreadController>().deckTop;
+    final ctrl = context.watch<SpreadController>();
+    final pack = context.watch<DeckPackController>().activePack;
+    final remaining = ctrl.remaining;
+
+    // Table reset detection: remaining jumps back up → regenerate the
+    // lived-in imperfection and clear the frozen shuffle arrangement.
+    if (_lastRemaining != -1 && remaining > _lastRemaining) {
+      _settle.stop();
+      _return.stop();
+      _restTravel = 0;
+      _travel = 0;
+      _sign = 1;
+      _layerOrder
+        ..clear()
+        ..addAll(List.generate(fanLayerCount, (i) => i));
+      _restPoses
+        ..clear()
+        ..addAll(generateOrganicRestPoses(
+          count: fanLayerCount,
+          rng: _visualRng,
+        ));
+      _shuffling = false;
+      _settling = false;
+      _returning = false;
+      _grabbedLayer = null;
+      _dragDelta = Offset.zero;
+    }
+    _lastRemaining = remaining;
+
+    final visibleCount = math.min(fanLayerCount, remaining);
+    final travel =
+        _settling ? _sign * travelForSeparation(_settle.value) : _travel;
     return SizedBox(
-      height: 122,
-      child: Column(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onHorizontalDragUpdate: _onFanDrag,
-              onHorizontalDragEnd: _onFanEnd,
-              onVerticalDragUpdate: _onDealDrag,
-              onVerticalDragEnd: _onDealEnd,
-              child: RepaintBoundary(
-                child: AnimatedBuilder(
-                  animation: Listenable.merge([_settle, _flight]),
-                  builder: (context, _) {
-                    final fan = _fanValue;
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        for (var i = top.length - 1;
-                            i >= (_dealing ? 1 : 0);
-                            i--)
-                          _fanCard(i, top.length, fan),
-                        if (_dealing) _flightProxy(),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ),
+      width: deckWidth,
+      height: deckBoxHeight,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragStart: _onShuffleStart,
+        onHorizontalDragUpdate: _onShuffleUpdate,
+        onHorizontalDragEnd: _onShuffleEnd,
+        onVerticalDragStart: _onGrabStart,
+        onVerticalDragUpdate: _onGrabUpdate,
+        onVerticalDragEnd: _onGrabEnd,
+        child: RepaintBoundary(
+          child: AnimatedBuilder(
+            animation: Listenable.merge([_settle, _return]),
+            builder: (context, _) {
+              return Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.topCenter,
+                children: [
+                  // ONLY the individual rounded cards of the stack are
+                  // rendered — on Colors.transparent, clip none. No spine,
+                  // headplate, backing rectangle or painter bar above the
+                  // top card. The grabbed layer carries its own drag
+                  // transform; every other layer stays put underneath.
+                  for (final layer in _layerOrder)
+                    if (layer < visibleCount)
+                      _fanLayer(
+                        layer,
+                        visibleCount,
+                        travel,
+                        pack,
+                        remaining: remaining,
+                        totalCards: ctrl.totalCards,
+                      ),
+                ],
+              );
+            },
           ),
-          const Padding(
-            padding: EdgeInsets.only(bottom: 6),
-            child: Text(
-              '←  →  SHUFFLE    ·    ↓  DEAL',
-              style: TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 9,
-                letterSpacing: 1.6,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
