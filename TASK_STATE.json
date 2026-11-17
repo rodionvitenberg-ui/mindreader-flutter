@@ -1,8 +1,8 @@
 {
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
-  "active_feature_or_sprint": "SPRINT 3/3: Authentic Tarot spread caps (1/3/4/7), Deck Deal Lock, AI-guided Clarifier Questions (+1 unlock) & hard 10-card table limit",
-  "status": "DONE",
+  "active_feature_or_sprint": "SPRINT 4: Clean Digital Table UI — remove top pill nav, fix header overflow, chat/chips exclusive to Pane 1, always-present igniting Synthesize CTA, living elemental threads, flip artifact cleanup",
+  "status": "IN_PROGRESS",
   "context": {
     "stack": [
       "Flutter/Dart (Impeller)",
@@ -43,9 +43,15 @@
       "SPRINT 3/3.2 ORACLE: buildClarifierSuggestions — 2-3 deterministic probes dynamically naming reversed/shadow cards, conflict thread pairs, dominant element; empty at 10",
       "SPRINT 3/3.3 LOCKED DECK UX: showDealLockPrompt (shared SnackBar + heavy haptic); tactile deck springs back on locked swipe; overview mini-deck tap prompts too; badge states (PULL CLARIFIER ↓ / 10/10 TABLE FULL / TAP TO RESET) with tap-to-dismiss armed question",
       "SPRINT 3/3.4 CHAT LOOP: AI question cards in Pane 1 after synthesis & after each clarifier chapter (recomputed live); 🃏 +1 CARD FOR MY QUESTION chip reads the lifted capsule text (external controller + FocusNode) and arms the custom question; arming slides to Pane 0 with clarifier-banner; camera-sync mode routes the arm through the camera; 10-card ceiling note replaces suggestions",
-      "SPRINT 3/3.5 TESTS: NEW spread_lock_test (caps, lock lifecycle all spreads, +1 unlock/relock, cancel, restore-locked, ceiling at 10 incl. camera, suggestion dynamics); phase2_clarifier rewritten to locked loop; phase2_flow += AI question → unlock → pull → clarifier reading, custom question arming, locked-deck prompt; roles updated in app_smoke/spread_controller/oracle_synthesis tests. 133/133 green ×2, analyze clean"
+      "SPRINT 3/3.5 TESTS: NEW spread_lock_test (caps, lock lifecycle all spreads, +1 unlock/relock, cancel, restore-locked, ceiling at 10 incl. camera, suggestion dynamics); phase2_clarifier rewritten to locked loop; phase2_flow += AI question → unlock → pull → clarifier reading, custom question arming, locked-deck prompt; roles updated in app_smoke/spread_controller/oracle_synthesis tests. 133/133 green ×2, analyze clean",
+      "SPRINT 4.1 CLEAN TABLE: top 3-pill nav (TABLE • ORACLE CHAT • HISTORY) deleted; horizontal swiping remains the only pane switch; header pill row wrapped in FittedBox(scaleDown) — no more 9.3px overflow on 360px screens; debugShowCheckedModeBanner: false confirmed in MaterialApp",
+      "SPRINT 4.2 PANE PURITY: Pane 0 stripped of the chip row AND the GeminiInputCapsule; Pane 1 now exclusively hosts the chips (filled #A78BFA selected state + ✓ + haptic + chat confirmation 'Context woven into the reading') and the capsule",
+      "SPRINT 4.3 SYNTHESIZE CTA: new widgets/synthesize_chat_cta.dart — permanently anchored on Pane 0; dormant (opacity 0.42, muted slate border, progress label FLIP ALL CARDS / N OF M FACE-UP, gentle haptic on tap) → ignited the moment the base spread is fully face-up (0.95→1.04→1.0 ignition burst + flash + continuous starlight sparkle border/aura CustomPainter via super(repaint:)); tap slides to Pane 1",
+      "SPRINT 4.4 LIVING THREADS: ElementalThreadsPainter now takes super(repaint: pulse) — repaints every tick (the AnimatedBuilder in BoardPillarView created structurally identical painters, so shouldRepaint never fired — the cords were frozen); amplitude raised to 10.0–14.0px with two harmonics sin(t·2π)+cos(t·4π); 4 traveling particles",
+      "SPRINT 4.5 CLEAN FLIP: removed the 3D edge-bevel side strips (cardEdgeStripX/cardEdgeSlices/cardFlipThicknessPx/cardEdgeBody/cardEdgeRimGold) from TarotCard3DWidget — ZERO protruding side bars during rotateY; 680ms flip + FoilGlint only",
+      "SPRINT 4.6 TESTS: workspace_layout_test (NEW) — capsule/chips exclusively Pane 1, dormant CTA permanently on Pane 0, chip ✓ toggle; card_edge_bevel_test rewritten for the clean flip; workspace_swipe/phase2_flow/app_smoke updated to swipe-only navigation (PageView ballistic settle loop — the drag fling's BallisticScrollActivity ignores pointers until it settles); 134/134 green, flutter analyze clean"
     ],
-    "current_task": "SPRINT 3/3 DONE — analyze clean, 133/133 tests green ×2, debug APK built (app-debug.apk), committed locally (no git remote configured in this workspace)",
+    "current_task": "SPRINT 4 VERIFY & BUILD: flutter analyze clean (0 issues), 134/134 tests green, debug APK building",
     "pending_tasks": [
       "KNOWN (separate, pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on this low-end device (background process killed at 10:30) — consider lazy receiver or plugin update",
       "Optional: drop downloaded deck images into assets/decks/<id>/ (id-based 00.jpg..77.jpg or RWS naming)",
@@ -53,6 +59,9 @@
     ]
   },
   "discovered_bugs_or_blockers": [
+    "FIXED (Sprint 4): elemental threads frozen — painter never repainted (hosts rebuilt structurally identical painters and shouldRepaint compared the same Animation instance; no super(repaint:)) — fixed with super(repaint: pulse)",
+    "FIXED (Sprint 4): rectangular side strips during card flip — the 4px 3D edge-bevel strip layers removed from TarotCard3DWidget",
+    "FIXED (Sprint 4, tests): drag-based pane switching left the PageView fling ballistic active — BallisticScrollActivity.shouldIgnorePointer=true swallows taps until it settles; goToPane helpers now pump until isScrollingNotifier is false",
     "FIXED (p9): SharedPreferences.getInstance() hangs forever in widget tests — SessionHistoryController made UI-first (in-memory + background persistence)",
     "FIXED (p9): PageView snaps back in tests when the drag is < half viewport (800px test viewport vs 400px phone) — tests drag -600px; on-device swipes are unaffected",
     "FIXED (p9): lazy ListView never built below-fold chat messages — chat stream switched to SingleChildScrollView+Column with exact jumpTo(maxScrollExtent)",
@@ -61,5 +70,5 @@
     "KNOWN: local timezone detection can fail on some devices — rituals fall back to UTC wall-clock (documented)",
     "FIXED (p10): dealCardAt depth guard used the ORIGINAL deck size (78) instead of the live stack length — RangeError risk on deep grabs; boundary now pos >= _cardIds.length"
   ],
-  "latest_observation_summary": "SPRINT 3/3 complete and verified: flutter analyze clean, 133/133 tests green ×2 (spread caps, deal lock, +1 unlock loop, 10-card ceiling, AI clarifier suggestions covered). Debug APK built (app-debug.apk). Committed 708041f on local master (no remote configured — same as prior sprints)."
+  "latest_observation_summary": "SPRINT 4 complete and verified: flutter analyze clean (0 issues), 134/134 tests green. Clean Digital Table (no top pill nav, no chat UI on Pane 0), permanently-anchored dormant→ignited Synthesize CTA with starlight shimmer, chips+capsule exclusively in Oracle Chat with ✓ selected state, living elemental threads (super(repaint:) + 10-14px dual-harmonic sway + 4 particles), flip side-strip artifacts removed. Debug APK built (app-debug.apk)."
 }

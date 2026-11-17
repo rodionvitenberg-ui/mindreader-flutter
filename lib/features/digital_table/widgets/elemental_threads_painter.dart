@@ -93,10 +93,13 @@ List<ElementalThreadSegment> threadSegmentsFor(
 }
 
 /// Animated glowing elemental strings connecting adjacent face-up cards:
-/// smooth plucked-string oscillation (transverse amplitude 2.5–4.0 px),
-/// luminous traveling energy particles, and a gradient that color-blends
+/// bold living-string oscillation (transverse amplitude 10.0–14.0 px with
+/// two overlapping harmonics — a slow sin sway + a fast cos ripple),
+/// 4 luminous traveling energy particles, and a gradient that color-blends
 /// the elemental pairing of the two connected cards. Tension threads pulse
-/// faster than harmonious ones.
+/// faster than harmonious ones. The host's repeating controller is wired
+/// through `super(repaint:)`, so the painter repaints EVERY tick at frame
+/// rate — the cords never freeze.
 ///
 /// CORD SPEC: a 4.5 px crisp core over a 14.0 px blurred aura
 /// (`MaskFilter.blur(BlurStyle.normal, 10.0)`) — 4x thicker, unmistakable.
@@ -110,7 +113,7 @@ class ElementalThreadsPainter extends CustomPainter {
     required this.segments,
     required this.pulse,
     this.ignite,
-  });
+  }) : super(repaint: pulse);
 
   final List<ElementalThreadSegment> segments;
   final Animation<double> pulse;
@@ -135,7 +138,12 @@ class ElementalThreadsPainter extends CustomPainter {
     final d = seg.to - seg.from;
     final dir = d / d.distance;
     final normal = Offset(-dir.dy, dir.dx);
-    final wobble = amp * math.sin(2 * math.pi * s + phase);
+    // Two overlapping harmonic frequencies: a slow sin sway (2π) and a
+    // fast cos shimmer ripple (4π) — the cord visibly breathes and
+    // undulates like a living cosmic guitar string.
+    final sway = math.sin(2 * math.pi * s + phase);
+    final ripple = math.cos(4 * math.pi * s - phase * 1.4);
+    final wobble = amp * (0.7 * sway + 0.3 * ripple);
     return seg.from + d * s + normal * wobble;
   }
 
@@ -151,8 +159,8 @@ class ElementalThreadsPainter extends CustomPainter {
     final ig = ignite.clamp(0.0, 1.0);
     if (ig <= 0) return;
 
-    // Subtle transverse oscillation in the spec range 2.5–4.0 px.
-    final amp = 3.25 + 0.75 * math.sin(t * 2 * math.pi + i * 0.9);
+    // Bold living motion in the spec range 10.0–14.0 px.
+    final amp = 12.0 + 2.0 * math.sin(t * 2 * math.pi + i * 0.9);
     final phase = t * 2 * math.pi * _speed(seg.tone) + i * 1.7;
 
     final path = Path()..moveTo(seg.from.dx, seg.from.dy);
@@ -205,8 +213,8 @@ class ElementalThreadsPainter extends CustomPainter {
         ..shader = shader
         ..color = Colors.white.withValues(alpha: 0.9),
     );
-    // Two luminous energy particles traveling along the string.
-    for (final offset in const [0.0, 0.5]) {
+    // Four luminous energy particles gliding along the string.
+    for (final offset in const [0.0, 0.25, 0.5, 0.75]) {
       final s = (t * _speed(seg.tone) + i * 0.23 + offset) % 1.0;
       if (s > ig) continue; // never run ahead of an igniting bolt
       final dot = _pointAt(seg, s, phase, amp);

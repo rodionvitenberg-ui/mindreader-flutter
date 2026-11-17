@@ -379,49 +379,13 @@ class CardBack extends StatelessWidget {
 
 /// A single 3D tarot card: 2.5D perspective, isometric tilt, 680ms
 /// `rotateY(π)` flip on `Curves.easeInOutCubic` (deliberate, heavy,
-/// ceremonial) with a haptic at the 90° midpoint, plus a layered 3D
-/// card-edge bevel (4 px, dark obsidian with a muted-gold rim) that
-/// becomes visible while the card passes through 45°–135°.
+/// ceremonial) with a haptic at the 90° midpoint and a `FoilGlint`
+/// specular sheen sliding across the surface mid-flip. NO protruding
+/// side strips/bevel layers — the flip is clean inside the card's
+/// rounded border.
 
 /// Flip duration: 680ms — +40% heavier than the old snappy 600ms flip.
 const cardFlipDuration = Duration(milliseconds: 680);
-
-/// Physical thickness of the card's edge/rim (spec: 4.0 px).
-const cardFlipThicknessPx = 4.0;
-
-/// Number of stacked bevel strips composing the 3D edge.
-const cardEdgeSlices = 5;
-
-/// Per-strip width: [cardFlipThicknessPx] / [cardEdgeSlices].
-const cardEdgeStripWidth = cardFlipThicknessPx / cardEdgeSlices;
-
-/// Dark obsidian body of the card edge.
-const cardEdgeBody = Color(0xFF1B1B24);
-
-/// Muted antique-gold rim of the card edge (no kitsch — just a hairline).
-const cardEdgeRimGold = Color(0xFF9C8A66);
-
-/// Screen-space X of the k-th stacked edge strip (the card's own left edge
-/// is 0) while the card flips at [angle] rad around Y.
-///
-/// The strips cluster along the card's TURNING edge and spread to the full
-/// [cardFlipThicknessPx] as the card passes edge-on (±π/2), so the 3D rim
-/// is clearly visible through 45°–135° and collapses behind the face at
-/// 0/π. [leadingSign] = +1 while the front face turns away, -1 while the
-/// back face turns in.
-double cardEdgeStripX({
-  required double angle,
-  required double width,
-  required double leadingSign,
-  required int k,
-}) {
-  final sinA = math.sin(angle).abs();
-  final cosA = math.cos(angle).abs();
-  final turningEdge = leadingSign * (cosA * width / 2);
-  final spread =
-      (k / (cardEdgeSlices - 1) - 0.5) * cardFlipThicknessPx * sinA;
-  return width / 2 + turningEdge + spread;
-}
 
 class TarotCard3DWidget extends StatefulWidget {
   const TarotCard3DWidget({
@@ -518,28 +482,6 @@ class _TarotCard3DWidgetState extends State<TarotCard3DWidget>
           return Stack(
             clipBehavior: Clip.none,
             children: [
-              // 3D card-edge bevel: stacked 0.8px strips along the turning
-              // edge — dark obsidian body, muted-gold rim. They spread to
-              // the full 4px thickness as the card passes edge-on (π/2).
-              if (_flipping)
-                for (var k = 0; k < cardEdgeSlices; k++)
-                  Positioned(
-                    left: cardEdgeStripX(
-                          angle: angle,
-                          width: widget.width,
-                          leadingSign: v < 0.5 ? 1 : -1,
-                          k: k,
-                        ) -
-                        cardEdgeStripWidth / 2,
-                    top: 0,
-                    width: cardEdgeStripWidth,
-                    height: widget.height,
-                    child: ColoredBox(
-                      color: k == 0 || k == cardEdgeSlices - 1
-                          ? cardEdgeRimGold
-                          : cardEdgeBody,
-                    ),
-                  ),
               Transform(
                 alignment: Alignment.center,
                 transform: matrix,

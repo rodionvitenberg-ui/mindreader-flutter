@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/main.dart';
-import 'package:mindreader/features/digital_table/table_workspace.dart';
 import 'package:mindreader/features/digital_table/widgets/interactive_deck_widget.dart';
 import 'package:mindreader/features/digital_table/widgets/shuffle_physics.dart';
 import 'package:mindreader/features/digital_table/widgets/tarot_card_3d_widget.dart';
@@ -136,9 +135,8 @@ void main() {
     // exactly the current scroll offset, so the bounce never overshoots.
     Future<void> scrollBackToDeck() async {
       final area = tester.getRect(find.byType(SingleChildScrollView).first);
-      // Sprint 2/3: no intention bar — the deck rests under the pane
-      // indicator + header.
-      final resting = paneIndicatorHeight + 84 + tableTopPad;
+      // Sprint 4: no pane indicator — the deck rests under the header.
+      final resting = 84 + tableTopPad;
       final delta = resting - tester.getTopLeft(deck).dy;
       if (delta > 4) {
         await tester.dragFrom(
@@ -190,7 +188,7 @@ void main() {
     await tester.pump();
 
     final deck = find.byType(InteractiveDeckWidget);
-    final resting = paneIndicatorHeight + 84 + tableTopPad;
+    final resting = 84 + tableTopPad;
     expect(tester.getTopLeft(deck).dy, closeTo(resting, 0.1));
 
     await tester.dragFrom(tester.getCenter(deck), const Offset(0, 100));

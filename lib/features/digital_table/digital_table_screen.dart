@@ -621,19 +621,27 @@ class _TableHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const _DeckPackPill(),
-              const SizedBox(width: 8),
-              const _BellPill(),
-              const SizedBox(width: 8),
-              if (ctrl.sourceMode == TableSourceMode.physicalCameraSync) ...[
-                const _PhysicalSyncPill(),
-                const SizedBox(width: 8),
-              ],
-              _ViewModeToggle(mode: mode, onChanged: onModeChanged),
-            ],
+          // The pill row NEVER overflows on narrow 360px screens: it is
+          // scaled down as one unit instead of spilling off the edge.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const _DeckPackPill(),
+                  const SizedBox(width: 8),
+                  const _BellPill(),
+                  const SizedBox(width: 8),
+                  if (ctrl.sourceMode == TableSourceMode.physicalCameraSync) ...[
+                    const _PhysicalSyncPill(),
+                    const SizedBox(width: 8),
+                  ],
+                  _ViewModeToggle(mode: mode, onChanged: onModeChanged),
+                ],
+              ),
+            ),
           ),
         ],
       ),

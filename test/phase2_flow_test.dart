@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/models/dealt_card_slot.dart';
-import 'package:mindreader/features/digital_table/widgets/cosmos_send_burst.dart';
+import 'package:mindreader/features/digital_table/widgets/gemini_input_capsule.dart';
 import 'package:mindreader/features/digital_table/widgets/interactive_deck_widget.dart';
 import 'package:mindreader/features/digital_table/widgets/tarot_card_3d_widget.dart';
 import 'package:mindreader/main.dart';
 import 'package:mindreader/state/spread_controller.dart';
 import 'package:provider/provider.dart';
 
-/// Sprint 2/3 end-to-end widget flows: the Gemini input capsule context
-/// ("Sent to Cosmos"), the ✦ SYNTHESIZE IN CHAT → gate, the clarifier loop
-/// inside the Oracle AI Chat pane and the phygital camera-to-table sync.
+/// Sprint 2/3 → 4 end-to-end widget flows: the context chips + Gemini
+/// input capsule now live EXCLUSIVELY on the Oracle AI Chat pane, the
+/// ✦ SYNTHESIZE IN CHAT CTA is permanently anchored on the Digital Table
+/// (dormant → ignited), the clarifier loop and the phygital camera-to-
+/// table sync.
 void main() {
   /// Deals one card from the tactile deck and settles the spring flight.
   Future<void> dealOne(WidgetTester tester) async {
@@ -33,16 +35,32 @@ void main() {
     await tester.pump();
   }
 
-  /// Switches panes with the 3-pill indicator (1-tap switching).
+  /// Swipes horizontally across the workspace until [pane] is the active
+  /// page (Sprint 4: the top 3-pill indicator bar is gone — horizontal
+  /// swiping is the only pane switch).
   Future<void> goToPane(WidgetTester tester, int pane) async {
-    await tester.tap(find.byKey(ValueKey('pane-$pane')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600)); // pane slide
-    await tester.pump();
+    final controller =
+        tester.widget<PageView>(find.byType(PageView)).controller!;
+    var current = controller.page!.round();
+    while (current != pane) {
+      await tester.dragFrom(
+        const Offset(200, 300),
+        Offset(current < pane ? -600 : 600, 0),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700)); // pane slide
+      // Settle the post-drag fling ballistic — while it runs, the
+      // PageView's scrollable ignores pointer events.
+      while (controller.position.isScrollingNotifier.value) {
+        await tester.pump(const Duration(milliseconds: 250));
+      }
+      await tester.pump();
+      current = controller.page!.round();
+    }
   }
 
-  /// Deals and flips the whole Triad spread, then runs the synthesis and
-  /// slides into the Oracle AI Chat pane.
+  /// Deals and flips the whole Triad spread, then taps the ignited CTA —
+  /// synthesis runs and the workspace slides into the Oracle AI Chat pane.
   Future<void> dealFlipAndSynthesize(WidgetTester tester) async {
     for (var i = 0; i < 3; i++) {
       await dealOne(tester);
@@ -58,48 +76,58 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('capsule sends context into the ether and tags the next card',
-      (tester) async {
+  testWidgets(
+      'Pane 1 exclusively hosts the chips + capsule; chip tap toggles ✓ '
+      'and weaves context into the reading', (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    // The decluttered table: no BEFORE YOU DRAW box, quick-context chips
-    // float above the Gemini capsule instead.
+    // Pane 0 is a pure table: no capsule, no context chips.
     expect(find.text('SLOT 1 · BEFORE YOU DRAW'), findsNothing);
+    expect(find.byType(GeminiInputCapsule), findsNothing);
+    expect(find.text('✨ Relationships'), findsNothing);
+    expect(find.text('⚡ Crossroads'), findsNothing);
+    expect(find.text('🔮 Blind Draw'), findsNothing);
+
+    await goToPane(tester, 1);
+
+    // Pane 1 (Oracle AI Chat) holds both exclusively.
+    expect(find.byType(GeminiInputCapsule), findsOneWidget);
     expect(find.text('✨ Relationships'), findsOneWidget);
     expect(find.text('⚡ Crossroads'), findsOneWidget);
     expect(find.text('🔮 Blind Draw'), findsOneWidget);
 
-    // Type a thought and send it — the capsule plays "Sent to Cosmos"
-    // and the note lands in the session context.
+    // A chip tap fills the selected state with ✓ and weaves the context
+    // into the session + confirms it in the chat stream. (Tap by KEY: the
+    // "Sent to Cosmos" burst also renders the chip label for a moment.)
+    await tester.tap(find.byKey(const ValueKey('context-chip-0')));
+    await tester.pump();
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    final ctrl = tester
+        .element(find.byType(GeminiInputCapsule))
+        .read<SpreadController>();
+    expect(ctrl.sessionContextNotes, contains('✨ Relationships'));
+    expect(find.textContaining('Context woven into the reading'), findsOneWidget);
+
+    // A second tap toggles the selected state off.
+    await tester.tap(find.byKey(const ValueKey('context-chip-0')));
+    await tester.pump();
+    expect(find.byIcon(Icons.check_rounded), findsNothing);
+
+    // The capsule drives the chat; before synthesis it guides back to
+    // the table instead of sending context into the ether.
     await tester.enterText(
       find.byKey(const ValueKey('oracle-input')),
       'my own words',
     );
     await tester.tap(find.byKey(const ValueKey('oracle-send')));
     await tester.pump();
-    expect(find.byType(CosmosSendBurst), findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 1300));
-    await tester.pump();
-
-    final ctrl = tester
-        .element(find.byType(InteractiveDeckWidget))
-        .read<SpreadController>();
-    expect(ctrl.sessionContextNotes, contains('my own words'));
-
-    // The pending note lands on the next dealt card.
-    await dealOne(tester);
-    expect(ctrl.slots[0].userContext, '"my own words"');
-
-    // A chip tap sends itself into the ether too.
-    await tester.tap(find.text('✨ Relationships'));
-    await tester.pump();
-    expect(ctrl.sessionContextNotes, contains('✨ Relationships'));
-    expect(ctrl.sessionContextNotes, hasLength(2));
+    expect(find.textContaining('not synthesized yet'), findsOneWidget);
   });
   testWidgets(
-      '✦ SYNTHESIZE IN CHAT appears only when all cards are face-up and '
-      'opens the full-width chat pane', (tester) async {
+      'synthesize CTA stays permanently on the table: dormant with flip '
+      'progress, ignites when every base card is face-up, then opens chat',
+      (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
@@ -108,16 +136,30 @@ void main() {
     await dealOne(tester);
     await tester.pump();
 
-    // Cards are face-down: no ceremonial CTA yet.
+    // Cards are face-down: the CTA is visible but DORMANT — dim, with the
+    // flip-progress hint, and a tap does nothing (no synthesis, no slide).
+    expect(find.text('✦ SYNTHESIZE IN CHAT (FLIP ALL CARDS)'), findsOneWidget);
     expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsNothing);
+    await tester.tap(find.text('✦ SYNTHESIZE IN CHAT (FLIP ALL CARDS)'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump();
+    expect(find.text('DIGITAL TABLE'), findsOneWidget); // still on the table
+    expect(find.text('1 · CORE NARRATIVE SYNTHESIS'), findsNothing);
 
     await flipCard(tester, 0);
+    await tester.pump();
+
+    // The dormant label counts down the remaining flips.
+    expect(find.text('✦ SYNTHESIZE IN CHAT (1 OF 3 FACE-UP)'), findsOneWidget);
+
     await flipCard(tester, 1);
     await flipCard(tester, 2);
     await tester.pump();
 
-    // All face-up: the glowing CTA is revealed above the capsule.
+    // All face-up: the CTA is IGNITED with the live label.
     expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsOneWidget);
+    expect(find.text('✦ SYNTHESIZE IN CHAT (2 OF 3 FACE-UP)'), findsNothing);
 
     await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
     await tester.pump();
@@ -201,7 +243,7 @@ void main() {
     await tester.pump();
     expect(find.textContaining('Type your question'), findsOneWidget);
     final ctrlEmpty = tester
-        .element(find.byKey(const ValueKey('pane-0')))
+        .element(find.byType(PageView))
         .read<SpreadController>();
     expect(ctrlEmpty.pendingClarifierQuestion, isNull);
 
@@ -216,7 +258,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700)); // pane slide
     await tester.pump();
     final ctrl = tester
-        .element(find.byKey(const ValueKey('pane-0')))
+        .element(find.byType(PageView))
         .read<SpreadController>();
     expect(ctrl.pendingClarifierQuestion, 'Should I change jobs?');
     expect(ctrl.allowedCardsLimit, 4);
@@ -316,7 +358,7 @@ void main() {
 
     // Back in the workspace: the photographed card is Card N+1, face-up.
     final ctrl = tester
-        .element(find.byKey(const ValueKey('pane-0')))
+        .element(find.byType(PageView))
         .read<SpreadController>();
     expect(ctrl.slots.length, 4);
     expect(ctrl.slots[3].state, SlotState.faceUp);

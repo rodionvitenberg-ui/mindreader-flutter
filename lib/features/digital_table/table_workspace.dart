@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/data/intention_prompts.dart' show tableContextChips;
 import '../../core/models/dealt_card_slot.dart';
+import '../../core/models/spread_type.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../state/session_history_controller.dart';
@@ -17,15 +18,12 @@ import 'spread_history_pane.dart';
 import 'widgets/cosmos_send_burst.dart';
 import 'widgets/deal_lock_prompt.dart';
 import 'widgets/gemini_input_capsule.dart';
+import 'widgets/synthesize_chat_cta.dart';
 
 /// Pane indices of the 3-screen horizontal workspace.
 const tablePane = 0;
 const chatPane = 1;
 const historyPane = 2;
-
-/// Fixed height of the 3-pill pane indicator above the PageView (used by
-/// tests to compute the deck's resting position).
-const paneIndicatorHeight = 34.0;
 
 /// The unified TABLE workspace: a horizontal 3-pane `PageView`
 /// `[Digital Table] ⇄ [Oracle AI Chat] ⇄ [Spread History & Notebooks]`
@@ -208,17 +206,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
     await _captureSession();
   }
 
-  // ---- Digital Table context → the ether (Pane 0) ----
-
-  void _sendToEther(String text) {
-    _ctrl.addSessionContextNote(text);
-    _ctrl.queueContext(note: text);
-    if (_ctrl.sourceMode == TableSourceMode.physicalCameraSync) {
-      _ctrl.attachContextToNextUntagged(text: text);
-      _ctrl.clearPendingContext();
-    }
-    _playCosmos(text);
-  }
+  // ---- Digital Table context → the ether (Pane 0 chips → Pane 1) ----
 
   void _sendChipToEther(String chip) {
     _ctrl.addSessionContextNote(chip);
@@ -228,6 +216,28 @@ class _TableWorkspaceState extends State<TableWorkspace>
       _ctrl.clearPendingContext();
     }
     _playCosmos(chip);
+  }
+
+  /// Context chips selected in the Oracle Chat pane — the filled ✓ state.
+  final Set<String> _selectedChips = <String>{};
+
+  /// Toggles a context chip on the Oracle Chat pane: selecting weaves the
+  /// context straight into the reading and confirms it in the chat stream;
+  /// deselecting only removes the visual state.
+  void _toggleContextChip(String chip) {
+    HapticFeedback.selectionClick();
+    final wasSelected = _selectedChips.contains(chip);
+    setState(() {
+      if (wasSelected) {
+        _selectedChips.remove(chip);
+      } else {
+        _selectedChips.add(chip);
+      }
+    });
+    if (!wasSelected) {
+      _sendChipToEther(chip);
+      _synthesis.addSystemMessage('Context woven into the reading: $chip');
+    }
   }
 
   void _playCosmos(String label) {
@@ -404,7 +414,6 @@ class _TableWorkspaceState extends State<TableWorkspace>
       bottom: false,
       child: Column(
         children: [
-          _PaneIndicator(pane: _pane, onTap: _goToPane),
           Expanded(
             child: PageView(
               controller: _paneController,
@@ -436,12 +445,12 @@ class _TableWorkspaceState extends State<TableWorkspace>
       ),
     );
   }
-  /// The shared floating input capsule area: quick-context chips + the
-  /// glowing SYNTHESIZE CTA (Table) or plain capsule (Chat), plus the
-  /// "Sent to Cosmos" overlay and the armed-clarifier banner.
+  /// Pane 0 (Digital Table): the armed-clarifier banner + the PERMANENT
+  /// dormant/ignited ✦ SYNTHESIZE IN CHAT CTA — a pure tactile sanctuary,
+  /// no chat UI. Pane 1 (Oracle AI Chat): the context chips + the shared
+  /// Gemini input capsule. Plus the "Sent to Cosmos" overlay on either.
   Widget _buildBottomArea(SpreadController ctrl) {
     final onTable = _pane == tablePane;
-    final ready = ctrl.initialSpreadAllFaceUp;
     final clarifier = ctrl.pendingClarifierQuestion;
     return Stack(
       alignment: Alignment.bottomCenter,
@@ -451,32 +460,35 @@ class _TableWorkspaceState extends State<TableWorkspace>
           mainAxisSize: MainAxisSize.min,
           children: [
             if (onTable) ...[
-              _QuickContextChips(onChipTap: _sendChipToEther),
-              const SizedBox(height: 2),
-            ],
-            if (onTable && clarifier != null) ...[
-              _ClarifierBanner(question: clarifier),
-              const SizedBox(height: 2),
-            ],
-            if (onTable && ready) ...[
-              _SynthesizeChatCta(
+              if (clarifier != null) ...[
+                _ClarifierBanner(question: clarifier),
+                const SizedBox(height: 2),
+              ],
+              SynthesizeChatCta(
+                key: const ValueKey('synthesize-cta'),
+                ignited: ctrl.initialSpreadAllFaceUp,
                 synthesized: _synthesis.hasSynthesis,
                 generating: _synthesis.generatingInitial,
+                faceUp: _baseFaceUp(ctrl),
+                total: ctrl.spreadType.cardCount,
                 onTap: _runSynthesis,
               ),
+            ] else ...[
+              _ChatContextChips(
+                selected: _selectedChips,
+                onChipTap: _toggleContextChip,
+              ),
               const SizedBox(height: 2),
+              GeminiInputCapsule(
+                fieldKey: const ValueKey('oracle-input'),
+                sendKey: const ValueKey('oracle-send'),
+                controller: _capsuleText,
+                focusNode: _capsuleFocus,
+                hint: 'Ask the Oracle — or type a question for a +1 card...',
+                onSend: _askOracle,
+                onPlus: _openPlusSheet,
+              ),
             ],
-            GeminiInputCapsule(
-              fieldKey: const ValueKey('oracle-input'),
-              sendKey: const ValueKey('oracle-send'),
-              controller: _capsuleText,
-              focusNode: _capsuleFocus,
-              hint: onTable
-                  ? 'Add context or ask Oracle...'
-                  : 'Ask the Oracle — or type a question for a +1 card...',
-              onSend: onTable ? _sendToEther : _askOracle,
-              onPlus: _openPlusSheet,
-            ),
           ],
         ),
         if (_cosmosVisible)
@@ -492,78 +504,29 @@ class _TableWorkspaceState extends State<TableWorkspace>
       ],
     );
   }
-}
 
-
-/// Subtle 3-pill indicator: Table • Oracle Chat • History — 1-tap pane
-/// switching on top of the workspace.
-class _PaneIndicator extends StatelessWidget {
-  const _PaneIndicator({required this.pane, required this.onTap});
-
-  final int pane;
-  final ValueChanged<int> onTap;
-
-  static const _labels = ['TABLE', 'ORACLE CHAT', 'HISTORY'];
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: paneIndicatorHeight,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          for (var i = 0; i < _labels.length; i++) ...[
-            if (i > 0)
-              Container(
-                width: 3,
-                height: 3,
-                margin: const EdgeInsets.symmetric(horizontal: 6),
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.textMuted,
-                ),
-              ),
-            GestureDetector(
-              key: ValueKey('pane-$i'),
-              behavior: HitTestBehavior.opaque,
-              onTap: () => onTap(i),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 13,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: pane == i
-                      ? AppColors.lavender.withValues(alpha: 0.16)
-                      : AppColors.surface.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: pane == i ? AppColors.lavender : AppColors.border,
-                  ),
-                ),
-                child: Text(
-                  _labels[i],
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 8,
-                    letterSpacing: 1.4,
-                    fontWeight: FontWeight.w700,
-                    color: pane == i ? AppColors.lavender : AppColors.textMuted,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
+  /// Face-up cards among the base spread — the dormant CTA's progress
+  /// hint.
+  int _baseFaceUp(SpreadController ctrl) {
+    var n = 0;
+    final limit = ctrl.slots.length < ctrl.spreadType.cardCount
+        ? ctrl.slots.length
+        : ctrl.spreadType.cardCount;
+    for (var i = 0; i < limit; i++) {
+      if (ctrl.slots[i].state == SlotState.faceUp) n++;
+    }
+    return n;
   }
 }
 
-/// Single-line quick-context chips floating above the input capsule on
-/// the Digital Table.
-class _QuickContextChips extends StatelessWidget {
-  const _QuickContextChips({required this.onChipTap});
 
+/// Context chips docked above the input capsule on the Oracle AI Chat
+/// pane (Gemini-style suggestion row): tapping toggles a filled
+/// lavender/indigo SELECTED state with a bright border and a ✓ checkmark.
+class _ChatContextChips extends StatelessWidget {
+  const _ChatContextChips({required this.selected, required this.onChipTap});
+
+  final Set<String> selected;
   final ValueChanged<String> onChipTap;
 
   @override
@@ -574,20 +537,54 @@ class _QuickContextChips extends StatelessWidget {
         for (var i = 0; i < tableContextChips.length; i++) ...[
           if (i > 0) const SizedBox(width: 8),
           GestureDetector(
+            key: ValueKey('context-chip-$i'),
+            behavior: HitTestBehavior.opaque,
             onTap: () => onChipTap(tableContextChips[i]),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: AppColors.surface.withValues(alpha: 0.7),
+                gradient: selected.contains(tableContextChips[i])
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppColors.lavender, AppColors.indigo],
+                      )
+                    : null,
+                color: selected.contains(tableContextChips[i])
+                    ? null
+                    : AppColors.surface.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(13),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Text(
-                tableContextChips[i],
-                style: GoogleFonts.inter(
-                  fontSize: 10.5,
-                  color: AppColors.textMuted,
+                border: Border.all(
+                  color: selected.contains(tableContextChips[i])
+                      ? AppColors.lavender
+                      : AppColors.border,
+                  width: selected.contains(tableContextChips[i]) ? 1.4 : 1.0,
                 ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (selected.contains(tableContextChips[i])) ...[
+                    const Icon(
+                      Icons.check_rounded,
+                      size: 12,
+                      color: AppColors.canvas,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  Text(
+                    tableContextChips[i],
+                    style: GoogleFonts.inter(
+                      fontSize: 10.5,
+                      fontWeight: selected.contains(tableContextChips[i])
+                          ? FontWeight.w700
+                          : FontWeight.w400,
+                      color: selected.contains(tableContextChips[i])
+                          ? AppColors.canvas
+                          : AppColors.textMuted,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -640,66 +637,9 @@ class _ClarifierBanner extends StatelessWidget {
   }
 }
 
-/// The glowing `✦ SYNTHESIZE IN CHAT →` call to action above the capsule.
-class _SynthesizeChatCta extends StatelessWidget {
-  const _SynthesizeChatCta({
-    required this.synthesized,
-    required this.generating,
-    required this.onTap,
-  });
-
-  final bool synthesized;
-  final bool generating;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    if (generating) {
-      return Text(
-        'WEAVING THE READING · · ·',
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 8.5,
-          letterSpacing: 1.8,
-          color: AppColors.lavender,
-        ),
-      );
-    }
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.mediumImpact();
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.lavender.withValues(alpha: 0.24),
-              AppColors.indigo.withValues(alpha: 0.14),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.lavender, width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.lavender.withValues(alpha: 0.3),
-              blurRadius: 14,
-            ),
-          ],
-        ),
-        child: Text(
-          synthesized ? '✦ OPEN ORACLE CHAT →' : '✦ SYNTHESIZE IN CHAT →',
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 10,
-            letterSpacing: 1.8,
-            fontWeight: FontWeight.w700,
-            color: AppColors.lavender,
-          ),
-        ),
-      ),
-    );
-  }
-}
+/// The glowing `✦ SYNTHESIZE IN CHAT →` call to action now lives in
+/// `widgets/synthesize_chat_cta.dart` — permanently anchored on Pane 0
+/// with dormant/ignited states.
 
 /// One action row of the `+` sheet.
 class _SheetAction extends StatelessWidget {

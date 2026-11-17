@@ -8,8 +8,10 @@ import 'package:mindreader/main.dart';
 import 'package:mindreader/state/spread_controller.dart';
 import 'package:provider/provider.dart';
 
-/// Sprint 2/3 workspace tests: the 3-pane horizontal PageView, gesture
+/// Sprint 2/3 → 4 workspace tests: the 3-pane horizontal PageView, gesture
 /// disambiguation with the 3D deck, and the local history save/restore.
+/// Sprint 4: panes switch EXCLUSIVELY by horizontal swipe (the top 3-pill
+/// indicator bar was removed).
 void main() {
   Future<void> dealOne(WidgetTester tester) async {
     final deck = find.byType(InteractiveDeckWidget);
@@ -30,6 +32,31 @@ void main() {
     await tester.pump();
   }
 
+  /// Swipes horizontally across the workspace until [pane] is the active
+  /// page (the test viewport is 800 px wide, so a drag must clear half a
+  /// page, >400 px, to snap into the next pane).
+  Future<void> goToPane(WidgetTester tester, int pane) async {
+    final controller =
+        tester.widget<PageView>(find.byType(PageView)).controller!;
+    var current = controller.page!.round();
+    while (current != pane) {
+      await tester.dragFrom(
+        const Offset(200, 300),
+        Offset(current < pane ? -600 : 600, 0),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      // The drag release ends in a fling whose ballistic keeps the
+      // PageView's scrollable in pointer-ignoring mode — pump until the
+      // activity fully settles so taps on the pane content land.
+      while (controller.position.isScrollingNotifier.value) {
+        await tester.pump(const Duration(milliseconds: 250));
+      }
+      await tester.pump();
+      current = controller.page!.round();
+    }
+  }
+
   Future<void> dealFlipAndSynthesize(WidgetTester tester) async {
     for (var i = 0; i < 3; i++) {
       await dealOne(tester);
@@ -45,7 +72,7 @@ void main() {
     await tester.pump();
   }
   testWidgets(
-      '3-pane workspace: swipe left through Chat into History, pills jump',
+      '3-pane workspace: swipe left through Chat into History and back',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
@@ -55,20 +82,12 @@ void main() {
     expect(find.text('NO READING YET'), findsNothing);
 
     // Swipe left on the table background (never on the deck) → Pane 1.
-    // The test viewport is 800 px wide, so the drag must clear half a
-    // page (>400 px) to snap into the next pane.
-    await tester.dragFrom(const Offset(60, 200), const Offset(-600, 0));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pump();
+    await goToPane(tester, 1);
     expect(find.text('NO READING YET'), findsOneWidget);
     expect(find.text('CURRENT SPREAD'), findsOneWidget);
 
     // Swipe once more → Pane 2: Spread History & Notebooks (PRO).
-    await tester.dragFrom(const Offset(200, 300), const Offset(-600, 0));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pump();
+    await goToPane(tester, 2);
     expect(find.text('SPREAD HISTORY'), findsOneWidget);
     expect(find.text('PRO'), findsOneWidget);
     expect(find.text('+ NEW SPREAD · НОВЫЙ РАСКЛАД'), findsOneWidget);
@@ -76,11 +95,8 @@ void main() {
     expect(find.text('RELATIONSHIPS'), findsOneWidget);
     expect(find.text('CAREER & PATH'), findsOneWidget);
 
-    // The 3-pill indicator jumps straight back to the table.
-    await tester.tap(find.byKey(const ValueKey('pane-0')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump();
+    // Swipe right twice → back on the Digital Table.
+    await goToPane(tester, 0);
     expect(find.text('DIGITAL TABLE'), findsOneWidget);
   });
 
@@ -127,10 +143,7 @@ void main() {
     await tester.pump();
 
     // Open the history pane: the session tile is waiting there.
-    await tester.tap(find.byKey(const ValueKey('pane-2')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump();
+    await goToPane(tester, 2);
     expect(find.text('SPREAD HISTORY'), findsOneWidget);
     expect(find.text('3 · TRIAD FLOW'), findsOneWidget);
 
@@ -140,16 +153,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pump();
     final ctrl = tester
-        .element(find.byKey(const ValueKey('pane-0')))
+        .element(find.byType(InteractiveDeckWidget))
         .read<SpreadController>();
     expect(ctrl.dealtCount, 0);
     expect(ctrl.remaining, 78);
 
     // 1-tap restore: the exact cards land on the table, face-up.
-    await tester.tap(find.byKey(const ValueKey('pane-2')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump();
+    await goToPane(tester, 2);
     await tester.tap(find.text('3 · TRIAD FLOW'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
@@ -160,10 +170,7 @@ void main() {
     expect(find.byType(TarotCard3DWidget), findsNWidgets(3));
 
     // And the exact conversation is restored in the chat pane.
-    await tester.tap(find.byKey(const ValueKey('pane-1')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump();
+    await goToPane(tester, 1);
     expect(find.text('What should I focus on?'), findsOneWidget);
     expect(find.textContaining('Sitting with your question'), findsOneWidget);
   });
