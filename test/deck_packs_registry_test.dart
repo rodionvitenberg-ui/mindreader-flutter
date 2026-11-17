@@ -12,6 +12,23 @@ void main() {
     expect(deckPackById('unknown_id'), isNull);
   });
 
+  test('the 7 real open-source decks are registered with their license', () {
+    const realIds = [
+      'rider_waite',
+      'marseille',
+      'oswald_wirth',
+      'etteilla',
+      'visconti_sforza',
+      'vieville',
+      'soimoi',
+    ];
+    for (final id in realIds) {
+      final pack = deckPackById(id);
+      expect(pack, isNotNull, reason: id);
+      expect(pack!.license, isNotEmpty);
+    }
+  });
+
   test('every pack points into assets/decks/ and carries a license', () {
     for (final pack in deckPacksRegistry) {
       expect(pack.assetFolder, startsWith('assets/decks/'));
@@ -21,27 +38,29 @@ void main() {
     }
   });
 
-  test('asset candidates resolve id-based, padded and RWS naming', () {
+  test('asset candidates resolve id-based and padded naming', () {
     final rws = deckPackById('rider_waite')!;
-    expect(rws.naming, CardNaming.rws);
+    expect(rws.naming, CardNaming.indexed);
     final fool = tarotDeck[0]; // The Fool, id 0
     final candidates = rws.cardAssetCandidates(fool);
     expect(candidates, contains('assets/decks/rider_waite/0.jpg'));
     expect(candidates, contains('assets/decks/rider_waite/00.jpg'));
-    expect(candidates, contains('assets/decks/rider_waite/00_The_Fool.jpg'));
 
     final ace = tarotDeck[22]; // Ace of Wands, id 22
     final aceCandidates = rws.cardAssetCandidates(ace);
-    expect(aceCandidates, contains('assets/decks/rider_waite/Wands01.jpg'));
-    expect(
-      aceCandidates,
-      contains('assets/decks/rider_waite/22_Ace_of_Wands.jpg'),
-    );
+    expect(aceCandidates, contains('assets/decks/rider_waite/22.jpg'));
   });
 
-  test('pro packs are flagged but remain selectable (no lock)', () {
-    final pro = deckPacksRegistry.where((p) => p.isPro).toList();
-    expect(pro, isNotEmpty);
-    expect(pro.every((p) => p.isLocked), isFalse);
+  test('real scan backs are wired where the sources ship a Cover', () {
+    expect(deckPackById('rider_waite')!.backAsset, 'back');
+    expect(deckPackById('vieville')!.backAsset, 'back');
+    expect(deckPackById('soimoi')!.backAsset, 'back');
+    expect(deckPackById('marseille')!.backAsset, isNull);
+  });
+
+  test('all 8 packs are free and selectable (no locked/pro tiers)', () {
+    expect(deckPacksRegistry.every((p) => !p.isLocked), isTrue);
+    expect(deckPacksRegistry.every((p) => !p.isPro), isTrue);
+    expect(deckPackById('obsidian_minimal'), isNotNull);
   });
 }

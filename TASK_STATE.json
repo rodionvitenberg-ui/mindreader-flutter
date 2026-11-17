@@ -1,8 +1,8 @@
 {
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
-  "active_feature_or_sprint": "SPRINT 4: Clean Digital Table UI — remove top pill nav, fix header overflow, chat/chips exclusive to Pane 1, always-present igniting Synthesize CTA, living elemental threads, flip artifact cleanup",
-  "status": "DONE",
+  "active_feature_or_sprint": "SPRINT 5: Meditative arcane card reveal (no rotateY), centered proportional Spread Overview (no giant flying card), 7 real open-source decks from TarotCards/tarot/",
+  "status": "IN_PROGRESS",
   "context": {
     "stack": [
       "Flutter/Dart (Impeller)",
@@ -51,14 +51,18 @@
       "SPRINT 4.5 CLEAN FLIP: removed the 3D edge-bevel side strips (cardEdgeStripX/cardEdgeSlices/cardFlipThicknessPx/cardEdgeBody/cardEdgeRimGold) from TarotCard3DWidget — ZERO protruding side bars during rotateY; 680ms flip + FoilGlint only",
       "SPRINT 4.6 TESTS: workspace_layout_test (NEW) — capsule/chips exclusively Pane 1, dormant CTA permanently on Pane 0, chip ✓ toggle; card_edge_bevel_test rewritten for the clean flip; workspace_swipe/phase2_flow/app_smoke updated to swipe-only navigation (PageView ballistic settle loop — the drag fling's BallisticScrollActivity ignores pointers until it settles); 134/134 green, flutter analyze clean"
     ],
-    "current_task": "SPRINT 4 DONE — analyze clean, 134/134 tests green, debug APK built (app-debug.apk), committed c277b11 on local master (no git remote configured in this workspace)",
+    "current_task": "SPRINT 5.6 VERIFY: analyze clean (0 issues), 136/136 tests green, debug APK build in progress",
     "pending_tasks": [
-      "KNOWN (separate, pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on this low-end device (background process killed at 10:30) — consider lazy receiver or plugin update",
-      "Optional: drop downloaded deck images into assets/decks/<id>/ (id-based 00.jpg..77.jpg or RWS naming)",
-      "Optional: run worker over HTTPS and disable cleartext in network_security_config"
+      "VERIFY APK: confirm build/app/outputs/flutter-apk/app-debug.apk exists and asset bundle includes assets/decks/<id>/NN.jpg",
+      "KNOWN (separate, pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on low-end devices"
     ]
   },
   "discovered_bugs_or_blockers": [
+    "FIXED (Sprint 5): mapper missed RWS minors (Cups01.jpg has no numeric prefix) — suit-prefix fallback added",
+    "FIXED (Sprint 5): default 800x600 test viewport is LANDSCAPE (w>h) — overview test pinned to a portrait viewport",
+    "KNOWN: tester.getSize inside FittedBox returns layout size, not painted size — tests compare deck height against the canvas box",
+    "CONFIRMED (Sprint 5): overview tap launched a full 220x360 flight overlay that rendered off the bottom-right — replaced by materialize-in-slot",
+    "KNOWN: _OverviewSlot key included slot.state → key change recreates subtree (entrance animation now lives at _OverviewSlot level with a stable slot list position)",
     "FIXED (Sprint 4): elemental threads frozen — painter never repainted (hosts rebuilt structurally identical painters and shouldRepaint compared the same Animation instance; no super(repaint:)) — fixed with super(repaint: pulse)",
     "FIXED (Sprint 4): rectangular side strips during card flip — the 4px 3D edge-bevel strip layers removed from TarotCard3DWidget",
     "FIXED (Sprint 4, tests): drag-based pane switching left the PageView fling ballistic active — BallisticScrollActivity.shouldIgnorePointer=true swallows taps until it settles; goToPane helpers now pump until isScrollingNotifier is false",
@@ -70,5 +74,5 @@
     "KNOWN: local timezone detection can fail on some devices — rituals fall back to UTC wall-clock (documented)",
     "FIXED (p10): dealCardAt depth guard used the ORIGINAL deck size (78) instead of the live stack length — RangeError risk on deep grabs; boundary now pos >= _cardIds.length"
   ],
-  "latest_observation_summary": "SPRINT 4 complete and verified: flutter analyze clean (0 issues), 134/134 tests green. Clean Digital Table (no top pill nav, no chat UI on Pane 0), permanently-anchored dormant→ignited Synthesize CTA with starlight shimmer, chips+capsule exclusively in Oracle Chat with ✓ selected state, living elemental threads (super(repaint:) + 10-14px dual-harmonic sway + 4 particles), flip side-strip artifacts removed. Debug APK built (app-debug.apk)."
+  "latest_observation_summary": "SPRINT 5 in progress: asset mapper tool/map_decks.py written (per-deck resolvers, JPEG <=520px, back.jpg from Cover). Next: run mapper, then registry/reveal/spread-view edits."
 }

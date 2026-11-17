@@ -353,15 +353,32 @@ class CardBack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final painter = CustomPaint(
+      size: Size(width, height),
+      painter: CardBackPainter(pack: pack),
+    );
+    // Real deck backs (pack.backAsset → back.jpg) replace the procedural
+    // pattern when the asset exists; zero-crash fallback chain to painter.
+    final candidates = pack?.backAssetCandidates;
+    Widget back() => candidates == null
+        ? painter
+        : Image.asset(
+            candidates.first,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => candidates.length > 1
+                ? Image.asset(
+                    candidates[1],
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => painter,
+                  )
+                : painter,
+          );
     return RepaintBoundary(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(width * 0.06),
         child: Stack(
           children: [
-            CustomPaint(
-              size: Size(width, height),
-              painter: CardBackPainter(pack: pack),
-            ),
+            SizedBox(width: width, height: height, child: back()),
             if (glint)
               Positioned.fill(
                 child: FoilGlint(
@@ -377,15 +394,21 @@ class CardBack extends StatelessWidget {
   }
 }
 
-/// A single 3D tarot card: 2.5D perspective, isometric tilt, 680ms
-/// `rotateY(π)` flip on `Curves.easeInOutCubic` (deliberate, heavy,
-/// ceremonial) with a haptic at the 90° midpoint and a `FoilGlint`
-/// specular sheen sliding across the surface mid-flip. NO protruding
-/// side strips/bevel layers — the flip is clean inside the card's
-/// rounded border.
+/// A single 3D tarot card resting flat and serene on the table plane:
+/// 2.5D perspective, isometric tilt, and a MEDITATIVE 750ms "arcane
+/// materialization" reveal on `Curves.easeInOutSine` — ZERO `rotateY`
+/// flip, no harsh geometric jump at 90°:
+///
+/// 1. a subtle breathing lift (scale 1.0 → 1.035 → 1.0) with a soft
+///    ambient glow pulse;
+/// 2. the card back dissolves into deep obsidian darkness (0 → 0.45);
+/// 3. the face materializes from the center outward through a radial
+///    `ShaderMask` mist (opacity 0 → 1 from v = 0.25) while a slow
+///    diagonal `FoilGlint` light sweep crosses the revealed artwork.
+/// A haptic lands at the halfway point; completion fires [onFlip].
 
-/// Flip duration: 680ms — +40% heavier than the old snappy 600ms flip.
-const cardFlipDuration = Duration(milliseconds: 680);
+/// Reveal duration: 750ms meditative materialization.
+const cardRevealDuration = Duration(milliseconds: 750);
 
 class TarotCard3DWidget extends StatefulWidget {
   const TarotCard3DWidget({
@@ -417,44 +440,44 @@ class TarotCard3DWidget extends StatefulWidget {
 
 class _TarotCard3DWidgetState extends State<TarotCard3DWidget>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _flip = AnimationController(
+  late final AnimationController _reveal = AnimationController(
     vsync: this,
-    duration: cardFlipDuration,
-  )..addListener(_onFlipTick);
+    duration: cardRevealDuration,
+  )..addListener(_onRevealTick);
 
-  /// The ceremonial timing curve: heavy start, heavy stop, graceful middle.
-  late final CurvedAnimation _flipCurve = CurvedAnimation(
-    parent: _flip,
-    curve: Curves.easeInOutCubic,
+  /// The meditative timing curve: calm start, calm stop, graceful middle.
+  late final CurvedAnimation _revealCurve = CurvedAnimation(
+    parent: _reveal,
+    curve: Curves.easeInOutSine,
   );
 
-  bool _flipping = false;
+  bool _revealing = false;
   double _lastValue = 0;
 
-  void _onFlipTick() {
-    // Haptic exactly at the 90° midpoint of the flip.
-    if (_lastValue < 0.5 && _flip.value >= 0.5) {
+  void _onRevealTick() {
+    // Haptic exactly at the halfway point of the materialization.
+    if (_lastValue < 0.5 && _reveal.value >= 0.5) {
       HapticFeedback.mediumImpact();
     }
-    _lastValue = _flip.value;
+    _lastValue = _reveal.value;
   }
 
   @override
   void dispose() {
-    _flipCurve.dispose();
-    _flip.dispose();
+    _revealCurve.dispose();
+    _reveal.dispose();
     super.dispose();
   }
 
   void _handleTap() {
-    if (_flipping) return;
+    if (_revealing) return;
     if (widget.state == SlotState.faceDown) {
-      setState(() => _flipping = true);
-      _flip.forward(from: 0).whenComplete(() {
+      setState(() => _revealing = true);
+      _reveal.forward(from: 0).whenComplete(() {
         if (!mounted) return;
-        _flipping = false;
+        _revealing = false;
         widget.onFlip?.call(); // controller reveals the card
-        _flip.value = 0; // face now rests at rotateY(0)
+        _reveal.value = 0; // face now rests fully materialized
       });
     } else if (widget.state == SlotState.faceUp) {
       widget.onTapFaceUp?.call();
@@ -466,19 +489,28 @@ class _TarotCard3DWidgetState extends State<TarotCard3DWidget>
     final pack = context.watch<DeckPackController>().activePack;
     final content = RepaintBoundary(
       child: AnimatedBuilder(
-        animation: _flip,
+        animation: _reveal,
         builder: (context, _) {
-          final v = _flipCurve.value;
-          final showFace =
-              widget.state == SlotState.faceUp || (_flipping && v >= 0.5);
-          var angle = 0.0;
-          if (_flipping) {
-            angle = v < 0.5 ? math.pi * v : math.pi * v - math.pi;
-          }
+          final v = _revealCurve.value;
+          final showFace = widget.state == SlotState.faceUp ||
+              (_revealing && v >= 0.25);
+          // Breathing lift: 1.0 → 1.035 → 1.0 — the card floats gently.
+          final breathe =
+              _revealing ? 1.0 + 0.035 * math.sin(math.pi * v) : 1.0;
+          // The back dissolves into deep obsidian darkness (0 → 0.45 → 0).
+          final backAlpha =
+              _revealing ? (v < 0.35 ? 1.0 - v / 0.35 : 0.0) : 1.0;
+          final darkVeil = _revealing
+              ? (v < 0.35
+                  ? 0.45 * (v / 0.35)
+                  : 0.45 * (1 - (v - 0.35) / 0.65))
+              : 0.0;
+          // The face materializes from the center outward from v = 0.25.
+          final faceIn = ((v - 0.25) / 0.75).clamp(0.0, 1.0);
+          // Flat and serene — isometric tilt only, NEVER rotateY.
           final matrix = Matrix4.identity()
             ..setEntry(3, 2, perspectiveEntry)
-            ..rotateX(widget.tilt ? slotTiltRadians : 0)
-            ..rotateY(angle);
+            ..rotateX(widget.tilt ? slotTiltRadians : 0);
           return Stack(
             clipBehavior: Clip.none,
             children: [
@@ -487,27 +519,94 @@ class _TarotCard3DWidgetState extends State<TarotCard3DWidget>
                 transform: matrix,
                 child: Stack(
                   children: [
-                    showFace
-                        ? _CardFace(
-                            card: widget.card,
-                            isReversed: widget.isReversed,
-                            width: widget.width,
-                            height: widget.height,
-                            pack: pack,
-                          )
-                        : CardBack(
-                            width: widget.width,
-                            height: widget.height,
-                            pack: pack,
-                          ),
-                    // Specular sheen slides across the card mid-flip.
-                    if (_flipping)
-                      Positioned.fill(
-                        child: FoilGlint(
-                          angleY: angle,
-                          angleX: widget.tilt ? slotTiltRadians : 0,
-                          intensity: 0.55,
+                    Transform.scale(
+                      scale: breathe,
+                      child: Opacity(
+                        opacity: backAlpha,
+                        child: CardBack(
+                          width: widget.width,
+                          height: widget.height,
+                          pack: pack,
                         ),
+                      ),
+                    ),
+                    if (_revealing) ...[
+                      // Soft ambient glow pulse breathing with the card.
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: RadialGradient(
+                                colors: [
+                                  AppColors.lavender.withValues(
+                                    alpha: 0.28 * math.sin(math.pi * v),
+                                  ),
+                                  Colors.transparent,
+                                ],
+                                stops: const [0.0, 1.0],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Deep obsidian darkness between back and face.
+                      if (darkVeil > 0)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color:
+                                    Colors.black.withValues(alpha: darkVeil),
+                              ),
+                            ),
+                          ),
+                        ),
+                      // The face emerges from the center outward through a
+                      // radial mist…
+                      if (showFace && faceIn > 0)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: Opacity(
+                              opacity: faceIn,
+                              child: ShaderMask(
+                                blendMode: BlendMode.dstIn,
+                                shaderCallback: (bounds) => RadialGradient(
+                                  radius: 0.3 + 1.1 * faceIn,
+                                  colors: const [
+                                    Colors.white,
+                                    Colors.white,
+                                    Colors.transparent,
+                                  ],
+                                  stops: const [0.0, 0.72, 1.0],
+                                ).createShader(bounds),
+                                child: _CardFace(
+                                  card: widget.card,
+                                  isReversed: widget.isReversed,
+                                  width: widget.width,
+                                  height: widget.height,
+                                  pack: pack,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      // …swept by a slow diagonal light glint.
+                      if (faceIn > 0 && faceIn < 1)
+                        Positioned.fill(
+                          child: FoilGlint(
+                            angleY: -0.9 + 1.8 * v,
+                            angleX: widget.tilt ? slotTiltRadians : 0,
+                            intensity: math.sin(math.pi * faceIn) * 0.6,
+                          ),
+                        ),
+                    ],
+                    if (!_revealing && showFace)
+                      _CardFace(
+                        card: widget.card,
+                        isReversed: widget.isReversed,
+                        width: widget.width,
+                        height: widget.height,
+                        pack: pack,
                       ),
                   ],
                 ),
@@ -549,15 +648,52 @@ class _CardFace extends StatelessWidget {
     Widget fallback() => _TypographicFace(card: card, width: width, pack: pack);
     Widget build(int i) => i >= candidates.length
         ? fallback()
-        : Image.asset(
-            candidates[i],
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => build(i + 1),
-          );
+        : _framedArtwork(candidates[i], () => build(i + 1));
     return Image.asset(
       'assets/cards/${card.id}.png',
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) => build(0),
+    );
+  }
+
+  /// The historical scan, trimmed and framed like a native obsidian card:
+  /// `BoxFit.cover` + a 1.05 upscale trims the scan's white paper margins,
+  /// and a dark inner vignette with a hairline accent border frames the
+  /// artwork — no ugly white edges.
+  Widget _framedArtwork(String path, Widget Function() onError) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(width * 0.035),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Transform.scale(
+            scale: 1.05,
+            child: Image.asset(
+              path,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => onError(),
+            ),
+          ),
+          IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  radius: 1.05,
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.38),
+                  ],
+                  stops: const [0.62, 0.86, 1.0],
+                ),
+                border: Border.all(
+                  color: Color(pack.faceAccentArgb).withValues(alpha: 0.35),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

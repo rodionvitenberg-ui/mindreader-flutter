@@ -7,13 +7,16 @@ import 'package:mindreader/features/digital_table/widgets/tarot_card_3d_widget.d
 import 'package:mindreader/state/deck_pack_controller.dart';
 import 'package:provider/provider.dart';
 
-/// Sprint 4: the flip must be CLEAN. The old 3D edge-bevel strips (the
-/// rectangular side bars that stuck out during rotateY) are gone — the
-/// only overlay mid-flip is the FoilGlint specular sheen, fully inside
-/// the card's rounded border.
+/// Sprint 5: the 3D flip is REPLACED by the meditative 750ms "arcane
+/// materialization" reveal — ZERO rotateY, no harsh 90° jump:
+/// * the card breathes (scale 1.0 → 1.035 → 1.0) flat on the table plane;
+/// * the back dissolves into obsidian darkness and the face emerges from
+///   the center outward through a radial ShaderMask;
+/// * a FoilGlint light sweep crosses the revealed face;
+/// * no rectangular overlay strips (ColoredBox) inside the card subtree.
 void main() {
-  test('flip is the ceremonial 680ms', () {
-    expect(cardFlipDuration, const Duration(milliseconds: 680));
+  test('reveal is the meditative 750ms', () {
+    expect(cardRevealDuration, const Duration(milliseconds: 750));
   });
 
   Future<void> pumpCard(WidgetTester tester) async {
@@ -38,36 +41,40 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('mid-flip: foil sheen present, ZERO side strips inside the card',
+  testWidgets(
+      'mid-reveal: foil sweep + radial mask, ZERO rotateY, no side strips',
       (tester) async {
     await pumpCard(tester);
 
     final card = find.byType(TarotCard3DWidget);
     await tester.tapAt(tester.getCenter(card));
-    await tester.pump(); // flip ticker starts
-    await tester.pump(const Duration(milliseconds: 340)); // edge-on moment
+    await tester.pump(); // reveal ticker starts
+    await tester.pump(const Duration(milliseconds: 375)); // halfway point
 
-    // The specular sheen slides across the surface mid-flip.
+    // The specular sheen sweeps across the revealed face.
     expect(find.byType(FoilGlint), findsOneWidget);
-    // No ColoredBox/bevel strips or any rectangular overlay layers
-    // protrude inside the card subtree during the flip.
+    // The face materializes through a radial ShaderMask from the center.
+    expect(find.byType(ShaderMask), findsOneWidget);
+    // No ColoredBox/bevel strips or rectangular overlay layers protrude
+    // inside the card subtree during the reveal.
     expect(
       find.descendant(of: card, matching: find.byType(ColoredBox)),
       findsNothing,
     );
   });
 
-  testWidgets('flip completes clean: sheen gone, no artifacts left behind',
+  testWidgets('reveal completes clean: sheen gone, no artifacts left behind',
       (tester) async {
     await pumpCard(tester);
 
     final card = find.byType(TarotCard3DWidget);
     await tester.tapAt(tester.getCenter(card));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump(const Duration(milliseconds: 800)); // 750ms reveal
     await tester.pump();
 
     expect(find.byType(FoilGlint), findsNothing);
+    expect(find.byType(ShaderMask), findsNothing);
     expect(
       find.descendant(of: card, matching: find.byType(ColoredBox)),
       findsNothing,

@@ -28,7 +28,7 @@ void main() {
     final rect = tester.getRect(card);
     await tester.tapAt(Offset(rect.center.dx, rect.top + 30));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump(const Duration(milliseconds: 800)); // 750ms reveal
     await tester.pump();
   }
 

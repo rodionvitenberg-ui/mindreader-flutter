@@ -48,10 +48,10 @@ void main() {
     final cardRect = tester.getRect(boardCards.first);
     final tapPoint = Offset(cardRect.center.dx, cardRect.top + 30);
 
-    // Tap flips it face-up (600 ms).
+    // Tap reveals it face-up (750 ms arcane materialization).
     await tester.tapAt(tapPoint);
     await tester.pump(); // ticker must capture its start time first
-    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump(const Duration(milliseconds: 800));
     await tester.pump();
 
     // Tapping the face-up card opens the reflection sheet.
@@ -301,8 +301,14 @@ void main() {
     expect(find.textContaining('blank page'), findsOneWidget);
   });
 
-  testWidgets('FOCUS ↔ SPREAD toggle: overview shows the full spread',
-      (tester) async {
+  testWidgets('FOCUS ↔ SPREAD toggle: centered proportional overview, '
+      'deal materializes in the slot (no flying card)', (tester) async {
+    // Portrait viewport (the default 800×600 logical test view is
+    // LANDSCAPE — wider than tall).
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3.0; // logical 360×640 portrait
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
@@ -314,26 +320,40 @@ void main() {
     await tester.tap(find.text('SPREAD VIEW'));
     await tester.pump();
 
-    // The compact 90×148 mini-deck replaces the tactile deck; the whole
-    // spread geometry is visible on ONE screen with role placeholders.
+    // The proportional mini-deck replaces the tactile deck, CENTERED
+    // above the spread geometry; role placeholders are visible.
     expect(find.byType(InteractiveDeckWidget), findsNothing);
     final miniDeck = find.byKey(const ValueKey('overview-deck'));
     expect(miniDeck, findsOneWidget);
-    expect(
-      tester.getSize(miniDeck),
-      const Size(overviewDeckWidth, overviewDeckHeight),
-    );
+    final deckRect = tester.getRect(miniDeck);
+    final screenW = tester.view.physicalSize.width / tester.view.devicePixelRatio;
+    expect(deckRect.center.dx, closeTo(screenW / 2, 1.5)); // centered
     expect(find.text('CURRENT STATE / ESSENCE'), findsOneWidget);
     expect(find.text('HIDDEN SHADOW / BLOCK'), findsOneWidget);
     expect(find.text('VECTOR / ACTION'), findsOneWidget);
 
-    // Tapping the mini-deck draws the next card into the spread.
+    // Tapping the mini-deck materializes the card DIRECTLY inside its
+    // slot — no flight overlay card anywhere on screen.
     await tester.tap(miniDeck);
-    await tester.pump(); // slot materializes; flight starts
-    await tester.pump(const Duration(milliseconds: 700)); // flight spring
+    await tester.pump(); // slot materializes
+    await tester.pump(const Duration(milliseconds: 600)); // entrance
     await tester.pump();
     expect(find.textContaining('77'), findsWidgets);
-    expect(find.byType(TarotCard3DWidget), findsOneWidget);
+    final dealt = find.byType(TarotCard3DWidget);
+    expect(dealt, findsOneWidget);
+
+    // The deck stays proportional to the dealt slot card (~1.12× larger,
+    // never the old 3× tower). The dealt card sits inside a FittedBox
+    // (paint-scaled), so compare the deck height against the CANVAS box
+    // height — exactly one row of slots in a 3-card spread.
+    final deckH = tester.getRect(miniDeck).height;
+    final canvasH = tester
+        .getSize(
+          find.ancestor(of: dealt, matching: find.byType(FittedBox)).first,
+        )
+        .height;
+    expect(deckH, greaterThanOrEqualTo(canvasH));
+    expect(deckH, lessThanOrEqualTo(canvasH * 1.35));
 
     // Toggle back to focus: the tactile deck returns.
     await tester.tap(find.text('FOCUS VIEW'));
