@@ -209,7 +209,10 @@ class _TableWorkspaceState extends State<TableWorkspace>
   // ---- Digital Table context → the ether (Pane 0 chips → Pane 1) ----
 
   void _sendChipToEther(String chip) {
-    _ctrl.addSessionContextNote(chip);
+    // Never duplicate the same context note in the session.
+    if (!_ctrl.sessionContextNotes.contains(chip)) {
+      _ctrl.addSessionContextNote(chip);
+    }
     _ctrl.queueContext(chip: chip);
     if (_ctrl.sourceMode == TableSourceMode.physicalCameraSync) {
       _ctrl.attachContextToNextUntagged(chip: chip);
@@ -218,26 +221,19 @@ class _TableWorkspaceState extends State<TableWorkspace>
     _playCosmos(chip);
   }
 
-  /// Context chips selected in the Oracle Chat pane — the filled ✓ state.
-  final Set<String> _selectedChips = <String>{};
+  /// The single active context pill in the Oracle Chat pane (radio
+  /// behavior) — null when none is selected.
+  String? _selectedChip;
 
-  /// Toggles a context chip on the Oracle Chat pane: selecting weaves the
-  /// context straight into the reading and confirms it in the chat stream;
-  /// deselecting only removes the visual state.
+  /// Toggles a context pill on the Oracle Chat pane: EXACTLY ONE pill may
+  /// be active at a time (tapping it again deselects it). Selection
+  /// silently updates the active context state — it NEVER appends
+  /// `Context woven into the reading` lines into the chat log.
   void _toggleContextChip(String chip) {
     HapticFeedback.selectionClick();
-    final wasSelected = _selectedChips.contains(chip);
-    setState(() {
-      if (wasSelected) {
-        _selectedChips.remove(chip);
-      } else {
-        _selectedChips.add(chip);
-      }
-    });
-    if (!wasSelected) {
-      _sendChipToEther(chip);
-      _synthesis.addSystemMessage('Context woven into the reading: $chip');
-    }
+    final wasSelected = _selectedChip == chip;
+    setState(() => _selectedChip = wasSelected ? null : chip);
+    if (!wasSelected) _sendChipToEther(chip);
   }
 
   void _playCosmos(String label) {
@@ -475,7 +471,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
               ),
             ] else ...[
               _ChatContextChips(
-                selected: _selectedChips,
+                selected: _selectedChip,
                 onChipTap: _toggleContextChip,
               ),
               const SizedBox(height: 2),
@@ -520,76 +516,73 @@ class _TableWorkspaceState extends State<TableWorkspace>
 }
 
 
-/// Context chips docked above the input capsule on the Oracle AI Chat
-/// pane (Gemini-style suggestion row): tapping toggles a filled
-/// lavender/indigo SELECTED state with a bright border and a ✓ checkmark.
+/// Context pills docked above the input capsule on the Oracle AI Chat
+/// pane: SINGLE-SELECT radio behavior (one active pill at a time, tap
+/// again to deselect). All 3 pills live in one `Row` of `Expanded`
+/// children with equal width, 8 px gaps and 16 px horizontal screen
+/// padding — they NEVER change size when tapped and NEVER overflow any
+/// screen width. Selection is shown purely by a soft lavender tint
+/// (#A78BFA @ 22%) and a glowing 1.2 px lavender border — no ✓ icon,
+/// no font/padding growth.
 class _ChatContextChips extends StatelessWidget {
   const _ChatContextChips({required this.selected, required this.onChipTap});
 
-  final Set<String> selected;
+  /// The single active pill — null when none is selected.
+  final String? selected;
   final ValueChanged<String> onChipTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        for (var i = 0; i < tableContextChips.length; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
-          GestureDetector(
-            key: ValueKey('context-chip-$i'),
-            behavior: HitTestBehavior.opaque,
-            onTap: () => onChipTap(tableContextChips[i]),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                gradient: selected.contains(tableContextChips[i])
-                    ? const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [AppColors.lavender, AppColors.indigo],
-                      )
-                    : null,
-                color: selected.contains(tableContextChips[i])
-                    ? null
-                    : AppColors.surface.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(13),
-                border: Border.all(
-                  color: selected.contains(tableContextChips[i])
-                      ? AppColors.lavender
-                      : AppColors.border,
-                  width: selected.contains(tableContextChips[i]) ? 1.4 : 1.0,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (selected.contains(tableContextChips[i])) ...[
-                    const Icon(
-                      Icons.check_rounded,
-                      size: 12,
-                      color: AppColors.canvas,
-                    ),
-                    const SizedBox(width: 4),
-                  ],
-                  Text(
-                    tableContextChips[i],
-                    style: GoogleFonts.inter(
-                      fontSize: 10.5,
-                      fontWeight: selected.contains(tableContextChips[i])
-                          ? FontWeight.w700
-                          : FontWeight.w400,
-                      color: selected.contains(tableContextChips[i])
-                          ? AppColors.canvas
-                          : AppColors.textMuted,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          for (var i = 0; i < tableContextChips.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(
+              child: GestureDetector(
+                key: ValueKey('context-chip-$i'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onChipTap(tableContextChips[i]),
+                child: Container(
+                  key: selected == tableContextChips[i]
+                      ? ValueKey('context-chip-$i-active')
+                      : null,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected == tableContextChips[i]
+                        ? AppColors.lavender.withValues(alpha: 0.22)
+                        : AppColors.surface.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(
+                      color: selected == tableContextChips[i]
+                          ? AppColors.lavender
+                          : AppColors.border,
+                      width: 1.2,
                     ),
                   ),
-                ],
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      tableContextChips[i],
+                      style: GoogleFonts.inter(
+                        fontSize: 10.5,
+                        color: selected == tableContextChips[i]
+                            ? AppColors.lavender
+                            : AppColors.textMuted,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

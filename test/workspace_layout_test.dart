@@ -70,18 +70,36 @@ void main() {
     expect(find.byType(SynthesizeChatCta), findsNothing);
   });
 
-  testWidgets('chip tap shows the ✓ selected state, a second tap toggles off',
+  testWidgets(
+      'context pills: single-select radio, zero size change, zero overflow',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
     await goToPane(tester, 1);
 
-    await tester.tap(find.byKey(const ValueKey('context-chip-0')));
-    await tester.pump();
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-
+    // Tapping a pill activates it with a soft glow — NO ✓ icon is ever
+    // rendered.
     await tester.tap(find.byKey(const ValueKey('context-chip-0')));
     await tester.pump();
     expect(find.byIcon(Icons.check_rounded), findsNothing);
+    expect(find.byKey(const ValueKey('context-chip-0-active')), findsOneWidget);
+    expect(find.byKey(const ValueKey('context-chip-1-active')), findsNothing);
+
+    // Tapping another pill switches the single selection.
+    await tester.tap(find.byKey(const ValueKey('context-chip-1')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('context-chip-0-active')), findsNothing);
+    expect(find.byKey(const ValueKey('context-chip-1-active')), findsOneWidget);
+
+    // Tapping the active pill deselects it.
+    await tester.tap(find.byKey(const ValueKey('context-chip-1')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('context-chip-1-active')), findsNothing);
+
+    // The 3 pills never overflow the screen (16 px margins, Expanded
+    // equal widths — the old row bled 13 px past the right edge).
+    final rightEdge =
+        tester.getTopRight(find.byKey(const ValueKey('context-chip-2'))).dx;
+    expect(rightEdge, lessThanOrEqualTo(800));
   });
 }

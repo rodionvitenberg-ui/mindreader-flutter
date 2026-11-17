@@ -90,7 +90,7 @@ void main() {
     await goToPane(tester, 2);
     expect(find.text('SPREAD HISTORY'), findsOneWidget);
     expect(find.text('PRO'), findsOneWidget);
-    expect(find.text('+ NEW SPREAD · НОВЫЙ РАСКЛАД'), findsOneWidget);
+    expect(find.text('NEW SPREAD · НОВЫЙ РАСКЛАД'), findsOneWidget);
     expect(find.text('ALL READINGS'), findsOneWidget);
     expect(find.text('RELATIONSHIPS'), findsOneWidget);
     expect(find.text('CAREER & PATH'), findsOneWidget);
@@ -148,7 +148,7 @@ void main() {
     expect(find.text('3 · TRIAD FLOW'), findsOneWidget);
 
     // Start a fresh table through the archive action.
-    await tester.tap(find.text('+ NEW SPREAD · НОВЫЙ РАСКЛАД'));
+    await tester.tap(find.text('NEW SPREAD · НОВЫЙ РАСКЛАД'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pump();

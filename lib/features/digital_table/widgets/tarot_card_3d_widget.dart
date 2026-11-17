@@ -643,12 +643,12 @@ class _CardFace extends StatelessWidget {
   /// Smart asset resolver with zero-crash fallback: legacy bundled artwork
   /// → active pack candidates (`<id>.jpg/png`, `00.jpg`, RWS names) → the
   /// bespoke procedural face in the pack's palette.
-  Widget _faceArt() {
+  Widget _faceArt({double? clipRadius}) {
     final candidates = pack.cardAssetCandidates(card);
     Widget fallback() => _TypographicFace(card: card, width: width, pack: pack);
     Widget build(int i) => i >= candidates.length
         ? fallback()
-        : _framedArtwork(candidates[i], () => build(i + 1));
+        : _framedArtwork(candidates[i], () => build(i + 1), clipRadius);
     return Image.asset(
       'assets/cards/${card.id}.png',
       fit: BoxFit.cover,
@@ -659,10 +659,15 @@ class _CardFace extends StatelessWidget {
   /// The historical scan, trimmed and framed like a native obsidian card:
   /// `BoxFit.cover` + a 1.05 upscale trims the scan's white paper margins,
   /// and a dark inner vignette with a hairline accent border frames the
-  /// artwork — no ugly white edges.
-  Widget _framedArtwork(String path, Widget Function() onError) {
+  /// artwork — no ugly white edges. [clipRadius] defaults to the inner
+  /// padded radius; illustrated full-bleed faces pass the card radius.
+  Widget _framedArtwork(
+    String path,
+    Widget Function() onError,
+    double? clipRadius,
+  ) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(width * 0.035),
+      borderRadius: BorderRadius.circular(clipRadius ?? width * 0.035),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -701,62 +706,78 @@ class _CardFace extends StatelessWidget {
   Widget build(BuildContext context) {
     final faceSec = Color(pack.faceSecondaryArgb);
     final faceAccent = Color(pack.faceAccentArgb);
-    final face = Container(
-      width: width,
-      height: height,
-      padding: EdgeInsets.all(width * 0.055),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.lerp(faceSec, Colors.black, 0.45)!,
-            AppColors.surface,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(width * 0.06),
-        border: Border.all(color: faceAccent.withValues(alpha: 0.35)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  card.positionLabel,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: width * 0.07,
-                    letterSpacing: 1.4,
-                    color: faceAccent.withValues(alpha: 0.9),
-                  ),
-                ),
-              ),
-              Text(
-                '${card.element.glyph} ${card.element.label.toUpperCase()}',
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: width * 0.055,
-                  letterSpacing: 1.2,
-                  color: card.element.accent,
-                ),
-              ),
-            ],
-          ),
-          Expanded(child: _faceArt()),
-          Text(
-            card.arcana == Arcana.major
-                ? 'MAJOR ARCANA'
-                : '${card.suit!.label.toUpperCase()} · ${card.element.label.toUpperCase()}',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: width * 0.05,
-              letterSpacing: 1.4,
-              color: AppColors.textMuted,
-            ),
-          ),
+    final decoration = BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color.lerp(faceSec, Colors.black, 0.45)!,
+          AppColors.surface,
         ],
       ),
+      borderRadius: BorderRadius.circular(width * 0.06),
+      border: Border.all(color: faceAccent.withValues(alpha: 0.35)),
     );
+
+    // Illustrated decks (the 7 real historical scans): the artwork fills
+    // the ENTIRE card face, edge to edge inside the rounded border — NO
+    // top/bottom text bars may ever cover or crop the illustration.
+    final Widget face;
+    if (pack.isIllustrated) {
+      face = Container(
+        width: width,
+        height: height,
+        clipBehavior: Clip.antiAlias,
+        decoration: decoration,
+        child: _faceArt(clipRadius: width * 0.06),
+      );
+    } else {
+      face = Container(
+        width: width,
+        height: height,
+        padding: EdgeInsets.all(width * 0.055),
+        decoration: decoration,
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    card.positionLabel,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: width * 0.07,
+                      letterSpacing: 1.4,
+                      color: faceAccent.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ),
+                Text(
+                  '${card.element.glyph} ${card.element.label.toUpperCase()}',
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: width * 0.055,
+                    letterSpacing: 1.2,
+                    color: card.element.accent,
+                  ),
+                ),
+              ],
+            ),
+            Expanded(child: _faceArt()),
+            Text(
+              card.arcana == Arcana.major
+                  ? 'MAJOR ARCANA'
+                  : '${card.suit!.label.toUpperCase()} · ${card.element.label.toUpperCase()}',
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: width * 0.05,
+                letterSpacing: 1.4,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return isReversed ? Transform.rotate(angle: math.pi, child: face) : face;
   }
 }

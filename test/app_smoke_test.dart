@@ -54,11 +54,19 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800));
     await tester.pump();
 
-    // Tapping the face-up card opens the reflection sheet.
+    // Tapping the face-up card opens the redesigned Card Inspector sheet:
+    // resonance pills, slot role line and a personal-note field — and NO
+    // synthesize button, NO reading-context chips.
     await tester.tapAt(tapPoint);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Card Reflection'), findsOneWidget);
+    expect(find.text('Resonates'), findsOneWidget);
+    expect(find.text('Challenging'), findsOneWidget);
+    expect(find.text('Unclear'), findsOneWidget);
+    expect(find.textContaining('SLOT 1 ·'), findsOneWidget);
+    expect(find.byKey(const ValueKey('card-note-field')), findsOneWidget);
+    expect(find.text('SYNTHESIZE SPREAD'), findsNothing);
+    expect(find.text('READING CONTEXT'), findsNothing);
   });
 
   testWidgets('header spread selector resets the table: pillar empty',

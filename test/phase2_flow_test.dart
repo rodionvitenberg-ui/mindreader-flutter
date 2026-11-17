@@ -97,22 +97,29 @@ void main() {
     expect(find.text('⚡ Crossroads'), findsOneWidget);
     expect(find.text('🔮 Blind Draw'), findsOneWidget);
 
-    // A chip tap fills the selected state with ✓ and weaves the context
-    // into the session + confirms it in the chat stream. (Tap by KEY: the
-    // "Sent to Cosmos" burst also renders the chip label for a moment.)
+    // A chip tap activates ONE pill (single-select radio, soft glow — no
+    // ✓ icon) and silently weaves the context into the session state.
+    // NO 'Context woven into the reading' lines may be appended to chat.
     await tester.tap(find.byKey(const ValueKey('context-chip-0')));
     await tester.pump();
-    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.check_rounded), findsNothing);
+    expect(find.byKey(const ValueKey('context-chip-0-active')), findsOneWidget);
     final ctrl = tester
         .element(find.byType(GeminiInputCapsule))
         .read<SpreadController>();
     expect(ctrl.sessionContextNotes, contains('✨ Relationships'));
-    expect(find.textContaining('Context woven into the reading'), findsOneWidget);
+    expect(find.textContaining('Context woven into the reading'), findsNothing);
 
-    // A second tap toggles the selected state off.
+    // A second tap deselects the active pill.
     await tester.tap(find.byKey(const ValueKey('context-chip-0')));
     await tester.pump();
-    expect(find.byIcon(Icons.check_rounded), findsNothing);
+    expect(find.byKey(const ValueKey('context-chip-0-active')), findsNothing);
+
+    // Tapping another pill switches the single active context.
+    await tester.tap(find.byKey(const ValueKey('context-chip-1')));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('context-chip-0-active')), findsNothing);
+    expect(find.byKey(const ValueKey('context-chip-1-active')), findsOneWidget);
 
     // The capsule drives the chat; before synthesis it guides back to
     // the table instead of sending context into the ether.

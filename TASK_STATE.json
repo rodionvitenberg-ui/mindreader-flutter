@@ -1,7 +1,7 @@
 {
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
-  "active_feature_or_sprint": "SPRINT 5: Meditative arcane card reveal (no rotateY), centered proportional Spread Overview (no giant flying card), 7 real open-source decks from TarotCards/tarot/",
+  "active_feature_or_sprint": "SPRINT 6: Uncropped full-bleed card art (no text bars over illustrated decks), taut slow elemental strings, redesigned Card Inspector sheet, fixed chat/history/almanac pill layouts (screenshots 1000049361-1000049372)",
   "status": "DONE",
   "context": {
     "stack": [
@@ -12,17 +12,17 @@
       "speech_to_text (capsule mic dictation)"
     ],
     "target_files": [
-      "lib/core/models/spread_type.dart (canonical slotRoles 1/3/4/7)",
-      "lib/state/spread_controller.dart (maxTableCards, baseCardLimit, allowedCardsLimit, isDealLocked, armClarifierQuestion, locked deal gate, camera ceiling guards)",
-      "lib/core/services/oracle_synthesis_service.dart (buildClarifierSuggestions)",
-      "lib/features/digital_table/widgets/deal_lock_prompt.dart (NEW — shared lock prompt)",
-      "lib/features/digital_table/widgets/interactive_deck_widget.dart (locked-deck spring-back + prompt)",
-      "lib/features/digital_table/widgets/gemini_input_capsule.dart (external controller/focusNode)",
-      "lib/features/digital_table/digital_table_screen.dart (deal refusal prompts, badge states)",
-      "lib/features/digital_table/table_workspace.dart (question-driven flow, clarifier banner, capsule wiring)",
-      "lib/features/digital_table/oracle_chat_pane.dart (AI question cards, +1 CARD FOR MY QUESTION)",
-      "test/spread_lock_test.dart (NEW), test/phase2_* , test/app_smoke_test.dart, test/spread_controller_test.dart, test/oracle_synthesis_service_test.dart",
-      "ARCHITECTURE.md"
+      "lib/core/models/tarot_deck_pack.dart (+ isIllustrated)",
+      "lib/core/data/deck_packs_registry.dart (7 illustrated decks)",
+      "lib/features/digital_table/widgets/tarot_card_3d_widget.dart (_CardFace full-bleed art, no header/footer bars)",
+      "lib/features/digital_table/widgets/elemental_threads_painter.dart (taut 3.0px cord, 4.5-5.0s wall-clock breathing)",
+      "lib/features/digital_table/widgets/reading_bottom_sheet.dart (Card Inspector Sheet)",
+      "lib/state/spread_controller.dart (+updateSlotUserContext)",
+      "lib/features/digital_table/table_workspace.dart (_ChatContextChips single-select, no chat spam)",
+      "lib/features/digital_table/spread_history_pane.dart (no double +, Expanded filter pills)",
+      "lib/features/almanac/almanac_screen.dart (clickable element filter bar, no ELEMENTS label)",
+      "lib/core/models/tarot_card_model.dart (earth glyph ▫)",
+      "test/* (app_smoke, workspace_layout, phase2_flow, workspace_swipe, NEW almanac_element_filter_test)"
     ],
     "hard_constraints": [
       "Strict Zero-Knowledge: do NOT log raw PII/secrets to console or logs",
@@ -49,11 +49,19 @@
       "SPRINT 4.3 SYNTHESIZE CTA: new widgets/synthesize_chat_cta.dart — permanently anchored on Pane 0; dormant (opacity 0.42, muted slate border, progress label FLIP ALL CARDS / N OF M FACE-UP, gentle haptic on tap) → ignited the moment the base spread is fully face-up (0.95→1.04→1.0 ignition burst + flash + continuous starlight sparkle border/aura CustomPainter via super(repaint:)); tap slides to Pane 1",
       "SPRINT 4.4 LIVING THREADS: ElementalThreadsPainter now takes super(repaint: pulse) — repaints every tick (the AnimatedBuilder in BoardPillarView created structurally identical painters, so shouldRepaint never fired — the cords were frozen); amplitude raised to 10.0–14.0px with two harmonics sin(t·2π)+cos(t·4π); 4 traveling particles",
       "SPRINT 4.5 CLEAN FLIP: removed the 3D edge-bevel side strips (cardEdgeStripX/cardEdgeSlices/cardFlipThicknessPx/cardEdgeBody/cardEdgeRimGold) from TarotCard3DWidget — ZERO protruding side bars during rotateY; 680ms flip + FoilGlint only",
-      "SPRINT 4.6 TESTS: workspace_layout_test (NEW) — capsule/chips exclusively Pane 1, dormant CTA permanently on Pane 0, chip ✓ toggle; card_edge_bevel_test rewritten for the clean flip; workspace_swipe/phase2_flow/app_smoke updated to swipe-only navigation (PageView ballistic settle loop — the drag fling's BallisticScrollActivity ignores pointers until it settles); 134/134 green, flutter analyze clean"
+      "SPRINT 4.6 TESTS: workspace_layout_test (NEW) — capsule/chips exclusively Pane 1, dormant CTA permanently on Pane 0, chip ✓ toggle; card_edge_bevel_test rewritten for the clean flip; workspace_swipe/phase2_flow/app_smoke updated to swipe-only navigation (PageView ballistic settle loop — the drag fling's BallisticScrollActivity ignores pointers until it settles); 134/134 green, flutter analyze clean",
+      "SPRINT 6.1 FULL-BLEED ART: TarotDeckPack.isIllustrated (true for the 7 real decks) + _CardFace renders the historical scan edge-to-edge inside the rounded ClipRRect border with ZERO header/footer text bars (Nine / ▽ WATER / CUPS · WATER / MAJOR ARCANA) on the Digital Table and in the Almanac grid; obsidian_minimal keeps the typographic bars; missing scans still fall back to the typographic face",
+      "SPRINT 6.2 TAUT SLOW THREADS: ElementalThreadsPainter — transverse deviation capped at 3.0 logical px (tautAmplitude), single gentle sine (no 2-harmonic rubber-noodle S-curves); wave period is exact WALL-CLOCK seconds via a shared static Stopwatch — 5.0s harmony / 4.75s neutral / 4.5s conflict (~3x slower); 4 luminous particles glide the full cord in the same period; aura breathes on a 6s sine",
+      "SPRINT 6.3 CARD INSPECTOR SHEET: ReadingBottomSheet(cardIndex) redesigned — large title + · REVERSED orientation, element badge (EARTH ▫ / WATER ▽ / FIRE △ / AIR ◇), SLOT N · ROLE line, drawn-orientation meaning + keywords, 3 single-select resonance pills (Resonates/Challenging/Unclear), compact text+mic note field auto-saving into slot.userContext (NEW SpreadController.updateSlotUserContext); READING CONTEXT chips and SYNTHESIZE SPREAD REMOVED from the card modal (Live Reading sheet unchanged)",
+      "SPRINT 6.4 CHAT PILLS: _ChatContextChips — single-select radio (one active pill, tap again deselects), Row of Expanded equal-width pills (8px gaps, 16px screen padding, FittedBox scaleDown) = zero size change + zero overflow; selection = lavender tint 22% + 1.2px lavender border, NO ✓ icon; _toggleContextChip no longer appends 'Context woven into the reading' chat lines and dedupes session notes",
+      "SPRINT 6.5 HISTORY PILLS: _NewSpreadButton double + fixed ('+ NEW SPREAD · НОВЫЙ РАСКЛАД' → 'NEW SPREAD · НОВЫЙ РАСКЛАД'); ALL READINGS / RELATIONSHIPS / CAREER & PATH moved from a scrolling Row into an equal-width Expanded row with FittedBox labels — no right-edge clipping",
+      "SPRINT 6.6 ALMANAC FILTERS: _ElementLegendBanner (static ELEMENTS label + scrollable badges) replaced by _ElementFilterBar — 4 equal-width interactive buttons (△ Fire · ▽ Water · ◇ Air · ▫ Earth) with soft elemental glow; tapping filters the grid by element, tapping the active one clears; Earth glyph □ → ▫",
+      "SPRINT 6.7 TESTS: almanac_element_filter_test.dart NEW (no ELEMENTS label, 4 filter keys, no MAJOR ARCANA/▽ WATER bars on illustrated tiles, water/fire counts, tap-again clears); app_smoke/workspace_layout/phase2_flow updated to the inspector + single-select pill contract (no ✓, active-key assertions, no 'Context woven'); workspace_swipe updated to the single + label — 137/137 green, flutter analyze clean"
     ],
-    "current_task": "SPRINT 5 DONE — analyze clean (0 issues), 136/136 tests green, debug APK built with all 485 deck images bundled, committed 5f1d325",
+    "current_task": "SPRINT 6.7 DONE — all 7 screenshot-driven fixes shipped and verified (137/137 tests green, analyze clean); commit pending",
     "pending_tasks": [
-      "KNOWN (separate, pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on low-end devices"
+      "KNOWN (separate, pre-existing): flutter_local_notifications ScheduledNotificationBootReceiver ANRs on BOOT_COMPLETED on low-end devices",
+      "OPTIONAL: on-device visual pass on Redmi 12C for the full-bleed art and the slow threads"
     ]
   },
   "discovered_bugs_or_blockers": [
@@ -73,5 +81,5 @@
     "KNOWN: local timezone detection can fail on some devices — rituals fall back to UTC wall-clock (documented)",
     "FIXED (p10): dealCardAt depth guard used the ORIGINAL deck size (78) instead of the live stack length — RangeError risk on deep grabs; boundary now pos >= _cardIds.length"
   ],
-  "latest_observation_summary": "SPRINT 5 complete: meditative 750ms arcane materialization reveal (zero rotateY, breathing lift, obsidian dissolve, radial face emergence + FoilGlint sweep); spread overview centered with proportional deck (~1.12x slot) and 550ms materialize-in-slot (no flying 220x360 card); 7 real decks bundled (485 images, 38.5MB, JPEG <=450px) with real scan backs and framed artwork; flutter analyze clean, 136/136 tests green, debug APK built and verified. Committed 5f1d325."
+  "latest_observation_summary": "SPRINT 6 shipped: 7 screenshot-driven fixes (1000049361-1000049372) — full-bleed illustrated card art with zero text bars, taut 3.0px elemental threads with 4.5-5.0s wall-clock breathing, redesigned Card Inspector sheet (meaning+keywords, resonance pills, auto-saving text+mic note), single-select no-growth no-spam chat context pills, history double-+ and clipping fixed, Almanac clickable element filters without the ELEMENTS label. Verified: flutter analyze clean, 137/137 tests green (incl. NEW almanac_element_filter_test)."
 }

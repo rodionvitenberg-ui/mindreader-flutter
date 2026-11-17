@@ -93,16 +93,18 @@ List<ElementalThreadSegment> threadSegmentsFor(
 }
 
 /// Animated glowing elemental strings connecting adjacent face-up cards:
-/// bold living-string oscillation (transverse amplitude 10.0–14.0 px with
-/// two overlapping harmonics — a slow sin sway + a fast cos ripple),
-/// 4 luminous traveling energy particles, and a gradient that color-blends
-/// the elemental pairing of the two connected cards. Tension threads pulse
+/// a TAUT, nearly straight cord — maximum transverse deviation 3.0 logical
+/// px (2.5–3.5 spec), a single gentle sine with a slow MEDITATIVE
+/// wall-clock wave period of 4.5–5.0 s (no deep S-curves, no rubber-noodle
+/// bends), 4 slow-gliding luminous particles that traverse the whole cord
+/// in the same period, and a gradient that color-blends the elemental
+/// pairing of the two connected cards. Tension threads breathe slightly
 /// faster than harmonious ones. The host's repeating controller is wired
 /// through `super(repaint:)`, so the painter repaints EVERY tick at frame
 /// rate — the cords never freeze.
 ///
 /// CORD SPEC: a 4.5 px crisp core over a 14.0 px blurred aura
-/// (`MaskFilter.blur(BlurStyle.normal, 10.0)`) — 4x thicker, unmistakable.
+/// (`MaskFilter.blur(BlurStyle.normal, 10.0)`).
 ///
 /// IGNITE: while [ignite] is below 1.0 for a segment, the cord is drawn
 /// progressively — it shoots like a bolt of elemental energy from Card N
@@ -122,35 +124,38 @@ class ElementalThreadsPainter extends CustomPainter {
   /// A missing entry renders the segment fully ignited.
   final Map<int, double>? ignite;
 
-  /// Pulse speed per tone: tension runs faster, harmony slower.
-  static double _speed(ThreadTone tone) => switch (tone) {
-        ThreadTone.harmony => 0.7,
-        ThreadTone.conflict => 1.6,
-        ThreadTone.neutral => 1.0,
+  /// Monotonic wall-clock shared by every painter instance — the wave
+  /// period is exact seconds regardless of the host's pulse duration.
+  static final Stopwatch _clock = Stopwatch()..start();
+
+  /// The maximum transverse deviation of the taut cord: 3.0 logical px.
+  static const tautAmplitude = 3.0;
+
+  /// One full sine breath in seconds per tone: 4.5–5.0 s (meditative).
+  /// Tension runs marginally faster than harmony.
+  static double _periodSeconds(ThreadTone tone) => switch (tone) {
+        ThreadTone.harmony => 5.0,
+        ThreadTone.conflict => 4.5,
+        ThreadTone.neutral => 4.75,
       };
 
   static Offset _pointAt(
     ElementalThreadSegment seg,
     double s,
     double phase,
-    double amp,
   ) {
     final d = seg.to - seg.from;
     final dir = d / d.distance;
     final normal = Offset(-dir.dy, dir.dx);
-    // Two overlapping harmonic frequencies: a slow sin sway (2π) and a
-    // fast cos shimmer ripple (4π) — the cord visibly breathes and
-    // undulates like a living cosmic guitar string.
-    final sway = math.sin(2 * math.pi * s + phase);
-    final ripple = math.cos(4 * math.pi * s - phase * 1.4);
-    final wobble = amp * (0.7 * sway + 0.3 * ripple);
+    // One gentle sine breathing — the cord stays taut and nearly
+    // straight between the two cards (max 3.0 px, never deep S-curves).
+    final wobble = tautAmplitude * math.sin(2 * math.pi * s + phase);
     return seg.from + d * s + normal * wobble;
   }
 
   void _paintSegment(
     Canvas canvas,
     ElementalThreadSegment seg,
-    double t,
     int i,
     double ignite,
   ) {
@@ -159,14 +164,16 @@ class ElementalThreadsPainter extends CustomPainter {
     final ig = ignite.clamp(0.0, 1.0);
     if (ig <= 0) return;
 
-    // Bold living motion in the spec range 10.0–14.0 px.
-    final amp = 12.0 + 2.0 * math.sin(t * 2 * math.pi + i * 0.9);
-    final phase = t * 2 * math.pi * _speed(seg.tone) + i * 1.7;
+    // Slow meditative breathing: one full sine wave takes 4.5–5.0 s of
+    // wall-clock time (3x slower than the old fast oscillation).
+    final elapsed = _clock.elapsedMicroseconds / 1e6;
+    final period = _periodSeconds(seg.tone);
+    final phase = 2 * math.pi * elapsed / period + i * 1.7;
 
     final path = Path()..moveTo(seg.from.dx, seg.from.dy);
     const steps = 24;
     for (var k = 1; k <= steps; k++) {
-      final p = _pointAt(seg, k / steps, phase, amp);
+      final p = _pointAt(seg, k / steps, phase);
       path.lineTo(p.dx, p.dy);
     }
 
@@ -190,7 +197,9 @@ class ElementalThreadsPainter extends CustomPainter {
       transform: GradientRotation(math.atan2(d.dy, d.dx)),
     ).createShader(Rect.fromPoints(seg.from, seg.to));
 
-    final breath = 0.30 + 0.14 * math.sin(t * 2 * math.pi + i * 1.3);
+    // Gentle 6-second breathing of the aura's brightness — calm, slow.
+    final breath =
+        0.30 + 0.14 * math.sin(2 * math.pi * elapsed / 6.0 + i * 1.3);
     // Brief bright flare while igniting: 2.0x glow settling to 1.0x.
     final flare = 1.0 + (1.0 - ig);
 
@@ -213,11 +222,12 @@ class ElementalThreadsPainter extends CustomPainter {
         ..shader = shader
         ..color = Colors.white.withValues(alpha: 0.9),
     );
-    // Four luminous energy particles gliding along the string.
+    // Four luminous energy particles SLOWLY gliding along the string —
+    // each takes the full 4.5–5.0 s breath to cross the cord.
     for (final offset in const [0.0, 0.25, 0.5, 0.75]) {
-      final s = (t * _speed(seg.tone) + i * 0.23 + offset) % 1.0;
+      final s = (elapsed / period + i * 0.23 + offset) % 1.0;
       if (s > ig) continue; // never run ahead of an igniting bolt
-      final dot = _pointAt(seg, s, phase, amp);
+      final dot = _pointAt(seg, s, phase);
       final dotColor = Color.lerp(colorsA[0], colorsB[1], s)!;
       canvas.drawCircle(
         dot,
@@ -244,7 +254,7 @@ class ElementalThreadsPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (var i = 0; i < segments.length; i++) {
-      _paintSegment(canvas, segments[i], pulse.value, i, ignite?[i] ?? 1.0);
+      _paintSegment(canvas, segments[i], i, ignite?[i] ?? 1.0);
     }
   }
 

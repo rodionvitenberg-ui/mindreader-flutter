@@ -23,6 +23,7 @@ class AlmanacScreen extends StatefulWidget {
 class _AlmanacScreenState extends State<AlmanacScreen> {
   String _query = '';
   String? _filter; // null = all, 'major', or a suit name
+  Element? _elementFilter; // null = all, else the tapped element
 
   List<TarotCard> get _filtered {
     var cards = tarotDeck;
@@ -31,6 +32,9 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
     } else if (_filter != null) {
       final suit = Suit.values.firstWhere((s) => s.name == _filter);
       cards = cards.where((c) => c.suit == suit).toList();
+    }
+    if (_elementFilter != null) {
+      cards = cards.where((c) => c.element == _elementFilter).toList();
     }
     final q = _query.toLowerCase().trim();
     if (q.isNotEmpty) {
@@ -110,7 +114,13 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
               ),
             ),
           ),
-          const _ElementLegendBanner(),
+          _ElementFilterBar(
+            active: _elementFilter,
+            onToggle: (e) {
+              HapticFeedback.selectionClick();
+              setState(() => _elementFilter = _elementFilter == e ? null : e);
+            },
+          ),
           SizedBox(
             height: 40,
             child: ListView(
@@ -248,67 +258,74 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-/// The 4 elements and how they interact — the reading lens of the app.
-class _ElementLegendBanner extends StatelessWidget {
-  const _ElementLegendBanner();
+/// 4 equal-width interactive Element Filter Buttons in one full-width Row
+/// (`Expanded` children, 8 px gaps): `△ Fire · ▽ Water · ◇ Air · ▫ Earth`.
+/// Tapping an element highlights it with a soft elemental glow and filters
+/// the card grid to that element; tapping the active one clears the
+/// filter. No static `ELEMENTS` label — the row IS the legend.
+class _ElementFilterBar extends StatelessWidget {
+  const _ElementFilterBar({required this.active, required this.onToggle});
+
+  final Element? active;
+  final ValueChanged<Element> onToggle;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
       child: Row(
         children: [
-          Text(
-            'ELEMENTS',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 9,
-              letterSpacing: 2,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final e in Element.values)
-                    Container(
-                      margin: const EdgeInsets.only(right: 6),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            e.glyph,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: e.accent,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            e.trait,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
+          for (var i = 0; i < Element.values.length; i++) ...[
+            if (i > 0) const SizedBox(width: 8),
+            Expanded(
+              child: GestureDetector(
+                key: ValueKey('element-filter-${Element.values[i].name}'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onToggle(Element.values[i]),
+                child: Container(
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: active == Element.values[i]
+                        ? Element.values[i].accent.withValues(alpha: 0.14)
+                        : AppColors.surface.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: active == Element.values[i]
+                          ? Element.values[i].accent
+                          : AppColors.border,
                     ),
-                ],
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          Element.values[i].glyph,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Element.values[i].accent,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          Element.values[i].label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: active == Element.values[i]
+                                ? Element.values[i].accent
+                                : AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

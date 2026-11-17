@@ -7,15 +7,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
+import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/spread_type.dart';
+import '../../../core/models/tarot_card_model.dart';
 import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/oracle_synthesis_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../state/spread_controller.dart';
 
-/// Glassmorphic bottom sheet: context chips, card-specific Socratic prompt,
-/// streaming (typewriter) oracle synthesis, local-first saving.
+/// Glassmorphic bottom sheet with two faces:
+/// * `cardIndex != null` — the CARDS INSPECTOR SHEET for a tapped face-up
+///   card: title + orientation, element badge, spread slot role, the
+///   card's meaning & keywords, 3 single-select resonance pills, and a
+///   compact personal-note input (text + mic) that auto-saves into
+///   `slot.userContext`. NO reading-context chips, NO synthesize button.
+/// * `cardIndex == null` — the classic Live Reading sheet (context chips,
+///   streaming synthesis, local-first saving).
 class ReadingBottomSheet extends StatefulWidget {
   const ReadingBottomSheet({super.key, this.cardIndex});
 
@@ -42,20 +51,92 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
     'Career & Path',
     'Custom Question',
   ];
-  static const _emotionChips = ['Resonates', 'Challenging', 'Not yet'];
+
+  /// The 3 mutually exclusive resonance pills of the Card Inspector.
+  static const _resonancePills = ['Resonates', 'Challenging', 'Unclear'];
 
   String? _contextChip;
-  String? _emotion;
+  String? _resonance;
   String _fullText = '';
   String _revealed = '';
   bool _synthesizing = false;
   bool _saved = false;
   Timer? _timer;
 
+  /// The personal note for the tapped card — pre-filled from
+  /// `slot.userContext` and auto-saved back on every change.
+  late final TextEditingController _note;
+  SpeechToText? _speech;
+  bool _micListening = false;
+
+  DealtCardSlot? _slotOf(SpreadController ctrl) {
+    final i = widget.cardIndex;
+    if (i == null || i < 0 || i >= ctrl.slots.length) return null;
+    return ctrl.slots[i];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final ctrl = context.read<SpreadController>();
+    _note = TextEditingController(text: _slotOf(ctrl)?.userContext ?? '');
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
+    _speech?.stop();
+    _note.dispose();
     super.dispose();
+  }
+
+  /// Auto-save: the typed/spoken note lands in `slot.userContext` as the
+  /// reader types (blank input clears it).
+  void _saveNote(String text) {
+    final ctrl = context.read<SpreadController>();
+    final i = widget.cardIndex;
+    if (i == null) return;
+    final trimmed = text.trim();
+    ctrl.updateSlotUserContext(i, text: trimmed.isEmpty ? null : trimmed);
+  }
+
+  Future<void> _toggleNoteMic() async {
+    if (_micListening) {
+      await _speech?.stop();
+      setState(() => _micListening = false);
+      return;
+    }
+    _speech ??= SpeechToText();
+    bool ok;
+    try {
+      ok = await _speech!.initialize();
+    } catch (_) {
+      ok = false;
+    }
+    if (!ok) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Voice input is not available here — type your note instead.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    setState(() => _micListening = true);
+    await _speech!.listen(
+      onResult: (r) {
+        _note.text = r.recognizedWords;
+        _note.selection = TextSelection.collapsed(offset: _note.text.length);
+        _saveNote(_note.text);
+      },
+      listenOptions: SpeechListenOptions(
+        listenFor: const Duration(seconds: 20),
+      ),
+    );
+    if (mounted) setState(() => _micListening = false);
   }
 
   void _pickContext(String chip) {
@@ -127,10 +208,8 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
-    final slots = ctrl.slots;
-    final card = (widget.cardIndex != null && widget.cardIndex! < slots.length)
-        ? slots[widget.cardIndex!].card
-        : null;
+    final slot = _slotOf(ctrl);
+    final card = slot?.card;
     final canSynthesize = ctrl.faceUpCount > 0;
 
     return ClipRRect(
@@ -161,71 +240,114 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  Text(
-                    card != null ? 'Card Reflection' : 'Live Reading',
-                    style: Theme.of(context).textTheme.displayMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    card != null
-                        ? '${card.name.toUpperCase()} · SOCRATIC PROMPT'
-                        : ctrl.spreadType.label.toUpperCase(),
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 10,
-                      letterSpacing: 2,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (card != null) ...[
+                  if (slot != null && card != null) ...[
+                    // ---- Card Inspector Sheet (tapped face-up card) ----
+                    _CardInspectorHeader(slot: slot, card: card),
+                    const SizedBox(height: 18),
                     Text(
-                      card.socratic,
+                      slot.isReversed ? 'REVERSED MEANING' : 'UPRIGHT MEANING',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 9,
+                        letterSpacing: 2,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      slot.isReversed ? card.reversed : card.upright,
                       style: const TextStyle(
-                        fontSize: 15,
-                        height: 1.5,
+                        fontSize: 14,
+                        height: 1.6,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
+                    Text(
+                      card.keywords.map((k) => k.toUpperCase()).join(' · '),
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 10,
+                        letterSpacing: 1.4,
+                        color: AppColors.lavender,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'RESONANCE',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 9,
+                        letterSpacing: 2,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       children: [
-                        for (final e in _emotionChips)
+                        for (final pill in _resonancePills)
                           _SheetChip(
-                            label: e,
-                            active: _emotion == e,
+                            label: pill,
+                            active: _resonance == pill,
                             onTap: () {
                               HapticFeedback.selectionClick();
-                              setState(() =>
-                                  _emotion = _emotion == e ? null : e);
+                              setState(() => _resonance =
+                                  _resonance == pill ? null : pill);
                             },
                           ),
                       ],
                     ),
                     const SizedBox(height: 20),
-                  ],
-                  Text(
-                    'READING CONTEXT',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 9,
-                      letterSpacing: 2,
-                      color: AppColors.textMuted,
+                    Text(
+                      'PERSONAL NOTE',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 9,
+                        letterSpacing: 2,
+                        color: AppColors.textMuted,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final chip in _contextChips)
-                        _SheetChip(
-                          label: chip,
-                          active: _contextChip == chip,
-                          onTap: () => _pickContext(chip),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 8),
+                    _CardNoteField(
+                      controller: _note,
+                      micListening: _micListening,
+                      onChanged: _saveNote,
+                      onMicTap: _toggleNoteMic,
+                    ),
+                  ] else ...[
+                    Text(
+                      'Live Reading',
+                      style: Theme.of(context).textTheme.displayMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      ctrl.spreadType.label.toUpperCase(),
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 10,
+                        letterSpacing: 2,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'READING CONTEXT',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 9,
+                        letterSpacing: 2,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final chip in _contextChips)
+                          _SheetChip(
+                            label: chip,
+                            active: _contextChip == chip,
+                            onTap: () => _pickContext(chip),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
                   if (!canSynthesize)
                     Container(
                       width: double.infinity,
@@ -290,11 +412,133 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
                         onTap: _saved ? () {} : _save,
                       ),
                   ],
+                  ],
                 ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Card Inspector header: large title + orientation, the element badge
+/// (`EARTH ▫ / WATER ▽ / FIRE △ / AIR ◇`) and the spread slot role.
+class _CardInspectorHeader extends StatelessWidget {
+  const _CardInspectorHeader({required this.slot, required this.card});
+
+  final DealtCardSlot slot;
+  final TarotCard card;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                slot.isReversed
+                    ? '${card.name.toUpperCase()} · REVERSED'
+                    : card.name.toUpperCase(),
+                style: Theme.of(context).textTheme.displayMedium,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'SLOT ${slot.index + 1} · ${slot.role.toUpperCase()}',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 10,
+                  letterSpacing: 2,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: card.element.accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border:
+                Border.all(color: card.element.accent.withValues(alpha: 0.6)),
+          ),
+          child: Text(
+            '${card.element.label.toUpperCase()} ${card.element.glyph}',
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 10,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w700,
+              color: card.element.accent,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Compact personal-note input (text + mic dictation) — auto-saves into
+/// `slot.userContext` on every change.
+class _CardNoteField extends StatelessWidget {
+  const _CardNoteField({
+    required this.controller,
+    required this.micListening,
+    required this.onChanged,
+    required this.onMicTap,
+  });
+
+  final TextEditingController controller;
+  final bool micListening;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onMicTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              key: const ValueKey('card-note-field'),
+              controller: controller,
+              onChanged: onChanged,
+              minLines: 1,
+              maxLines: 2,
+              style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+              cursorColor: AppColors.lavender,
+              decoration: const InputDecoration(
+                hintText: 'Add a personal note or thought for this card...',
+                hintStyle: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onMicTap,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(
+                micListening ? Icons.mic : Icons.mic_none,
+                size: 20,
+                color: micListening
+                    ? AppColors.lavender
+                    : AppColors.textMuted,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

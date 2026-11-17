@@ -17,7 +17,7 @@ extension ElementX on Element {
         Element.fire => '△',
         Element.water => '▽',
         Element.air => '◇',
-        Element.earth => '□',
+        Element.earth => '▫',
       };
 
   String get trait => switch (this) {

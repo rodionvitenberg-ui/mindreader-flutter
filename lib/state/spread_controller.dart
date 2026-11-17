@@ -247,6 +247,15 @@ class SpreadController extends ChangeNotifier {
     }
   }
 
+  /// Overwrites the personal note on slot [index] — the Card Inspector
+  /// sheet auto-saves the reader's typed/spoken note into
+  /// `slot.userContext` as they type (blank clears it).
+  void updateSlotUserContext(int index, {String? text}) {
+    if (index < 0 || index >= _slots.length) return;
+    _slots[index].setUserContext(text: text);
+    notifyListeners();
+  }
+
   /// Camera-sync helper: attaches the context to the first FACE-UP slot
   /// that has no intention yet. Returns false when every card is tagged.
   bool attachContextToNextUntagged({String? chip, String? text}) {

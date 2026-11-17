@@ -32,6 +32,7 @@ class TarotDeckPack {
     this.backSecondaryArgb = 0xFF6366F1,
     this.faceAccentArgb = 0xFFA78BFA,
     this.faceSecondaryArgb = 0xFF6366F1,
+    this.isIllustrated = false,
     this.isLocked = false,
     this.isPro = false,
   });
@@ -58,6 +59,10 @@ class TarotDeckPack {
   final int backSecondaryArgb;
   final int faceAccentArgb;
   final int faceSecondaryArgb;
+
+  /// True for the 7 REAL decks with historical card scans — the artwork
+  /// fills the entire card face (no text header/footer bars overlay it).
+  final bool isIllustrated;
   final bool isLocked;
   final bool isPro;
 

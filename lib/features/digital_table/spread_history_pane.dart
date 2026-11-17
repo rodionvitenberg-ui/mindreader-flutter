@@ -85,13 +85,12 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      for (var i = 0; i < _notebooks.length; i++) ...[
-                        if (i > 0) const SizedBox(width: 8),
-                        _NotebookChip(
+                child: Row(
+                  children: [
+                    for (var i = 0; i < _notebooks.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 8),
+                      Expanded(
+                        child: _NotebookChip(
                           label: _notebooks[i],
                           active: _notebook == _notebooks[i],
                           onTap: () {
@@ -99,9 +98,9 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
                             setState(() => _notebook = _notebooks[i]);
                           },
                         ),
-                      ],
+                      ),
                     ],
-                  ),
+                  ],
                 ),
               ),
               Expanded(
@@ -190,7 +189,7 @@ class _NewSpreadButton extends StatelessWidget {
             const Icon(Icons.add, size: 16, color: AppColors.lavender),
             const SizedBox(width: 8),
             Text(
-              '+ NEW SPREAD · НОВЫЙ РАСКЛАД',
+              'NEW SPREAD · НОВЫЙ РАСКЛАД',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 10,
                 letterSpacing: 1.6,
@@ -219,9 +218,12 @@ class _NotebookChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        width: double.infinity,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
           color: active
               ? AppColors.lavender.withValues(alpha: 0.16)
@@ -231,13 +233,16 @@ class _NotebookChip extends StatelessWidget {
             color: active ? AppColors.lavender : AppColors.border,
           ),
         ),
-        child: Text(
-          label.toUpperCase(),
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 8.5,
-            letterSpacing: 1.2,
-            fontWeight: FontWeight.w700,
-            color: active ? AppColors.lavender : AppColors.textMuted,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label.toUpperCase(),
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 8.5,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w700,
+              color: active ? AppColors.lavender : AppColors.textMuted,
+            ),
           ),
         ),
       ),

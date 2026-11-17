@@ -21,6 +21,7 @@ const List<TarotDeckPack> deckPacksRegistry = [
     backSecondaryArgb: 0xFF6366F1,
     faceAccentArgb: 0xFFA78BFA,
     faceSecondaryArgb: 0xFF6366F1,
+    isIllustrated: true,
   ),
   TarotDeckPack(
     id: 'marseille',
@@ -34,6 +35,7 @@ const List<TarotDeckPack> deckPacksRegistry = [
     backSecondaryArgb: 0xFF9A6B4F,
     faceAccentArgb: 0xFFE8D5B5,
     faceSecondaryArgb: 0xFF9A6B4F,
+    isIllustrated: true,
   ),
   TarotDeckPack(
     id: 'oswald_wirth',
@@ -47,6 +49,7 @@ const List<TarotDeckPack> deckPacksRegistry = [
     backSecondaryArgb: 0xFF6B5B4F,
     faceAccentArgb: 0xFFC9B8A3,
     faceSecondaryArgb: 0xFF6B5B4F,
+    isIllustrated: true,
   ),
   TarotDeckPack(
     id: 'etteilla',
@@ -60,6 +63,7 @@ const List<TarotDeckPack> deckPacksRegistry = [
     backSecondaryArgb: 0xFF7A5C43,
     faceAccentArgb: 0xFFD8C3A5,
     faceSecondaryArgb: 0xFF7A5C43,
+    isIllustrated: true,
   ),
   TarotDeckPack(
     id: 'visconti_sforza',
@@ -73,6 +77,7 @@ const List<TarotDeckPack> deckPacksRegistry = [
     backSecondaryArgb: 0xFF8C6E4E,
     faceAccentArgb: 0xFFD6C7A8,
     faceSecondaryArgb: 0xFF8C6E4E,
+    isIllustrated: true,
   ),
   TarotDeckPack(
     id: 'vieville',
@@ -87,6 +92,7 @@ const List<TarotDeckPack> deckPacksRegistry = [
     backSecondaryArgb: 0xFF8A7A5F,
     faceAccentArgb: 0xFFCDBB9E,
     faceSecondaryArgb: 0xFF8A7A5F,
+    isIllustrated: true,
   ),
   TarotDeckPack(
     id: 'soimoi',
@@ -101,6 +107,7 @@ const List<TarotDeckPack> deckPacksRegistry = [
     backSecondaryArgb: 0xFFF472B6,
     faceAccentArgb: 0xFF7DD3FC,
     faceSecondaryArgb: 0xFFF472B6,
+    isIllustrated: true,
   ),
   TarotDeckPack(
     id: 'obsidian_minimal',

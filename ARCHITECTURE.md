@@ -133,6 +133,49 @@ cards arming fails, every deal path returns null, and the chat shows
 *"MAXIMUM OF 10 CARDS REACHED FOR THIS READING — THE CONVERSATION STAYS
 OPEN"* while text/voice Q&A continues freely.
 
+## Sprint 6 (screenshot-driven polish — 1000049361–1000049372)
+
+- **Uncropped full-bleed card art** (`TarotDeckPack.isIllustrated`, `_CardFace`):
+  the 7 real decks (rider_waite, marseille, oswald_wirth, etteilla,
+  visconti_sforza, vieville, soimoi) render the historical scan edge-to-edge
+  inside the rounded card border — NO `Nine / ▽ WATER` / `CUPS · WATER` /
+  `MAJOR ARCANA` header/footer bars over the artwork, on the Digital Table
+  and in the Almanac grid. `obsidian_minimal` keeps the typographic face
+  with its bars; missing scans still fall back to the typographic face.
+- **Taut slow elemental threads** (`ElementalThreadsPainter`): transverse
+  deviation capped at 3.0 logical px with a single gentle sine (no
+  rubber-noodle S-curves); the wave period is exact wall-clock seconds —
+  5.0 s harmony / 4.75 s neutral / 4.5 s conflict (~3x slower) — and the
+  4 luminous particles glide the full cord in the same period.
+- **Card Inspector Sheet** (`ReadingBottomSheet` with `cardIndex`): tapping
+  a face-up card now opens a clean inspector — large title + `· REVERSED`
+  orientation, element badge (`EARTH ▫ / WATER ▽ / FIRE △ / AIR ◇`),
+  `SLOT N · ROLE` line, the drawn orientation's meaning + keywords,
+  3 single-select resonance pills (`Resonates / Challenging / Unclear`),
+  and a compact text+mic note field that auto-saves into
+  `slot.userContext` (`SpreadController.updateSlotUserContext`). The
+  `READING CONTEXT` chips and `SYNTHESIZE SPREAD` button are GONE from
+  this modal (the Live Reading sheet keeps them).
+- **Oracle chat context pills** (`_ChatContextChips`): single-select radio
+  behavior, one active pill at a time; all 3 pills in one `Row` of
+  `Expanded` children (equal width, 8 px gaps, 16 px screen padding) —
+  zero size change on tap, zero overflow; selection is a soft lavender
+  tint (#A78BFA @ 22%) + glowing 1.2 px border, no `✓` icon; tapping a
+  pill silently updates the context state and NEVER appends
+  `Context woven into the reading` lines to the chat log.
+- **Spread history pills**: the double-`+` (`+  + NEW SPREAD · НОВЫЙ
+  РАСКЛАД`) is fixed (single `+` icon); `ALL READINGS / RELATIONSHIPS /
+  CAREER & PATH` live in an equal-width `Expanded` row with `FittedBox`
+  labels — no right-edge clipping.
+- **Almanac element filter bar**: the static `ELEMENTS` label is deleted;
+  4 equal-width interactive element filter buttons (`△ Fire · ▽ Water ·
+  ◇ Air · ▫ Earth`) with a soft elemental glow filter the grid to that
+  element; tapping the active one clears the filter. Earth's glyph is now
+  `▫` (was `□`).
+- Tests: 137 green (new `almanac_element_filter_test.dart`; updated
+  `app_smoke_test`, `workspace_layout_test`, `phase2_flow_test`,
+  `workspace_swipe_test`), `flutter analyze` clean.
+
 ## Folder map
 
 ```
