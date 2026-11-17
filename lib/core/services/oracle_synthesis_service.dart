@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 
+import '../models/chat_message.dart';
 import '../models/dealt_card_slot.dart';
 import '../models/spread_type.dart';
 import '../models/tarot_card_model.dart';
@@ -445,6 +446,83 @@ class OracleSynthesisService {
         'tensions, and closes with one sharp Socratic question. '
         'Plain text only: no markdown, no lists, no headers.');
     return b.toString();
+  }
+
+  /// A free-form conversational turn of the Oracle AI Chat (Pane 1):
+  /// answers [question] in the light of the current table and the ongoing
+  /// [history]. Same dual pipeline, deterministic local fallback.
+  Future<String> answerChat({
+    required String question,
+    required List<DealtCardSlot> slots,
+    required SpreadType type,
+    required List<ChatMessage> history,
+  }) async {
+    final fallback = _chatFallback(question, slots);
+    if (!hasPrimary && !hasCloud) return fallback;
+    final b = StringBuffer();
+    b.writeln('You are the mindreader.quest oracle: grounded, psychological, '
+        'modern. No kitsch, no mysticism.');
+    b.writeln('Spread: ${type.label}.');
+    for (final s in slots) {
+      final c = s.card;
+      if (c == null) continue;
+      b.writeln('- ${s.role}: ${c.name} '
+          '${s.isReversed ? '(reversed)' : '(upright)'}');
+    }
+    if (history.isNotEmpty) {
+      b.writeln('Dialog so far:');
+      for (final m in history) {
+        b.writeln('  ${m.role}: ${m.text.replaceAll('\n', ' ')}');
+      }
+    }
+    b.writeln('The reader asks: $question');
+    b.writeln('Answer in 2-4 short sentences grounded in the cards on the '
+        'table. Plain text only: no markdown, no lists.');
+    try {
+      if (hasPrimary) {
+        final text = await _chat(
+          url: primaryWorkerUrl,
+          key: primaryWorkerKey,
+          model: primaryChatModel,
+          timeout: primaryTimeout,
+          prompt: b.toString(),
+        );
+        if (text.isNotEmpty) return text;
+      }
+      if (hasCloud) {
+        final text = await _chat(
+          url: cloudUrl,
+          key: cloudKey,
+          model: cloudModel,
+          timeout: cloudTimeout,
+          prompt: b.toString(),
+        );
+        if (text.isNotEmpty) return text;
+      }
+    } catch (e) {
+      debugPrint(
+          'oracle: chat endpoints failed (${e.runtimeType}), local answer');
+    }
+    return fallback;
+  }
+
+  /// Offline conversational answer: the dominant element axis + the
+  /// loudest card's Socratic question, closed toward the reader's question.
+  String _chatFallback(String question, List<DealtCardSlot> slots) {
+    final faceUp = [for (final s in slots) if (s.card != null) s];
+    if (faceUp.isEmpty) {
+      return 'The table is still empty — deal and flip your spread first, '
+          'then bring your question back to me.';
+    }
+    final balance = elementalBalance(slots);
+    final dominant = dominantElements(balance);
+    final last = faceUp.last.card!;
+    final axis = dominant.isEmpty
+        ? 'the elements are balanced'
+        : '${dominant.map((e) => e.trait.toLowerCase()).join(' and ')} '
+            'keeps leading the reading';
+    return 'Sitting with your question, $axis. '
+        '${last.name} stays the loudest voice on the table: ${last.socratic}';
   }
 
   /// OpenAI/Ollama-compatible chat request. No keys or prompts are logged.

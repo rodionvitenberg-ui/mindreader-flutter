@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/models/chat_message.dart';
 import '../core/services/oracle_synthesis_service.dart';
 
 /// One appended "Clarifier Expansion" chapter: the follow-up question, the
@@ -22,13 +23,20 @@ class ClarifierChapter {
   bool generating = true;
 }
 
-/// The screen-level state of the reading synthesis: the structured initial
-/// synthesis + the endless clarifier chapters appended to it.
+/// The workspace-level state of the reading synthesis: the structured
+/// initial synthesis, the endless clarifier chapters appended to it, and
+/// the full Oracle AI Chat conversation (Pane 1).
 class SynthesisSession extends ChangeNotifier {
   StructuredSynthesis? initial;
   bool generatingInitial = false;
 
   final List<ClarifierChapter> chapters = [];
+
+  /// The free-form conversational thread after the synthesis.
+  final List<ChatMessage> messages = [];
+
+  /// True while the oracle is composing the answer to the last question.
+  bool generatingAnswer = false;
 
   bool get hasSynthesis => initial != null;
 
@@ -65,10 +73,58 @@ class SynthesisSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ---- Oracle AI Chat conversation ----
+
+  void addUserMessage(String text) {
+    messages.add(ChatMessage(role: 'user', text: text));
+    notifyListeners();
+  }
+
+  void addOracleMessage(String text) {
+    messages.add(ChatMessage(role: 'oracle', text: text));
+    notifyListeners();
+  }
+
+  void addSystemMessage(String text) {
+    messages.add(ChatMessage(role: 'system', text: text));
+    notifyListeners();
+  }
+
+  void beginAnswer() {
+    generatingAnswer = true;
+    notifyListeners();
+  }
+
+  void finishAnswer() {
+    generatingAnswer = false;
+    notifyListeners();
+  }
+
+  /// 1-tap session restore: rebuilds the exact reading state from the
+  /// local archive (synthesis + clarifiers + the whole conversation).
+  void restore({
+    required StructuredSynthesis? initial,
+    required List<ClarifierChapter> chapters,
+    required List<ChatMessage> messages,
+  }) {
+    this.initial = initial;
+    generatingInitial = false;
+    generatingAnswer = false;
+    this.chapters
+      ..clear()
+      ..addAll(chapters);
+    this.messages
+      ..clear()
+      ..addAll(messages);
+    notifyListeners();
+  }
+
   void reset() {
     initial = null;
     generatingInitial = false;
+    generatingAnswer = false;
     chapters.clear();
+    messages.clear();
     notifyListeners();
   }
 }

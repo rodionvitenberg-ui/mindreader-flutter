@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/main.dart';
+import 'package:mindreader/features/digital_table/table_workspace.dart';
 import 'package:mindreader/features/digital_table/widgets/interactive_deck_widget.dart';
-import 'package:mindreader/features/digital_table/widgets/intention_prompt_bar.dart';
 import 'package:mindreader/features/digital_table/widgets/shuffle_physics.dart';
 import 'package:mindreader/features/digital_table/widgets/tarot_card_3d_widget.dart';
 
@@ -62,22 +62,27 @@ void main() {
     expect(find.text('Card Reflection'), findsOneWidget);
   });
 
-  testWidgets('spread selector resets the table: pillar renders nothing',
+  testWidgets('header spread selector resets the table: pillar empty',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    await tester.ensureVisible(find.text('7 · DEEP SYNTHESIS'));
+    // Sprint 2/3: the tappable header subtitle opens the compact selector.
+    await tester.tap(find.textContaining('3 · TRIAD FLOW · 78 IN DECK'));
     await tester.pump();
-    await tester.tap(find.text('7 · DEEP SYNTHESIS').first);
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.text('SPREAD METHOD'), findsOneWidget);
+
+    await tester.tap(find.text('7 · DEEP SYNTHESIS'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     // No placeholders: the pillar stays empty after switching the spread.
     expect(find.text('The Heart of the Matter'), findsNothing);
     expect(find.text('The Outcome'), findsNothing);
     expect(find.text('Current State'), findsNothing);
-    // The pill + the header subtitle now carry the new spread label.
-    expect(find.text('7 · DEEP SYNTHESIS'), findsWidgets);
+    // The header subtitle now carries the new spread label.
+    expect(find.textContaining('7 · DEEP SYNTHESIS'), findsOneWidget);
   });
 
   testWidgets('mock camera scan hands the spread to the table face-up',
@@ -131,9 +136,9 @@ void main() {
     // exactly the current scroll offset, so the bounce never overshoots.
     Future<void> scrollBackToDeck() async {
       final area = tester.getRect(find.byType(SingleChildScrollView).first);
-      final barHeight =
-          tester.getSize(find.byType(IntentionPromptBar)).height;
-      final resting = 84 + tableTopPad + barHeight + intentBarGapPx;
+      // Sprint 2/3: no intention bar — the deck rests under the pane
+      // indicator + header.
+      final resting = paneIndicatorHeight + 84 + tableTopPad;
       final delta = resting - tester.getTopLeft(deck).dy;
       if (delta > 4) {
         await tester.dragFrom(
@@ -185,8 +190,7 @@ void main() {
     await tester.pump();
 
     final deck = find.byType(InteractiveDeckWidget);
-    final barHeight = tester.getSize(find.byType(IntentionPromptBar)).height;
-    final resting = 84 + tableTopPad + barHeight + intentBarGapPx;
+    final resting = paneIndicatorHeight + 84 + tableTopPad;
     expect(tester.getTopLeft(deck).dy, closeTo(resting, 0.1));
 
     await tester.dragFrom(tester.getCenter(deck), const Offset(0, 100));
@@ -256,8 +260,9 @@ void main() {
 
     expect(find.text('DECK SELECTOR'), findsOneWidget);
     // Bring the second carousel tile into the viewport and let the page
-    // settle fully before tapping.
-    await tester.drag(find.byType(PageView), const Offset(-400, 0));
+    // settle fully before tapping. (Two PageViews exist: the workspace
+    // panes + the carousel inside the sheet — target the sheet's last.)
+    await tester.drag(find.byType(PageView).last, const Offset(-400, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pump(const Duration(milliseconds: 300));

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cleartext HTTP is allowed so the app can reach the local/tunneled
+     RTX 3080 worker (LAN Ollama or ssh tunnel over http://).
+     Switch base-config cleartextTrafficPermitted to "false" once the
+     worker is served over HTTPS. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

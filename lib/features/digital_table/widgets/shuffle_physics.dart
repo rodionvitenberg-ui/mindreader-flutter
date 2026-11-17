@@ -79,9 +79,6 @@ const tableTopPad = 24.0;
 const deckToPillarGap = 52.0;
 const slotGapPx = 56.0;
 
-/// Gap between the intention prompt bar and the deck below it.
-const intentBarGapPx = 12.0;
-
 /// Permanent isometric table camera tilt over the deck (spec):
 /// perspective entry 0.0014 + rotateX(0.16) — the 78-card stack is viewed
 /// at a tactile angle so its stepped 3D volume never flattens into a brick.

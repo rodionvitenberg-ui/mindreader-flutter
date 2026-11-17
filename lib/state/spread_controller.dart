@@ -115,6 +115,9 @@ class SpreadController extends ChangeNotifier {
     _clarifierCount = 0;
     _pendingClarifierQuestion = null;
     _sourceMode = TableSourceMode.digitalDeck;
+    _sessionContextNotes.clear();
+    _pendingChip = null;
+    _pendingNote = null;
   }
 
   /// Fisher–Yates shuffle with a cryptographically secure RNG; orientation is
@@ -303,6 +306,9 @@ class SpreadController extends ChangeNotifier {
     _clarifierCount = 0;
     _pendingClarifierQuestion = null;
     _sourceMode = TableSourceMode.physicalCameraSync;
+    _sessionContextNotes.clear();
+    _pendingChip = null;
+    _pendingNote = null;
     _slots = List.generate(cards.length, (i) {
       final slot = DealtCardSlot(index: i, role: _spreadType.slotRoles[i]);
       slot.fromPhysicalCard = true;
@@ -319,6 +325,97 @@ class SpreadController extends ChangeNotifier {
     _resetSlots();
     _resetDeck();
     shuffleDeck();
+  }
+
+  // ---- Gemini input capsule → session context notes (the ether) -------
+
+  /// Every thought the reader sent into the ether for the CURRENT spread
+  /// (context chips and/or typed/spoken notes). Woven into the synthesis
+  /// lens and persisted with the session.
+  final List<String> _sessionContextNotes = [];
+  List<String> get sessionContextNotes => List.unmodifiable(_sessionContextNotes);
+
+  void addSessionContextNote(String note) {
+    final trimmed = note.trim();
+    if (trimmed.isEmpty) return;
+    _sessionContextNotes.add(trimmed);
+    notifyListeners();
+  }
+
+  /// Pending context queued by the input capsule — attaches to the NEXT
+  /// dealt card (pre-draw intention).
+  String? _pendingChip;
+  String? _pendingNote;
+  bool get hasPendingContext => _pendingChip != null || _pendingNote != null;
+
+  void queueContext({String? chip, String? note}) {
+    _pendingChip = chip;
+    _pendingNote = note;
+    notifyListeners();
+  }
+
+  void clearPendingContext() {
+    if (_pendingChip == null && _pendingNote == null) return;
+    _pendingChip = null;
+    _pendingNote = null;
+    notifyListeners();
+  }
+
+  /// Stores the pending context into the freshly dealt slot [slotIndex]
+  /// and clears the queue for the next card. Returns false when nothing
+  /// was queued.
+  bool consumePendingContext(int slotIndex) {
+    final chip = _pendingChip;
+    final note = _pendingNote;
+    if (chip == null && note == null) return false;
+    if (slotIndex >= 0 && slotIndex < _slots.length) {
+      _slots[slotIndex].setUserContext(chip: chip, text: note);
+    }
+    _pendingChip = null;
+    _pendingNote = null;
+    notifyListeners();
+    return true;
+  }
+
+  /// 1-tap session restore (Pane 2): rebuilds the table with the exact
+  /// saved cards, orientations, roles and intentions — all FACE UP with
+  /// threads ready. The physical stack refreshes to a full shuffled 78:
+  /// restored cards are a snapshot (camera-sync semantics) that never
+  /// touches the digital ledger.
+  void restoreSpread({
+    required SpreadType type,
+    required List<({int cardId, bool reversed, String role, String? userContext})> cards,
+    required List<String> sessionNotes,
+  }) {
+    _spreadType = type;
+    _clarifierCount =
+        cards.where((c) => c.role.startsWith('Clarifier')).length;
+    _pendingClarifierQuestion = null;
+    _pendingChip = null;
+    _pendingNote = null;
+    _sourceMode = TableSourceMode.physicalCameraSync;
+    _slots = List.generate(cards.length, (i) {
+      final slot = DealtCardSlot(index: i, role: cards[i].role);
+      slot.fromPhysicalCard = true;
+      slot.userContext = cards[i].userContext;
+      final card = _cardById(cards[i].cardId);
+      if (card != null) {
+        slot.placeCardFaceUp(card, cards[i].reversed);
+      }
+      return slot;
+    });
+    _sessionContextNotes
+      ..clear()
+      ..addAll(sessionNotes);
+    _resetDeck();
+    shuffleDeck();
+  }
+
+  TarotCard? _cardById(int id) {
+    for (final c in tarotDeck) {
+      if (c.id == id) return c;
+    }
+    return null;
   }
 
   /// Serialized completed spread for local history (100% local-first).

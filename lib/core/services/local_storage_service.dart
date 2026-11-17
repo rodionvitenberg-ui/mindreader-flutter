@@ -13,6 +13,8 @@ class LocalStorageService {
   static const _ritualMorningKey = 'ritual_morning_minutes';
   static const _ritualEveningKey = 'ritual_evening_minutes';
   static const _readingDaysKey = 'reading_days';
+  static const _sessionsKey = 'spread_sessions_v2';
+  static const _maxSessions = 100;
 
   Future<List<Map<String, dynamic>>> loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
@@ -30,6 +32,35 @@ class LocalStorageService {
       history.removeRange(_maxEntries, history.length);
     }
     await prefs.setString(_historyKey, jsonEncode(history));
+  }
+
+  // ---- full-session archive (Sprint 2/3 — Pane 2 History & Notebooks) --
+
+  /// Full reading sessions (cards + orientations + contexts + synthesis +
+  /// chat dialog), newest first. 100% local JSON.
+  Future<List<Map<String, dynamic>>> loadSessions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_sessionsKey);
+    if (raw == null) return const [];
+    return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+  }
+
+  /// Upserts one session by its timestamp (identity), newest first.
+  Future<void> upsertSession(Map<String, dynamic> entry) async {
+    final prefs = await SharedPreferences.getInstance();
+    final sessions = await loadSessions();
+    final ts = entry['timestamp'] as String?;
+    sessions.removeWhere((s) => s['timestamp'] == ts);
+    sessions.insert(0, entry);
+    if (sessions.length > _maxSessions) {
+      sessions.removeRange(_maxSessions, sessions.length);
+    }
+    await prefs.setString(_sessionsKey, jsonEncode(sessions));
+  }
+
+  Future<void> deleteAllSessions() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_sessionsKey);
   }
 
   // ---- active deck pack ----

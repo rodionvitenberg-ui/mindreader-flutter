@@ -58,6 +58,39 @@ SpreadController
 - `OracleSynthesisService.synthesize()`: same chain for the reading text — RTX 3080 chat (3500 ms) → Gemini Flash (`ORACLE_API_URL`, `GEMINI_API_KEY`) → local `synthesizeSpread` engine. The reading sheet awaits it and reveals the result with the typewriter effect.
 - `LocalStorageService`: spread history, active deck id, ritual prefs, reading days — all via `shared_preferences` (JSON).
 
+## Sprint 2/3 — Gemini-inspired 3-pane workspace & decluttered table
+
+The TABLE tab now hosts `TableWorkspace` — a horizontal 3-pane `PageView` with a
+3-pill indicator (`TABLE • ORACLE CHAT • HISTORY`) for 1-tap switching:
+
+- **Pane 0 — Digital Table** (decluttered): no `BEFORE YOU DRAW` box above the
+  deck, no bottom spread carousel. The spread method lives in the tappable
+  header subtitle (`3 · TRIAD FLOW · 78 IN DECK ▾` → `SpreadSelectorSheet`).
+- **Pane 1 — Oracle AI Chat**: full-width Gemini-style conversation — pinned
+  spread header strip (mini card glyphs + elemental balance badges, tap/swipe
+  → back to the table), the structured synthesis as the first message,
+  clarifier expansion chapters, free Q&A via `OracleSynthesisService.answerChat`
+  (dual AI chain + deterministic local fallback).
+- **Pane 2 — Spread History & Notebooks** (`PRO` badge): local-first archive,
+  `+ NEW SPREAD`, notebook filters (All Readings / Relationships / Career &
+  Path — derived from context chips), **1-tap full session restore**
+  (`SpreadSessionSnapshot` JSON round-trip: exact cards/orientations/roles,
+  session notes, synthesis, clarifiers, whole dialog).
+
+**Gesture disambiguation:** the 3D deck (220×360) sits deepest in the gesture
+arena, so horizontal drags on it always riffle the deck; swiping anywhere else
+(background, header, dealt cards) pans the PageView.
+
+**Gemini input capsule** (shared Table/Chat, above the bottom nav dock):
+`+` action sheet (context chips / 📷 attach camera card / 🃏 pull clarifier /
+✦ new spread), expandable text field, mic dictation, circular accent send.
+On the table, submits play **"Sent to Cosmos"** — the thought rises from the
+capsule and dissolves into stardust (`CosmosSendBurst`, deterministic painter)
+and lands in `SpreadController.sessionContextNotes`; the next dealt card also
+inherits the pending context. Synthesis + chat turns upsert the session into
+`SessionHistoryController` (in-memory first, background `shared_preferences`
+write — the UI never waits on storage).
+
 ## Folder map
 
 ```
@@ -65,21 +98,28 @@ lib/
 ├── main.dart
 ├── core/
 │   ├── theme/            # Obsidian + Lavender design tokens & ThemeData
-│   ├── models/           # TarotCard, SpreadType, DealtCardSlot
-│   ├── data/             # 78-card RWS dataset + Socratic questions
-│   └── services/         # vision, oracle (dignity + synthesis), local storage
-├── state/                # SpreadController (ChangeNotifier)
+│   ├── models/           # TarotCard, SpreadType, DealtCardSlot, ChatMessage
+│   ├── data/             # 78-card RWS dataset + Socratic questions + chips
+│   └── services/         # vision, oracle (dignity + synthesis + chat), local storage
+├── state/                # SpreadController, SynthesisSession, SessionHistoryController,
+│                         # SpreadSessionSnapshot (ChangeNotifiers)
 └── features/
-    ├── shell/            # 3-tab bottom bar (Camera | Digital Table | Almanac)
+    ├── shell/            # 3-tab bottom bar (Camera | Table | Almanac)
     ├── camera_scan/      # native camera UI + lock-on animation
-    ├── digital_table/    # deck, pillar, 3D cards, threads, reading sheet
+    ├── digital_table/    # table_workspace (3-pane PageView), oracle_chat_pane,
+    │                     # spread_history_pane, deck, pillar, 3D cards, threads,
+    │                     # gemini_input_capsule, cosmos_send_burst, sheets
     └── almanac/          # filterable library + 3D detail sheet
 ```
 
 ## Verification
 
 - `flutter analyze` — zero errors/warnings. ✅
-- `flutter test` — 27 tests green: domain (deck integrity 78/22/56/14×4, shuffle permutation, deal order, flip, scanned face-up load, dignity classification, synthesis) + widget smoke (boot → deal → flip → reading sheet, spread switching, mock camera scan → face-up handoff, almanac → detail sheet). ✅
+- `flutter test` — 114 tests green: domain (deck integrity, shuffle, deal,
+  flip, dignity, synthesis, session notes, snapshot round-trip, restore) +
+  widget (boot → deal → flip → reading sheet, workspace swipes & deck gesture
+  isolation, capsule → cosmos, synthesize → chat pane, clarifiers in chat,
+  camera sync, history save/restore). ✅
 - `flutter build apk --debug` (Android SDK present on host; Gradle auto-installs Platform 35).
 - iOS: config kept clean (Info.plist permissions) for cloud CI; no local xcodebuild on Linux.
 

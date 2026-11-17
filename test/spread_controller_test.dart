@@ -221,4 +221,105 @@ void main() {
     c.setSpreadType(SpreadType.four);
     expect(c.ledgerTotal, 78);
   });
+
+  group('session context notes (Gemini capsule → the ether)', () {
+    test('addSessionContextNote accumulates; spread switch clears it', () {
+      final c = SpreadController(random: Random(7));
+      c.addSessionContextNote('my own words');
+      c.addSessionContextNote('✨ Relationships');
+      expect(c.sessionContextNotes, [
+        'my own words',
+        '✨ Relationships',
+      ]);
+      c.setSpreadType(SpreadType.one);
+      expect(c.sessionContextNotes, isEmpty);
+      c.resetTable();
+      expect(c.sessionContextNotes, isEmpty);
+    });
+
+    test('queueContext attaches to the next dealt card and clears', () {
+      final c = SpreadController(random: Random(8));
+      expect(c.hasPendingContext, isFalse);
+      c.queueContext(chip: '✨ Crossroads', note: 'job change');
+      expect(c.hasPendingContext, isTrue);
+      final idx = c.dealNextCard();
+      expect(idx, 0);
+      expect(c.consumePendingContext(idx!), isTrue);
+      expect(c.slots[0].userContext, '✨ Crossroads · "job change"');
+      expect(c.hasPendingContext, isFalse);
+      // Nothing queued → consume reports false and touches nothing.
+      expect(c.consumePendingContext(0), isFalse);
+      expect(c.slots[0].userContext, '✨ Crossroads · "job change"');
+    });
+  });
+
+  group('1-tap session restore', () {
+    test('restoreSpread rebuilds exact cards/orientations/roles face-up', () {
+      final c = SpreadController(random: Random(9));
+      for (var i = 0; i < 3; i++) {
+        c.dealNextCard();
+      }
+      final firstCardId = c.slots[0].card!.id;
+      final firstReversed = c.slots[0].isReversed;
+      final cards = [
+        for (final s in c.slots)
+          (
+            cardId: s.card!.id,
+            reversed: s.isReversed,
+            role: s.role,
+            userContext: s.userContext,
+          ),
+      ];
+      // Mess the table up completely first.
+      c.setSpreadType(SpreadType.seven);
+      c.restoreSpread(
+        type: SpreadType.three,
+        cards: cards,
+        sessionNotes: const ['my own words'],
+      );
+      expect(c.spreadType, SpreadType.three);
+      expect(c.slots.length, 3);
+      expect(c.slots.every((s) => s.state == SlotState.faceUp), isTrue);
+      expect(c.slots[0].card!.id, firstCardId);
+      expect(c.slots[0].isReversed, firstReversed);
+      expect(c.sessionContextNotes, ['my own words']);
+      expect(c.sourceMode, TableSourceMode.physicalCameraSync);
+      expect(c.remaining, 78); // the physical stack refreshed fully
+      // Restored cards exist OUTSIDE the digital ledger.
+      expect(c.ledgerTotal, greaterThan(78));
+    });
+
+    test('restoreSpread counts clarifier roles', () {
+      final c = SpreadController(random: Random(10));
+      for (var i = 0; i < 3; i++) {
+        c.dealNextCard();
+      }
+      final cards = [
+        for (final s in c.slots)
+          (
+            cardId: s.card!.id,
+            reversed: s.isReversed,
+            role: s.role,
+            userContext: s.userContext,
+          ),
+      ];
+      c.restoreSpread(
+        type: SpreadType.three,
+        cards: [
+          ...cards,
+          (
+            cardId: 5,
+            reversed: true,
+            role: 'Clarifier 1',
+            userContext: '"Why?"',
+          ),
+        ],
+        sessionNotes: const [],
+      );
+      expect(c.slots.length, 4);
+      expect(c.slots[3].role, 'Clarifier 1');
+      expect(c.slots[3].fromPhysicalCard, isTrue);
+      expect(c.slots[3].isReversed, isTrue);
+    });
+  });
 }

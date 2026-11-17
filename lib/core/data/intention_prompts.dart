@@ -70,3 +70,11 @@ const clarifierFollowUpQuestions = [
 
 /// The label of the third, free-form clarifier option.
 const clarifierCustomLabel = '+ Ask my own question & pull a card...';
+
+/// Quick one-line context chips floating above the Gemini input capsule on
+/// the Digital Table (Sprint 2/3): one tap sends the chip into the ether.
+const tableContextChips = [
+  '✨ Relationships',
+  '⚡ Crossroads',
+  '🔮 Blind Draw',
+];

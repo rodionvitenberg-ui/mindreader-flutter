@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/models/dealt_card_slot.dart';
+import 'package:mindreader/features/digital_table/widgets/cosmos_send_burst.dart';
 import 'package:mindreader/features/digital_table/widgets/interactive_deck_widget.dart';
 import 'package:mindreader/features/digital_table/widgets/tarot_card_3d_widget.dart';
 import 'package:mindreader/main.dart';
 import 'package:mindreader/state/spread_controller.dart';
 import 'package:provider/provider.dart';
 
-/// Phase 2 end-to-end widget flows: pre-draw intention prompts, the
-/// ceremonial SYNTHESIZE READING gate, the endless clarifier loop and the
-/// phygital camera-to-table sync.
+/// Sprint 2/3 end-to-end widget flows: the Gemini input capsule context
+/// ("Sent to Cosmos"), the ✦ SYNTHESIZE IN CHAT → gate, the clarifier loop
+/// inside the Oracle AI Chat pane and the phygital camera-to-table sync.
 void main() {
   /// Deals one card from the tactile deck and settles the spring flight.
   Future<void> dealOne(WidgetTester tester) async {
@@ -32,8 +33,16 @@ void main() {
     await tester.pump();
   }
 
-  /// Deals and flips the whole Triad spread, then runs the synthesis
-  /// until the three sections are on the table.
+  /// Switches panes with the 3-pill indicator (1-tap switching).
+  Future<void> goToPane(WidgetTester tester, int pane) async {
+    await tester.tap(find.byKey(ValueKey('pane-$pane')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600)); // pane slide
+    await tester.pump();
+  }
+
+  /// Deals and flips the whole Triad spread, then runs the synthesis and
+  /// slides into the Oracle AI Chat pane.
   Future<void> dealFlipAndSynthesize(WidgetTester tester) async {
     for (var i = 0; i < 3; i++) {
       await dealOne(tester);
@@ -42,51 +51,55 @@ void main() {
       await flipCard(tester, i);
     }
     await tester.pump();
-    await tester.ensureVisible(find.text('СИНТЕЗИРОВАТЬ ПРОГНОЗ'));
-    await tester.pump();
-    await tester.tap(find.text('СИНТЕЗИРОВАТЬ ПРОГНОЗ'));
-    await tester.pump(); // start the async synthesis
+    await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
+    await tester.pump(); // synthesis starts
     await tester.pump(); // local engine resolves
-    await tester.pump(const Duration(seconds: 6)); // typewriter reveal
+    await tester.pump(const Duration(milliseconds: 700)); // pane slide
     await tester.pump();
   }
 
-  testWidgets('intention bar asks the slot question; chip lands in the slot',
+  testWidgets('capsule sends context into the ether and tags the next card',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    // Slot 1 question + the four zero-friction chips above the deck.
-    expect(
-      find.text('What is on your mind right now? Where is the tension?'),
-      findsOneWidget,
-    );
-    expect(find.text('Relationships & Feelings'), findsOneWidget);
-    expect(find.text('Career / Money Crossroads'), findsOneWidget);
-    expect(find.text('Inner Doubt'), findsOneWidget);
-    expect(find.text('Let the Deck Decide'), findsOneWidget);
+    // The decluttered table: no BEFORE YOU DRAW box, quick-context chips
+    // float above the Gemini capsule instead.
+    expect(find.text('SLOT 1 · BEFORE YOU DRAW'), findsNothing);
+    expect(find.text('✨ Relationships'), findsOneWidget);
+    expect(find.text('⚡ Crossroads'), findsOneWidget);
+    expect(find.text('🔮 Blind Draw'), findsOneWidget);
 
-    // Tap a chip (highlights immediately), then pull the card.
-    await tester.tap(find.text('Relationships & Feelings'));
+    // Type a thought and send it — the capsule plays "Sent to Cosmos"
+    // and the note lands in the session context.
+    await tester.enterText(
+      find.byKey(const ValueKey('oracle-input')),
+      'my own words',
+    );
+    await tester.tap(find.byKey(const ValueKey('oracle-send')));
     await tester.pump();
-    await dealOne(tester);
+    expect(find.byType(CosmosSendBurst), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 1300));
+    await tester.pump();
 
     final ctrl = tester
         .element(find.byType(InteractiveDeckWidget))
         .read<SpreadController>();
-    expect(ctrl.slots[0].userContext, 'Relationships & Feelings');
+    expect(ctrl.sessionContextNotes, contains('my own words'));
 
-    // The bar advanced to the Slot 2 question.
-    expect(
-      find.text('What hidden force or fear is influencing this?'),
-      findsOneWidget,
-    );
+    // The pending note lands on the next dealt card.
+    await dealOne(tester);
+    expect(ctrl.slots[0].userContext, '"my own words"');
+
+    // A chip tap sends itself into the ether too.
+    await tester.tap(find.text('✨ Relationships'));
+    await tester.pump();
+    expect(ctrl.sessionContextNotes, contains('✨ Relationships'));
+    expect(ctrl.sessionContextNotes, hasLength(2));
   });
-
-
   testWidgets(
-      'SYNTHESIZE READING appears only when all cards are face-up and '
-      'opens the three-section panel', (tester) async {
+      '✦ SYNTHESIZE IN CHAT appears only when all cards are face-up and '
+      'opens the full-width chat pane', (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
@@ -96,72 +109,88 @@ void main() {
     await tester.pump();
 
     // Cards are face-down: no ceremonial CTA yet.
-    expect(find.text('СИНТЕЗИРОВАТЬ ПРОГНОЗ'), findsNothing);
+    expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsNothing);
 
     await flipCard(tester, 0);
     await flipCard(tester, 1);
     await flipCard(tester, 2);
     await tester.pump();
 
-    // All face-up: the ceremonial CTA is revealed below the spread.
-    expect(find.text('СИНТЕЗИРОВАТЬ ПРОГНОЗ'), findsOneWidget);
+    // All face-up: the glowing CTA is revealed above the capsule.
+    expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('СИНТЕЗИРОВАТЬ ПРОГНОЗ'));
-    await tester.pump();
-    await tester.tap(find.text('СИНТЕЗИРОВАТЬ ПРОГНОЗ'));
+    await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
     await tester.pump();
     await tester.pump();
-    await tester.pump(const Duration(seconds: 6));
+    await tester.pump(const Duration(milliseconds: 700)); // pane slide
     await tester.pump();
 
-    // The structured synthesis renders directly on the table.
+    // The structured synthesis streams as the first message of the
+    // full-width Oracle AI Chat pane (no narrow modal box).
     expect(find.text('1 · CORE NARRATIVE SYNTHESIS'), findsOneWidget);
     expect(find.text('2 · ELEMENTAL ALCHEMY'), findsOneWidget);
     expect(find.text('3 · ACTIONABLE VERDICT'), findsOneWidget);
+    // The narrative text itself carries the closing Socratic question.
     expect(find.textContaining('The question to sit with:'), findsWidgets);
+    // The pinned spread header strip is on top of the chat.
+    expect(find.text('CURRENT SPREAD'), findsOneWidget);
   });
 
-
-  testWidgets('endless clarifier loop: +1 card and its expansion chapter',
+  testWidgets('endless clarifier loop lives inside the chat pane',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-
     await dealFlipAndSynthesize(tester);
-    expect(find.text('1 · CORE NARRATIVE SYNTHESIS'), findsOneWidget);
 
-    // The follow-up prompts live at the bottom of the synthesis panel.
-    final prompt =
-        find.text('+ Pull 1 Card: What is the hidden obstacle?');
-    await tester.ensureVisible(prompt);
+    // The follow-up actions are offered as fixed suggestion chips.
+    final chip = find.text('+1 · PULL CLARIFIER');
+    expect(chip, findsOneWidget);
+    await tester.tap(chip);
     await tester.pump();
-    await tester.tap(prompt);
-    await tester.pump(); // clarifier slot appended + dealt
-    await tester.pump(const Duration(milliseconds: 700)); // flight spring
-    await tester.pump();
+    await tester.pump(); // stream rebuilds and jumps to the bottom
+    expect(find.textContaining('A clarifier was dealt'), findsOneWidget);
 
+    // Back to the table (1-tap pill) and flip the clarifier face-up.
+    await goToPane(tester, 0);
     expect(find.byType(TarotCard3DWidget), findsNWidgets(4));
-
-    // Flip the clarifier → the chapter generates automatically.
     await flipCard(tester, 3);
     await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 1)); // chapter generation
     await tester.pump();
 
-    expect(find.textContaining('CLARIFIER EXPANSION'), findsOneWidget);
-    expect(find.textContaining('What is the hidden obstacle?'),
-        findsWidgets);
-
-    // The bar above the deck switched to the endless-clarifier mode.
-    await tester.ensureVisible(find.text('EXPAND THE READING'));
+    // The expansion chapter appeared in the chat stream.
+    await goToPane(tester, 1);
     await tester.pump();
-    expect(find.text('EXPAND THE READING'), findsOneWidget);
+    await tester.pump();
+    expect(find.text('CLARIFIER EXPANSION'), findsOneWidget);
+    expect(find.textContaining('What else does the table want'), findsWidgets);
   });
 
-
   testWidgets(
-      'phygital sync: scanned spread gets context prompts, synthesis and '
-      'camera clarifier buttons', (tester) async {
+      'chat: a free-form question gets a grounded oracle answer',
+      (tester) async {
+    await tester.pumpWidget(const MindreaderApp());
+    await tester.pump();
+    await dealFlipAndSynthesize(tester);
+
+    // The same Gemini capsule drives the conversation on the chat pane.
+    await tester.enterText(
+      find.byKey(const ValueKey('oracle-input')),
+      'What should I focus on?',
+    );
+    await tester.tap(find.byKey(const ValueKey('oracle-send')));
+    await tester.pump();
+    await tester.pump(); // stream rebuilds and jumps to the bottom
+    expect(find.text('What should I focus on?'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    // The offline oracle answered, grounded in the table.
+    expect(find.textContaining('Sitting with your question'), findsOneWidget);
+  });
+  testWidgets(
+      'phygital sync: scanned spread gets synthesis + camera clarifier',
+      (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
@@ -175,74 +204,23 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
 
-    // Back on the table: physical-sync badge + all 3 cards face-up.
+    // Back on the table: physical-sync badge + all 3 cards face-up and
+    // the CTA ready immediately.
     expect(find.text('PHYSICAL SYNC'), findsOneWidget);
     expect(find.byType(TarotCard3DWidget), findsNWidgets(3));
+    expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsOneWidget);
 
-    // Pre-synthesis context prompts for the photographed cards.
-    expect(find.text('ADD CONTEXT FOR YOUR CARDS'), findsOneWidget);
-    await tester.tap(find.text('Relationships & Feelings'));
-    await tester.pump();
-    await tester.tap(find.text('APPLY'));
-    await tester.pump();
-    final ctrl = tester
-        .element(find.text('PHYSICAL SYNC'))
-        .read<SpreadController>();
-    expect(ctrl.slots[0].userContext, 'Relationships & Feelings');
-
-    // Synthesize the photographed spread.
-    await tester.ensureVisible(find.text('СИНТЕЗИРОВАТЬ ПРОГНОЗ'));
-    await tester.pump();
-    await tester.tap(find.text('СИНТЕЗИРОВАТЬ ПРОГНОЗ'));
+    // Synthesize the photographed spread → lands in the chat pane.
+    await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
     await tester.pump();
     await tester.pump();
-    await tester.pump(const Duration(seconds: 6));
+    await tester.pump(const Duration(milliseconds: 700));
     await tester.pump();
     expect(find.text('1 · CORE NARRATIVE SYNTHESIS'), findsOneWidget);
 
-    // The camera-sync clarifier pair is offered in the panel.
-    final cameraBtn = find.text('📷 Photograph Next Physical Card');
-    await tester.ensureVisible(cameraBtn);
-    await tester.pump();
+    // Photograph the next PHYSICAL clarifier card (fixed suggestion chip).
+    final cameraBtn = find.text('📷 · CAMERA CLARIFIER');
     expect(cameraBtn, findsOneWidget);
-    expect(find.text('🃏 Draw from Digital Deck'), findsOneWidget);
-
-    // Draw a digital clarifier straight from the panel.
-    await tester.tap(find.text('🃏 Draw from Digital Deck'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pump();
-    expect(find.byType(TarotCard3DWidget), findsNWidgets(4));
-  });
-
-
-  testWidgets(
-      'photographing the next physical card arms the camera for one card '
-      'and appends it face-up', (tester) async {
-    await tester.pumpWidget(const MindreaderApp());
-    await tester.pump();
-
-    // Reach the synthesized physical-sync table.
-    await tester.tap(find.text('CAMERA'));
-    await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('shutter')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pump();
-    await tester.ensureVisible(find.text('СИНТЕЗИРОВАТЬ ПРОГНОЗ'));
-    await tester.pump();
-    await tester.tap(find.text('СИНТЕЗИРОВАТЬ ПРОГНОЗ'));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 6));
-    await tester.pump();
-
-    // Photograph the next PHYSICAL clarifier card.
-    final cameraBtn = find.text('📷 Photograph Next Physical Card');
-    await tester.ensureVisible(cameraBtn);
-    await tester.pump();
     await tester.tap(cameraBtn);
     await tester.pump();
 
@@ -258,21 +236,25 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
 
-    // Back on the table: the photographed card is Card N+1, face-up.
-    expect(find.text('DIGITAL TABLE'), findsOneWidget);
-    expect(find.byType(TarotCard3DWidget), findsNWidgets(4));
+    // Back in the workspace: the photographed card is Card N+1, face-up.
     final ctrl = tester
-        .element(find.text('DIGITAL TABLE'))
+        .element(find.byKey(const ValueKey('pane-0')))
         .read<SpreadController>();
     expect(ctrl.slots.length, 4);
     expect(ctrl.slots[3].state, SlotState.faceUp);
     expect(ctrl.slots[3].fromPhysicalCard, isTrue);
 
-    // The expansion chapter generated automatically.
+    // The expansion chapter generated automatically in the chat.
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
     await tester.pump();
-    expect(find.textContaining('CLARIFIER EXPANSION'), findsOneWidget);
+    await tester.pump();
+    expect(find.text('CLARIFIER EXPANSION'), findsOneWidget);
+
+    // The table pane holds all 4 cards.
+    await goToPane(tester, 0);
+    expect(find.byType(TarotCard3DWidget), findsNWidgets(4));
   });
 }
+
 
