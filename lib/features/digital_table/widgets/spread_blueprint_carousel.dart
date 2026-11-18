@@ -33,14 +33,18 @@ class _SpreadBlueprint {
   final VoidCallback onTap;
 }
 
-/// Compact horizontal swipeable carousel (`height: 92`) of spread blueprints,
-/// placed below the system/pack header rows and directly above the deck.
-/// Free spreads switch the table geometry immediately; locked PRO spreads
-/// open [ProSubscriptionSheet].
+/// Step 1 — the pre-table spread selection picker: ONE horizontal swipeable
+/// row of tall, clean spread blueprint cards (Labyrinthos-style, strictly 1
+/// row, NOT 2). Each card shows a miniature spread wireframe, the spread name
+/// + card count, and a subtle `PRO` lock badge on gated spreads.
+///
+/// Tapping a FREE spread selects it AND enters the Active Digital Table
+/// (Step 2); tapping a LOCKED PRO spread opens [ProSubscriptionSheet] without
+/// touching the active spread.
 class SpreadBlueprintCarousel extends StatelessWidget {
   const SpreadBlueprintCarousel({super.key});
 
-  static const double height = 92.0;
+  static const double height = 200.0;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +58,7 @@ class SpreadBlueprintCarousel extends StatelessWidget {
         return;
       }
       select();
+      context.read<SpreadController>().activateSpread();
     }
 
     final blueprints = <_SpreadBlueprint>[
@@ -138,15 +143,17 @@ class _BlueprintCard extends StatelessWidget {
         : (locked
             ? AppColors.border
             : AppColors.lavender.withValues(alpha: 0.32));
+    // Strip the "N · " prefix: "3 · Triad Flow" → "Triad Flow".
+    final name = blueprint.label.replaceFirst(RegExp(r'^\d+\s*·\s*'), '');
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: blueprint.onTap,
       child: Container(
-        width: 118,
-        padding: const EdgeInsets.all(8),
+        width: 150,
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: AppColors.surface.withValues(alpha: 0.72),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: borderColor),
         ),
         child: Column(
@@ -163,22 +170,21 @@ class _BlueprintCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
-              blueprint.label,
+              name,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8.5,
-                letterSpacing: 1.1,
-                height: 1.2,
-                fontWeight: FontWeight.w700,
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 17,
+                height: 1.1,
+                fontWeight: FontWeight.w600,
                 color: blueprint.active
                     ? AppColors.lavender
                     : AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 4),
             Row(
               children: [
                 Flexible(
@@ -188,18 +194,18 @@ class _BlueprintCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.jetBrainsMono(
-                      fontSize: 7,
+                      fontSize: 8,
                       letterSpacing: 1.2,
                       color: AppColors.textMuted,
                     ),
                   ),
                 ),
                 if (blueprint.isPro) ...[
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 5),
                   Text(
                     locked ? '🔒 PRO' : 'PRO',
                     style: GoogleFonts.jetBrainsMono(
-                      fontSize: 7.5,
+                      fontSize: 8.5,
                       letterSpacing: 1.2,
                       fontWeight: FontWeight.w700,
                       color: locked ? AppColors.textMuted : AppColors.lavender,

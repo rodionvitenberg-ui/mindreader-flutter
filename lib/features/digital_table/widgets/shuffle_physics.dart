@@ -15,9 +15,13 @@ import '../../../core/theme/app_colors.dart';
 /// with staggered sine phases (`sin(dragPhase + layer * 0.45)`) so cards
 /// visibly arc, lift, cascade and interleave like a real physical deck.
 
-/// Geometry of the hero deck (task spec: 220.0 × 360.0 logical pixels).
-const deckWidth = 220.0;
-const deckHeight = 360.0;
+/// Geometry of the hero deck — matched to the Almanac's card proportions
+/// (220:360) scaled down to the Almanac's ~168 px grid-tile width, so the
+/// FOCUS VIEW deck + dealt cards no longer render oversized at 220×360.
+/// `deckWidth * 360 / 220 == 274.9`, rounded to 275 — the exact Almanac
+/// aspect ratio (0.611) is preserved.
+const deckWidth = 168.0;
+const deckHeight = 275.0;
 
 /// Headroom above the hero card where the painted layer edges stack up
 /// (78 × 0.35 ≈ 27 px); the deck widget's hit-box is 220 × (360 + headroom).

@@ -124,6 +124,31 @@ class SpreadController extends ChangeNotifier {
         DivinationSystem.runes => _runeCast.slotRoleShorts,
       };
 
+  // ---- two-step entry flow (Step 1 picker → Step 2 active table) ----------
+
+  bool _isSpreadActive = false;
+
+  /// True while the reader is on Step 2 (the Active Digital Table). False on
+  /// Step 1 — the pre-table "Choose Spread" selection view, which is the
+  /// DEFAULT entry state of the Table tab before a spread is started.
+  bool get isSpreadActive => _isSpreadActive;
+
+  /// Step 1 → Step 2: enters the Active Digital Table. Call AFTER the spread
+  /// has been selected (setSpreadType / setLenormandSpread / setRuneCast) or
+  /// after a camera handoff / session restore.
+  void activateSpread() {
+    if (_isSpreadActive) return;
+    _isSpreadActive = true;
+    notifyListeners();
+  }
+
+  /// Step 2 → Step 1: exits the Active Digital Table back to the spread
+  /// selection view and clears the table so the next selection starts fresh.
+  void exitSpread() {
+    _isSpreadActive = false;
+    resetTable(); // notifies via shuffleDeck()
+  }
+
   // ---- table view mode (SPREAD VIEW default, persisted) -------------------
 
   bool _isSpreadOverview = true;
@@ -540,6 +565,7 @@ class SpreadController extends ChangeNotifier {
     if (cards.isEmpty) return;
     _system = DivinationSystem.tarot;
     _spreadType = spreadTypeForCount(cards.length);
+    _isSpreadActive = true; // land directly on the Active Digital Table
     _clarifierCount = 0;
     _pendingClarifierQuestion = null;
     _sourceMode = TableSourceMode.physicalCameraSync;
@@ -630,6 +656,7 @@ class SpreadController extends ChangeNotifier {
     required List<String> sessionNotes,
   }) {
     _system = system;
+    _isSpreadActive = true; // restored sessions land on the Active Digital Table
     _spreadType = type ?? SpreadType.three;
     _lenormandSpread = lenormandSpread ?? LenormandSpread.three;
     _runeCast = runeCast ?? RuneCast.three;

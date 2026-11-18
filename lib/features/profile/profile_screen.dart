@@ -26,25 +26,14 @@ class ProfileScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 96),
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    AppStrings.t(lang, 'profile.title'),
-                    style: GoogleFonts.cormorantGaramond(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1.2,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                const ProfilePill(
-                  label: 'ZERO-KNOWLEDGE',
-                  active: true,
-                  icon: Icons.shield_outlined,
-                ),
-              ],
+            Text(
+              AppStrings.t(lang, 'profile.title'),
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 26,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+                color: AppColors.textPrimary,
+              ),
             ),
             const SizedBox(height: 14),
             const ProfileIdentityCard(),

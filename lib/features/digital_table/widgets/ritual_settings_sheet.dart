@@ -76,8 +76,11 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
       hour: (morning ? _morning : _evening) ~/ 60,
       minute: (morning ? _morning : _evening) % 60,
     );
-    final picked =
-        await showTimePicker(context: context, initialTime: current);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: current,
+      initialEntryMode: TimePickerEntryMode.input,
+    );
     if (picked == null) return;
     setState(() {
       if (morning) {

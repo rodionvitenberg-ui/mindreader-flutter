@@ -412,7 +412,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
     _sessionKind = SessionKind.divinationSpread;
     _clearAstralContext();
     _synthesis.reset();
-    _ctrl.resetTable();
+    _ctrl.exitSpread();
     HapticFeedback.mediumImpact();
     _goToPane(tablePane);
   }
@@ -656,6 +656,11 @@ class _TableWorkspaceState extends State<TableWorkspace>
   /// Gemini input capsule. Plus the "Sent to Cosmos" overlay on either.
   Widget _buildBottomArea(SpreadController ctrl) {
     final onTable = _pane == tablePane;
+    // Step 1 (spread selection) is a clean picker — no reading-subject
+    // toggle, no synthesize CTA, no clarifier banner.
+    if (onTable && !ctrl.isSpreadActive) {
+      return const SizedBox.shrink();
+    }
     final clarifier = ctrl.pendingClarifierQuestion;
     return Stack(
       alignment: Alignment.bottomCenter,

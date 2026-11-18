@@ -58,6 +58,7 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
     final picked = await showTimePicker(
       context: context,
       initialTime: profile.birthTime ?? const TimeOfDay(hour: 12, minute: 0),
+      initialEntryMode: TimePickerEntryMode.input,
     );
     if (picked == null) return;
     HapticFeedback.selectionClick();
@@ -91,11 +92,6 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
     final profile = context.watch<UserProfileController>();
     return ProfileCard(
       title: 'PERSONAL CONTEXT & BIRTH DATA',
-      trailing: const ProfilePill(
-        label: 'LOCAL ONLY',
-        active: true,
-        icon: Icons.shield_outlined,
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

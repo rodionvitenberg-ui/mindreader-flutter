@@ -681,16 +681,17 @@ class _CardFace extends StatelessWidget {
         : _framedArtwork(candidates[i], () => build(i + 1), clipRadius);
     return Image.asset(
       'assets/cards/${card.id}.png',
-      fit: BoxFit.cover,
+      fit: BoxFit.contain,
       errorBuilder: (_, _, _) => build(0),
     );
   }
 
-  /// The historical scan, trimmed and framed like a native obsidian card:
-  /// `BoxFit.cover` + a 1.05 upscale trims the scan's white paper margins,
-  /// and a dark inner vignette with a hairline accent border frames the
-  /// artwork — no ugly white edges. [clipRadius] defaults to the inner
-  /// padded radius; illustrated full-bleed faces pass the card radius.
+  /// The historical scan, framed like a native obsidian card: `BoxFit.contain`
+  /// renders the FULL artwork edge to edge inside the rounded border — zero
+  /// crop at the top or bottom (the old `BoxFit.cover` + 1.05 upscale clipped
+  /// the illustrated deck's artwork). A dark inner vignette with a hairline
+  /// accent border still frames it. [clipRadius] defaults to the inner padded
+  /// radius; illustrated full-bleed faces pass the card radius.
   Widget _framedArtwork(
     String path,
     Widget Function() onError,
@@ -701,13 +702,10 @@ class _CardFace extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Transform.scale(
-            scale: 1.05,
-            child: Image.asset(
-              path,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => onError(),
-            ),
+          Image.asset(
+            path,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => onError(),
           ),
           IgnorePointer(
             child: DecoratedBox(

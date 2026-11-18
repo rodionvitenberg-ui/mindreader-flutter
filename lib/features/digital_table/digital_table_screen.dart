@@ -20,7 +20,6 @@ import '../../state/user_profile_controller.dart';
 import '../profile/profile_screen.dart';
 import 'widgets/board_pillar_view.dart';
 import 'widgets/deal_lock_prompt.dart';
-import 'widgets/deck_picker_sheet.dart';
 import 'widgets/elemental_threads_painter.dart';
 import 'widgets/foil_glint.dart';
 import 'widgets/interactive_deck_widget.dart';
@@ -30,14 +29,12 @@ import 'widgets/rune_stone_3d_widget.dart';
 import 'widgets/shuffle_physics.dart';
 import 'widgets/slotted_divination_card.dart';
 import 'widgets/spread_blueprint_carousel.dart';
-import 'widgets/spread_selector_sheet.dart';
 import 'widgets/spread_threads_layer.dart';
 import 'widgets/tarot_card_3d_widget.dart';
 
-/// Fixed header above the table canvas: three clean balanced rows —
-/// Row 1 the FOCUS/SPREAD toggle, Row 2 the TAROT|LENORMAND|RUNES system
-/// selector, Row 3 the pack + spread picker pills (Expanded, no overflow).
-const _headerHeight = 118.0;
+/// Fixed header of the ACTIVE table (Step 2): the `←` back button + the
+/// reordered `[SPREAD VIEW | FOCUS VIEW]` toggle in one clean row.
+const _activeHeaderHeight = 56.0;
 
 /// The two switchable view modes of the Digital Table.
 enum TableViewMode {
@@ -489,6 +486,11 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
+    // Step 1 — the pre-table spread selection view (default entry state):
+    // avatar + system switcher + "Choose Spread" + one swipeable spread row.
+    if (!ctrl.isSpreadActive) {
+      return const _SpreadSelectionView();
+    }
     final pack = context.watch<DeckPackController>().activePack;
     final flight = _flight;
     final viewMode = ctrl.isSpreadOverview
@@ -499,21 +501,19 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
       child: Column(
         children: [
           SizedBox(
-            height: _headerHeight,
-            child: _TableHeader(
-              ctrl: ctrl,
+            height: _activeHeaderHeight,
+            child: _ActiveTableHeader(
               mode: viewMode,
               toggleKey: _viewModeToggleKey,
               onModeChanged: (mode) {
                 HapticFeedback.selectionClick();
                 ctrl.setSpreadOverview(mode == TableViewMode.spread);
               },
+              onBack: () {
+                HapticFeedback.selectionClick();
+                context.read<SpreadController>().exitSpread();
+              },
             ),
-          ),
-          Flexible(
-            flex: 0,
-            fit: FlexFit.loose,
-            child: const SpreadBlueprintCarousel(),
           ),
           Expanded(
             child: LayoutBuilder(
@@ -597,104 +597,127 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
   }
 }
 
-class _TableHeader extends StatelessWidget {
-  const _TableHeader({
-    required this.ctrl,
+/// Step 2 header — the clean active-table bar: the `←` back button (top-left)
+/// that exits the spread back to Step 1, and the reordered
+/// `[SPREAD VIEW | FOCUS VIEW]` toggle (SPREAD VIEW first/left, default).
+class _ActiveTableHeader extends StatelessWidget {
+  const _ActiveTableHeader({
     required this.mode,
     required this.toggleKey,
     required this.onModeChanged,
+    required this.onBack,
   });
 
-  final SpreadController ctrl;
   final TableViewMode mode;
   final GlobalKey toggleKey;
   final ValueChanged<TableViewMode> onModeChanged;
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
         Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Row 1 — the [ FOCUS VIEW | SPREAD VIEW ] segmented toggle,
-              // top-center where the old static title used to sit.
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: _ViewModeToggle(
-                  key: toggleKey,
-                  mode: mode,
-                  onChanged: onModeChanged,
-                ),
-              ),
-              const SizedBox(height: 4),
-              // Row 2 — the 3-system segmented selector.
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: _SystemSelector(ctrl: ctrl),
-              ),
-              const SizedBox(height: 6),
-              // Row 3 — pack picker + spread picker, two balanced pills.
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  children: [
-                    const Expanded(child: _SystemPackPill()),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: GestureDetector(
-                        key: const ValueKey('spread-selector-pill'),
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => SpreadSelectorSheet.show(context),
-                        child: Container(
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 7),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface.withValues(alpha: 0.8),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  ctrl.spreadLabel.toUpperCase(),
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.jetBrainsMono(
-                                    fontSize: 8.5,
-                                    letterSpacing: 1.4,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.lavender,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.keyboard_arrow_down,
-                                size: 13,
-                                color: AppColors.lavender,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: _ViewModeToggle(
+              key: toggleKey,
+              mode: mode,
+              onChanged: onModeChanged,
+            ),
           ),
         ),
-        // Top-left profile avatar, aligned with the FOCUS/SPREAD toggle.
-        const Positioned(
-          left: 12,
-          top: 6,
-          child: _ProfileAvatarButton(),
+        Positioned(
+          left: 8,
+          top: 0,
+          bottom: 0,
+          child: Center(child: _BackButton(onTap: onBack)),
         ),
       ],
+    );
+  }
+}
+
+/// The `←` back button (top-left) on the active table — replaces the profile
+/// avatar while a spread is running.
+class _BackButton extends StatelessWidget {
+  const _BackButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      key: const ValueKey('table-back-button'),
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.surface.withValues(alpha: 0.9),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Icon(
+          Icons.arrow_back,
+          size: 20,
+          color: AppColors.lavender,
+        ),
+      ),
+    );
+  }
+}
+
+/// Step 1 — the pre-table spread selection view (the DEFAULT entry state of
+/// the Table tab before a spread is started): the top-left profile avatar,
+/// the [TAROT | LENORMAND | RUNES] system switcher, a clean "Choose Spread"
+/// title, and ONE horizontal swipeable row of tall spread blueprint cards.
+class _SpreadSelectionView extends StatelessWidget {
+  const _SpreadSelectionView();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      bottom: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 48,
+            child: Stack(
+              children: [
+                Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: _SystemSelector(
+                      ctrl: context.watch<SpreadController>(),
+                    ),
+                  ),
+                ),
+                const Positioned(
+                  left: 12,
+                  top: 6,
+                  child: _ProfileAvatarButton(),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+            child: Text(
+              'Choose Spread',
+              style: GoogleFonts.cormorantGaramond(
+                fontSize: 30,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const SpreadBlueprintCarousel(),
+        ],
+      ),
     );
   }
 }
@@ -782,7 +805,8 @@ class _SystemSelector extends StatelessWidget {
   }
 }
 
-/// Focus ↔ Spread view switch in the top table bar (pill segmented toggle).
+/// Spread ↔ Focus view switch in the top table bar (pill segmented toggle):
+/// SPREAD VIEW first (left, active by default), FOCUS VIEW second (right).
 class _ViewModeToggle extends StatelessWidget {
   const _ViewModeToggle({super.key, required this.mode, required this.onChanged});
 
@@ -802,14 +826,14 @@ class _ViewModeToggle extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _ModeSegment(
-            label: 'FOCUS VIEW',
-            active: mode == TableViewMode.focus,
-            onTap: () => onChanged(TableViewMode.focus),
-          ),
-          _ModeSegment(
             label: 'SPREAD VIEW',
             active: mode == TableViewMode.spread,
             onTap: () => onChanged(TableViewMode.spread),
+          ),
+          _ModeSegment(
+            label: 'FOCUS VIEW',
+            active: mode == TableViewMode.focus,
+            onTap: () => onChanged(TableViewMode.focus),
           ),
         ],
       ),
@@ -891,65 +915,6 @@ class _SystemSegment extends StatelessWidget {
             fontWeight: FontWeight.w700,
             color: active ? AppColors.lavender : AppColors.textMuted,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The pack picker pill (header Row 3 left) — filtered strictly to packs
-/// of the ACTIVE divination system (DeckPickerSheet branches on it).
-class _SystemPackPill extends StatelessWidget {
-  const _SystemPackPill();
-
-  @override
-  Widget build(BuildContext context) {
-    final ctrl = context.watch<SpreadController>();
-    final packs = context.watch<DeckPackController>();
-    final label = switch (ctrl.system) {
-      DivinationSystem.tarot => packs.activePack.name.toUpperCase(),
-      DivinationSystem.lenormand => packs.activeLenormandPack.name.toUpperCase(),
-      DivinationSystem.runes => packs.activeRunePack.name.toUpperCase(),
-    };
-    return GestureDetector(
-      key: const ValueKey('system-pack-pill'),
-      behavior: HitTestBehavior.opaque,
-      onTap: () => DeckPickerSheet.show(context, system: ctrl.system),
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              ctrl.system.packGlyph,
-              style: const TextStyle(fontSize: 11),
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 8.5,
-                  letterSpacing: 1.4,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.lavender,
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(
-              Icons.keyboard_arrow_down,
-              size: 13,
-              color: AppColors.lavender,
-            ),
-          ],
         ),
       ),
     );

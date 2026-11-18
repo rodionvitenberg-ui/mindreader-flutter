@@ -75,7 +75,7 @@ class ProfileFieldLabel extends StatelessWidget {
   }
 }
 
-/// Zero-Knowledge note rendered under a local-only field.
+/// On-device note rendered under a local-only field.
 class ProfilePrivacyNote extends StatelessWidget {
   const ProfilePrivacyNote(this.text, {super.key});
 
@@ -85,22 +85,13 @@ class ProfilePrivacyNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.lock_outline, size: 13, color: AppColors.harmonyEmerald),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 10.5,
-                height: 1.4,
-                color: AppColors.textMuted.withValues(alpha: 0.9),
-              ),
-            ),
-          ),
-        ],
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 10.5,
+          height: 1.4,
+          color: AppColors.textMuted.withValues(alpha: 0.9),
+        ),
       ),
     );
   }
