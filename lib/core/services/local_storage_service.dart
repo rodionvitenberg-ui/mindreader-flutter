@@ -28,6 +28,9 @@ class LocalStorageService {
   static const _appLanguageKey = 'app_language';
   static const _proUnlockedKey = 'is_pro_unlocked';
 
+  // Digital Table view mode (Iteration 4): SPREAD VIEW is the default.
+  static const _tableSpreadOverviewKey = 'table_view_spread';
+
   static const _userProfileKey = 'user_profile_v1';
 
   Future<List<Map<String, dynamic>>> loadHistory() async {
@@ -230,6 +233,17 @@ class LocalStorageService {
   Future<void> saveAstralHouseSystem(String system) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_astralHouseSystemKey, system);
+  }
+
+  /// True when the Digital Table last rendered in SPREAD VIEW (default true).
+  Future<bool> loadTableSpreadOverview() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_tableSpreadOverviewKey) ?? true;
+  }
+
+  Future<void> saveTableSpreadOverview(bool isSpread) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_tableSpreadOverviewKey, isSpread);
   }
 
   // ---- Local-only user profile (Zero-Knowledge, device storage) ----

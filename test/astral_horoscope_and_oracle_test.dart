@@ -9,6 +9,7 @@ import 'package:mindreader/features/astral/natal_profile_detail_sheet.dart';
 import 'package:mindreader/features/astral/synastry_summary_sheet.dart';
 import 'package:mindreader/features/astral/widgets/daily_horoscope_card.dart';
 import 'package:mindreader/features/digital_table/table_workspace.dart';
+import 'package:mindreader/state/app_settings_controller.dart';
 import 'package:mindreader/state/deck_pack_controller.dart';
 import 'package:mindreader/state/session_history_controller.dart';
 import 'package:mindreader/state/spread_controller.dart';
@@ -304,6 +305,7 @@ void main() {
             ChangeNotifierProvider(create: (_) => DeckPackController()),
             ChangeNotifierProvider(
                 create: (_) => SessionHistoryController()..load()),
+            ChangeNotifierProvider(create: (_) => AppSettingsController()),
             ChangeNotifierProvider(create: (_) => UserProfileController()),
           ],
           child: MaterialApp(

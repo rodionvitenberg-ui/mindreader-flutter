@@ -11,12 +11,13 @@ import '../almanac/almanac_screen.dart';
 import '../astral/astral_screen.dart';
 import '../camera_scan/camera_scan_screen.dart';
 import '../digital_table/table_workspace.dart';
-import '../profile/profile_screen.dart';
 
-/// Bottom dock: Camera (0) | Table (1, default) | Almanac (2) | Astral (3) |
-/// Profile (4). The Table tab hosts the 3-pane horizontal workspace
-/// (Digital Table ⇄ Oracle AI Chat ⇄ History). Rituals and Settings are no
-/// longer dock actions — they live on the full-page ProfileScreen.
+/// Bottom dock: Camera (0) | Table (1, default) | Almanac (2) | Astral (3).
+/// Profile moved OUT of the dock — it is now pushed full-page from the
+/// top-left profile avatar on the Digital Table header. Index 4 is RESERVED
+/// for the upcoming ACADEMY learning tab (append a child + a tab entry when
+/// that sprint lands). Rituals and Settings live on the full-page
+/// ProfileScreen.
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key});
 
@@ -79,7 +80,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             onOpenOracle: _openOracle,
             browseZodiacSign: _browseSign,
           ),
-          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: _GlassNavBar(index: _index, onTap: _switchTo),
@@ -93,13 +93,14 @@ class _GlassNavBar extends StatelessWidget {
   final int index;
   final ValueChanged<int> onTap;
 
-  /// The 5 real tabs, in IndexedStack order.
+  /// The 4 core tabs, in IndexedStack order. The 5th slot (Academy) is
+  /// reserved for the upcoming learning sprint — add `Icons.school_outlined,
+  /// 'nav.academy'` here and a matching IndexedStack child.
   static const _tabs = [
     (Icons.camera_alt_outlined, 'nav.camera'),
     (Icons.style_outlined, 'nav.table'),
     (Icons.menu_book_outlined, 'nav.almanac'),
     (Icons.auto_awesome_outlined, 'nav.astral'),
-    (Icons.person_outline, 'nav.profile'),
   ];
 
   @override
@@ -155,7 +156,7 @@ class _NavItem extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: color),
           const SizedBox(height: 2),
-          // Six dock segments must fit a 360 px screen: the label scales
+          // Four dock segments must fit a 360 px screen: the label scales
           // down rather than overflowing.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),

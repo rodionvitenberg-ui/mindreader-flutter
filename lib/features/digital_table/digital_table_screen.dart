@@ -13,8 +13,11 @@ import '../../core/models/rune_stone.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/models/tarot_deck_pack.dart';
 import '../../core/theme/app_colors.dart';
+import '../../state/app_settings_controller.dart';
 import '../../state/deck_pack_controller.dart';
 import '../../state/spread_controller.dart';
+import '../../state/user_profile_controller.dart';
+import '../profile/profile_screen.dart';
 import 'widgets/board_pillar_view.dart';
 import 'widgets/deal_lock_prompt.dart';
 import 'widgets/deck_picker_sheet.dart';
@@ -26,6 +29,7 @@ import 'widgets/reading_bottom_sheet.dart';
 import 'widgets/rune_stone_3d_widget.dart';
 import 'widgets/shuffle_physics.dart';
 import 'widgets/slotted_divination_card.dart';
+import 'widgets/spread_blueprint_carousel.dart';
 import 'widgets/spread_selector_sheet.dart';
 import 'widgets/spread_threads_layer.dart';
 import 'widgets/tarot_card_3d_widget.dart';
@@ -90,7 +94,9 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
   final GlobalKey _deckKey = GlobalKey();
   final GlobalKey _contentKey = GlobalKey();
 
-  TableViewMode _viewMode = TableViewMode.focus;
+  /// Hook on the [ FOCUS VIEW | SPREAD VIEW ] toggle for a future onboarding
+  /// tooltip (kept as a stable key; no consumer yet).
+  final GlobalKey _viewModeToggleKey = GlobalKey();
 
   AnimationController? _flightCtl;
   _CardFlight? _flight;
@@ -373,7 +379,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
           (design.height + 1.12 * deckHeight),
     );
     final slotW = deckWidth * scale;
-    final deckW = (slotW * 1.12).clamp(overviewDeckWidth, 200.0);
+    final deckW = math.min(slotW * 1.12, 200.0);
     final deckH = deckW * deckHeight / deckWidth;
     final miniDeck = _OverviewDeck(
       system: ctrl.system,
@@ -485,6 +491,9 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     final ctrl = context.watch<SpreadController>();
     final pack = context.watch<DeckPackController>().activePack;
     final flight = _flight;
+    final viewMode = ctrl.isSpreadOverview
+        ? TableViewMode.spread
+        : TableViewMode.focus;
     return SafeArea(
       bottom: false,
       child: Column(
@@ -493,17 +502,23 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
             height: _headerHeight,
             child: _TableHeader(
               ctrl: ctrl,
-              mode: _viewMode,
+              mode: viewMode,
+              toggleKey: _viewModeToggleKey,
               onModeChanged: (mode) {
                 HapticFeedback.selectionClick();
-                setState(() => _viewMode = mode);
+                ctrl.setSpreadOverview(mode == TableViewMode.spread);
               },
             ),
+          ),
+          Flexible(
+            flex: 0,
+            fit: FlexFit.loose,
+            child: const SpreadBlueprintCarousel(),
           ),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                if (_viewMode == TableViewMode.spread) {
+                if (viewMode == TableViewMode.spread) {
                   return _buildSpreadOverview(ctrl, pack, constraints);
                 }
                 return SingleChildScrollView(
@@ -586,83 +601,148 @@ class _TableHeader extends StatelessWidget {
   const _TableHeader({
     required this.ctrl,
     required this.mode,
+    required this.toggleKey,
     required this.onModeChanged,
   });
 
   final SpreadController ctrl;
   final TableViewMode mode;
+  final GlobalKey toggleKey;
   final ValueChanged<TableViewMode> onModeChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Row 1 — the [ FOCUS VIEW | SPREAD VIEW ] segmented toggle,
-          // top-center where the old static title used to sit.
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: _ViewModeToggle(mode: mode, onChanged: onModeChanged),
-          ),
-          const SizedBox(height: 4),
-          // Row 2 — the 3-system segmented selector.
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: _SystemSelector(ctrl: ctrl),
-          ),
-          const SizedBox(height: 6),
-          // Row 3 — pack picker + spread picker, two balanced pills.
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                const Expanded(child: _SystemPackPill()),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: GestureDetector(
-                    key: const ValueKey('spread-selector-pill'),
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => SpreadSelectorSheet.show(context),
-                    child: Container(
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              ctrl.spreadLabel.toUpperCase(),
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 8.5,
-                                letterSpacing: 1.4,
-                                fontWeight: FontWeight.w700,
+    return Stack(
+      children: [
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Row 1 — the [ FOCUS VIEW | SPREAD VIEW ] segmented toggle,
+              // top-center where the old static title used to sit.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: _ViewModeToggle(
+                  key: toggleKey,
+                  mode: mode,
+                  onChanged: onModeChanged,
+                ),
+              ),
+              const SizedBox(height: 4),
+              // Row 2 — the 3-system segmented selector.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: _SystemSelector(ctrl: ctrl),
+              ),
+              const SizedBox(height: 6),
+              // Row 3 — pack picker + spread picker, two balanced pills.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    const Expanded(child: _SystemPackPill()),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GestureDetector(
+                        key: const ValueKey('spread-selector-pill'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => SpreadSelectorSheet.show(context),
+                        child: Container(
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface.withValues(alpha: 0.8),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.border),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  ctrl.spreadLabel.toUpperCase(),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.jetBrainsMono(
+                                    fontSize: 8.5,
+                                    letterSpacing: 1.4,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.lavender,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.keyboard_arrow_down,
+                                size: 13,
                                 color: AppColors.lavender,
                               ),
-                            ),
+                            ],
                           ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.keyboard_arrow_down,
-                            size: 13,
-                            color: AppColors.lavender,
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
+        // Top-left profile avatar, aligned with the FOCUS/SPREAD toggle.
+        const Positioned(
+          left: 12,
+          top: 6,
+          child: _ProfileAvatarButton(),
+        ),
+      ],
+    );
+  }
+}
+
+
+/// Circular obsidian-lavender profile avatar (36×36) in the header's top-left
+/// corner: the reader's initial (or an arcane glyph when the profile is
+/// unnamed) + a thin lavender PRO ring when unlocked. Tapping pushes the
+/// full-page [ProfileScreen], keeping the bottom dock clean.
+class _ProfileAvatarButton extends StatelessWidget {
+  const _ProfileAvatarButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final name = context.watch<UserProfileController>().displayName.trim();
+    final isPro = context.watch<AppSettingsController>().isProUnlocked;
+    final initial = name.isEmpty
+        ? '✦'
+        : String.fromCharCode(name.runes.first).toUpperCase();
+    return GestureDetector(
+      key: const ValueKey('profile-avatar-button'),
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ProfileScreen()),
+        );
+      },
+      child: Container(
+        width: 36,
+        height: 36,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.surface.withValues(alpha: 0.9),
+          border: Border.all(
+            color: isPro ? AppColors.lavender : AppColors.border,
+            width: isPro ? 1.6 : 1.0,
+          ),
+        ),
+        child: Text(
+          initial,
+          style: GoogleFonts.cormorantGaramond(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: AppColors.lavender,
+          ),
+        ),
       ),
     );
   }
@@ -704,7 +784,7 @@ class _SystemSelector extends StatelessWidget {
 
 /// Focus ↔ Spread view switch in the top table bar (pill segmented toggle).
 class _ViewModeToggle extends StatelessWidget {
-  const _ViewModeToggle({required this.mode, required this.onChanged});
+  const _ViewModeToggle({super.key, required this.mode, required this.onChanged});
 
   final TableViewMode mode;
   final ValueChanged<TableViewMode> onChanged;
@@ -988,6 +1068,13 @@ class _OverviewDeckState extends State<_OverviewDeck>
     widget.onTap();
   }
 
+  /// Horizontal swipe directly on the overview deck/rune cluster shuffles
+  /// the remaining stack (same touch-scoped weave as the hero deck).
+  void _onShuffle(DragEndDetails details) {
+    HapticFeedback.selectionClick();
+    context.read<SpreadController>().weaveShuffleRemaining(swaps: 3);
+  }
+
   @override
   Widget build(BuildContext context) {
     final w = widget.width;
@@ -995,6 +1082,7 @@ class _OverviewDeckState extends State<_OverviewDeck>
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _onTap,
+      onHorizontalDragEnd: _onShuffle,
       child: AnimatedBuilder(
         animation: _pulse,
         builder: (context, _) {
@@ -1061,7 +1149,7 @@ class _OverviewSlotState extends State<_OverviewSlot>
   /// already-dealt cards (no replay).
   late final AnimationController _entrance = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 550),
+    duration: const Duration(milliseconds: 750),
     value: widget.slot.card == null ? 0.0 : 1.0,
   );
 
@@ -1085,6 +1173,9 @@ class _OverviewSlotState extends State<_OverviewSlot>
     final slot = widget.slot;
     final card = slot.card;
     if (card == null) {
+      final shorts = context.read<SpreadController>().spreadSlotRoleShorts;
+      final shortRole =
+          widget.slotIndex < shorts.length ? shorts[widget.slotIndex] : 'Clarifier';
       return Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(deckWidth * 0.06),
@@ -1093,7 +1184,7 @@ class _OverviewSlotState extends State<_OverviewSlot>
         alignment: Alignment.topCenter,
         padding: const EdgeInsets.only(top: 14),
         child: Text(
-          slot.role.toUpperCase(),
+          '${widget.slotIndex + 1} · $shortRole',
           textAlign: TextAlign.center,
           style: GoogleFonts.jetBrainsMono(
             fontSize: 9,

@@ -14,10 +14,26 @@ import 'package:provider/provider.dart';
 /// (dormant → ignited), the clarifier loop and the phygital camera-to-
 /// table sync.
 void main() {
+  /// SPREAD VIEW is the default; deal-driven flows opt back into FOCUS VIEW.
+  Future<void> focusMode(WidgetTester tester) async {
+    await tester.tap(find.text('FOCUS VIEW'));
+    await tester.pump();
+  }
+
   /// Deals one card from the tactile deck and settles the spring flight.
   Future<void> dealOne(WidgetTester tester) async {
     final deck = find.byType(InteractiveDeckWidget);
-    await tester.dragFrom(tester.getCenter(deck), const Offset(0, 90));
+    // The clarifier flow may leave the deck scrolled off the top after
+    // flipping cards — bring it back into the viewport first.
+    await tester.ensureVisible(deck);
+    await tester.pump();
+    // Drag from near the deck's TOP edge (always inside the viewport, even
+    // when the clarifier banner shrinks the canvas) rather than its center.
+    final rect = tester.getRect(deck);
+    await tester.dragFrom(
+      Offset(rect.center.dx, rect.top + 40),
+      const Offset(0, 90),
+    );
     await tester.pump(); // slot materializes; flight starts
     await tester.pump(const Duration(milliseconds: 700)); // spring flight
     await tester.pump();
@@ -137,6 +153,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     await dealOne(tester);
     await dealOne(tester);
@@ -190,6 +207,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
     await dealFlipAndSynthesize(tester);
 
     // The synthesis ends with 3 AI-generated +1 CARD questions that
@@ -243,6 +261,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
     await dealFlipAndSynthesize(tester);
 
     // Empty input → gentle prompt + keyboard focus, nothing armed.
@@ -277,6 +296,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
     for (var i = 0; i < 3; i++) {
       await dealOne(tester);
     }
@@ -298,6 +318,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
     await dealFlipAndSynthesize(tester);
 
     // The same Gemini capsule drives the conversation on the chat pane.
@@ -320,6 +341,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     // Mock camera scan of a 3-card physical spread.
     await tester.tap(find.text('CAMERA'));

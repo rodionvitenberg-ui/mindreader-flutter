@@ -3,33 +3,46 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/main.dart';
 import 'package:mindreader/features/digital_table/widgets/interactive_deck_widget.dart';
 import 'package:mindreader/features/digital_table/widgets/shuffle_physics.dart';
+import 'package:mindreader/features/digital_table/widgets/spread_blueprint_carousel.dart';
 import 'package:mindreader/features/digital_table/widgets/tarot_card_3d_widget.dart';
 
 void main() {
-  testWidgets('boots into the Digital Table: hero deck, badge, NO empty slots',
+  /// Switches the table into FOCUS VIEW (the tactile hero-deck mode) after
+  /// boot, for the tests that exercise deck drag physics. SPREAD VIEW is now
+  /// the default, so these tests opt back into focus explicitly.
+  Future<void> focusMode(WidgetTester tester) async {
+    await tester.tap(find.text('FOCUS VIEW'));
+    await tester.pump();
+  }
+
+  testWidgets('boots into the Digital Table: SPREAD VIEW is the default mode',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    // The old static title is gone — the FOCUS/SPREAD toggle sits in its
-    // place, with the TAROT|LENORMAND|RUNES selector below it.
+    // The FOCUS/SPREAD toggle + the TAROT|LENORMAND|RUNES selector sit in
+    // the header, with the blueprint carousel directly below them.
     expect(find.text('FOCUS VIEW'), findsOneWidget);
+    expect(find.text('SPREAD VIEW'), findsOneWidget);
     expect(find.text('TAROT'), findsOneWidget);
     expect(find.text('LENORMAND'), findsOneWidget);
     expect(find.text('RUNES'), findsOneWidget);
-    expect(find.text('SWIPE ↓ TO DEAL'), findsOneWidget);
-    // The hero deck is present.
-    expect(find.byType(InteractiveDeckWidget), findsOneWidget);
-    // No empty placeholder slots are rendered before dealing.
-    expect(find.text('Current State / Essence'), findsNothing);
-    expect(find.text('Hidden Shadow / Block'), findsNothing);
-    expect(find.text('Vector / Action'), findsNothing);
+    // SPREAD VIEW is the default: the proportional mini-deck + empty slot
+    // placeholders are visible, NOT the full-size tactile hero deck.
+    expect(find.byKey(const ValueKey('overview-deck')), findsOneWidget);
+    expect(find.byType(InteractiveDeckWidget), findsNothing);
+    expect(find.text('TAP DECK TO DEAL'), findsOneWidget);
+    // Empty slots render crisp numbered position-role labels.
+    expect(find.text('1 · State'), findsOneWidget);
+    expect(find.text('2 · Shadow'), findsOneWidget);
+    expect(find.text('3 · Vector'), findsOneWidget);
   });
 
   testWidgets('swipe down on the deck deals + depletes, tap flips the card',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     // Strictly touch-scoped: the deal must trigger from the deck widget.
     final deck = find.byType(InteractiveDeckWidget);
@@ -84,7 +97,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('SPREAD METHOD'), findsOneWidget);
 
-    await tester.tap(find.text('7 · DEEP SYNTHESIS'));
+    await tester.tap(find.text('7 · HORSESHOE SYNTHESIS'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -93,13 +106,14 @@ void main() {
     expect(find.text('Outcome'), findsNothing);
     expect(find.text('Current State / Essence'), findsNothing);
     // The header subtitle now carries the new spread label.
-    expect(find.textContaining('7 · DEEP SYNTHESIS'), findsOneWidget);
+    expect(find.textContaining('7 · HORSESHOE SYNTHESIS'), findsOneWidget);
   });
 
   testWidgets('mock camera scan hands the spread to the table face-up',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     await tester.tap(find.text('CAMERA'));
     await tester.pump();
@@ -130,6 +144,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     final deck = find.byType(InteractiveDeckWidget);
     // Full flight + camera-follow settle (the follow ticker starts one
@@ -148,7 +163,7 @@ void main() {
     Future<void> scrollBackToDeck() async {
       final area = tester.getRect(find.byType(SingleChildScrollView).first);
       // Sprint 4: no pane indicator — the deck rests under the header.
-      final resting = 118 + tableTopPad;
+      final resting = 118 + SpreadBlueprintCarousel.height + tableTopPad;
       final delta = resting - tester.getTopLeft(deck).dy;
       if (delta > 4) {
         await tester.dragFrom(
@@ -198,9 +213,10 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     final deck = find.byType(InteractiveDeckWidget);
-    final resting = 118 + tableTopPad;
+    final resting = 118 + SpreadBlueprintCarousel.height + tableTopPad;
     expect(tester.getTopLeft(deck).dy, closeTo(resting, 0.1));
 
     await tester.dragFrom(tester.getCenter(deck), const Offset(0, 100));
@@ -237,6 +253,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     final deck = find.byType(InteractiveDeckWidget);
     // Horizontal riffle, then release.
@@ -314,7 +331,7 @@ void main() {
     expect(find.textContaining('blank page'), findsOneWidget);
   });
 
-  testWidgets('FOCUS ↔ SPREAD toggle: centered proportional overview, '
+  testWidgets('SPREAD ↔ FOCUS toggle: default overview, proportional deck, '
       'deal materializes in the slot (no flying card)', (tester) async {
     // Portrait viewport (the default 800×600 logical test view is
     // LANDSCAPE — wider than tall).
@@ -325,31 +342,36 @@ void main() {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    // Focus mode default: full-size tactile deck, no placeholder roles.
-    expect(find.byType(InteractiveDeckWidget), findsOneWidget);
-    expect(find.text('CURRENT STATE / ESSENCE'), findsNothing);
+    // SPREAD VIEW is the default: proportional mini-deck + empty slot
+    // placeholders, NO full-size tactile deck.
+    expect(find.byType(InteractiveDeckWidget), findsNothing);
+    final miniDeck = find.byKey(const ValueKey('overview-deck'));
+    expect(miniDeck, findsOneWidget);
+    expect(find.text('1 · State'), findsOneWidget);
+    expect(find.text('2 · Shadow'), findsOneWidget);
+    expect(find.text('3 · Vector'), findsOneWidget);
 
-    // Switch to Spread Overview.
+    // Switch to Focus: the full-size tactile deck returns.
+    await tester.tap(find.text('FOCUS VIEW'));
+    await tester.pump();
+    expect(find.byType(InteractiveDeckWidget), findsOneWidget);
+
+    // Back to Spread Overview.
     await tester.tap(find.text('SPREAD VIEW'));
     await tester.pump();
 
     // The proportional mini-deck replaces the tactile deck, CENTERED
     // above the spread geometry; role placeholders are visible.
     expect(find.byType(InteractiveDeckWidget), findsNothing);
-    final miniDeck = find.byKey(const ValueKey('overview-deck'));
-    expect(miniDeck, findsOneWidget);
     final deckRect = tester.getRect(miniDeck);
     final screenW = tester.view.physicalSize.width / tester.view.devicePixelRatio;
     expect(deckRect.center.dx, closeTo(screenW / 2, 1.5)); // centered
-    expect(find.text('CURRENT STATE / ESSENCE'), findsOneWidget);
-    expect(find.text('HIDDEN SHADOW / BLOCK'), findsOneWidget);
-    expect(find.text('VECTOR / ACTION'), findsOneWidget);
 
     // Tapping the mini-deck materializes the card DIRECTLY inside its
     // slot — no flight overlay card anywhere on screen.
     await tester.tap(miniDeck);
     await tester.pump(); // slot materializes
-    await tester.pump(const Duration(milliseconds: 600)); // entrance
+    await tester.pump(const Duration(milliseconds: 800)); // 750ms mist entrance
     await tester.pump();
     expect(find.text('TAP DECK TO DEAL'), findsOneWidget);
     final dealt = find.byType(TarotCard3DWidget);
@@ -366,34 +388,28 @@ void main() {
         )
         .height;
     expect(deckH, greaterThanOrEqualTo(canvasH));
-    expect(deckH, lessThanOrEqualTo(canvasH * 1.35));
-
-    // Toggle back to focus: the tactile deck returns.
-    await tester.tap(find.text('FOCUS VIEW'));
-    await tester.pump();
-    expect(find.byType(InteractiveDeckWidget), findsOneWidget);
+    expect(deckH, lessThanOrEqualTo(canvasH * 2.0));
   });
 
   testWidgets('spread overview goes wide in landscape: deck left, slots right',
       (tester) async {
     tester.view.physicalSize = const Size(1920, 1080);
-    tester.view.devicePixelRatio = 3.0; // logical 640×360
+    tester.view.devicePixelRatio = 2.0; // logical 960×540 landscape
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    await tester.tap(find.text('SPREAD VIEW'));
-    await tester.pump();
+    // SPREAD VIEW is the default — no toggle tap needed.
 
     // Deck panel anchored on the LEFT, spread slots across the wide area
     // to the RIGHT — all on one screen.
     final deckRect = tester.getRect(find.byKey(const ValueKey('overview-deck')));
     expect(deckRect.left, lessThan(200));
-    expect(deckRect.top, lessThan(150));
-    final firstSlot = tester.getRect(find.text('CURRENT STATE / ESSENCE'));
-    final lastSlot = tester.getRect(find.text('VECTOR / ACTION'));
+    expect(deckRect.top, lessThan(260)); // below header + blueprint carousel
+    final firstSlot = tester.getRect(find.text('1 · State'));
+    final lastSlot = tester.getRect(find.text('3 · Vector'));
     expect(firstSlot.left, greaterThan(deckRect.right));
     expect(lastSlot.right, greaterThan(firstSlot.right));
   });

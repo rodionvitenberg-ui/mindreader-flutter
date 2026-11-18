@@ -13,6 +13,12 @@ import 'package:provider/provider.dart';
 /// Sprint 4: panes switch EXCLUSIVELY by horizontal swipe (the top 3-pill
 /// indicator bar was removed).
 void main() {
+  /// SPREAD VIEW is the default; deal-driven flows opt back into FOCUS VIEW.
+  Future<void> focusMode(WidgetTester tester) async {
+    await tester.tap(find.text('FOCUS VIEW'));
+    await tester.pump();
+  }
+
   Future<void> dealOne(WidgetTester tester) async {
     final deck = find.byType(InteractiveDeckWidget);
     await tester.dragFrom(tester.getCenter(deck), const Offset(0, 90));
@@ -105,6 +111,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     final deck = find.byType(InteractiveDeckWidget);
     await tester.dragFrom(tester.getCenter(deck), const Offset(90, 0));
@@ -130,6 +137,7 @@ void main() {
       '(cards + conversation)', (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
     await dealFlipAndSynthesize(tester);
 
     // One conversational turn, so the dialog is captured too.

@@ -313,8 +313,10 @@ Size spreadCanvasDesignSizeForCount(int count, {int? totalSlots}) {
     3 => Size(3 * w + 2 * g, h),
     4 => Size(2 * w + g, 2 * h + g),
     5 => Size(3 * w + 2 * g, 3 * h + 2 * g),
+    6 => Size(3 * w + 2 * g, 3 * h + 2 * g),
     7 => Size(3 * w + 2 * g, 3 * h + 2 * g),
     9 => Size(3 * w + 2 * g, 3 * h + 2 * g),
+    10 => Size(4 * w + 3 * g, 4 * h + 3 * g),
     _ => Size(3 * w + 2 * g, 3 * h + 2 * g),
   };
   final extra = (totalSlots ?? count) - count;
@@ -345,12 +347,32 @@ Offset spreadSlotDesignTopLeftForCount(int count, int index,
         const order = [4, 5, 6, 7, 8]; // the 3×3 cell index of each arm
         final cell = order[index];
         return Offset((cell % 3) * (w + g), (cell ~/ 3) * (h + g));
+      case 6: // Career & Path Crossroads — 1-2-3 branching tree
+        const order = [1, 0, 2, 0, 1, 2];
+        const row = [0, 1, 1, 2, 2, 2];
+        return Offset(order[index] * (w + g), row[index] * (h + g));
       case 7: // Heimdall's Bridge / Deep Synthesis — 3-1-3
         if (index < 3) return Offset(index * (w + g), 0);
         if (index == 3) return Offset(w + g, h + g);
         return Offset((index - 4) * (w + g), 2 * (h + g));
       case 9: // 3×3 portrait box — reading order left→right, top→bottom
         return Offset((index % 3) * (w + g), (index ~/ 3) * (h + g));
+      case 10: // Celtic Cross — 6-card cross + 4-card staff on the right
+        const cells = [
+          [1, 1], // 0 significator (center)
+          [1, 1], // 1 crossing (offset below, laid across the center)
+          [1, 0], // 2 crown
+          [1, 2], // 3 foundation
+          [0, 1], // 4 past
+          [2, 1], // 5 future
+          [3, 0], // 6 staff 1
+          [3, 1], // 7 staff 2
+          [3, 2], // 8 staff 3
+          [3, 3], // 9 staff 4
+        ];
+        final cell = cells[index];
+        final crossingOffset = index == 1 ? Offset(w * 0.35, h * 0.28) : Offset.zero;
+        return Offset(cell[0] * (w + g), cell[1] * (h + g)) + crossingOffset;
       default:
         return Offset((index % 3) * (w + g), (index ~/ 3) * (h + g));
     }
@@ -371,8 +393,10 @@ int _spreadBaseRowsForCount(int count) => switch (count) {
       3 => 1,
       4 => 2,
       5 => 3,
+      6 => 3,
       7 => 3,
       9 => 3,
+      10 => 4,
       _ => 3,
     };
 
@@ -382,8 +406,10 @@ int _spreadColsForCount(int count) => switch (count) {
       3 => 3,
       4 => 2,
       5 => 3,
+      6 => 3,
       7 => 3,
       9 => 3,
+      10 => 4,
       _ => 3,
     };
 

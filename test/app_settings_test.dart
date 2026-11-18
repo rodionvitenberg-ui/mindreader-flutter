@@ -15,7 +15,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await tester.tap(find.text('PROFILE'));
+    await tester.tap(find.byKey(const ValueKey('profile-avatar-button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
   }

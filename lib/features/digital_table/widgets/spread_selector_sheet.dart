@@ -8,7 +8,9 @@ import '../../../core/models/lenormand_spread.dart';
 import '../../../core/models/rune_cast.dart';
 import '../../../core/models/spread_type.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../state/app_settings_controller.dart';
 import '../../../state/spread_controller.dart';
+import '../../shell/widgets/pro_subscription_sheet.dart';
 
 /// Compact spread switcher opened from the header's spread picker pill
 /// (`3 · TRIAD FLOW ▾`) — the options are ALWAYS the active system's
@@ -20,6 +22,7 @@ class SpreadSelectorSheet extends StatelessWidget {
   static Future<void> show(BuildContext context) {
     return showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.55),
       builder: (_) => const SpreadSelectorSheet(),
@@ -29,6 +32,7 @@ class SpreadSelectorSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
+    final proUnlocked = context.watch<AppSettingsController>().isProUnlocked;
     final title = switch (ctrl.system) {
       DivinationSystem.tarot => 'SPREAD METHOD',
       DivinationSystem.lenormand => 'LENORMAND SPREAD',
@@ -72,9 +76,15 @@ class SpreadSelectorSheet extends StatelessWidget {
                     count: SpreadType.values[i].cardCount,
                     label: SpreadType.values[i].label,
                     focusLine: SpreadType.values[i].focusLine,
+                    isPro: SpreadType.values[i].isPro,
+                    locked: SpreadType.values[i].isPro && !proUnlocked,
                     active: SpreadType.values[i] == ctrl.spreadType,
                     onTap: () {
                       HapticFeedback.selectionClick();
+                      if (SpreadType.values[i].isPro && !proUnlocked) {
+                        ProSubscriptionSheet.show(context);
+                        return;
+                      }
                       context
                           .read<SpreadController>()
                           .setSpreadType(SpreadType.values[i]);
@@ -91,9 +101,15 @@ class SpreadSelectorSheet extends StatelessWidget {
                     count: LenormandSpread.values[i].cardCount,
                     label: LenormandSpread.values[i].label,
                     focusLine: LenormandSpread.values[i].focusLine,
+                    isPro: LenormandSpread.values[i].isPro,
+                    locked: LenormandSpread.values[i].isPro && !proUnlocked,
                     active: LenormandSpread.values[i] == ctrl.lenormandSpread,
                     onTap: () {
                       HapticFeedback.selectionClick();
+                      if (LenormandSpread.values[i].isPro && !proUnlocked) {
+                        ProSubscriptionSheet.show(context);
+                        return;
+                      }
                       context.read<SpreadController>().setLenormandSpread(
                           LenormandSpread.values[i]);
                       Navigator.of(context).pop();
@@ -109,9 +125,15 @@ class SpreadSelectorSheet extends StatelessWidget {
                     count: RuneCast.values[i].cardCount,
                     label: RuneCast.values[i].label,
                     focusLine: RuneCast.values[i].focusLine,
+                    isPro: RuneCast.values[i].isPro,
+                    locked: RuneCast.values[i].isPro && !proUnlocked,
                     active: RuneCast.values[i] == ctrl.runeCast,
                     onTap: () {
                       HapticFeedback.selectionClick();
+                      if (RuneCast.values[i].isPro && !proUnlocked) {
+                        ProSubscriptionSheet.show(context);
+                        return;
+                      }
                       context
                           .read<SpreadController>()
                           .setRuneCast(RuneCast.values[i]);
@@ -134,6 +156,8 @@ class _SpreadOption extends StatelessWidget {
     required this.count,
     required this.label,
     required this.focusLine,
+    required this.isPro,
+    required this.locked,
     required this.active,
     required this.onTap,
   });
@@ -141,6 +165,8 @@ class _SpreadOption extends StatelessWidget {
   final int count;
   final String label;
   final String focusLine;
+  final bool isPro;
+  final bool locked;
   final bool active;
   final VoidCallback onTap;
 
@@ -175,15 +201,38 @@ class _SpreadOption extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label.toUpperCase(),
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 11,
-                      letterSpacing: 1.4,
-                      fontWeight: FontWeight.w700,
-                      color:
-                          active ? AppColors.lavender : AppColors.textPrimary,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          label.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 11,
+                            letterSpacing: 1.4,
+                            fontWeight: FontWeight.w700,
+                            color: active
+                                ? AppColors.lavender
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      if (isPro) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          locked ? '🔒 PRO' : 'PRO',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 8,
+                            letterSpacing: 1.1,
+                            fontWeight: FontWeight.w700,
+                            color: locked
+                                ? AppColors.textMuted
+                                : AppColors.lavender,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(

@@ -1,7 +1,7 @@
 {
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
-  "active_feature_or_sprint": "STEP 2 DONE (2026-11-18): 3-window ASTRAL workspace (NATAL CHART | HOROSCOPE | SYNASTRY PageView), computeSynastry (0..100 resonance + 4 axes), computeSevenDayForecast (7-day power/tension), SynastryWindow + SevenDayForecastCard, 273/273 tests green.",
+  "active_feature_or_sprint": "STEP 3 DONE (2026-11-18): Atomic UI & Spreads Upgrade — top-left Profile avatar (36x36, pushes ProfileScreen), clean 4-tab dock [CAMERA|TABLE|ALMANAC|ASTRAL] + reserved ACADEMY slot, SPREAD VIEW as default (persisted isSpreadOverview), polished overview slots (N · Role hairline frames), horizontal visual SpreadBlueprintCarousel (Free + PRO: Tarot 1/3/4/7 + 5/6/10, Lenormand 9 Grand Portrait, Runes 9 World Tree; wireframe miniSlots + PRO gate), 277/277 tests green.",
   "status": "DONE",
   "context": {
     "stack": [
@@ -13,6 +13,17 @@
       "speech_to_text (capsule mic dictation)"
     ],
     "target_files": [
+      "lib/core/models/spread_type.dart (UPDATED — 7 tarot spreads: Free 1/3/4/7 Horseshoe + PRO 5 Love Bridge/6 Career Crossroads/10 Celtic Cross; isPro/miniSlots/slotRoleShorts)",
+      "lib/core/models/lenormand_spread.dart (UPDATED — + PRO 9 Grand Portrait + isPro/miniSlots/slotRoleShorts)",
+      "lib/core/models/rune_cast.dart (UPDATED — + PRO 9 Yggdrasil's World Tree + isPro/miniSlots/slotRoleShorts)",
+      "lib/features/digital_table/widgets/spread_blueprint_carousel.dart (NEW — 92px horizontal wireframe carousel, Free/PRO gate)",
+      "lib/features/digital_table/widgets/shuffle_physics.dart (UPDATED — 6-card tree + 10-card Celtic Cross geometries)",
+      "lib/features/digital_table/widgets/spread_selector_sheet.dart (UPDATED — PRO gate + isScrollControlled)",
+      "lib/state/spread_controller.dart (UPDATED — isSpreadOverview/setSpreadOverview/loadTablePreferences/spreadSlotRoleShorts)",
+      "lib/core/services/local_storage_service.dart (UPDATED — table_view_spread key)",
+      "lib/features/digital_table/digital_table_screen.dart (UPDATED — avatar, carousel, controller view-mode, N · Role labels, 750ms mist, overview-deck swipe shuffle, proportional deck)",
+      "lib/features/shell/main_navigation_shell.dart (UPDATED — 4-tab dock + reserved ACADEMY hook)",
+      "test/spread_blueprint_carousel_test.dart (NEW — avatar→ProfileScreen, free/PRO carousel taps, swipe)",
       "PLAN.md (NEW — 4-phase ASTRAL plan + execution status)",
       "lib/core/models/natal_chart.dart (NEW — HouseSystem/ZodiacSign/PlanetId/AspectType + positions/aspects/horoscope/chart models, JSON)",
       "lib/core/services/natal_calculator_service.dart (NEW — Meeus engine, swehouse port, aspects, moon phase, daily horoscope)",
@@ -167,5 +178,5 @@
     "ITER5 KNOWN: device migration export produces a plain (unencrypted) JSON snapshot copied to the clipboard and shown in a dialog - no relay server is configured, so nothing is ever uploaded. Encryption/relay upload is future work.",
     "ITER5 KNOWN: Lenormand pair pills are placed between adjacent dealt cards in the focus pillar only (the spread overview still shows no cords for Lenormand/Runes and no pills)."
   ],
-  "latest_observation_summary": "STEP 2 GATE PASSED (2026-11-18): flutter analyze = No issues found; full flutter test = 273/273 green. (1) ASTRAL is now a 3-window horizontal PageView [NATAL CHART | HOROSCOPE | SYNASTRY] - AstralWindow grew a synastry value, the 3-pill switcher is synced to a PageController (animateToPage 320ms + onPageChanged), and synastry moved from a modal sheet into an inline SynastryWindow (widgets/synastry_window.dart); the natal-window 'COMPARE 2 PROFILES · SYNASTRY' button now jumps to window 2. (2) computeSynastry(a,b): deterministic 0..100 overall resonance + 4 axes (Emotional Bond / Attraction & Spark / Mental & Communication / Growth & Friction) from the tightest cross-chart aspects; SynastryAxis/SynastryReport models with JSON round-trip. (3) computeSevenDayForecast: 7 DailyTransitPeak (Today..+6, strongest per-day transit, null=calm) rendered as SevenDayForecastCard in HoroscopeWindow; daily transit-candidate logic extracted into _transitCandidates/_toTransitItem (DRY). (4) Deck-picker button removal, History->Pane 1 and Cormorant/Plus Jakarta typography were already done in earlier iterations - verified, left as-is. New test/astral_workspace_and_zodiac_test.dart (6); astral_horoscope_and_zodiac_almanac_test.dart updated to the 3-window switch."
+  "latest_observation_summary": "STEP 3 GATE PASSED (2026-11-18): flutter analyze = No issues found; full flutter test = 277/277 green. (1) Profile avatar (36x36, initial/glyph + PRO ring) sits top-left in the Digital Table header and Navigator.push's the full ProfileScreen; the bottom dock is now 4 clean tabs [CAMERA|TABLE|ALMANAC|ASTRAL] with index 4 RESERVED for the upcoming ACADEMY tab. (2) SPREAD VIEW is the default (SpreadController.isSpreadOverview=true, persisted via table_view_spread with UI-first persistence; a GlobalKey hook left on the toggle). The portrait overview deck now scales exactly 1.12x a slot (min-clamp removed). (3) Spread catalog expanded: SpreadType grew to 7 (Free 1/3/4/7 Horseshoe + PRO 5 Love Bridge / 6 Career Crossroads / 10 Celtic Cross) each with slotRoles/slotRoleShorts/focusLine/miniSlots/isPro; Lenormand + PRO 9 Grand Portrait; Runes + PRO 9 Yggdrasil's World Tree; shuffle_physics gains 6-card + 10-card geometries. (4) New SpreadBlueprintCarousel (height 92, above the deck) paints mini wireframes and gates PRO via ProSubscriptionSheet; SpreadSelectorSheet got the same PRO gate + isScrollControlled. (5) Empty overview slots now render 'N · Role' hairline labels and materialize on a 750ms mist; the overview deck also supports horizontal swipe shuffling. New test/spread_blueprint_carousel_test.dart (4); app_smoke/multi_system/phase2/workspace tests updated for the SPREAD default and the 4-tab dock."
 }

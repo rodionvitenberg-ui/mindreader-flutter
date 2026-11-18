@@ -12,21 +12,29 @@ import '../core/models/lenormand_spread.dart';
 import '../core/models/rune_cast.dart';
 import '../core/models/spread_type.dart';
 import '../core/models/tarot_card_model.dart';
+import '../core/services/local_storage_service.dart';
 
 /// Single source of truth for the Digital Table AND the Camera handoff.
 /// Pure domain logic — the UI only reads state and calls these methods.
 /// Hosts all three divination systems (Tarot 78 / Lenormand 36 / Runes 24)
 /// behind one unified [DivinationCard] interface.
 class SpreadController extends ChangeNotifier {
-  SpreadController({Random? random, int totalCards = 78})
-      : _rng = random ?? Random.secure(),
+  SpreadController({
+    Random? random,
+    int totalCards = 78,
+    LocalStorageService? storage,
+  })  : _rng = random ?? Random.secure(),
+        _storage = storage ?? LocalStorageService(),
         _deckSize = totalCards.clamp(1, tarotDeck.length) {
     _resetDeck();
     _resetSlots();
     shuffleDeck();
+    loadTablePreferences();
   }
 
   final Random _rng;
+
+  final LocalStorageService _storage;
 
   /// Physical stack size of the ACTIVE system (78/36/24); a custom
   /// [totalCards] only ever shrinks the tarot stack (test/scan setup).
@@ -107,6 +115,48 @@ class SpreadController extends ChangeNotifier {
         DivinationSystem.lenormand => _lenormandSpread.focusLine,
         DivinationSystem.runes => _runeCast.focusLine,
       };
+
+  /// Compact single-word role per slot (`1 · State`, `2 · Shadow`, ...) for
+  /// the overview slot labels.
+  List<String> get spreadSlotRoleShorts => switch (_system) {
+        DivinationSystem.tarot => _spreadType.slotRoleShorts,
+        DivinationSystem.lenormand => _lenormandSpread.slotRoleShorts,
+        DivinationSystem.runes => _runeCast.slotRoleShorts,
+      };
+
+  // ---- table view mode (SPREAD VIEW default, persisted) -------------------
+
+  bool _isSpreadOverview = true;
+
+  /// True → SPREAD VIEW (full-table overview), false → FOCUS VIEW (tactile
+  /// hero deck). Defaults to true; the reader's toggle choice is persisted.
+  bool get isSpreadOverview => _isSpreadOverview;
+
+  /// UI-first persistence: memory + notify synchronously, then write
+  /// `SharedPreferences` in the background (widget tests never block).
+  void setSpreadOverview(bool value) {
+    if (_isSpreadOverview == value) return;
+    _isSpreadOverview = value;
+    notifyListeners();
+    _storage
+        .saveTableSpreadOverview(value)
+        .then((_) {}, onError: (Object _) {});
+  }
+
+  /// Restores the persisted view mode. Non-blocking — the SPREAD VIEW default
+  /// is already in memory, so the async read only corrects an earlier FOCUS
+  /// choice and NEVER clobbers a choice the reader just made this session.
+  Future<void> loadTablePreferences() async {
+    try {
+      final stored = await _storage.loadTableSpreadOverview();
+      if (!stored && _isSpreadOverview) {
+        _isSpreadOverview = false;
+        notifyListeners();
+      }
+    } catch (_) {
+      // Storage unavailable — keep the default SPREAD VIEW.
+    }
+  }
 
   /// How the cards on the table were produced. The camera handoff flips
   /// this to [TableSourceMode.physicalCameraSync]; spread switches and

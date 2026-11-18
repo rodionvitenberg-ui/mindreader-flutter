@@ -28,6 +28,51 @@
   (new `test/astral_workspace_and_zodiac_test.dart`; the `switches …` test was
   updated to 3 windows).
 
+## STEP 3 — Atomic UI & Spreads Upgrade: Avatar, Default SPREAD VIEW, Blueprint Carousel & Clean Dock `[x] DONE (2026-11-18)`
+
+- **Top-left profile avatar** (`digital_table_screen.dart` → `_ProfileAvatarButton`):
+  36×36 obsidian-lavender circle in the table header (initial / `✦` glyph +
+  lavender PRO ring), `Navigator.push` → `ProfileScreen`. Profile no longer
+  lives in the dock.
+- **Clean 4-tab bottom dock** (`main_navigation_shell.dart`):
+  `CAMERA | TABLE | ALMANAC | ASTRAL`; index 4 is RESERVED for the upcoming
+  ACADEMY tab (documented hook).
+- **SPREAD VIEW is the default** (`spread_controller.dart`):
+  `isSpreadOverview = true` by default; the reader's toggle choice persists via
+  `table_view_spread` (`LocalStorageService`) with UI-first persistence
+  (memory + notify synchronously, `SharedPreferences` in the background; the
+  async restore never clobbers an in-session choice). A `GlobalKey` hook
+  (`_viewModeToggleKey`) is left on the toggle for a future onboarding tooltip.
+  The portrait overview deck now scales exactly 1.12× a slot card (min-clamp
+  removed) so it never towers 3× over the spread.
+- **Polished SPREAD VIEW**: empty slots render hairline obsidian frames with
+  crisp `N · Role` labels (`slotRoleShorts` on each spread);
+  `ElementalThreadsPainter` stays TAROT-only (zero cords for Runes/Lenormand);
+  the overview deck/rune cluster supports horizontal swipe shuffling AND
+  tap-to-deal (750 ms mist materialization in the target slot).
+- **Horizontal visual spread-blueprint carousel**
+  (`widgets/spread_blueprint_carousel.dart`, height 92, directly above the
+  deck): each 118-px card paints a miniature glowing wireframe from normalized
+  `miniSlots` coordinates + title/count + `🔒 PRO` badge. Free spreads switch
+  the table geometry instantly; locked PRO spreads open `ProSubscriptionSheet`
+  (the header `SpreadSelectorSheet` got the same PRO gate and is now
+  `isScrollControlled`).
+- **Rich spread catalog** (Free + PRO):
+  - Tarot `SpreadType` (7): Daily Anchor (1), Triad Flow (3),
+    Target & Shadow (4), Horseshoe Synthesis (7, renamed) — Free;
+    Love & Relationship Bridge (5), Career & Path Crossroads (6),
+    Celtic Cross (10) — PRO. Each carries `slotRoles`, `slotRoleShorts`,
+    `focusLine`, `miniSlots` (normalized), `isPro`.
+  - Lenormand: canonical 1/3/5/9 + PRO `9 · Grand Portrait`.
+  - Runes: canonical 1/3/5/7 + PRO `9 · Yggdrasil's World Tree`.
+  - `shuffle_physics.dart` extended with 6-card (1-2-3 branching tree) and
+    10-card (Celtic Cross + staff) geometries.
+- **Verification**: `flutter analyze` = 0 issues; `flutter test` = 277/277 green
+  (new `test/spread_blueprint_carousel_test.dart`: avatar → ProfileScreen,
+  free-spread tap switches geometry, locked-PRO tap opens the paywall,
+  carousel swipe reveals later blueprints; `app_smoke_test.dart` now asserts
+  SPREAD VIEW as the default).
+
 ## Iteration 5 — Profile, 5-Tab Shell & True Deck Cycling `[x] DONE (2026-11-18)`
 
 - **True top-to-bottom shuffle cycling** (`interactive_deck_widget.dart`):

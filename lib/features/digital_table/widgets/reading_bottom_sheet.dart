@@ -12,7 +12,6 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/divination_card.dart';
 import '../../../core/models/divination_system.dart';
-import '../../../core/models/spread_type.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/oracle_synthesis_service.dart';

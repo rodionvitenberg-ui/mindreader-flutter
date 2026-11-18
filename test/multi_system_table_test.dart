@@ -16,6 +16,13 @@ import 'package:provider/provider.dart';
 ///   (no "78 IN DECK" counter, no RITUAL button),
 /// * RUNES swaps the paper deck for the 3D stone cluster.
 void main() {
+  /// SPREAD VIEW is the default; tests that exercise the hero deck/cast
+  /// physics opt back into FOCUS VIEW explicitly.
+  Future<void> focusMode(WidgetTester tester) async {
+    await tester.tap(find.text('FOCUS VIEW'));
+    await tester.pump();
+  }
+
   testWidgets('header: 3 clean rows, no old title / counter / ritual', (
     tester,
   ) async {
@@ -43,6 +50,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     await tester.tap(find.text('LENORMAND'));
     await tester.pump();
@@ -61,6 +69,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     await tester.tap(find.text('RUNES'));
     await tester.pump();
@@ -113,6 +122,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     await tester.tap(find.text('LENORMAND'));
     await tester.pump();
@@ -132,6 +142,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     await tester.tap(find.text('LENORMAND'));
     await tester.pump();
@@ -173,6 +184,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await focusMode(tester);
 
     await tester.tap(find.text('RUNES'));
     await tester.pump();
