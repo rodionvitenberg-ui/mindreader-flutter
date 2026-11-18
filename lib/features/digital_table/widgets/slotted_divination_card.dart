@@ -38,9 +38,14 @@ class SlottedDivinationCard extends StatelessWidget {
     if (card == null) {
       return SizedBox(width: width, height: height);
     }
+    // The key MUST stay stable across the flip: it changes only when the
+    // slot's identity changes (index + card id), never on state/isFaceUp.
+    // A state-keyed slot would remount the 3D widget and skip the 750ms
+    // mist materialization entirely.
+    final stableKey = ValueKey('slot_${slot.index}_${card.id}');
     return switch (card.system) {
       DivinationSystem.tarot => TarotCard3DWidget(
-          key: ValueKey('slot-${slot.index}-${slot.state}'),
+          key: stableKey,
           card: (card as TarotDivinationCard).card,
           isReversed: slot.isReversed,
           state: slot.state,
@@ -52,7 +57,7 @@ class SlottedDivinationCard extends StatelessWidget {
           onTapFaceUp: onTapFaceUp,
         ),
       DivinationSystem.lenormand => LenormandCard3DWidget(
-          key: ValueKey('slot-${slot.index}-${slot.state}'),
+          key: stableKey,
           card: (card as LenormandDivinationCard).card,
           isReversed: false,
           state: slot.state,
@@ -64,7 +69,8 @@ class SlottedDivinationCard extends StatelessWidget {
           onTapFaceUp: onTapFaceUp,
         ),
       DivinationSystem.runes => _RuneSlot(
-          key: ValueKey('slot-${slot.index}-${slot.state}'),
+          key: stableKey,
+          slotIndex: slot.index,
           stone: (card as RuneDivinationCard).stone,
           isMerkstave: slot.isReversed,
           state: slot.state,
@@ -84,6 +90,7 @@ class SlottedDivinationCard extends StatelessWidget {
 class _RuneSlot extends StatelessWidget {
   const _RuneSlot({
     super.key,
+    required this.slotIndex,
     required this.stone,
     required this.isMerkstave,
     required this.state,
@@ -94,6 +101,7 @@ class _RuneSlot extends StatelessWidget {
     required this.onTapFaceUp,
   });
 
+  final int slotIndex;
   final RuneStone stone;
   final bool isMerkstave;
   final SlotState state;
@@ -119,6 +127,8 @@ class _RuneSlot extends StatelessWidget {
               stone: stone,
               isMerkstave: isMerkstave,
               state: state,
+              slotIndex: slotIndex,
+              tilt: true,
               width: stoneSize,
               height: stoneSize * 1.18,
               interactive: interactive,

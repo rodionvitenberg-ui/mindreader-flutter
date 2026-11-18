@@ -18,6 +18,7 @@ import '../../state/spread_controller.dart';
 import 'widgets/board_pillar_view.dart';
 import 'widgets/deal_lock_prompt.dart';
 import 'widgets/deck_picker_sheet.dart';
+import 'widgets/elemental_threads_painter.dart';
 import 'widgets/foil_glint.dart';
 import 'widgets/interactive_deck_widget.dart';
 import 'widgets/interactive_rune_stones_widget.dart';
@@ -164,11 +165,11 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     );
   }
 
-  /// The rune cluster handed us a cast stone: deal the top stone and fly
-  /// it from the release point into its slot.
+  /// The rune cluster handed us a cast stone: deal the EXACT grabbed stone
+  /// (its depth in the heap) and fly it from the release point into its slot.
   void _onRuneCastRelease(RuneCastReleaseRequest request) {
     final ctrl = context.read<SpreadController>();
-    final slotIndex = ctrl.dealCardAtOrClarifier(0);
+    final slotIndex = ctrl.dealCardAtOrClarifier(request.depth);
     if (slotIndex == null) {
       showDealLockPrompt(context, ctrl);
       return;
@@ -299,8 +300,10 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
       height: design.height,
       child: Stack(
         children: [
-          // The living Elemental Fate Threads across the spread geometry.
-          SpreadThreadsLayer(dealt: dealt, rects: rects),
+          // The living Elemental Fate Threads across the spread geometry —
+          // TAROT ONLY. Runes keep their rim glow, Lenormand its pair pills.
+          if (elementalThreadsVisibleFor(ctrl.system))
+            SpreadThreadsLayer(dealt: dealt, rects: rects),
           for (var i = 0; i < ctrl.slots.length; i++)
             Positioned(
               left: slotTopLeft(i).dx,

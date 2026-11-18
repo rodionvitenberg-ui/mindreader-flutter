@@ -5,19 +5,25 @@ import 'package:provider/provider.dart';
 
 import '../../core/data/intention_prompts.dart' show tableContextChips;
 import '../../core/models/dealt_card_slot.dart';
+import '../../core/models/natal_chart.dart';
 import '../../core/models/oracle_handoff.dart';
+import '../../core/models/zodiac_forecast.dart';
+import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../state/astral_controller.dart';
 import '../../state/session_history_controller.dart';
 import '../../state/spread_controller.dart';
 import '../../state/spread_session_snapshot.dart';
 import '../../state/synthesis_session.dart';
+import '../../state/user_profile_controller.dart';
 import 'digital_table_screen.dart';
 import 'oracle_chat_pane.dart';
 import 'spread_history_pane.dart';
 import 'widgets/cosmos_send_burst.dart';
 import 'widgets/deal_lock_prompt.dart';
 import 'widgets/gemini_input_capsule.dart';
+import 'widgets/reading_subject_toggle.dart';
 import 'widgets/synthesize_chat_cta.dart';
 
 /// Pane indices of the 3-screen horizontal workspace.
@@ -60,7 +66,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
 
   late final SpreadController _ctrl = context.read<SpreadController>();
   final SynthesisSession _synthesis = SynthesisSession();
-  final SessionHistoryController _history = SessionHistoryController();
+  late final SessionHistoryController _history =
+      context.read<SessionHistoryController>();
 
   late final AnimationController _cosmosCtl = AnimationController(
     vsync: this,
@@ -79,13 +86,23 @@ class _TableWorkspaceState extends State<TableWorkspace>
   /// first synthesis so later chat turns upsert the same entry).
   String? _sessionTimestamp;
 
+  /// What the in-progress session is (spread vs. Astral reading) + the
+  /// context needed to keep answering follow-up questions.
+  SessionKind _sessionKind = SessionKind.divinationSpread;
+  String? _astralTitle;
+  String? _astralChartId;
+  NatalChart? _astralChart;
+  NatalChart? _astralOtherChart;
+  DailyHoroscopeReport? _astralHoroscope;
+  ZodiacSign? _astralZodiacSign;
+  ZodiacSignForecast? _astralZodiacForecast;
+
   @override
   void initState() {
     super.initState();
     _ctrl.addListener(_onSpreadChanged);
     _cosmosCtl.addStatusListener(_onCosmosStatus);
     widget.astralHandoff?.addListener(_onAstralHandoff);
-    _history.load();
   }
 
   @override
@@ -97,7 +114,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
     _capsuleText.dispose();
     _capsuleFocus.dispose();
     _synthesis.dispose();
-    _history.dispose();
+    // The archive is owned by the root provider — never disposed here.
     super.dispose();
   }
 
@@ -123,19 +140,56 @@ class _TableWorkspaceState extends State<TableWorkspace>
   }
 
   Future<void> _runAstralReading(OracleHandoff handoff) async {
+    // A fresh Astral reading replaces the previous astral thread and starts a
+    // new history entry (astral dialogues were never persisted before).
+    _synthesis.reset();
+    _sessionTimestamp = DateTime.now().toIso8601String();
+    _sessionKind = _sessionKindFor(handoff.kind);
+    _astralTitle = _astralTitleFor(handoff);
+    _astralChartId = handoff.chart?.id;
+    _astralChart = handoff.chart;
+    _astralOtherChart = handoff.otherChart;
+    _astralHoroscope = handoff.horoscope;
+    _astralZodiacSign = handoff.zodiacSign;
+    _astralZodiacForecast = handoff.zodiacForecast;
+
     _synthesis.addUserMessage(handoff.prompt);
     _synthesis.beginAnswer();
     _goToPane(chatPane);
+    await _captureSession(); // persist the moment the CTA is tapped
     final answer = await OracleSynthesisService().synthesizeNatalReading(
       prompt: handoff.prompt,
       chart: handoff.chart,
       otherChart: handoff.otherChart,
       horoscope: handoff.horoscope,
+      zodiacSign: handoff.zodiacSign,
+      zodiacForecast: handoff.zodiacForecast,
       history: _synthesis.messages,
     );
     if (!mounted) return;
     _synthesis.addOracleMessage(answer);
     _synthesis.finishAnswer();
+    await _captureSession();
+  }
+
+  static SessionKind _sessionKindFor(OracleHandoffKind kind) => switch (kind) {
+        OracleHandoffKind.natalChart => SessionKind.natalChartReading,
+        OracleHandoffKind.synastry => SessionKind.synastryReading,
+        OracleHandoffKind.horoscope => SessionKind.horoscopeReading,
+        OracleHandoffKind.zodiac => SessionKind.zodiacReading,
+      };
+
+  static String _astralTitleFor(OracleHandoff handoff) {
+    final chart = handoff.chart;
+    return switch (handoff.kind) {
+      OracleHandoffKind.natalChart => '${chart?.profileName ?? 'Natal'} · Natal',
+      OracleHandoffKind.horoscope =>
+        '${chart?.profileName ?? 'Natal'} · Horoscope',
+      OracleHandoffKind.synastry =>
+        '${chart?.profileName ?? 'A'} × ${handoff.otherChart?.profileName ?? 'B'}',
+      OracleHandoffKind.zodiac =>
+        '${handoff.zodiacSign?.title ?? 'Zodiac'} · Horoscope',
+    };
   }
 
   // ---- clarifier expansion (moved from the old synthesis panel) ----
@@ -165,6 +219,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
       question: chapter.question,
       newSlot: slot,
       previous: previous,
+      profileContext: context.read<UserProfileController>().oracleContext,
     );
     if (!mounted) return;
     _synthesis.completeChapter(chapter.slotIndex, text);
@@ -196,9 +251,15 @@ class _TableWorkspaceState extends State<TableWorkspace>
           ? null
           : _ctrl.sessionContextNotes.join(' · '),
       slotContexts: contexts,
+      profileContext: context.read<UserProfileController>().oracleContext,
     );
     if (!mounted) return;
     _synthesis.markInitial(result);
+    // A spread synthesized after an Astral reading starts its own history
+    // entry instead of overwriting the astral one.
+    if (_sessionKind != SessionKind.divinationSpread) _sessionTimestamp = null;
+    _sessionKind = SessionKind.divinationSpread;
+    _clearAstralContext();
     _sessionTimestamp ??= DateTime.now().toIso8601String();
     await _captureSession();
     if (!mounted) return;
@@ -206,8 +267,22 @@ class _TableWorkspaceState extends State<TableWorkspace>
     _goToPane(chatPane);
   }
 
-  /// Upserts the in-progress session into the local archive.
+  /// Upserts the in-progress session into the local archive: a spread uses
+  /// the dealt cards, an Astral reading only its conversation.
   Future<void> _captureSession() async {
+    if (_sessionKind != SessionKind.divinationSpread) {
+      if (_synthesis.messages.isEmpty) return;
+      final timestamp = _sessionTimestamp ?? DateTime.now().toIso8601String();
+      _sessionTimestamp = timestamp;
+      await _history.upsert(SpreadSessionSnapshot.astral(
+        timestamp: timestamp,
+        kind: _sessionKind,
+        title: _astralTitle ?? 'Astral reading',
+        natalChartId: _astralChartId,
+        messages: [..._synthesis.messages],
+      ));
+      return;
+    }
     if (!_synthesis.hasSynthesis) return;
     final timestamp =
         _sessionTimestamp ?? DateTime.now().toIso8601String();
@@ -223,7 +298,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
   // ---- Oracle AI Chat (Pane 1) ----
 
   Future<void> _askOracle(String question) async {
-    if (!_synthesis.hasSynthesis) {
+    if (_sessionKind == SessionKind.divinationSpread &&
+        !_synthesis.hasSynthesis) {
       _synthesis.addSystemMessage(
         'The reading is not synthesized yet — deal and flip your spread '
         'on the table, then tap ✦ SYNTHESIZE IN CHAT.',
@@ -232,13 +308,28 @@ class _TableWorkspaceState extends State<TableWorkspace>
     }
     _synthesis.addUserMessage(question);
     _synthesis.beginAnswer();
-    final answer = await OracleSynthesisService().answerChat(
-      question: question,
-      slots: _ctrl.slots,
-      type: _ctrl.spreadType,
-      spreadLabel: _ctrl.spreadLabel,
-      history: _synthesis.messages,
-    );
+    final profileContext =
+        context.read<UserProfileController>().oracleContext;
+    await _captureSession(); // persist the turn immediately
+    final oracle = OracleSynthesisService();
+    final answer = _sessionKind == SessionKind.divinationSpread
+        ? await oracle.answerChat(
+            question: question,
+            slots: _ctrl.slots,
+            type: _ctrl.spreadType,
+            spreadLabel: _ctrl.spreadLabel,
+            history: _synthesis.messages,
+            profileContext: profileContext,
+          )
+        : await oracle.synthesizeNatalReading(
+            prompt: question,
+            chart: _astralChart,
+            otherChart: _astralOtherChart,
+            horoscope: _astralHoroscope,
+            zodiacSign: _astralZodiacSign,
+            zodiacForecast: _astralZodiacForecast,
+            history: _synthesis.messages,
+          );
     if (!mounted) return;
     _synthesis.addOracleMessage(answer);
     _synthesis.finishAnswer();
@@ -318,31 +409,73 @@ class _TableWorkspaceState extends State<TableWorkspace>
   Future<void> _newSpread() async {
     await _captureSession(); // persist the current reading before leaving
     _sessionTimestamp = null;
+    _sessionKind = SessionKind.divinationSpread;
+    _clearAstralContext();
     _synthesis.reset();
     _ctrl.resetTable();
     HapticFeedback.mediumImpact();
     _goToPane(tablePane);
   }
 
+  void _clearAstralContext() {
+    _astralTitle = null;
+    _astralChartId = null;
+    _astralChart = null;
+    _astralOtherChart = null;
+    _astralHoroscope = null;
+    _astralZodiacSign = null;
+    _astralZodiacForecast = null;
+  }
+
   /// 1-tap full session restore: the exact conversation in Pane 1 AND the
   /// exact dealt cards/orientations/threads on Pane 0.
   Future<void> _restoreSession(SpreadSessionSnapshot snapshot) async {
-    _ctrl.restoreSpread(
-      system: snapshot.system,
-      type: snapshot.spreadType,
-      lenormandSpread: snapshot.lenormandSpread,
-      runeCast: snapshot.runeCast,
-      cards: snapshot.toRestoreCards(),
-      sessionNotes: snapshot.sessionNotes,
-    );
-    _synthesis.restore(
-      initial: snapshot.synthesis,
-      chapters: snapshot.chapters,
-      messages: snapshot.messages,
-    );
     _sessionTimestamp = snapshot.timestamp;
+    _sessionKind = snapshot.kind;
+    _astralTitle = snapshot.astralSessionTitle;
+    _astralChartId = snapshot.natalChartId;
+
+    if (snapshot.kind == SessionKind.divinationSpread) {
+      _clearAstralContext();
+      _ctrl.restoreSpread(
+        system: snapshot.system,
+        type: snapshot.spreadType,
+        lenormandSpread: snapshot.lenormandSpread,
+        runeCast: snapshot.runeCast,
+        cards: snapshot.toRestoreCards(),
+        sessionNotes: snapshot.sessionNotes,
+      );
+      _synthesis.restore(
+        initial: snapshot.synthesis,
+        chapters: snapshot.chapters,
+        messages: snapshot.messages,
+      );
+    } else {
+      // Astral sessions carry no dealt cards: restore the conversation only
+      // and re-resolve the natal context so follow-ups keep the chart.
+      _clearAstralContext();
+      _astralTitle = snapshot.astralSessionTitle;
+      _astralChartId = snapshot.natalChartId;
+      if (snapshot.natalChartId != null) {
+        final astral = context.read<AstralController>();
+        for (final p in astral.profiles) {
+          if (p.id == snapshot.natalChartId) {
+            _astralChart = p;
+            _astralHoroscope = NatalCalculatorService.computeDailyHoroscope(p);
+            break;
+          }
+        }
+      }
+      _synthesis.restore(
+        initial: null,
+        chapters: const [],
+        messages: snapshot.messages,
+      );
+    }
     HapticFeedback.mediumImpact();
-    _goToPane(tablePane);
+    // Land on the Oracle Chat: the restored conversation is the first thing
+    // the reader sees (not a jarring jump to the raw table).
+    _goToPane(chatPane);
   }
 
   void _goToPane(int pane) {
@@ -536,6 +669,10 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 _ClarifierBanner(question: clarifier),
                 const SizedBox(height: 2),
               ],
+              const Padding(
+                padding: EdgeInsets.only(bottom: 6),
+                child: ReadingSubjectToggle(),
+              ),
               SynthesizeChatCta(
                 key: const ValueKey('synthesize-cta'),
                 ignited: ctrl.initialSpreadAllFaceUp,

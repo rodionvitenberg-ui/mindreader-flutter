@@ -276,13 +276,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pump(const Duration(milliseconds: 300));
-    // Pick a different pack in the carousel.
+    // Pick a different pack in the carousel: the tap selects + persists it
+    // immediately — the bottom "USE ..." confirm button is gone.
     await tester.tap(find.text('TAROT DE MARSEILLE'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Close the sheet with the confirm action.
-    await tester.tap(find.text('USE TAROT DE MARSEILLE'));
+    // Dismiss the sheet (tap the barrier above it).
+    await tester.tapAt(const Offset(400, 40));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 

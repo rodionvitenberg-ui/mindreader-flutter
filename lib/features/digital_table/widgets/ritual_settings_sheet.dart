@@ -10,7 +10,12 @@ import '../../../core/theme/app_colors.dart';
 /// anchor (09:00) and evening reflection (22:00) times, and see the current
 /// reading streak. Zero server retention — everything stays on the device.
 class RitualSettingsSheet extends StatefulWidget {
-  const RitualSettingsSheet({super.key});
+  const RitualSettingsSheet({super.key, this.inline = false});
+
+  /// When true the same controls render as plain page content (no sheet
+  /// chrome, no drag handle, no auto-close) — used by ProfileScreen so the
+  /// ritual toggles live on the full page instead of a second modal.
+  final bool inline;
 
   static Future<void> show(BuildContext context) {
     HapticFeedback.selectionClick();
@@ -108,24 +113,37 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
             : 'Ritual reminders disabled.'),
       ),
     );
-    Navigator.of(context).pop();
+    if (!widget.inline) Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
+    final content = Padding(
+      padding: widget.inline
+          ? EdgeInsets.zero
+          : const EdgeInsets.fromLTRB(24, 12, 24, 24),
+      child: _content(context),
+    );
+    if (widget.inline) return content;
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: Container(
         color: const Color(0xEB13131A),
         child: SafeArea(
           top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-            child: Column(
+          child: SingleChildScrollView(child: content),
+        ),
+      ),
+    );
+  }
+
+  Widget _content(BuildContext context) {
+    return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
+                if (!widget.inline)
+                  Center(
                   child: Container(
                     width: 40,
                     height: 4,
@@ -220,11 +238,7 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
                     onTap: _apply,
                   ),
                 ],
-              ],
-            ),
-          ),
-        ),
-      ),
+      ],
     );
   }
 }

@@ -24,6 +24,12 @@ class LocalStorageService {
   static const _astralActiveProfileKey = 'astral_active_profile_index';
   static const _astralHouseSystemKey = 'astral_default_house_system';
 
+  // App settings (Iteration 2): UI language + the shared PRO flag.
+  static const _appLanguageKey = 'app_language';
+  static const _proUnlockedKey = 'is_pro_unlocked';
+
+  static const _userProfileKey = 'user_profile_v1';
+
   Future<List<Map<String, dynamic>>> loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_historyKey);
@@ -101,6 +107,28 @@ class LocalStorageService {
   Future<void> saveRunePackId(String id) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_runePackKey, id);
+  }
+
+  // ---- app settings: language + shared PRO subscription ----
+
+  Future<String?> loadAppLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_appLanguageKey);
+  }
+
+  Future<void> saveAppLanguage(String code) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_appLanguageKey, code);
+  }
+
+  Future<bool> loadProUnlocked() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_proUnlockedKey) ?? false;
+  }
+
+  Future<void> saveProUnlocked(bool unlocked) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_proUnlockedKey, unlocked);
   }
 
   // ---- daily ritual (local notifications, zero server retention) ----
@@ -202,6 +230,22 @@ class LocalStorageService {
   Future<void> saveAstralHouseSystem(String system) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_astralHouseSystemKey, system);
+  }
+
+  // ---- Local-only user profile (Zero-Knowledge, device storage) ----
+
+  /// The whole profile lives in ONE key so a write is atomic and the
+  /// controller has exactly one decision point.
+  Future<Map<String, dynamic>?> loadUserProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_userProfileKey);
+    if (raw == null) return null;
+    return jsonDecode(raw) as Map<String, dynamic>;
+  }
+
+  Future<void> saveUserProfile(Map<String, dynamic> json) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userProfileKey, jsonEncode(json));
   }
 }
 

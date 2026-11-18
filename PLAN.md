@@ -1,9 +1,123 @@
-# PLAN.md — ASTRAL Feature (4 Atomic Phases)
+# PLAN.md — Polish & Feature Roadmap (3 Iterations)
 
-> mindreader.quest (Flutter/Dart, Impeller). Pure-Dart offline astrology.
-> Execution protocol: 4 strictly isolated sessions, each 100% test-verified
+> mindreader.quest (Flutter/Dart, Impeller).
+> Execution protocol: strictly isolated sessions, each 100% test-verified
 > (`flutter analyze` = 0 issues, `flutter test` = green) before the next starts.
 > SSOT: `TASK_STATE.json`.
+
+---
+
+## Iteration 5 — Profile, 5-Tab Shell & True Deck Cycling `[x] DONE (2026-11-18)`
+
+- **True top-to-bottom shuffle cycling** (`interactive_deck_widget.dart`):
+  every 18 px weave tick now takes the top **1–2 visible layers**, plays a
+  150 ms GPU-composited **overhand arc** (`translateX` outward + `translateZ`
+  lift + `rotateZ`, sine bell on `_overhand`) painted ON TOP of the fan, and
+  physically re-inserts those indices at the **back/bottom** of `_layerOrder`,
+  so the real top card tucks underneath and a fresh card surfaces. Continues
+  to fire `weaveShuffleRemaining()` + `selectionClick()`.
+- **Elemental Fate Threads are TAROT-only** (`elemental_threads_painter.dart`
+  → `elementalThreadsVisibleFor`): gate applied in `board_pillar_view.dart`
+  (focus pillar) and `digital_table_screen.dart` (spread overview). Runes
+  render ZERO cords (rim glow + ignited glyph carry the read); Lenormand
+  renders ZERO cords and instead shows one compact obsidian **pair-combination
+  pill** between adjacent face-up cards (`A + B` + the traditional
+  “With the …” line taken from `lenormand_data.dart`).
+- **Exactly 5 dock tabs** (`main_navigation_shell.dart`):
+  `CAMERA | TABLE | ALMANAC | ASTRAL | PROFILE`. The Rituals (🔔) and
+  Settings (⚙️) dock actions are gone.
+- **`UserProfileController`** (new, `lib/state/user_profile_controller.dart`):
+  local-only identity + birth data (name/date/time/timeUnknown/city/lat/lon/tz),
+  `personalBioContext`, `readingForSelf`, `targetPersonNote`, `isGoogleLinked`.
+  UI-first persistence (memory + `notifyListeners()` synchronously, one atomic
+  `SharedPreferences` key `user_profile_v1` written in the background).
+  `oracleContext` is the single gate for prompt injection.
+  `exportAllUserDataJson()` / `importUserDataJson()` bundle the profile,
+  `SessionHistoryController` sessions and `AstralController` natal profiles.
+- **`SessionHistoryController` hoisted to the root provider** (one writer):
+  `TableWorkspace` now reads it from `context`, and the Profile page can export
+  it. New `restoreSessions` / `restoreProfiles` merges make import idempotent.
+- **Full-page `ProfileScreen`** (new `lib/features/profile/`):
+  Card 1 identity + birth data (city autocomplete via `searchAstroCities`,
+  Zero-Knowledge badge) · Card 2 1-Click Google/Apple state + PRO monthly/annual
+  (`ProSubscriptionSheet`) · Card 3 export/import with an honest disclosure
+  dialog (local JSON snapshot in the clipboard — no relay server exists yet) ·
+  Card 4 language selector + live ritual controls (`RitualSettingsSheet` gained
+  an `inline` mode so the real toggles render on the page, not a second modal).
+- **“WHO IS THIS FOR?”** (`reading_subject_toggle.dart`): 2-pill
+  `FOR MYSELF (PROFILE) | FOR SOMEONE ELSE` above the ✦ SYNTHESIZE CTA and in
+  `OracleChatPane`. `synthesizeSpreadFor` / `synthesizeStructured` /
+  `answerChat` / `synthesizeClarifier` gained an optional `profileContext`
+  that is woven into the local fallback and the AI prompts; external readings
+  never leak the profile.
+- **ASTRAL 1-tap fill** (`birth_data_form_sheet.dart`):
+  `USE BIRTH DATA FROM MY PROFILE` populates name/date/time/timeKnown/city
+  (catalog match for country + tz) from `UserProfileController`.
+- **Gate:** `flutter analyze` = No issues found; `test/profile_and_table_fixes_test.dart`
+  5/5 (5-tab dock, tarot-only threads, prompt injection gate, readingForSelf
+  gating, profile → `AstralController` chart); full `flutter test` re-run.
+
+---
+
+
+## 3-Iteration Polish & Feature Roadmap
+
+- **Iteration 1 — Table / Lenormand / Rune Physics & Reveal Fixes** `[x] DONE`:
+  - Tap-to-flip for Lenormand cards & Rune stones in BOTH Focus and Spread views
+    (face-down → `flipSlot`; face-up → `ReadingBottomSheet`).
+  - Smooth 750ms mist materialization (no instant pop-in): stable slot keys
+    (`slot_<index>_<cardId>` — never state-keyed), obsidian mist + breathing lift
+    + radial face bloom + foil sweep, identical for Tarot/Lenormand/Runes.
+  - True top-to-bottom interleaving shuffle for cards; rune-heap neighbour
+    position/z-order swaps with `mediumImpact` + ledger re-weave.
+  - Rune pile depletion (24 → 23 → …), pick-any-exposed-stone hit-test, real
+    per-stone identity, organic pebble silhouette (`id.hashCode`), deterministic
+    ±10° body tilt with a counter-rotated vertical glyph.
+- **Iteration 2 — UX, Deck Picker, History→Chat, Typography & Bottom Bar** `[x] DONE`:
+  - `DeckPickerSheet`: removed the redundant bottom "USE <pack>" confirm button —
+    tapping a pack tile selects + persists immediately (tap the active tile to
+    close); the glowing active border remains.
+  - History restore now lands on the Oracle Chat (Pane 1) with the synthesis +
+    conversation; `+ NEW SPREAD` still resets to Pane 0.
+  - Typography: display/headings → `Cormorant Garamond` (tracked 0.8–1.2);
+    body `Plus Jakarta Sans`, labels `JetBrains Mono`.
+  - 6-slot bottom dock `[Camera | Table | Almanac | Astral | Rituals | Settings]`
+    (compact labels, fits 360 px); RITUALS removed from the ASTRAL header.
+  - `AppSettingsController` + `AppSettingsSheet` (EN/RU toggle) and the reusable
+    `ProSubscriptionSheet` (Monthly / Annual PRO) syncing the shared PRO flag.
+  - Gate: `flutter analyze` 0 issues, `flutter test` 254/254 green.
+- **Iteration 3 — Astral Horoscope Window, Natal Chat Auto-Save & Almanac
+  Zodiac Tab** `[x] DONE`:
+  - ASTRAL is now a 2-window tab `[ NATAL CHART | HOROSCOPE ]` (RU
+    `[ НАТАЛЬНАЯ КАРТА | ГОРОСКОП ]`): a 2-segment toggle under the profile
+    bar; window 0 keeps the wheel + summary + natal CTA, window 1
+    (`HoroscopeWindow`) shows the personal daily transit report (cosmic
+    weather, 0–100 Energy & Resonance bar, 3 focus spheres, live transit
+    cards, `✦ DISCUSS HOROSCOPE WITH ORACLE`) or a quick whole-sign solar
+    forecast for any of the 12 signs (`computeZodiacSignForecast`, no natal
+    profile required) with the same CTA.
+  - Nodal audit confirmed: Placidus / Koch / Whole Sign cusps, `0°00'–29°59'`
+    degrees, ASC/MC and aspects are already swetest-anchored
+    (`test/natal_calculator_test.dart`, 56 tests); no math changes needed.
+  - Astral dialogues now auto-save to History: `SpreadSessionSnapshot` gained
+    `kind` (`divinationSpread | natalChartReading | horoscopeReading |
+    synastryReading | zodiacReading`), `astralSessionTitle`, `natalChartId`
+    (backward-compatible JSON); `TableWorkspace` upserts the moment the
+    handoff streams and on every follow-up message, and `SpreadHistoryPane`
+    shows a cosmic `☉ NATAL` / `✦ HOROSCOPE` / `☍ SYNASTRY` / `✦ ZODIAC`
+    badge that restores the conversation into Pane 1 (Oracle Chat).
+  - ALMANAC is now a 4-tab encyclopedia `[ TAROT | LENORMAND | RUNES | ZODIAC ]`:
+    offline `zodiac_almanac_data.dart` (12 signs: dates, glyph, element,
+    modality, rulers, polarity, house affinity, keywords, archetype, shadow,
+    love, career), element + modality filters, bespoke zodiac tiles and a
+    `ZodiacDetailSheet` with a 1-tap `✦ VIEW HOROSCOPE IN ASTRAL` jump.
+  - Gate: `flutter analyze` 0 issues, `flutter test` 262/262 green (8 new in
+    `test/astral_horoscope_and_zodiac_almanac_test.dart`),
+    `flutter build apk --debug` passing.
+
+---
+
+## (Historical) ASTRAL Feature (4 Atomic Phases)
 
 ---
 

@@ -402,6 +402,22 @@ class MoonPhase {
   final double ageDays;
 }
 
+/// One grounded daily focus sphere: a domain of life with one sentence of
+/// psychological guidance (relationships, career, inner state).
+class FocusSphere {
+  const FocusSphere({required this.title, required this.text});
+
+  final String title;
+  final String text;
+
+  Map<String, dynamic> toJson() => {'title': title, 'text': text};
+
+  static FocusSphere fromJson(Map<String, dynamic> json) => FocusSphere(
+    title: json['title'] as String,
+    text: json['text'] as String,
+  );
+}
+
 /// One active live transit of today's sky against the natal chart.
 class DailyTransitItem {
   const DailyTransitItem({
@@ -457,6 +473,7 @@ class DailyHoroscopeReport {
     required this.overallTheme,
     required this.energyScore,
     required this.transits,
+    this.focusSpheres = const [],
   });
 
   final DateTime date;
@@ -476,6 +493,9 @@ class DailyHoroscopeReport {
   /// Top 3–5 active transits, tightest orb first.
   final List<DailyTransitItem> transits;
 
+  /// Three grounded focus spheres (relationships, career, inner state).
+  final List<FocusSphere> focusSpheres;
+
   Map<String, dynamic> toJson() => {
     'date': date.toIso8601String(),
     'moonPhaseName': moonPhaseName,
@@ -486,6 +506,7 @@ class DailyHoroscopeReport {
     'overallTheme': overallTheme,
     'energyScore': energyScore,
     'transits': [for (final t in transits) t.toJson()],
+    'focusSpheres': [for (final f in focusSpheres) f.toJson()],
   };
 
   static DailyHoroscopeReport fromJson(Map<String, dynamic> json) =>
@@ -503,6 +524,10 @@ class DailyHoroscopeReport {
         transits: [
           for (final t in json['transits'] as List<dynamic>)
             DailyTransitItem.fromJson(t as Map<String, dynamic>),
+        ],
+        focusSpheres: [
+          for (final f in (json['focusSpheres'] as List? ?? const []))
+            FocusSphere.fromJson(f as Map<String, dynamic>),
         ],
       );
 }

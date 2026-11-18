@@ -57,6 +57,24 @@ class SessionHistoryController extends ChangeNotifier {
     );
   }
 
+  /// Merges an imported archive (device migration). Identity is the
+  /// timestamp, exactly like [upsert] — an existing session is never
+  /// duplicated, and the in-memory order stays newest-first.
+  void restoreSessions(List<SpreadSessionSnapshot> imported) {
+    var changed = false;
+    for (final snapshot in imported) {
+      if (_sessions.any((s) => s.timestamp == snapshot.timestamp)) continue;
+      _sessions.add(snapshot);
+      changed = true;
+    }
+    if (!changed) return;
+    _sessions.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    notifyListeners();
+    for (final snapshot in imported) {
+      _persist(snapshot);
+    }
+  }
+
   Future<void> deleteAll() async {
     _sessions.clear();
     notifyListeners();

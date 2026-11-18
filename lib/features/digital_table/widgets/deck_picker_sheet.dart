@@ -58,7 +58,7 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<DeckPackController>();
-    final (title, subtitle, tiles, activeName) = switch (widget.system) {
+    final (title, subtitle, tiles) = switch (widget.system) {
       DivinationSystem.tarot => (
           'DECK SELECTOR',
           '${deckPacksRegistry.length} PACKS · ACTIVE: '
@@ -67,7 +67,6 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
             for (final p in deckPacksRegistry)
               _PackTile.tarot(p, ctrl.activePack.id == p.id),
           ],
-          ctrl.activePack.name.toUpperCase(),
         ),
       DivinationSystem.lenormand => (
           'LENORMAND PACKS',
@@ -77,7 +76,6 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
             for (final p in lenormandPacksRegistry)
               _PackTile.lenormand(p, ctrl.activeLenormandPack.id == p.id),
           ],
-          ctrl.activeLenormandPack.name.toUpperCase(),
         ),
       DivinationSystem.runes => (
           'RUNE STONE SETS',
@@ -87,7 +85,6 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
             for (final p in runePacksRegistry)
               _PackTile.rune(p, ctrl.activeRunePack.id == p.id),
           ],
-          ctrl.activeRunePack.name.toUpperCase(),
         ),
     };
     return ClipRRect(
@@ -127,11 +124,6 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
                     itemCount: tiles.length,
                     itemBuilder: (context, i) => tiles[i],
                   ),
-                ),
-                const SizedBox(height: 14),
-                _PrimaryAction(
-                  label: 'USE $activeName',
-                  onTap: () => Navigator.of(context).pop(),
                 ),
               ],
             ),
@@ -198,6 +190,11 @@ class _PackTile extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
+        // Already active: a second tap closes the sheet cleanly.
+        if (selected) {
+          Navigator.of(context).pop();
+          return;
+        }
         if (pack != null) {
           context.read<DeckPackController>().setActivePack(pack!.id);
         } else if (lenormand != null) {
@@ -279,38 +276,3 @@ class _PackTile extends StatelessWidget {
   }
 }
 
-class _PrimaryAction extends StatelessWidget {
-  const _PrimaryAction({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        width: double.infinity,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 13),
-        decoration: BoxDecoration(
-          color: AppColors.lavender.withValues(alpha: 0.16),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.lavender),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 10,
-            letterSpacing: 2,
-            fontWeight: FontWeight.w700,
-            color: AppColors.lavender,
-          ),
-        ),
-      ),
-    );
-  }
-}

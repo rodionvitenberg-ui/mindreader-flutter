@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -54,14 +56,16 @@ class _LenormandCard3DWidgetState extends State<LenormandCard3DWidget>
     value: widget.state == SlotState.faceUp ? 1.0 : 0.0,
   );
 
+  /// True while the local mist materialization is playing (tap-to-flip) —
+  /// separate from the authoritative [widget.state].
+  bool _revealing = false;
+
   @override
   void didUpdateWidget(covariant LenormandCard3DWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.state != SlotState.faceUp && widget.state == SlotState.faceUp) {
-      HapticFeedback.selectionClick();
-      _reveal.forward(from: 0).whenCompleteOrCancel(() {
-        widget.onFlip?.call();
-      });
+    if (oldWidget.state != SlotState.faceUp &&
+        widget.state == SlotState.faceUp) {
+      _reveal.forward(from: 0);
     }
   }
 
@@ -71,44 +75,111 @@ class _LenormandCard3DWidgetState extends State<LenormandCard3DWidget>
     super.dispose();
   }
 
+  void _handleTap() {
+    if (widget.state == SlotState.faceDown) {
+      setState(() => _revealing = true);
+      HapticFeedback.selectionClick();
+      // The controller flips state only after the materialization completes,
+      // mirroring the tarot reveal — the face does NOT pop in instantly.
+      _reveal.forward(from: 0).whenComplete(() {
+        if (!mounted) return;
+        setState(() => _revealing = false);
+        widget.onFlip?.call();
+        _reveal.value = 0;
+      });
+    } else if (widget.state == SlotState.faceUp) {
+      widget.onTapFaceUp?.call();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pack = context.watch<DeckPackController>().activeLenormandPack;
     final faceUp = widget.state == SlotState.faceUp;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: widget.interactive
-          ? () {
-              if (faceUp) widget.onTapFaceUp?.call();
-            }
-          : null,
+      onTap: widget.interactive ? _handleTap : null,
       child: AnimatedBuilder(
         animation: _reveal,
         builder: (context, _) {
-          final v = Curves.easeInOutSine.transform(_reveal.value);
+          final v = Curves.easeInOutCubic.transform(_reveal.value);
+          // Phase 0→0.45: the back darkens into deep obsidian mist with a
+          // breathing lift (1.0 → 1.035 → 1.0) + radial lavender aura.
+          final breathing = _revealing
+              ? 1.0 + 0.035 * math.sin(math.pi * v)
+              : 1.0;
+          final backAlpha = _revealing
+              ? (v < 0.35 ? 1.0 - v / 0.35 : 0.0)
+              : 1.0;
+          final mist = _revealing
+              ? (v < 0.35 ? 0.45 * (v / 0.35) : 0.45 * (1 - (v - 0.35) / 0.65))
+              : 0.0;
+          // Phase 0.30→1.0: the face blooms out of the mist from the center.
+          final faceIn = _revealing ? ((v - 0.30) / 0.70).clamp(0.0, 1.0) : 1.0;
           return RepaintBoundary(
-            child: Opacity(
-              opacity: faceUp ? 0.35 + 0.65 * v : 1,
-              child: Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.identity()
-                  ..setEntry(3, 2, 0.0012)
-                  ..rotateX(widget.tilt ? -0.14 : 0)
-                  ..scaleByDouble(faceUp ? 0.985 + 0.015 * v : 1.0, 1, 1, 1),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(widget.width * 0.06),
-                  child: SizedBox(
-                    width: widget.width,
-                    height: widget.height,
-                    child: faceUp
-                        ? _face(pack)
-                        : CardBack(
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.0012)
+                ..rotateX(widget.tilt ? -0.14 : 0)
+                ..scaleByDouble(breathing, 1, 1, 1),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(widget.width * 0.06),
+                child: SizedBox(
+                  width: widget.width,
+                  height: widget.height,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Face-down: the procedural back, fading into the mist.
+                      if (!_revealing || backAlpha > 0)
+                        Opacity(
+                          opacity: backAlpha,
+                          child: CardBack(
                             width: widget.width,
                             height: widget.height,
                             styleOverride: pack.backStyle,
                             accentOverride: pack.backAccentArgb,
                             secondaryOverride: pack.backSecondaryArgb,
                           ),
+                        ),
+                      // The deep obsidian mist veil during the reveal.
+                      if (mist > 0)
+                        IgnorePointer(
+                          child: Container(
+                            color: AppColors.surface.withValues(alpha: mist),
+                          ),
+                        ),
+                      // The face, emerging from the center outward.
+                      if (faceUp || (_revealing && faceIn > 0))
+                        IgnorePointer(
+                          child: Opacity(
+                            opacity: faceUp ? 1.0 : faceIn,
+                            child: ShaderMask(
+                              blendMode: BlendMode.dstIn,
+                              shaderCallback: (bounds) => RadialGradient(
+                                radius: _revealing ? 0.3 + 1.1 * faceIn : 3.0,
+                                colors: const [
+                                  Colors.white,
+                                  Colors.white,
+                                  Colors.transparent,
+                                ],
+                                stops: const [0.0, 0.72, 1.0],
+                              ).createShader(bounds),
+                              child: _face(pack),
+                            ),
+                          ),
+                        ),
+                      // Diagonal foil light sweep as the face completes.
+                      if (_revealing && faceIn > 0 && faceIn < 1)
+                        Positioned.fill(
+                          child: FoilGlint(
+                            angleY: -0.9 + 1.8 * v,
+                            angleX: widget.tilt ? -0.14 : 0,
+                            intensity: math.sin(math.pi * faceIn) * 0.6,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mindreader/core/models/dealt_card_slot.dart';
 import 'package:mindreader/features/digital_table/widgets/interactive_deck_widget.dart';
 import 'package:mindreader/features/digital_table/widgets/interactive_rune_stones_widget.dart';
 import 'package:mindreader/features/digital_table/widgets/lenormand_card_3d_widget.dart';
 import 'package:mindreader/main.dart';
+import 'package:mindreader/state/spread_controller.dart';
+import 'package:provider/provider.dart';
 
 /// SPRINT 1/2 — the redesigned Digital Table header and Almanac drive all
 /// three systems from the UI:
@@ -13,8 +16,9 @@ import 'package:mindreader/main.dart';
 ///   (no "78 IN DECK" counter, no RITUAL button),
 /// * RUNES swaps the paper deck for the 3D stone cluster.
 void main() {
-  testWidgets('header: 3 clean rows, no old title / counter / ritual',
-      (tester) async {
+  testWidgets('header: 3 clean rows, no old title / counter / ritual', (
+    tester,
+  ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
@@ -34,8 +38,9 @@ void main() {
     expect(find.byKey(const ValueKey('spread-selector-pill')), findsOneWidget);
   });
 
-  testWidgets('switching to LENORMAND swaps the pack pill and spread label',
-      (tester) async {
+  testWidgets('switching to LENORMAND swaps the pack pill and spread label', (
+    tester,
+  ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
@@ -51,8 +56,9 @@ void main() {
     expect(find.byType(InteractiveRuneStonesWidget), findsNothing);
   });
 
-  testWidgets('switching to RUNES replaces the deck with the stone cluster',
-      (tester) async {
+  testWidgets('switching to RUNES replaces the deck with the stone cluster', (
+    tester,
+  ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
@@ -67,8 +73,9 @@ void main() {
     expect(find.text('SWIPE ↓ TO CAST'), findsOneWidget);
   });
 
-  testWidgets('almanac system switcher drives per-system grids and filters',
-      (tester) async {
+  testWidgets('almanac system switcher drives per-system grids and filters', (
+    tester,
+  ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
@@ -77,8 +84,10 @@ void main() {
 
     // Row 1 system switcher is present; tarot filters default.
     expect(find.byKey(const ValueKey('almanac-system-tarot')), findsOneWidget);
-    expect(find.byKey(const ValueKey('almanac-system-lenormand')),
-        findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('almanac-system-lenormand')),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('almanac-system-runes')), findsOneWidget);
     expect(find.text('All (78)'), findsOneWidget);
     expect(find.text('Major (22)'), findsOneWidget);
@@ -99,8 +108,9 @@ void main() {
     expect(find.textContaining('Tyr’s Aett (8)'), findsOneWidget);
   });
 
-  testWidgets('lenormand cards render after a system switch on the table',
-      (tester) async {
+  testWidgets('lenormand cards render after a system switch on the table', (
+    tester,
+  ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
@@ -115,5 +125,79 @@ void main() {
     await tester.pump();
 
     expect(find.byType(LenormandCard3DWidget), findsOneWidget);
+  });
+
+  testWidgets('face-down lenormand card flips via tap with a stable key', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MindreaderApp());
+    await tester.pump();
+
+    await tester.tap(find.text('LENORMAND'));
+    await tester.pump();
+
+    // Deal one card from the deck.
+    final deck = find.byType(InteractiveDeckWidget);
+    await tester.dragFrom(tester.getCenter(deck), const Offset(0, 100));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump();
+
+    final card = find.byType(LenormandCard3DWidget);
+    expect(card, findsOneWidget);
+    // The card widget (stable key) must survive the flip — no remount.
+    final elementBefore = tester.element(card);
+
+    // Bring the dealt card into the viewport, then tap to flip.
+    await tester.ensureVisible(card);
+    await tester.pump();
+    await tester.tap(card, warnIfMissed: false);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump();
+
+    final elementAfter = tester.element(card);
+    expect(
+      identical(elementBefore, elementAfter),
+      isTrue,
+      reason: 'flip must NOT remount the card (stable key)',
+    );
+    // The tap actually flipped the card to face-up (not just key stability).
+    final ctrl = tester.element(card).read<SpreadController>();
+    expect(ctrl.slots.first.state == SlotState.faceUp, isTrue,
+        reason: 'tap on a face-down card must flip it');
+  });
+
+  testWidgets('rune heap depletes 24 → 23 → 21 as stones are cast', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MindreaderApp());
+    await tester.pump();
+
+    await tester.tap(find.text('RUNES'));
+    await tester.pump();
+
+    final heap = find.byType(InteractiveRuneStonesWidget);
+    expect(heap, findsOneWidget);
+
+    // Each downward cast deals one stone and shrinks the heap/ledger.
+    Future<void> cast() async {
+      await tester.dragFrom(tester.getCenter(heap), const Offset(0, 120));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pump();
+    }
+
+    await cast();
+    await cast();
+    await cast();
+
+    // The ledger (and the heap it mirrors) deplete 24 → 21.
+    final ctrl = tester.element(heap).read<SpreadController>();
+    expect(
+      ctrl.remaining,
+      21,
+      reason: 'three casts must remove three stones from the 24-stone pile',
+    );
   });
 }

@@ -3,9 +3,12 @@ import 'package:provider/provider.dart';
 
 import 'core/theme/app_theme.dart';
 import 'features/shell/main_navigation_shell.dart';
+import 'state/app_settings_controller.dart';
 import 'state/astral_controller.dart';
 import 'state/deck_pack_controller.dart';
+import 'state/session_history_controller.dart';
 import 'state/spread_controller.dart';
+import 'state/user_profile_controller.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +25,16 @@ class MindreaderApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SpreadController()),
         ChangeNotifierProvider(create: (_) => DeckPackController()),
         ChangeNotifierProvider(create: (_) => AstralController()),
+        ChangeNotifierProvider(create: (_) => AppSettingsController()),
+        // One writer for the reading archive: the Table mutates it and the
+        // ProfileScreen reads it for the device-migration backup.
+        ChangeNotifierProvider(create: (_) => SessionHistoryController()..load()),
+        ChangeNotifierProvider(
+          create: (context) => UserProfileController(
+            history: context.read<SessionHistoryController>(),
+            astral: context.read<AstralController>(),
+          )..load(),
+        ),
       ],
       child: MaterialApp(
         title: 'mindreader.quest',

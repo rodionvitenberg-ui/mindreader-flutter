@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/models/spread_type.dart';
 import '../../core/theme/app_colors.dart';
+import '../../state/app_settings_controller.dart';
 import '../../state/session_history_controller.dart';
 import '../../state/spread_session_snapshot.dart';
 
@@ -75,7 +77,10 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
                         ],
                       ),
                     ),
-                    const _ProBadge(),
+                    _ProBadge(
+                      unlocked: context.watch<AppSettingsController>()
+                          .isProUnlocked,
+                    ),
                   ],
                 ),
               ),
@@ -135,7 +140,10 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
 }
 
 class _ProBadge extends StatelessWidget {
-  const _ProBadge();
+  const _ProBadge({required this.unlocked});
+
+  /// Mirrors the shared PRO flag from [AppSettingsController].
+  final bool unlocked;
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +158,7 @@ class _ProBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
-        'PRO',
+        unlocked ? 'PRO ∞' : 'PRO',
         style: GoogleFonts.jetBrainsMono(
           fontSize: 8.5,
           letterSpacing: 1.6,
@@ -299,9 +307,14 @@ class _SessionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final snippet = session.synthesis?.narrative ??
-        (session.sessionNotes.isEmpty
-            ? 'No context notes'
-            : session.sessionNotes.join(' · '));
+        (session.messages.isNotEmpty
+            ? session.messages.last.text
+            : session.sessionNotes.isEmpty
+                ? 'No context notes'
+                : session.sessionNotes.join(' · '));
+    final isAstral = session.kind != SessionKind.divinationSpread;
+    final title = session.astralSessionTitle ??
+        session.spreadType.label.toUpperCase();
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
@@ -329,7 +342,7 @@ class _SessionTile extends StatelessWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          session.spreadType.label.toUpperCase(),
+                          title.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.jetBrainsMono(
@@ -341,7 +354,10 @@ class _SessionTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      _NotebookTag(label: session.notebook),
+                      if (isAstral)
+                        _AstralBadge(kind: session.kind)
+                      else
+                        _NotebookTag(label: session.notebook),
                     ],
                   ),
                   const SizedBox(height: 3),
@@ -391,6 +407,23 @@ class _CardGlyphStack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final preview = cards.take(4).toList();
+    if (preview.isEmpty) {
+      return Container(
+        width: 40,
+        height: 44,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.4)),
+        ),
+        child: const Center(
+          child: Text(
+            '✦',
+            style: TextStyle(fontSize: 16, color: AppColors.lavender),
+          ),
+        ),
+      );
+    }
     return SizedBox(
       width: 40,
       height: 44,
@@ -446,6 +479,41 @@ class _NotebookTag extends StatelessWidget {
           letterSpacing: 1.0,
           fontWeight: FontWeight.w700,
           color: AppColors.harmonyCyan,
+        ),
+      ),
+    );
+  }
+}
+
+/// The cosmic badge marking a saved Astral conversation.
+class _AstralBadge extends StatelessWidget {
+  const _AstralBadge({required this.kind});
+
+  final SessionKind kind;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = switch (kind) {
+      SessionKind.natalChartReading => '☉ NATAL',
+      SessionKind.horoscopeReading => '✦ HOROSCOPE',
+      SessionKind.synastryReading => '☍ SYNASTRY',
+      SessionKind.zodiacReading => '✦ ZODIAC',
+      SessionKind.divinationSpread => 'SPREAD',
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.lavender.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.lavender.withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.jetBrainsMono(
+          fontSize: 7,
+          letterSpacing: 1.0,
+          fontWeight: FontWeight.w700,
+          color: AppColors.lavender,
         ),
       ),
     );

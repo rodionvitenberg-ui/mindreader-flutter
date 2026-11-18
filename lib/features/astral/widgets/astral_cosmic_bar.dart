@@ -4,19 +4,17 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
 
-/// Top strip of the ASTRAL screen: today's moon phase, the reading streak
-/// and the entry point into the daily-ritual settings.
+/// Top strip of the ASTRAL screen: today's moon phase and the reading
+/// streak. The daily-ritual settings now live in the bottom dock.
 class AstralCosmicBar extends StatelessWidget {
   const AstralCosmicBar({
     required this.phase,
     required this.streak,
-    required this.onRituals,
     super.key,
   });
 
   final MoonPhase phase;
   final int streak;
-  final VoidCallback onRituals;
 
   @override
   Widget build(BuildContext context) {
@@ -49,40 +47,33 @@ class AstralCosmicBar extends StatelessWidget {
         ),
         if (streak > 0) ...[
           _Pill(label: '🔥 ${streak}D', accent: AppColors.lavender),
-          const SizedBox(width: 8),
         ],
-        _Pill(label: '🔔 RITUALS', accent: AppColors.textMuted, onTap: onRituals),
       ],
     );
   }
 }
 
 class _Pill extends StatelessWidget {
-  const _Pill({required this.label, required this.accent, this.onTap});
+  const _Pill({required this.label, required this.accent});
 
   final String label;
   final Color accent;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 9,
-            letterSpacing: 1.2,
-            color: accent,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.jetBrainsMono(
+          fontSize: 9,
+          letterSpacing: 1.2,
+          color: accent,
         ),
       ),
     );

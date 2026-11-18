@@ -97,24 +97,50 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
     duration: const Duration(milliseconds: 240),
   );
 
+  /// Overhand arc played by the 1–2 layers that just travelled from the top
+  /// of the fan to the bottom of the stack (150 ms, GPU transforms only).
+  late final AnimationController _overhand = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 150),
+  );
+
+  /// Layers currently mid-arc — painted ON TOP while they travel, then
+  /// dropped behind the fan when the cycle completes.
+  final Set<int> _cycling = {};
+
   int _lastRemaining = -1;
 
   @override
   void dispose() {
     _settle.dispose();
     _return.dispose();
+    _overhand.dispose();
     super.dispose();
   }
 
-  /// One weave tick: two adjacent fan layers exchange render depths (the
-  /// visible interleave) and the underlying remaining deck is permuted
-  /// with `Random.secure()` in the controller.
+  /// One weave tick: the top 1–2 VISIBLE layers arc over the fan and are
+  /// physically moved to the BACK/BOTTOM of the paint order, so the reader
+  /// sees the real top card tuck underneath the stack and a fresh card
+  /// surface on top. The remaining deck is then permuted with
+  /// `Random.secure()` in the controller.
   void _interleave() {
-    if (_layerOrder.length < 2) return;
-    final a = _visualRng.nextInt(_layerOrder.length - 1);
-    final tmp = _layerOrder[a];
-    _layerOrder[a] = _layerOrder[a + 1];
-    _layerOrder[a + 1] = tmp;
+    final visible = _layerOrder.where((l) => l < _visibleCount).toList();
+    if (visible.length < 2) return;
+    final count = math.min(2, visible.length);
+    final moving = visible.sublist(visible.length - count);
+    for (final layer in moving) {
+      _layerOrder.remove(layer);
+    }
+    _layerOrder.insertAll(0, moving.reversed);
+    setState(() {
+      _cycling
+        ..clear()
+        ..addAll(moving);
+    });
+    _overhand.forward(from: 0).whenCompleteOrCancel(() {
+      if (!mounted || _overhand.isAnimating) return;
+      setState(_cycling.clear);
+    });
     context.read<SpreadController>().weaveShuffleRemaining();
   }
 
@@ -311,48 +337,63 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
     final drag = grabbed
         ? (_returning ? _dragDelta * _return.value : _dragDelta)
         : Offset.zero;
+    // Overhand arc: outward translateX + translateZ lift + rotateZ, driven
+    // by a sine bell so the card leaves and returns to the stack smoothly.
+    final arc =
+        _cycling.contains(layer) ? math.sin(math.pi * _overhand.value) : 0.0;
     final glintK = 0.35 + 0.65 * (1 - layer / visibleCount);
     return Transform.translate(
-      offset: Offset(0, baseDy) + drag,
+      offset: Offset(_sign * 46 * arc, baseDy - 8 * arc) + drag,
       child: Transform(
         alignment: Alignment.center,
-        transform: fanMatrixWithCamera(pose, liftZ: grabbed ? 26 : 0),
-        child: RepaintBoundary(
-          child: Stack(
-            children: [
-              if (grabbed)
-                // Subtle glow + drop shadow under the lifted card.
-                Container(
-                  width: deckWidth,
-                  height: deckHeight,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(deckWidth * 0.06),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.lavender.withValues(alpha: 0.35),
-                        blurRadius: 26,
-                        spreadRadius: 2,
-                      ),
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 18,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
+        transform: Matrix4.identity()..rotateZ(_sign * 0.16 * arc),
+        child: Transform(
+          alignment: Alignment.center,
+          transform: fanMatrixWithCamera(
+            pose,
+            liftZ: (grabbed ? 26 : 0) + 42 * arc,
+          ),
+          child: RepaintBoundary(
+            child: Stack(
+              children: [
+                if (grabbed)
+                  // Subtle glow + drop shadow under the lifted card.
+                  Container(
+                    width: deckWidth,
+                    height: deckHeight,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(deckWidth * 0.06),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.lavender.withValues(alpha: 0.35),
+                          blurRadius: 26,
+                          spreadRadius: 2,
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          blurRadius: 18,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (tarotPack == null)
+                  _LenormandDeckBack()
+                else
+                  CardBack(
+                    width: deckWidth,
+                    height: deckHeight,
+                    pack: tarotPack,
+                  ),
+                Positioned.fill(
+                  child: FoilGlint(
+                    angleY: pose.rotateY,
+                    angleX: pose.rotateX,
+                    intensity: glintK,
                   ),
                 ),
-              if (tarotPack == null)
-                _LenormandDeckBack()
-              else
-                CardBack(width: deckWidth, height: deckHeight, pack: tarotPack),
-              Positioned.fill(
-                child: FoilGlint(
-                  angleY: pose.rotateY,
-                  angleX: pose.rotateX,
-                  intensity: glintK,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -390,6 +431,8 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
       _returning = false;
       _grabbedLayer = null;
       _dragDelta = Offset.zero;
+      _overhand.stop();
+      _cycling.clear();
     }
     _lastRemaining = remaining;
 
@@ -409,7 +452,7 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
         onVerticalDragEnd: _onGrabEnd,
         child: RepaintBoundary(
           child: AnimatedBuilder(
-            animation: Listenable.merge([_settle, _return]),
+            animation: Listenable.merge([_settle, _return, _overhand]),
             builder: (context, _) {
               return Stack(
                 clipBehavior: Clip.none,
@@ -420,8 +463,20 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
                   // headplate, backing rectangle or painter bar above the
                   // top card. The grabbed layer carries its own drag
                   // transform; every other layer stays put underneath.
+                  // Layers mid-overhand are painted LAST so their arc
+                  // travels visibly over the fan.
                   for (final layer in _layerOrder)
-                    if (layer < visibleCount)
+                    if (layer < visibleCount && !_cycling.contains(layer))
+                      _fanLayer(
+                        layer,
+                        visibleCount,
+                        travel,
+                        tarotPack,
+                        remaining: remaining,
+                        totalCards: ctrl.totalCards,
+                      ),
+                  for (final layer in _layerOrder)
+                    if (layer < visibleCount && _cycling.contains(layer))
                       _fanLayer(
                         layer,
                         visibleCount,

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/models/dealt_card_slot.dart';
+import '../../../core/models/divination_card.dart';
+import '../../../core/models/divination_system.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../state/spread_controller.dart';
 import 'elemental_threads_painter.dart';
 import 'shuffle_physics.dart';
@@ -90,7 +94,12 @@ class _BoardPillarViewState extends State<BoardPillarView>
           cardHeight,
         ),
     ];
-    final segments = threadSegmentsFor(dealt, rects);
+    // Elemental Fate Threads exist for TAROT only: runes keep their chiseled
+    // rim glow, Lenormand reads through pair combinations instead.
+    final isTarot = elementalThreadsVisibleFor(controller.system);
+    final isLenormand = controller.system == DivinationSystem.lenormand;
+    final segments =
+        isTarot ? threadSegmentsFor(dealt, rects) : const <ElementalThreadSegment>[];
     _syncIgnites(segments);
 
     // Nothing is rendered before the first deal — no dashed placeholders.
@@ -103,26 +112,38 @@ class _BoardPillarViewState extends State<BoardPillarView>
         height: totalHeight,
         child: Stack(
           children: [
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: Listenable.merge([_pulse, ..._ignites.values]),
-                builder: (context, _) => CustomPaint(
-                  painter: ElementalThreadsPainter(
-                    segments: segments,
-                    pulse: _pulse,
-                    ignite: {
-                      for (var i = 0; i < segments.length; i++)
-                        i: _ignites[segments[i].pairKey]?.value ?? 1.0,
-                    },
+            if (isTarot)
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: Listenable.merge([_pulse, ..._ignites.values]),
+                  builder: (context, _) => CustomPaint(
+                    painter: ElementalThreadsPainter(
+                      segments: segments,
+                      pulse: _pulse,
+                      ignite: {
+                        for (var i = 0; i < segments.length; i++)
+                          i: _ignites[segments[i].pairKey]?.value ?? 1.0,
+                      },
+                    ),
                   ),
                 ),
               ),
-            ),
             Column(
               children: [
                 for (var i = 0; i < dealt.length; i++) ...[
                   _buildCard(context, dealt[i]),
-                  if (i < dealt.length - 1) const SizedBox(height: slotGap),
+                  if (i < dealt.length - 1)
+                    SizedBox(
+                      height: slotGap,
+                      child: isLenormand
+                          ? Center(
+                              child: _LenormandPairPill(
+                                first: dealt[i],
+                                second: dealt[i + 1],
+                              ),
+                            )
+                          : null,
+                    ),
                 ],
               ],
             ),
@@ -144,3 +165,78 @@ class _BoardPillarViewState extends State<BoardPillarView>
     );
   }
 }
+
+/// The Lenormand replacement for elemental threads: one compact obsidian
+/// pill between adjacent FACE-UP cards carrying their traditional pair
+/// combination ("With the Letter, the message arrives in writing.").
+class _LenormandPairPill extends StatelessWidget {
+  const _LenormandPairPill({required this.first, required this.second});
+
+  final DealtCardSlot first;
+  final DealtCardSlot second;
+
+  String? _combination() {
+    final a = first.card;
+    final b = second.card;
+    if (a is! LenormandDivinationCard || b is! LenormandDivinationCard) {
+      return null;
+    }
+    final needle = 'with the ${b.card.name.toLowerCase()}';
+    for (final line in a.card.combinations) {
+      if (line.toLowerCase().startsWith(needle)) return line;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (first.state != SlotState.faceUp || second.state != SlotState.faceUp) {
+      return const SizedBox.shrink();
+    }
+    final a = first.card;
+    final b = second.card;
+    if (a == null || b == null) return const SizedBox.shrink();
+    final hint = _combination();
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 220),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${a.name.toUpperCase()} + ${b.name.toUpperCase()}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 7.5,
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w700,
+              color: AppColors.lavender,
+            ),
+          ),
+          if (hint != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 3),
+              child: Text(
+                hint,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 8.5,
+                  height: 1.25,
+                  color: AppColors.textMuted.withValues(alpha: 0.95),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+

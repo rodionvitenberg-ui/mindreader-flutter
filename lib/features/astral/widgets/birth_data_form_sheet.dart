@@ -8,6 +8,7 @@ import '../../../core/models/natal_chart.dart';
 import '../../../core/services/natal_calculator_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../state/astral_controller.dart';
+import '../../../state/user_profile_controller.dart';
 import 'astral_gradient_button.dart';
 import 'astral_house_selector.dart';
 
@@ -98,6 +99,43 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
       ),
     );
     if (picked != null) setState(() => _time = picked);
+  }
+
+  /// 1-tap fill from the local profile on the PROFILE tab.
+  void _fillFromProfile() {
+    final profile = context.read<UserProfileController>();
+    if (!profile.hasBirthData) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Add your birth date and city in PROFILE first.'),
+        ),
+      );
+      return;
+    }
+    HapticFeedback.selectionClick();
+    AstroCity? match;
+    for (final city in astroCities) {
+      if (city.name.toLowerCase() == profile.cityName.toLowerCase()) {
+        match = city;
+        break;
+      }
+    }
+    setState(() {
+      _nameCtrl.text =
+          profile.displayName.trim().isEmpty ? 'My Chart' : profile.displayName;
+      _date = profile.birthDate!;
+      if (profile.birthTime != null) _time = profile.birthTime!;
+      _timeKnown = profile.birthTimeKnown;
+      _city = match ??
+          AstroCity(
+            name: profile.cityName,
+            country: '',
+            latitude: profile.latitude!,
+            longitude: profile.longitude!,
+            timezoneOffsetHours: profile.timezoneOffset ?? 0,
+          );
+      _cityCtrl.clear();
+    });
   }
 
   void _generate() {
@@ -195,6 +233,8 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
                     ),
                   ),
                   const SizedBox(height: 18),
+                  _ProfileFillPill(onFill: _fillFromProfile),
+                  const SizedBox(height: 14),
                   _eyebrow('NAME'),
                   TextField(
                     controller: _nameCtrl,
@@ -472,6 +512,46 @@ class _CityResult extends StatelessWidget {
                 fontSize: 9,
                 letterSpacing: 1.2,
                 color: AppColors.textMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One-tap entry point for the local profile birth data.
+class _ProfileFillPill extends StatelessWidget {
+  const _ProfileFillPill({required this.onFill});
+
+  final VoidCallback onFill;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onFill,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.lavender.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.45)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.person_pin_circle_outlined,
+                size: 14, color: AppColors.lavender),
+            const SizedBox(width: 8),
+            Text(
+              'USE BIRTH DATA FROM MY PROFILE',
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 9,
+                letterSpacing: 1.4,
+                fontWeight: FontWeight.w600,
+                color: AppColors.lavender,
               ),
             ),
           ],

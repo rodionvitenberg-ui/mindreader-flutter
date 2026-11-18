@@ -7,6 +7,17 @@ import '../core/services/oracle_synthesis_service.dart';
 import 'spread_controller.dart';
 import 'synthesis_session.dart';
 
+/// What produced a saved session — a table spread or an Astral reading.
+/// Drives the history badge and the restore branch (astral sessions have no
+/// dealt cards, only the conversation).
+enum SessionKind {
+  divinationSpread,
+  natalChartReading,
+  horoscopeReading,
+  synastryReading,
+  zodiacReading,
+}
+
 /// One saved card of a session: exact identity, orientation, slot role and
 /// the pre-draw intention it carried.
 class RestoredSpreadCard {
@@ -56,7 +67,33 @@ class SpreadSessionSnapshot {
     this.system = DivinationSystem.tarot,
     this.lenormandSpread = LenormandSpread.three,
     this.runeCast = RuneCast.three,
+    this.kind = SessionKind.divinationSpread,
+    this.astralSessionTitle,
+    this.natalChartId,
   });
+
+  /// An Astral (natal / horoscope / synastry / zodiac) conversation with no
+  /// dealt cards — the snapshot only carries the Oracle dialogue.
+  factory SpreadSessionSnapshot.astral({
+    required String timestamp,
+    required SessionKind kind,
+    required String title,
+    required List<ChatMessage> messages,
+    String? natalChartId,
+  }) =>
+      SpreadSessionSnapshot(
+        timestamp: timestamp,
+        spreadType: SpreadType.three,
+        notebook: 'All Readings',
+        cards: const [],
+        sessionNotes: const [],
+        synthesis: null,
+        chapters: const [],
+        messages: messages,
+        kind: kind,
+        astralSessionTitle: title,
+        natalChartId: natalChartId,
+      );
 
   /// Identity + local persistence key (ISO-8601).
   final String timestamp;
@@ -81,6 +118,15 @@ class SpreadSessionSnapshot {
   final StructuredSynthesis? synthesis;
   final List<ClarifierChapter> chapters;
   final List<ChatMessage> messages;
+
+  /// Which flow saved this session (spread vs. Astral reading).
+  final SessionKind kind;
+
+  /// Human-readable Astral title, e.g. 'Self · Natal' (null for spreads).
+  final String? astralSessionTitle;
+
+  /// The natal profile the Astral session was read from (null if none).
+  final String? natalChartId;
 
   /// Captures the current table + session state into a serializable
   /// snapshot (history upsert).
@@ -156,6 +202,10 @@ class SpreadSessionSnapshot {
             },
         ],
         'messages': [for (final m in messages) m.toJson()],
+        'kind': kind.name,
+        if (astralSessionTitle != null)
+          'astralSessionTitle': astralSessionTitle,
+        if (natalChartId != null) 'natalChartId': natalChartId,
       };
 
   static SpreadSessionSnapshot fromJson(Map<String, dynamic> json) {
@@ -205,6 +255,13 @@ class SpreadSessionSnapshot {
         for (final raw in (json['messages'] as List? ?? const []))
           ChatMessage.fromJson(raw as Map<String, dynamic>),
       ],
+      kind: _enumOr<SessionKind>(
+        SessionKind.values,
+        json['kind'] as String?,
+        SessionKind.divinationSpread,
+      ),
+      astralSessionTitle: json['astralSessionTitle'] as String?,
+      natalChartId: json['natalChartId'] as String?,
     );
   }
 

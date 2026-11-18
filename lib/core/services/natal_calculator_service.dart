@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import '../data/astro_ephemeris_tables.dart';
 import '../models/natal_chart.dart';
 import '../models/tarot_card_model.dart' show Element;
+import '../models/zodiac_forecast.dart';
 
 /// ASTRAL Phase 1 — the 100% offline, deterministic ephemeris engine.
 ///
@@ -966,7 +967,94 @@ class NatalCalculatorService {
       overallTheme: theme,
       energyScore: energyScore,
       transits: transits,
+      focusSpheres: _dailyFocusSpheres(
+        moonSign: moonSign,
+        moonHouse: moonHouse,
+        moonPhase: moonPhase,
+        transits: transits,
+        energyScore: energyScore,
+      ),
     );
+  }
+
+  /// Quick daily forecast for a sign with no natal chart: a whole-sign solar
+  /// chart anchored on [sign], so the Moon/Sun houses are solar houses
+  /// (1..12 counted from the sign itself).
+  static ZodiacSignForecast computeZodiacSignForecast(
+    ZodiacSign sign, {
+    DateTime? forDate,
+  }) {
+    final date = (forDate ?? DateTime.now()).toUtc();
+    final moonPhase = computeMoonPhase(date);
+    final sunLon = computeEclipticLongitude(PlanetId.sun, date);
+    final moonLon = computeEclipticLongitude(PlanetId.moon, date);
+    final moonSign = ZodiacSignX.fromLongitude(moonLon);
+    final sunSign = ZodiacSignX.fromLongitude(sunLon);
+    int solarHouse(ZodiacSign s) => ((s.index - sign.index) % 12 + 12) % 12 + 1;
+    final moonHouse = solarHouse(moonSign);
+    final sunHouse = solarHouse(sunSign);
+
+    var score = 50 + ((moonPhase.illumination - 0.5) * 30).round();
+    if (moonHouse == 1 || moonHouse == 10) score += 8;
+    if (moonHouse == 6 || moonHouse == 12) score -= 6;
+    final energyScore = score.clamp(1, 100);
+
+    return ZodiacSignForecast(
+      date: date,
+      sign: sign,
+      moonPhaseName: moonPhase.name,
+      moonPhaseGlyph: moonPhase.glyph,
+      moonIllumination: moonPhase.illumination,
+      transitingMoonSign: moonSign,
+      solarMoonHouse: moonHouse,
+      solarSunHouse: sunHouse,
+      sunDegreeInSign: sunLon - sunSign.index * 30.0,
+      overallTheme: '${sign.title} weather: the ${moonSign.title} Moon moves '
+          'through your solar house $moonHouse — ${houseTheme(moonHouse)}.',
+      energyScore: energyScore,
+      focusSpheres: _dailyFocusSpheres(
+        moonSign: moonSign,
+        moonHouse: moonHouse,
+        moonPhase: moonPhase,
+        transits: const [],
+        energyScore: energyScore,
+      ),
+    );
+  }
+
+  /// The three grounded daily focus spheres shared by the natal horoscope
+  /// and the quick-sign forecast.
+  static List<FocusSphere> _dailyFocusSpheres({
+    required ZodiacSign moonSign,
+    required int moonHouse,
+    required MoonPhase moonPhase,
+    required List<DailyTransitItem> transits,
+    required int energyScore,
+  }) {
+    final harmony =
+        transits.where((t) => t.harmony == AspectHarmony.harmonious).length;
+    final tension =
+        transits.where((t) => t.harmony == AspectHarmony.tense).length;
+    final illumination = (moonPhase.illumination * 100).round();
+    return [
+      FocusSphere(
+        title: 'Relationships & Feelings',
+        text: 'The ${moonSign.title} Moon crosses house $moonHouse '
+            '(${houseTheme(moonHouse)}), so feeling moves through '
+            '${moonSign.trait}. '
+            '${tension > harmony ? 'Name one need plainly before it leaks out sideways.' : 'Say the warm thing out loud while it is easy to give.'}',
+      ),
+      FocusSphere(
+        title: 'Career & Decisions',
+        text: '${harmony >= tension ? 'A clean decision moves faster than a perfect one today.' : 'Choose the option you can still defend tomorrow; urgency is not a strategy.'} '
+            'Anchor on one concrete next step in the work that matters.',
+      ),
+      FocusSphere(
+        title: 'Inner State',
+        text: '${moonPhase.name} at $illumination% illumination. '
+            '${energyScore >= 60 ? 'There is surplus energy — spend it on one deliberate act, not on proving yourself.' : 'Energy is thin — protect your attention and let recovery count as progress.'}',
+      ),
+    ];
   }
 
   // ---------------------------------------------------------------------

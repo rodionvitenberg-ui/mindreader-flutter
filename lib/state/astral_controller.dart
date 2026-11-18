@@ -169,6 +169,22 @@ class AstralController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Merges imported natal profiles (device migration). Identity is the
+  /// chart id, so importing a backup twice is idempotent and never
+  /// duplicates a profile. The free-tier generation counter is untouched.
+  void restoreProfiles(List<NatalChart> imported) {
+    var changed = false;
+    for (final chart in imported) {
+      if (_profiles.any((p) => p.id == chart.id)) continue;
+      _profiles.add(chart);
+      changed = true;
+    }
+    if (!changed) return;
+    _refreshHoroscope();
+    notifyListeners();
+    _persistProfiles();
+  }
+
   void _refreshHoroscope() {
     final profile = activeProfile;
     _activeHoroscope =

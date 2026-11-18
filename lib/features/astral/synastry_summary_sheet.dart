@@ -51,6 +51,7 @@ class SynastrySummarySheet extends StatelessWidget {
   void _send(BuildContext context) {
     final handoff = OracleHandoff(
       prompt: OracleSynthesisService.buildSynastryPrompt(a, b),
+      kind: OracleHandoffKind.synastry,
       chart: a,
       otherChart: b,
     );

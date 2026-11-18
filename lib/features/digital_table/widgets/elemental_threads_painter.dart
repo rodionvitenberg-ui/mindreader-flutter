@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart' hide Element;
 
 import '../../../core/models/dealt_card_slot.dart';
+import '../../../core/models/divination_system.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/services/oracle_synthesis_service.dart';
 
@@ -10,6 +11,13 @@ import '../../../core/services/oracle_synthesis_service.dart';
 /// from Card N down into Card N+1 the moment both cards are face-up —
 /// 480ms, with a brief bright flare (2.0x glow settling to 1.0x).
 const igniteFlashDuration = Duration(milliseconds: 480);
+
+/// Elemental Fate Threads are a TAROT-only visual: Runes rely on their
+/// chiseled rim glow + ignited glyph, and Lenormand reads through pair
+/// combinations instead of cords. Single decision point for both the
+/// pillar and the spread-overview renderers.
+bool elementalThreadsVisibleFor(DivinationSystem system) =>
+    system == DivinationSystem.tarot;
 
 /// Elemental thread gradient pairs (start → end):
 /// Fire = amber-crimson, Water = cyan-indigo, Air = silver-violet,

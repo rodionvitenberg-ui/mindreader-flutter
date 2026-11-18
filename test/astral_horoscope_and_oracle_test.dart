@@ -10,7 +10,9 @@ import 'package:mindreader/features/astral/synastry_summary_sheet.dart';
 import 'package:mindreader/features/astral/widgets/daily_horoscope_card.dart';
 import 'package:mindreader/features/digital_table/table_workspace.dart';
 import 'package:mindreader/state/deck_pack_controller.dart';
+import 'package:mindreader/state/session_history_controller.dart';
 import 'package:mindreader/state/spread_controller.dart';
+import 'package:mindreader/state/user_profile_controller.dart';
 import 'package:provider/provider.dart';
 
 /// ASTRAL Phase 4 — the daily horoscope card, the full natal profile sheet,
@@ -300,6 +302,9 @@ void main() {
           providers: [
             ChangeNotifierProvider(create: (_) => SpreadController()),
             ChangeNotifierProvider(create: (_) => DeckPackController()),
+            ChangeNotifierProvider(
+                create: (_) => SessionHistoryController()..load()),
+            ChangeNotifierProvider(create: (_) => UserProfileController()),
           ],
           child: MaterialApp(
             theme: buildAppTheme(),

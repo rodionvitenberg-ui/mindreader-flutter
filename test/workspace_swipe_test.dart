@@ -158,21 +158,25 @@ void main() {
     expect(ctrl.dealtCount, 0);
     expect(ctrl.remaining, 78);
 
-    // 1-tap restore: the exact cards land on the table, face-up.
+    // 1-tap restore: it lands on the ORACLE CHAT (Pane 1) with the exact
+    // conversation restored — no jarring jump back to the raw table.
     await goToPane(tester, 2);
     await tester.tap(find.text('3 · TRIAD FLOW'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pump();
 
+    final paneController =
+        tester.widget<PageView>(find.byType(PageView)).controller!;
+    expect(paneController.page!.round(), 1);
+    expect(find.text('What should I focus on?'), findsOneWidget);
+    expect(find.textContaining('Sitting with your question'), findsOneWidget);
+
+    // The exact cards are restored face-up back on the table (Pane 0).
+    await goToPane(tester, 0);
     expect(ctrl.slots.length, 3);
     expect(ctrl.slots.every((s) => s.state == SlotState.faceUp), isTrue);
     expect(find.byType(TarotCard3DWidget), findsNWidgets(3));
-
-    // And the exact conversation is restored in the chat pane.
-    await goToPane(tester, 1);
-    expect(find.text('What should I focus on?'), findsOneWidget);
-    expect(find.textContaining('Sitting with your question'), findsOneWidget);
   });
 }
 

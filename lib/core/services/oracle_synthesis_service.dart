@@ -9,6 +9,7 @@ import '../models/divination_system.dart';
 import '../models/natal_chart.dart';
 import '../models/spread_type.dart';
 import '../models/tarot_card_model.dart';
+import '../models/zodiac_forecast.dart';
 import 'natal_calculator_service.dart';
 
 /// How two adjacent face-up cards relate, elementally.
@@ -276,6 +277,7 @@ String synthesizeSpreadFor(
   required String focusLine,
   String? contextChip,
   Map<int, String>? slotContexts,
+  String? profileContext,
 }) {
   final faceUp = slots.where((s) => s.card != null).toList();
   if (faceUp.isEmpty) {
@@ -283,6 +285,9 @@ String synthesizeSpreadFor(
   }
 
   final b = StringBuffer();
+  if (profileContext != null && profileContext.isNotEmpty) {
+    b.writeln('Who this reading is for: $profileContext.');
+  }
   if (contextChip != null && contextChip.isNotEmpty) {
     b.writeln('Lens: $contextChip.');
   }
@@ -374,6 +379,7 @@ class OracleSynthesisService {
     DivinationSystem system = DivinationSystem.tarot,
     String? contextChip,
     Map<int, String>? slotContexts,
+    String? profileContext,
   }) async {
     final resolvedLabel =
         spreadLabel ?? (type ?? SpreadType.three).label;
@@ -386,6 +392,7 @@ class OracleSynthesisService {
       focusLine: resolvedFocus,
       contextChip: contextChip,
       slotContexts: slotContexts,
+      profileContext: profileContext,
     );
     final prompt = _buildPrompt(
       slots,
@@ -394,6 +401,7 @@ class OracleSynthesisService {
       resolvedFocus,
       contextChip,
       slotContexts,
+      profileContext,
     );
     if (prompt == null) return fallback;
 
@@ -442,6 +450,7 @@ class OracleSynthesisService {
     DivinationSystem system = DivinationSystem.tarot,
     String? contextChip,
     Map<int, String>? slotContexts,
+    String? profileContext,
   }) async {
     final narrative = await synthesize(
       slots: slots,
@@ -451,6 +460,7 @@ class OracleSynthesisService {
       system: system,
       contextChip: contextChip,
       slotContexts: slotContexts,
+      profileContext: profileContext,
     );
     final faceUp = slots.where((s) => s.card != null).toList();
     final threads = computeThreads(slots);
@@ -470,6 +480,7 @@ class OracleSynthesisService {
     required String question,
     required DealtCardSlot newSlot,
     required List<DealtCardSlot> previous,
+    String? profileContext,
   }) async {
     final c = newSlot.card;
     if (c == null) return '';
@@ -485,6 +496,9 @@ class OracleSynthesisService {
       b.writeln('- ${s.role}: ${pc.name} '
           '(${orientationWord(s)}), '
           'element ${pc.element.label}');
+    }
+    if (profileContext != null && profileContext.isNotEmpty) {
+      b.writeln('Reader context: $profileContext.');
     }
     b.writeln('The reader now asks a follow-up question: $question');
     b.writeln('They pulled one clarifier ${c.system.unit}: ${c.name} '
@@ -554,8 +568,9 @@ class OracleSynthesisService {
     String spreadLabel,
     String focusLine,
     String? contextChip,
-    Map<int, String>? slotContexts,
-  ) {
+    Map<int, String>? slotContexts, [
+    String? profileContext,
+  ]) {
     final faceUp = slots.where((s) => s.card != null).toList();
     if (faceUp.isEmpty) return null;
     final b = StringBuffer();
@@ -564,6 +579,10 @@ class OracleSynthesisService {
         'reflective insight only.');
     b.writeln('Spread: $spreadLabel (${faceUp.length} ${system.unit}s). '
         '$focusLine');
+    if (profileContext != null && profileContext.isNotEmpty) {
+      b.writeln('Who this reading is for (local profile, never stored '
+          'server-side): $profileContext.');
+    }
     if (contextChip != null && contextChip.isNotEmpty) {
       b.writeln('Reader lens: $contextChip.');
     }
@@ -604,6 +623,7 @@ class OracleSynthesisService {
     SpreadType? type,
     String? spreadLabel,
     required List<ChatMessage> history,
+    String? profileContext,
   }) async {
     final fallback = _chatFallback(question, slots);
     if (!hasPrimary && !hasCloud) return fallback;
@@ -622,6 +642,9 @@ class OracleSynthesisService {
       for (final m in history) {
         b.writeln('  ${m.role}: ${m.text.replaceAll('\n', ' ')}');
       }
+    }
+    if (profileContext != null && profileContext.isNotEmpty) {
+      b.writeln('Reader context: $profileContext.');
     }
     b.writeln('The reader asks: $question');
     b.writeln('Answer in 2-4 short sentences grounded in the cards on the '
@@ -777,6 +800,57 @@ class OracleSynthesisService {
     return buf.toString().trim();
   }
 
+  /// A structured daily-horoscope summary for the active natal profile —
+  /// today's sky, the three focus spheres and the loudest live transits.
+  static String buildHoroscopePrompt(
+    NatalChart chart,
+    DailyHoroscopeReport report,
+  ) {
+    final buf = StringBuffer();
+    final d = report.date.toLocal();
+    buf.writeln(
+      'Daily horoscope for ${chart.profileName} — '
+      '${d.day.toString().padLeft(2, '0')}.'
+      '${d.month.toString().padLeft(2, '0')}.${d.year}.',
+    );
+    buf.writeln(
+      '${report.moonPhaseGlyph} ${report.moonPhaseName} · '
+      '${(report.moonIllumination * 100).round()}% illuminated · '
+      'Moon in ${report.transitingMoonSign.title}, natal house '
+      '${report.transitingMoonHouse}.',
+    );
+    buf.writeln('Energy: ${report.energyScore}/100. ${report.overallTheme}');
+    for (final f in report.focusSpheres) {
+      buf.writeln('${f.title}: ${f.text}');
+    }
+    for (final t in report.transits.take(4)) {
+      buf.writeln('- ${t.transitLabel} · orb ${t.orb.toStringAsFixed(1)}°.');
+    }
+    return buf.toString().trim();
+  }
+
+  /// A structured quick-sign forecast prompt — no natal chart required.
+  static String buildZodiacForecastPrompt(
+    ZodiacSign sign,
+    ZodiacSignForecast forecast,
+  ) {
+    final buf = StringBuffer();
+    buf.writeln(
+      'Daily horoscope for ${sign.title} ${sign.glyph} (no natal chart).',
+    );
+    buf.writeln(
+      '${forecast.moonPhaseGlyph} ${forecast.moonPhaseName} · '
+      '${(forecast.moonIllumination * 100).round()}% illuminated · '
+      'Moon in ${forecast.transitingMoonSign.title}, solar house '
+      '${forecast.solarMoonHouse}.',
+    );
+    buf.writeln('Energy: ${forecast.energyScore}/100. ${forecast.overallTheme}');
+    for (final f in forecast.focusSpheres) {
+      buf.writeln('${f.title}: ${f.text}');
+    }
+    return buf.toString().trim();
+  }
+
   /// A structured synastry summary for the compare-two-charts handoff.
   static String buildSynastryPrompt(NatalChart a, NatalChart b) {
     final buf = StringBuffer();
@@ -811,16 +885,25 @@ class OracleSynthesisService {
     NatalChart? chart,
     NatalChart? otherChart,
     DailyHoroscopeReport? horoscope,
+    ZodiacSign? zodiacSign,
+    ZodiacSignForecast? zodiacForecast,
     required List<ChatMessage> history,
   }) async {
-    final fallback = _natalReadingFallback(chart, otherChart, horoscope);
+    final fallback = _natalReadingFallback(
+      chart,
+      otherChart,
+      horoscope,
+      zodiacForecast,
+    );
     if (!hasPrimary && !hasCloud) return fallback;
     final buf = StringBuffer();
     buf.writeln(
       'You are the mindreader.quest oracle: grounded, psychological, modern. '
       'No kitsch, no mysticism.',
     );
-    buf.writeln('The reader brings their natal astrology data.');
+    buf.writeln(chart == null && zodiacForecast != null
+        ? 'The reader brings a daily zodiac forecast without a birth chart.'
+        : 'The reader brings their natal astrology data.');
     buf.writeln(prompt);
     if (history.isNotEmpty) {
       buf.writeln('Dialog so far:');
@@ -868,7 +951,17 @@ class OracleSynthesisService {
     NatalChart? chart,
     NatalChart? otherChart,
     DailyHoroscopeReport? horoscope,
+    ZodiacSignForecast? zodiacForecast,
   ) {
+    if (chart == null && zodiacForecast != null) {
+      final sphere =
+          zodiacForecast.focusSpheres.isEmpty ? null : zodiacForecast.focusSpheres.first;
+      return 'Reading ${zodiacForecast.sign.title} '
+          '${zodiacForecast.sign.glyph} for today: '
+          '${zodiacForecast.overallTheme} '
+          'Energy reads ${zodiacForecast.energyScore}/100. '
+          '${sphere == null ? '' : '${sphere.title}: ${sphere.text}'}';
+    }
     if (chart != null && otherChart != null) {
       final aspects = NatalCalculatorService.computeSynastryAspects(
         chart,

@@ -11,6 +11,7 @@ import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../state/spread_controller.dart';
 import '../../state/synthesis_session.dart';
+import 'widgets/reading_subject_toggle.dart';
 
 /// Pane 1 — ORACLE AI CHAT: a full-width Gemini-style conversation. The
 /// pinned spread header strip (mini card icons + elemental badges) sits on
@@ -240,6 +241,10 @@ class _OracleChatPaneState extends State<OracleChatPane> {
             ),
           ),
           if (ready) ...[
+            const Padding(
+              padding: EdgeInsets.only(bottom: 10),
+              child: ReadingSubjectToggle(),
+            ),
             const SizedBox(height: 16),
             GestureDetector(
               onTap: () {
