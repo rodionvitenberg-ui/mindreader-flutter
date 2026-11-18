@@ -167,8 +167,8 @@ void main() {
     });
   });
 
-  group('ASTRAL 2-window architecture', () {
-    testWidgets('switches NATAL CHART ⇄ HOROSCOPE', (tester) async {
+  group('ASTRAL 3-window workspace', () {
+    testWidgets('switches NATAL CHART ⇄ HOROSCOPE ⇄ SYNASTRY', (tester) async {
       await tester.pumpWidget(const MindreaderApp());
       await tester.pump();
       await tester.tap(find.text('ASTRAL'));
@@ -184,11 +184,15 @@ void main() {
         find.byKey(const ValueKey('astral-window-horoscope')),
         findsOneWidget,
       );
+      expect(
+        find.byKey(const ValueKey('astral-window-synastry')),
+        findsOneWidget,
+      );
       expect(find.byType(HoroscopeWindow), findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('astral-window-horoscope')));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byType(HoroscopeWindow), findsOneWidget);
       // No natal profile yet → the quick-sign forecast is shown.
@@ -198,8 +202,14 @@ void main() {
       );
       expect(find.text('✦ DISCUSS HOROSCOPE WITH ORACLE'), findsOneWidget);
 
+      await tester.tap(find.byKey(const ValueKey('astral-window-synastry')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byKey(const ValueKey('synastry-window')), findsOneWidget);
+
       await tester.tap(find.byKey(const ValueKey('astral-window-natalChart')));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       expect(find.byType(HoroscopeWindow), findsNothing);
     });
   });

@@ -882,48 +882,9 @@ class NatalCalculatorService {
     final moonSign = ZodiacSignX.fromLongitude(moonLon);
     final moonHouse = _houseForLongitude(moonLon, chart.houseCusps);
 
-    const transitBodies = [
-      PlanetId.sun,
-      PlanetId.moon,
-      PlanetId.mercury,
-      PlanetId.venus,
-      PlanetId.mars,
-      PlanetId.jupiter,
-      PlanetId.saturn,
-    ];
-    final natalTargets = chart.planets
-        .where((p) => p.planet.isBody || p.planet == PlanetId.ascendant)
-        .toList();
-
-    final candidates = <_TransitCandidate>[];
-    for (final transit in transitBodies) {
-      final tLon = computeEclipticLongitude(transit, date);
-      for (final natal in natalTargets) {
-        var angle = (tLon - natal.longitude).abs() % 360.0;
-        if (angle > 180) angle = 360 - angle;
-        for (final type in AspectType.values) {
-          final deviation = (angle - type.baseAngle).abs();
-          if (deviation <= type.maxOrb) {
-            candidates.add(_TransitCandidate(transit, natal, type, deviation));
-          }
-        }
-      }
-    }
-    candidates.sort((a, b) => a.orb.compareTo(b.orb));
+    final candidates = _transitCandidates(chart, date);
     final top = candidates.take(5).toList();
-
-    final transits = [
-      for (final c in top)
-        DailyTransitItem(
-          title: '${c.transit.title} stirs your ${c.natal.planet.title}',
-          transitLabel:
-              'Transit ${c.transit.title} ${c.type.glyph} '
-              'Natal ${c.natal.planet.title}',
-          orb: c.orb,
-          advice: _transitAdvice(c),
-          harmony: c.type.harmony,
-        ),
-    ];
+    final transits = [for (final c in top) _toTransitItem(c)];
 
     final dominant = top.isEmpty
         ? AspectHarmony.harmonious
@@ -974,6 +935,159 @@ class NatalCalculatorService {
         transits: transits,
         energyScore: energyScore,
       ),
+    );
+  }
+
+  /// The deterministic 2-profile synastry read: four compatibility axes
+  /// (Emotional Bond, Attraction & Spark, Mental & Communication, Growth &
+  /// Friction) plus an overall 0..100 resonance score derived from the
+  /// tightest cross-chart aspects.
+  static SynastryReport computeSynastry(NatalChart a, NatalChart b) {
+    final cross = computeSynastryAspects(a, b);
+
+    bool between(NatalAspect x, Set<PlanetId> s1, Set<PlanetId> s2) =>
+        (s1.contains(x.bodyA) && s2.contains(x.bodyB)) ||
+        (s1.contains(x.bodyB) && s2.contains(x.bodyA));
+    bool anyOf(NatalAspect x, Set<PlanetId> s) =>
+        s.contains(x.bodyA) || s.contains(x.bodyB);
+
+    int axis(bool Function(NatalAspect) matches, {required bool tensionPositive}) {
+      var score = 50.0;
+      for (final x in cross) {
+        if (!matches(x)) continue;
+        final w = x.strength;
+        switch (x.type.harmony) {
+          case AspectHarmony.harmonious:
+            score += w * 18;
+          case AspectHarmony.tense:
+            score += (tensionPositive ? 14 : -14) * w;
+          case AspectHarmony.intense:
+            score += w * 6;
+        }
+      }
+      return score.round().clamp(0, 100);
+    }
+
+    final axes = [
+      SynastryAxis(
+        title: 'Emotional Bond',
+        score: axis(
+          (x) =>
+              between(x, <PlanetId>{PlanetId.moon}, <PlanetId>{PlanetId.moon, PlanetId.venus}) ||
+              between(x, <PlanetId>{PlanetId.venus}, <PlanetId>{PlanetId.venus}),
+          tensionPositive: false,
+        ),
+        text: 'Moon–Moon and Moon–Venus contact: how needs are felt, held '
+            'and mirrored.',
+      ),
+      SynastryAxis(
+        title: 'Attraction & Spark',
+        score: axis(
+          (x) =>
+              between(x, <PlanetId>{PlanetId.venus, PlanetId.sun}, <PlanetId>{PlanetId.mars}) ||
+              between(x, <PlanetId>{PlanetId.sun}, <PlanetId>{PlanetId.venus}),
+          tensionPositive: false,
+        ),
+        text: 'Venus–Mars and Sun contact: the charge that pulls two people '
+            'together.',
+      ),
+      SynastryAxis(
+        title: 'Mental & Communication',
+        score: axis(
+          (x) => between(x, <PlanetId>{PlanetId.mercury}, <PlanetId>{PlanetId.mercury, PlanetId.moon, PlanetId.sun}),
+          tensionPositive: false,
+        ),
+        text: 'Mercury links: how the two minds trade, question and '
+            'understand.',
+      ),
+      SynastryAxis(
+        title: 'Growth & Friction',
+        score: axis(
+          (x) =>
+              anyOf(x, <PlanetId>{PlanetId.saturn}) ||
+              x.type == AspectType.square ||
+              x.type == AspectType.opposition,
+          tensionPositive: true,
+        ),
+        text: 'Saturn and the squares: where the bond is built through '
+            'resistance.',
+      ),
+    ];
+    final overall =
+        (axes.fold<int>(0, (sum, ax) => sum + ax.score) / axes.length).round();
+    return SynastryReport(overallScore: overall, axes: axes);
+  }
+
+  /// Today..+6: the single strongest transit peak per day (tightest orb),
+  /// used by the Horoscope's 7-day power/tension timeline. Days with no
+  /// exact transit are calm and carry a null peak.
+  static List<DailyTransitPeak> computeSevenDayForecast(
+    NatalChart chart, {
+    DateTime? fromDate,
+  }) {
+    final start = (fromDate ?? DateTime.now()).toUtc();
+    return [
+      for (var i = 0; i < 7; i++)
+        _transitPeakFor(chart, start.add(Duration(days: i))),
+    ];
+  }
+
+  /// All candidate live transit pairs (transiting body × natal point ×
+  /// aspect) for one instant, tightest orb first.
+  static List<_TransitCandidate> _transitCandidates(
+    NatalChart chart,
+    DateTime date,
+  ) {
+    const transitBodies = [
+      PlanetId.sun,
+      PlanetId.moon,
+      PlanetId.mercury,
+      PlanetId.venus,
+      PlanetId.mars,
+      PlanetId.jupiter,
+      PlanetId.saturn,
+    ];
+    final natalTargets = chart.planets
+        .where((p) => p.planet.isBody || p.planet == PlanetId.ascendant)
+        .toList();
+
+    final candidates = <_TransitCandidate>[];
+    for (final transit in transitBodies) {
+      final tLon = computeEclipticLongitude(transit, date);
+      for (final natal in natalTargets) {
+        var angle = (tLon - natal.longitude).abs() % 360.0;
+        if (angle > 180) angle = 360 - angle;
+        for (final type in AspectType.values) {
+          final deviation = (angle - type.baseAngle).abs();
+          if (deviation <= type.maxOrb) {
+            candidates.add(_TransitCandidate(transit, natal, type, deviation));
+          }
+        }
+      }
+    }
+    candidates.sort((a, b) => a.orb.compareTo(b.orb));
+    return candidates;
+  }
+
+  /// Maps one transit candidate to the UI-friendly daily transit item.
+  static DailyTransitItem _toTransitItem(_TransitCandidate c) {
+    return DailyTransitItem(
+      title: '${c.transit.title} stirs your ${c.natal.planet.title}',
+      transitLabel:
+          'Transit ${c.transit.title} ${c.type.glyph} '
+          'Natal ${c.natal.planet.title}',
+      orb: c.orb,
+      advice: _transitAdvice(c),
+      harmony: c.type.harmony,
+    );
+  }
+
+  static DailyTransitPeak _transitPeakFor(NatalChart chart, DateTime date) {
+    final candidates = _transitCandidates(chart, date);
+    if (candidates.isEmpty) return DailyTransitPeak(date: date);
+    return DailyTransitPeak(
+      date: date,
+      transit: _toTransitItem(candidates.first),
     );
   }
 

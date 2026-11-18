@@ -14,7 +14,7 @@ import '../../core/theme/app_colors.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/astral_controller.dart';
 import 'natal_profile_detail_sheet.dart';
-import 'synastry_summary_sheet.dart';
+import 'widgets/synastry_window.dart';
 import 'widgets/astral_cosmic_bar.dart';
 import 'widgets/astral_gradient_button.dart';
 import 'widgets/astral_house_selector.dart';
@@ -26,8 +26,8 @@ import 'widgets/birth_data_form_sheet.dart';
 import 'widgets/horoscope_window.dart';
 import 'widgets/natal_wheel_widget.dart';
 
-/// The two ASTRAL windows.
-enum AstralWindow { natalChart, horoscope }
+/// The three ASTRAL windows.
+enum AstralWindow { natalChart, horoscope, synastry }
 
 /// Pillar 5: ASTRAL — multi-profile natal charts with a 2-profile free
 /// tier, instant house-system switching, a 2-window architecture
@@ -55,6 +55,8 @@ class _AstralScreenState extends State<AstralScreen> {
   int _streak = 0;
 
   AstralWindow _window = AstralWindow.natalChart;
+
+  late final PageController _windowController = PageController();
 
   /// Quick-sign browse state: null = the personal (natal) horoscope.
   ZodiacSign? _quickSign;
@@ -90,6 +92,7 @@ class _AstralScreenState extends State<AstralScreen> {
   @override
   void dispose() {
     widget.browseZodiacSign?.removeListener(_onBrowseSign);
+    _windowController.dispose();
     super.dispose();
   }
 
@@ -99,10 +102,8 @@ class _AstralScreenState extends State<AstralScreen> {
     final sign = widget.browseZodiacSign?.value;
     if (sign == null || !mounted) return;
     HapticFeedback.selectionClick();
-    setState(() {
-      _quickSign = sign;
-      _window = AstralWindow.horoscope;
-    });
+    setState(() => _quickSign = sign);
+    _selectWindow(AstralWindow.horoscope);
     widget.browseZodiacSign?.value = null;
   }
 
@@ -174,23 +175,31 @@ class _AstralScreenState extends State<AstralScreen> {
     );
   }
 
-  void _openSynastry(AstralController astral) {
-    final active = astral.activeProfile;
-    if (active == null) return;
-    NatalChart? other;
-    for (final p in astral.profiles) {
-      if (p.id != active.id) {
-        other = p;
-        break;
-      }
+  void _selectWindow(AstralWindow w) {
+    if (_window == w) return;
+    HapticFeedback.selectionClick();
+    setState(() => _window = w);
+    if (_windowController.hasClients) {
+      _windowController.animateToPage(
+        w.index,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
     }
-    if (other == null) return;
-    SynastrySummarySheet.show(
-      context,
-      a: active,
-      b: other,
-      onSendToOracle: widget.onOpenOracle,
-    );
+  }
+
+  void _openSynastry(AstralController astral) {
+    if (astral.profiles.length < 2) return;
+    _selectWindow(AstralWindow.synastry);
+  }
+
+  NatalChart? _otherProfile(AstralController astral) {
+    final active = astral.activeProfile;
+    if (active == null) return null;
+    for (final p in astral.profiles) {
+      if (p.id != active.id) return p;
+    }
+    return null;
   }
 
   @override
@@ -210,88 +219,136 @@ class _AstralScreenState extends State<AstralScreen> {
     return Scaffold(
       backgroundColor: AppColors.canvas,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AstralCosmicBar(phase: _phase, streak: _streak),
-              const SizedBox(height: 16),
-              AstralProfileBar(
-                profiles: astral.profiles,
-                activeIndex: astral.activeProfileIndex,
-                canCreate: astral.canCreateOrGenerateChart(),
-                onSelect: astral.setActiveProfile,
-                onAdd: _openNewChart,
-              ),
-              const SizedBox(height: 12),
-              _AstralWindowSwitcher(
-                window: _window,
-                onChanged: (w) {
-                  HapticFeedback.selectionClick();
-                  setState(() => _window = w);
-                },
-              ),
-              const SizedBox(height: 14),
-              if (_window == AstralWindow.natalChart) ...[
-                Text(
-                  'HOUSE SYSTEM',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 9,
-                    letterSpacing: 1.8,
-                    color: AppColors.textMuted,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AstralCosmicBar(phase: _phase, streak: _streak),
+                  const SizedBox(height: 16),
+                  AstralProfileBar(
+                    profiles: astral.profiles,
+                    activeIndex: astral.activeProfileIndex,
+                    canCreate: astral.canCreateOrGenerateChart(),
+                    onSelect: astral.setActiveProfile,
+                    onAdd: _openNewChart,
                   ),
-                ),
-                const SizedBox(height: 6),
-                AstralHouseSelector(
-                  value: astral.activeHouseSystem,
-                  onChanged: astral.setHouseSystem,
-                ),
-                const SizedBox(height: 16),
-                if (chart == null)
-                  const AstralWheelPlaceholder(chart: null)
-                else
-                  NatalWheelWidget(chart: chart),
-                const SizedBox(height: 16),
-                if (chart == null)
-                  AstralEmptyState(onGenerate: _openNewChart)
-                else ...[
-                  AstralSummaryCard(
-                    chart: chart,
-                    onOpenProfile: () => _openProfile(chart),
+                  const SizedBox(height: 12),
+                  _AstralWindowSwitcher(
+                    window: _window,
+                    onChanged: _selectWindow,
                   ),
                   const SizedBox(height: 14),
-                  AstralGradientButton(
-                    label: '✦ DISCUSS NATAL CHART WITH ORACLE',
-                    onTap: () => _handoffNatalToOracle(chart),
-                  ),
-                  if (astral.profiles.length >= 2) ...[
-                    const SizedBox(height: 10),
-                    AstralGradientButton(
-                      label: '⚡ COMPARE 2 PROFILES · SYNASTRY',
-                      onTap: () => _openSynastry(astral),
-                    ),
-                  ],
                 ],
-              ] else
-                HoroscopeWindow(
-                  chart: chart,
-                  report: report,
-                  selectedSign: _quickSign,
-                  forecast: forecast,
-                  onSelectSign: (s) => setState(() => _quickSign = s),
-                  onPersonal: () => setState(() => _quickSign = null),
-                  onDiscuss: () {
-                    if (_quickSign == null && chart != null && report != null) {
-                      _handoffHoroscopeToOracle(chart, report);
-                    } else if (sign != null && forecast != null) {
-                      _handoffZodiacToOracle(sign, forecast);
-                    }
-                  },
-                ),
-            ],
-          ),
+              ),
+            ),
+            Expanded(
+              child: PageView(
+                controller: _windowController,
+                onPageChanged: (i) =>
+                    setState(() => _window = AstralWindow.values[i]),
+                children: [
+                  _buildNatalWindow(astral, chart),
+                  _buildHoroscopeWindow(chart, report, sign, forecast),
+                  _buildSynastryWindow(astral),
+                ],
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildNatalWindow(AstralController astral, NatalChart? chart) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'HOUSE SYSTEM',
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 9,
+              letterSpacing: 1.8,
+              color: AppColors.textMuted,
+            ),
+          ),
+          const SizedBox(height: 6),
+          AstralHouseSelector(
+            value: astral.activeHouseSystem,
+            onChanged: astral.setHouseSystem,
+          ),
+          const SizedBox(height: 16),
+          if (chart == null)
+            const AstralWheelPlaceholder(chart: null)
+          else
+            NatalWheelWidget(chart: chart),
+          const SizedBox(height: 16),
+          if (chart == null)
+            AstralEmptyState(onGenerate: _openNewChart)
+          else ...[
+            AstralSummaryCard(
+              chart: chart,
+              onOpenProfile: () => _openProfile(chart),
+            ),
+            const SizedBox(height: 14),
+            AstralGradientButton(
+              label: '✦ DISCUSS NATAL CHART WITH ORACLE',
+              onTap: () => _handoffNatalToOracle(chart),
+            ),
+            if (astral.profiles.length >= 2) ...[
+              const SizedBox(height: 10),
+              AstralGradientButton(
+                label: '⚡ COMPARE 2 PROFILES · SYNASTRY',
+                onTap: () => _openSynastry(astral),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHoroscopeWindow(
+    NatalChart? chart,
+    DailyHoroscopeReport? report,
+    ZodiacSign? sign,
+    ZodiacSignForecast? forecast,
+  ) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      child: HoroscopeWindow(
+        chart: chart,
+        report: report,
+        selectedSign: _quickSign,
+        forecast: forecast,
+        sevenDayPeaks: chart == null
+            ? null
+            : NatalCalculatorService.computeSevenDayForecast(chart),
+        onSelectSign: (s) => setState(() => _quickSign = s),
+        onPersonal: () => setState(() => _quickSign = null),
+        onDiscuss: () {
+          if (_quickSign == null && chart != null && report != null) {
+            _handoffHoroscopeToOracle(chart, report);
+          } else if (sign != null && forecast != null) {
+            _handoffZodiacToOracle(sign, forecast);
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildSynastryWindow(AstralController astral) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+      child: SynastryWindow(
+        a: astral.activeProfile,
+        b: _otherProfile(astral),
+        onDiscuss: widget.onOpenOracle,
       ),
     );
   }
@@ -310,6 +367,7 @@ class _AstralWindowSwitcher extends StatelessWidget {
     final labels = {
       AstralWindow.natalChart: AppStrings.t(lang, 'astral.natal'),
       AstralWindow.horoscope: AppStrings.t(lang, 'astral.horoscope'),
+      AstralWindow.synastry: AppStrings.t(lang, 'astral.synastry'),
     };
     return Container(
       padding: const EdgeInsets.all(4),

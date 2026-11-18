@@ -54,6 +54,10 @@ class AppStrings {
       AppLanguage.en: 'HOROSCOPE',
       AppLanguage.ru: 'ГОРОСКОП',
     },
+    'astral.synastry': {
+      AppLanguage.en: 'SYNASTRY',
+      AppLanguage.ru: 'СИНАСТРИЯ',
+    },
 
     // ---- settings sheet ----
     'settings.title': {AppLanguage.en: 'SETTINGS', AppLanguage.ru: 'НАСТРОЙКИ'},

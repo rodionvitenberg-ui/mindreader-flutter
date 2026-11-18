@@ -635,3 +635,79 @@ class NatalChart {
     ],
   );
 }
+
+/// One axis of the four-axis synastry compatibility read.
+class SynastryAxis {
+  const SynastryAxis({
+    required this.title,
+    required this.score,
+    required this.text,
+  });
+
+  /// E.g. 'Emotional Bond'.
+  final String title;
+
+  /// Deterministic 0..100 axis score.
+  final int score;
+
+  /// Grounded, non-fatalistic interpretation line.
+  final String text;
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'score': score,
+    'text': text,
+  };
+
+  static SynastryAxis fromJson(Map<String, dynamic> json) => SynastryAxis(
+    title: json['title'] as String,
+    score: json['score'] as int,
+    text: json['text'] as String,
+  );
+}
+
+/// The deterministic 2-profile synastry summary: an overall 0..100 resonance
+/// score plus the four core compatibility axes.
+class SynastryReport {
+  const SynastryReport({required this.overallScore, required this.axes});
+
+  final int overallScore;
+  final List<SynastryAxis> axes;
+
+  Map<String, dynamic> toJson() => {
+    'overallScore': overallScore,
+    'axes': [for (final a in axes) a.toJson()],
+  };
+
+  static SynastryReport fromJson(Map<String, dynamic> json) => SynastryReport(
+    overallScore: json['overallScore'] as int,
+    axes: [
+      for (final a in json['axes'] as List<dynamic>)
+        SynastryAxis.fromJson(a as Map<String, dynamic>),
+    ],
+  );
+}
+
+/// One day of the 7-day power/tension forecast: the strongest single transit
+/// peak for that day, or null when the day is calm.
+class DailyTransitPeak {
+  const DailyTransitPeak({required this.date, this.transit});
+
+  final DateTime date;
+  final DailyTransitItem? transit;
+
+  Map<String, dynamic> toJson() => {
+    'date': date.toIso8601String(),
+    if (transit != null) 'transit': transit!.toJson(),
+  };
+
+  static DailyTransitPeak fromJson(Map<String, dynamic> json) =>
+      DailyTransitPeak(
+        date: DateTime.parse(json['date'] as String),
+        transit: json['transit'] == null
+            ? null
+            : DailyTransitItem.fromJson(
+                json['transit'] as Map<String, dynamic>,
+              ),
+      );
+}

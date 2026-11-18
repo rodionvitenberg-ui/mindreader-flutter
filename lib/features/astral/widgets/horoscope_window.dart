@@ -21,6 +21,7 @@ class HoroscopeWindow extends StatelessWidget {
     required this.onSelectSign,
     required this.onPersonal,
     required this.onDiscuss,
+    this.sevenDayPeaks,
     super.key,
   });
 
@@ -33,6 +34,9 @@ class HoroscopeWindow extends StatelessWidget {
   final ValueChanged<ZodiacSign> onSelectSign;
   final VoidCallback onPersonal;
   final VoidCallback onDiscuss;
+
+  /// Today..+6 transit peaks for the 7-day timeline (personal mode only).
+  final List<DailyTransitPeak>? sevenDayPeaks;
 
   bool get _personal => selectedSign == null && chart != null && report != null;
 
@@ -57,6 +61,10 @@ class HoroscopeWindow extends StatelessWidget {
           for (final f in report!.focusSpheres) ...[
             FocusSphereCard(sphere: f),
             const SizedBox(height: 8),
+          ],
+          if (sevenDayPeaks != null) ...[
+            const SizedBox(height: 8),
+            SevenDayForecastCard(peaks: sevenDayPeaks!),
           ],
           const SizedBox(height: 6),
           AstralGradientButton(

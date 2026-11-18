@@ -7,6 +7,27 @@
 
 ---
 
+## STEP 2 — 3-Window Astral Workspace, Synastry Engine & 7-Day Transit Forecast `[x] DONE (2026-11-18)`
+
+- **3-window ASTRAL PageView** (`astral_screen.dart`): `AstralWindow` grew a
+  third value (`synastry`); the top switcher is now
+  `[ NATAL CHART | HOROSCOPE | SYNASTRY ]`, synced to a horizontal
+  `PageController`. Synastry moved from a modal sheet into an inline
+  `SynastryWindow` (`widgets/synastry_window.dart`); the natal-window
+  “COMPARE 2 PROFILES · SYNASTRY” button now jumps to the synastry window.
+- **`computeSynastry`** (`natal_calculator_service.dart` + models): a
+  deterministic 0..100 overall resonance score plus four compatibility axes
+  (Emotional Bond, Attraction & Spark, Mental & Communication, Growth &
+  Friction) derived from the tightest cross-chart aspects.
+- **7-day transit forecast** (`computeSevenDayForecast` +
+  `SevenDayForecastCard`): Today..+6, one strongest peak per day (tightest orb,
+  Harmony/Tension tinted). The daily-horoscope transit-candidate logic was
+  extracted into shared helpers (`_transitCandidates`, `_toTransitItem`) to
+  remove duplication.
+- **Verification**: `flutter analyze` = 0 issues; `flutter test` = 273/273 green
+  (new `test/astral_workspace_and_zodiac_test.dart`; the `switches …` test was
+  updated to 3 windows).
+
 ## Iteration 5 — Profile, 5-Tab Shell & True Deck Cycling `[x] DONE (2026-11-18)`
 
 - **True top-to-bottom shuffle cycling** (`interactive_deck_widget.dart`):
