@@ -109,8 +109,68 @@ SpreadController
   badge + mode badge (QUICK SCAN / GUIDED SPREAD / LIVE ORACLE), a mute/unmute
   voice toggle, and a mode-gated physical CTA (`RESUME CAMERA` /
   `CONTINUE GUIDED SESSION` / `RETURN TO PHYSICAL SPREAD`). New free-dialog
-  Oracle answers are auto-spoken when TTS is available and unmuted; the mic-duck
-  hook (`onSpeakingStarted`/`onSpeakingStopped`) is wired in 4.4.
+  Oracle answers are auto-spoken when TTS is available and unmuted. The
+  half-duplex hooks (`onSpeakingStarted`/`onSpeakingStopped`) exist on the
+  service but are not yet wired to the STT mic (the capsule/bottom-sheet own
+  `SpeechToText`); that mic-duck is deferred out of 4.4's widget scope.
+- **Voice Overlay + Compact Oracle (4.4):** five presentation widgets in
+  `lib/features/oracle/widgets/`, all depending on the ONE shared
+  `OracleVoiceService` so Full ↔ Overlay ↔ Compact transitions never reset the
+  voice session:
+  * `oracle_presence_indicator.dart` — pure `oraclePresenceColor(state, muted)`
+    + `oraclePresenceActive(state)` palette/state helpers, and
+    `OraclePresenceIndicator`: a pulsing lavender glow (GPU-composited
+    `Transform.scale` + `Opacity`) + a subtle 5-bar waveform `CustomPainter`
+    inside a `RepaintBoundary`; the ticker runs only while the Oracle is alive.
+  * `oracle_voice_controls.dart` — `OracleVoiceControls`: mic / mute / pause /
+    interrupt / expand-collapse / end. The TTS buttons drive the service
+    directly; mic/expand/end are caller-owned callbacks (the widget never owns
+    the STT half or the session lifecycle).
+  * `oracle_subtitles.dart` — `OracleSubtitles`: bounded, internally-scrollable
+    captions (`maxLines × 18px`) so a long answer never covers the viewfinder.
+  * `oracle_voice_overlay.dart` — `OracleVoiceOverlay`: a `SafeArea` glass panel
+    (`BackdropFilter` blur 16 + 1 px lavender hairline, 24 px radius) meant to
+    dock BELOW the camera viewfinder, carrying presence + subtitles + controls
+    and a `LIVE ORACLE` mono eyebrow.
+  * `compact_oracle.dart` — `CompactOracle`: a floating capsule (presence +
+    minimal controls) that expands back to the overlay.
+  * The overlay/capsule never occupy the viewfinder itself.
+- **Live Oracle freeform (4.5):** `LiveOracleController`
+  (`lib/state/live_oracle_controller.dart`) tracks the freeform session state
+  (active / intention / `pendingAction`) but holds NO cards and NO dialogue —
+  `SpreadController` and `OracleSessionController` stay the single sources of
+  truth. `OracleSynthesisService.interpretFreeform` reads a stated intention +
+  freely-laid cards and returns a validated `OracleActionCommand` (worker →
+  cloud → local; the offline `_freeformFallback` is deterministic and always
+  `respond`). `planGuidedTransition` (pure) maps existing free cards onto a
+  chosen structured spread WITHOUT dropping any and WITHOUT silently
+  reassigning — it returns a `GuidedTransitionPlan` whose
+  `requiresConfirmation` is true whenever cards exist, so the reader confirms
+  roles before the app applies them. `LiveOracleController` is registered as a
+  provider in `main.dart` (parallel to `LiveReadingController`).
+- **Structured actions (4.6):** `lib/core/models/oracle_action.dart` —
+  `OracleAction` (`respond` / `suggestSpread` / `requestNextCard` /
+  `requestClarifier` / `requestReveal` / `askQuestion` / `summarizeSpread` /
+  `completeReading` / `none`), `OracleActionCommand` (action + text + a safe
+  `position` honored only for `requestReveal`/`requestNextCard`), and
+  `parseOracleActionResponse` — strict and total: prose/malformed JSON degrade
+  to `respond`, and any injected `cards`/`canonicalCardId`/`orientation`/
+  `bypassLimit`/`pro`/`history` key is silently dropped. The app is
+  AUTHORITATIVE: the LLM can only REQUEST; it structurally cannot mutate cards.
+- **Payload contract (4.7):** `lib/core/models/oracle_payload.dart` —
+  `canonicalCardId(system, id)` is the ONLY id form the Oracle receives
+  (`tarot:13`, `lenormand:9`, `runes:5`). `OraclePayload` is the compact
+  `schemaVersion/sessionId/source/mode/system/spreadId/currentPosition/
+  cards[...]/expectedAction` context. `OraclePayload.build` describes ONLY
+  face-up (revealed, confirmed) cards — a face-down card's identity is never
+  leaked — and carries NO bbox and NO image bytes, so a bbox update can never
+  change the payload or trigger an LLM request.
+- **Personality (4.8):** `OracleSynthesisService.oraclePersona` — one const
+  voice (calm, restrained, contextual, symbolic; grounded psychology; NEVER
+  categorical medical/financial/legal predictions; spoken answers shorter than
+  written) wired into the `_chat` system prompt and the `synthesizeClarifier` /
+  `answerChat` / `_buildPrompt` openers (replacing three slightly-different
+  hardcoded intro lines).
 
 ## Digital Table physics (game-feel contract)
 

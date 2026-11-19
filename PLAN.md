@@ -6,22 +6,10 @@
 
 ## СТАТУС
 - Phase 0 (Vision Engine): DEFERRED.
-- Phase 1 (Camera & Session Architecture): DONE — 1.1 + 1.2 + 1.3 + 1.4 + 1.5 + 1.6 + 1.7 DONE
-  (domain enums, stable sessionId/snapshot extension, OracleSessionController,
-  Vision Engine contract, Camera UI redesign, CardOverlayPainter, Resource
-  lifecycle). Acceptance criteria passed.
-- Phase 2 (Quick Scan & Table): DONE — 2.1 + 2.2 + 2.3 + 2.4 DONE
-  (SpreadInferenceService, Recognition Review sheet, generalized Camera→Table
-  handoff, physical clarifier; PRO restrictions centrally disabled for
-  pre-launch). Acceptance criteria passed.
-- Phase 3 (Guided Physical Spread): DONE — 3.1 + 3.2 + 3.3 + 3.4 + 3.5 + 3.6 DONE.
-  Acceptance criteria passed.
-- Phase 4 (Live Oracle & Voice): IN PROGRESS — 4.1 DONE (Shared Oracle session
-  VERIFIED: single OracleSessionController across all tabs; new
-  test/oracle_shared_session_test.dart incl. Camera↔Table↔Oracle continuity).
-  4.2 DONE (OracleVoiceService + flutter_tts ^4.2.5 research; TtsEngine seam;
-  392/392 green). 4.3 DONE (Full Chat: source/mode badges, voice toggle +
-  auto-speak, physical resume/return CTA; 401/401 green).
+- Phase 1 (Camera & Session Architecture): READY (аудит выполнен, см. ниже).
+- Phase 2 (Quick Scan & Table): PENDING.
+- Phase 3 (Guided Physical Spread): PENDING.
+- Phase 4 (Live Oracle & Voice): PENDING.
 - Phase 5 (Unification & QA): PENDING.
 
 ## РЕЗУЛЬТАТЫ АУДИТА РЕПОЗИТОРИЯ (фиксируются как исходная точка)
@@ -75,12 +63,9 @@ AppSettingsController, SessionHistoryController(..load()), UserProfileController
 # PHASE 1 — CAMERA & SESSION ARCHITECTURE
 
 ## 1.0 Pre-flight (1 сессия)
-1. git status; зафиксировать baseline; PLAN.md (этот файл) — уже пересоздан.
-2. Обновить TASK_STATE.json: status=IN_PROGRESS, active_feature_or_sprint="Phase 1".
-3. Снимок счётчика тестов: `flutter test` до изменений (~254+ green).
-STOP → отчёт.
+1. Обновить TASK_STATE.json: status=IN_PROGRESS, active_feature_or_sprint="Phase 1".
 
-## 1.1 Доменные enum + модели (1 сессия) — DONE
+## 1.1 Доменные enum + модели (1 сессия)
 Создать (lib/core/models/):
 - reading_source.dart: enum ReadingSource { digital, physical }
 - reading_mode.dart: enum ReadingMode { standard, quickScan, guidedSpread, liveOracle }
@@ -90,7 +75,7 @@ STOP → отчёт.
 сохранение source/mode. НЕ дублировать TableSourceMode (документировать маппинг в коде).
 STOP.
 
-## 1.2 Стабильный sessionId + расширение снимка (1 сессия) — DONE
+## 1.2 Стабильный sessionId + расширение снимка (1 сессия)
 1. SpreadSessionSnapshot: добавить optional поля readingSource/readingMode/
    readingStatus/completionStatus/voiceUsed + factory/JSON (backward-compatible:
    отсутствующие ключи → null/default, старые снимки грузятся).
@@ -131,7 +116,7 @@ STOP.
 Тесты: vision_contract_test.dart (координаты 0..1, отмена, stale-rejection).
 STOP.
 
-## 1.5 Camera UI redesign (1-2 сессии) — DONE
+## 1.5 Camera UI redesign (1-2 сессии)
 Файл: lib/features/camera_scan/camera_scan_screen.dart (+ widgets/).
 1. УДАЛИТЬ ряд _CountChip (1|3|4|7|5|6|10) из build() (там :232-243).
 2. widgets/camera_mode_selector.dart: segmented QUICK SCAN | GUIDED SPREAD | LIVE ORACLE;
@@ -145,7 +130,7 @@ STOP.
 GATE: flutter analyze + flutter test + сборка apk --debug (если окружение доступно).
 STOP.
 
-## 1.6 CardOverlayPainter (1 сессия) — DONE
+## 1.6 CardOverlayPainter (1 сессия)
 lib/features/camera_scan/widgets/card_overlay_painter.dart:
 состояния detected/recognizing/recognized/ambiguous/faceDown/lost (цвета из AppColors:
 lavender, conflictAmber), преобразование normalized→viewfinder, RepaintBoundary +
@@ -154,33 +139,17 @@ Listenable (не rebuild всего дерева). Debug-only fixtures для т
 Тесты: card_overlay_painter_test.dart.
 STOP.
 
-## 1.7 Resource lifecycle (1 сессия) — DONE
-IndexedStack + isActiveTab уже корректны (camera_lifecycle_test 2 теста). Добавлено:
-- микрофон выключается при уходе приложения в фон — GeminiInputCapsule теперь
-  WidgetsBindingObserver: paused/inactive/hidden → _stopMic() (глушит SpeechToText,
-  сохраняет текст; индикатор ОС гаснет). CameraController и так enableAudio:false.
-- app-background приостанавливает камеру — CameraScanScreen теперь
-  WidgetsBindingObserver: paused/inactive/hidden → _releaseCamera(); resumed →
-  _initCamera() ТОЛЬКО если таб активен (green privacy indicator не горит в фоне).
-- возврат не пересоздаёт расклад — IndexedStack + SpreadController (provider) уже
-  держат состояние; подтверждено существующими tab-switch тестами.
-- поздний async-ответ не меняет завершённую сессию — OracleSessionController
-  получил монотонный epoch + isCurrentSession(epoch); TableWorkspace
-  (_runSynthesis/_askOracle/_runAstralReading/_generateClarifier) захватывает epoch
-  до await и отклоняет мутацию, если сессия была reset/перезапущена.
-Тесты: camera_lifecycle_test.dart расширен до 4 (background→release, resume→re-acquire,
-resume на не-камерном табе → не пересоздаётся); oracle_session_controller_test.dart +1
-(epoch guard). GATE: flutter analyze = No issues found; full flutter test = 325/325 green.
+## 1.7 Resource lifecycle (1 сессия)
+Проверить IndexedStack + isActiveTab (уже корректно). Добавить: микрофон выключен,
+когда голос не активен; app-background приостанавливает camera/voice; возврат не
+пересоздаёт расклад; поздний async-ответ не меняет завершённую сессию (guard по
+sessionId/status). Тесты: camera_lifecycle_test.dart расширить.
 STOP.
 
-## Phase 1 acceptance criteria (единый чек-лист) — PASSED
-- [x] 3 режима в Camera (QUICK SCAN | GUIDED SPREAD | LIVE ORACLE, 1.5);
-- [x] выбор количества карт удалён (1.5);
-- [x] Table/History без регрессий (full test 325/325);
-- [x] Vision-контракт независим от ML (1.4, legacy_vision_adapter/unavailable_vision_engine);
-- [x] FakeVision только тесты/debug (test/fakes/fake_vision_engine.dart);
-- [x] отсутствие Vision не падает; ручной fallback (unavailable_vision_engine → manualFallbackRequired);
-- [x] lifecycle корректен (1.7: mic off в фоне, camera pause на фоне, stale-response guard).
+## Phase 1 acceptance criteria (единый чек-лист)
+- 3 режима в Camera; выбор количества карт удалён; Table/History без регрессий;
+  Vision-контракт независим от ML; FakeVision только тесты/debug; отсутствие Vision
+  не падает; ручной fallback; lifecycle корректен.
 
 ## Phase 1 → отчёт (шаблон §7 спеки) → STOP. НЕ начинать Phase 2 без команды.
 
@@ -188,72 +157,56 @@ STOP.
 
 # PHASE 2 — QUICK SCAN & TABLE INTEGRATION
 
-## 2.1 SpreadInferenceService (1 сессия) — DONE
-lib/core/services/spread_inference_service.dart: SpreadInferenceInput (system,
-detectedCount, confirmedCount?, positions?/boxes? как NormalizedPoint/NormalizedRect
-из VisionEngine — геометрия ОПЦИОНАЛЬНА, только флаг hasGeometry), SpreadCandidate
-(tarot/lenormand/rune + cardCount/label/isPro/slotRoles/reason),
-SpreadInferenceResult (candidates, top, isFreeform, needsConfirmation, detectedCount).
-Количество ≠ назначение позиций; неоднозначность (Lenormand 9 = nine + grandPortrait)
-→ needsConfirmation; нет схемы → Freeform (detectedCount сохраняется, карты не теряются).
-Тесты: test/spread_inference_test.dart (8 тестов).
+## 2.1 SpreadInferenceService (1 сессия)
+lib/core/services/spread_inference_service.dart: вход (system, detectedCount,
+confirmedCount, positions, geometry, каталоги SpreadType/LenormandSpread/RuneCast,
+intention) → выход (совместимые схемы, топ-схема, основания, нужна ли конфирмация).
+Количество ≠ назначение позиций. Неоднозначность → компактный выбор; нет схемы →
+Freeform/Custom. Лишние карты не отбрасывать молча.
+Тесты: spread_inference_test.dart.
 STOP.
 
-## 2.2 Recognition Review (1-2 сессии) — DONE
+## 2.2 Recognition Review (1-2 сессии)
 lib/features/camera_scan/widgets/recognition_review_sheet.dart (bottom sheet):
-счётчик распознанных, предложенный расклад (+ компактный выбор кандидатов при
-неоднозначности), список карт с thumbnail (shortLabel), именем, переключением
-ориентации (скрыто для Lenormand — supportsReversal), reorder (вверх/вниз = confirm
-порядка), remove, CONFIRM → RecognitionReviewResult (cards + reversed + spread?).
-Confidence не выдумывается. Тесты: test/recognition_review_test.dart (5 тестов).
+обнаружено/распознано, миниатюры (из Almanac-карточек), имена, ориентация, порядок,
+позиции, неизвестные, предложенный расклад. Действия: change/toggle orientation/reorder/
+assign/remove/add/rescan/confirm. Lenormand без reversed; confidence не выдумывать.
+Тесты: widget — recognition_review_test.dart.
 STOP.
 
-## 2.3 Camera→Table handoff (1 сессия) — DONE
-SpreadController.loadScannedSpread (новый, обобщённый): system + List<DivinationCard>
-+ reversed + опциональный spread (tarot/lenormand/rune enum). Freeform → все карты
-сохраняются (generic "Card N" роли сверх шаблона), лишние не отбрасываются. Цифровой
-ledger не трогается (reset+shuffle, без fake dealCardAt). loadScannedSpreadFaceUp
-оставлен как legacy-обёртка. camera_scan_screen.dart: _scan → detect → lock-on →
-RecognitionReviewSheet → loadScannedSpread → onHandoff. Amendment 4: recognizer
-TAROT-only — для Lenormand/Runes честный manual fallback (SnackBar), никакой
-конвертации tarot→lenormand/runes. Тесты: phase2_flow_test + app_smoke_test (обновлены
-под review sheet), phase2_clarifier_test (freeform + идемпотентность).
+## 2.3 Camera→Table handoff (1 сессия)
+1. Расширить loadScannedSpreadFaceUp (или новый метод) до передачи: sessionId,
+   ReadingSource.physical, ReadingMode.quickScan, cardIds, deckIds, orientation,
+   positions, slot roles, intention, subject. Максимально переиспользовать
+   loadScannedSpreadFaceUp + physicalCameraSync.
+2. После confirm: Active Table, карты face-up, Focus/Spread доступны, переход в
+   Oracle Chat, автосохранение. Фиктивного вытягивания из цифровой колоды НЕ делать;
+   цифровой ledger не трогать.
+Тесты: phase2_flow_test.dart расширить (quickScan → Oracle).
 STOP.
 
-## 2.4 Physical clarifier (1 сессия) — DONE
-+1 Clarifier уже был реализован (completeClarifierScan → Clarifier N с userContext =
-вопросом, fromPhysicalCard, face-up; _maybeExpandClarifiers генерирует Clarifier
-Expansion; _captureSession upsert той же сессии — новая сессия НЕ создаётся). Phase 2
-закрепил: (а) amendment 4 — clarifier-скан для Lenormand/Runes → manual fallback,
-(б) идемпотентность completeClarifierScan (повторный вызов без вооружения = no-op,
-maxTableCards=10 соблюдается, hard cap не меняется). Тесты: phase2_clarifier_test
-(round-trip + идемпотентность).
+## 2.4 Physical clarifier (1 сессия)
+Расширить +1 Clarifier: Oracle question → Pull Physical Card → Camera → Recognition →
+Confirm → Existing Oracle Chat. completeClarifierScan уже добавляет Clarifier N; связать
+с вопросом, Oracle Clarifier Expansion, upsert той же сессии. Новую сессию НЕ создавать.
+Соблюдать maxTableCards=10. Вопрос расширения лимита — отдельно (hard cap не менять).
+Тесты: phase2_clarifier_test.dart расширить (physical clarifier round-trip).
 STOP.
 
-## Phase 2 acceptance criteria — PASSED
-- Quick Scan инферирует/подтверждает расклад; неоднозначность → выбор; Freeform
-  сохраняет все карты; лишние не теряются (2.1 + 2.3).
-- Recognition Review: полный набор действий, без выдуманного confidence, Lenormand
-  без reversed (2.2).
-- Handoff: физический источник, face-up, Focus/Spread + Oracle Chat + автосохранение,
-  цифровой ledger нетронут (2.3).
-- Physical clarifier в той же сессии, cap 10 соблюдён (2.4).
-- PRO-ограничения централизованно отключены (lib/core/config/app_flags.dart:
-  kProRestrictionsEnabled=false) при сохранении метаданных/инфраструктуры монетизации.
-- Table/History/Astral без регрессий; flutter analyze clean; full flutter test зелёный.
+## Phase 2 acceptance criteria → отчёт → STOP.
 
 ---
 
 # PHASE 3 — GUIDED PHYSICAL SPREAD
 
-## 3.1 Переиспользование Choose Spread (1 сессия) — DONE
+## 3.1 Переиспользование Choose Spread (1 сессия)
 НЕ создавать новый каталог. Использовать Step 1 (digital_table_screen.dart
 _SpreadSelectionView + spread_blueprint_carousel.dart). Только контекст запуска:
 Digital → Active Digital Table; Physical guided → Active Camera Guided Session.
 Опциональный заголовок "PHYSICAL SPREAD".
 STOP.
 
-## 3.2 Guided Session Controller / FSM (1-2 сессии) — DONE
+## 3.2 Guided Session Controller / FSM (1-2 сессии)
 lib/state/live_reading_controller.dart (ChangeNotifier): конечный автомат
 preparing→awaitingIntention→awaitingCard→cardDetected→awaitingReveal→recognizingCard→
 awaitingConfirmation→interpretingCard→awaitingUser→awaitingNextCard→spreadCompleted→
@@ -262,20 +215,20 @@ awaitingConfirmation→interpretingCard→awaitingUser→awaitingNextCard→spre
 Тесты: guided_fsm_test.dart (все переходы, невалидные переходы).
 STOP.
 
-## 3.3 Guided lifecycle (1-2 сессии) — DONE
+## 3.3 Guided lifecycle (1-2 сессии)
 Реализовать сценарий Triad Flow: намерение → карта 1 (рубашкой вверх → обнаружение →
 просьба открыть) → подтверждение → привязка к позиции → интерпретация → уточнение →
 следующая. Завершение базового расклада → общий синтез → уместные уточнения →
 clarifiers → продолжить в Oracle Chat. Незавершённый расклад не выдавать за завершённый.
 STOP.
 
-## 3.4 Guided Camera HUD (1 сессия) — DONE
+## 3.4 Guided Camera HUD (1 сессия)
 lib/features/camera_scan/widgets/guided_spread_hud.dart: spread name, progress (2/3),
 current slot role (HIDDEN SHADOW), flash, pause/exit. Снизу — инструкции + Confirm/Next
 + открыть полный чат. Не рисовать world-anchored AR (позиции = визуальные подсказки).
 STOP.
 
-## 3.5 Event-driven architecture (1 сессия) — DONE
+## 3.5 Event-driven architecture (1 сессия)
 lib/core/models/physical_reading_event.dart: CardObserved/CardRecognized/CardConfirmed/
 CardRevealed/CardTemporarilyOccluded/CardMoved/CardRemoved/CardOrientationChanged/
 ClarifierConfirmed/SpreadCompleted. eventId + trackId + sessionId против дублей.
@@ -284,40 +237,25 @@ ClarifierConfirmed/SpreadCompleted. eventId + trackId + sessionId против �
 Тесты: physical_event_test.dart (dedupe, occlusion, stale).
 STOP.
 
-## 3.6 Physical authenticity / Active vs Quiet Guidance (1 сессия) — DONE
+## 3.6 Physical authenticity / Active vs Quiet Guidance (1 сессия)
 Обеспечить естественную последовательность (намерение/перемешивание/вытягивание/
 выкладывание/открытие/созерцание/интерпретация/уточнение/завершение). Два режима
 сопровождения (Active/Quiet). Oracle не комментирует каждое движение.
 STOP.
 
-## Phase 3 acceptance criteria — PASSED (2026-11-19)
-- 3.1 Choose Spread reused (no new catalog): SpreadLaunchContext digital →
-  activateSpread, guided → onSpreadSelected(cardCount).
-- 3.2 LiveReadingController FSM: validated transitions + position guard; no
-  card-mutation API (cards stay in SpreadController).
-- 3.3 Triad Flow: SpreadController.startGuidedSpread/bindGuidedCard +
-  GuidedSessionCoordinator (start/confirmCard/nextCard/isComplete); incomplete
-  spread never reported complete.
-- 3.4 GuidedSpreadHud: name/progress/slot-role/instruction + flash/pause/exit +
-  Confirm/Next/Resume + open-chat; no world-anchored AR.
-- 3.5 PhysicalReadingEvent sealed model + physicalEventFromVision (lost =
-  temporary occlusion, NOT removal) + dedupe ledger.
-- 3.6 GuidanceMode active/quiet + guidanceShouldSpeak (quiet never narrates
-  movement beats).
-VERIFY: flutter analyze = No issues found; full flutter test green.
-STOP → Phase 4 (Live Oracle & Voice) awaits command.
+## Phase 3 acceptance criteria → отчёт → STOP.
 
 ---
 
 # PHASE 4 — LIVE ORACLE & VOICE EXPERIENCE
 
-## 4.1 Shared Oracle session (подготовлено в 1.3; verify 1 сессия) — VERIFIED
+## 4.1 Shared Oracle session (подготовлено в 1.3; verify 1 сессия)
 Full Chat / Voice Overlay / Compact Oracle используют один sessionId, одни messages,
 одни cards, один контекст, одни clarifiers, одну историю. Смена представления не
 создаёт новую AI-сессию.
 STOP.
 
-## 4.2 OracleVoiceService (1-2 сессии; research обязателен) — DONE
+## 4.2 OracleVoiceService (1-2 сессии; research обязателен)
 1. RESEARCH: TTS-пакет (flutter_tts) — совместимость Android/iOS, лицензия, EN/RU,
    управление воспроизведением, background, версии Flutter/Dart. Зафиксировать в
    PLAN/ARCHITECTURE до добавления зависимости.
@@ -330,7 +268,7 @@ STOP.
 Тесты: oracle_voice_service_test.dart.
 STOP.
 
-## 4.3 Full Chat дополнения (1 сессия) — DONE
+## 4.3 Full Chat дополнения (1 сессия)
 oracle_chat_pane.dart: source indicator (DIGITAL/PHYSICAL), mode indicator (QUICK/
 GUIDED/LIVE), voice playback control, Resume Camera / Return to Physical Spread /
 Continue Guided Session. Не перегружать метками.
