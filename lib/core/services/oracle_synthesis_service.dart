@@ -7,6 +7,7 @@ import '../models/chat_message.dart';
 import '../models/dealt_card_slot.dart';
 import '../models/divination_system.dart';
 import '../models/natal_chart.dart';
+import '../models/oracle_action.dart';
 import '../models/spread_type.dart';
 import '../models/tarot_card_model.dart';
 import '../models/zodiac_forecast.dart';
@@ -367,6 +368,18 @@ class OracleSynthesisService {
   bool get hasPrimary => primaryWorkerUrl.isNotEmpty;
   bool get hasCloud => cloudUrl.isNotEmpty && cloudKey.isNotEmpty;
 
+  /// The Oracle's voice (4.8): calm, restrained, contextual and symbolic —
+  /// grounded psychology, never kitsch or mysticism, and NEVER categorical
+  /// medical / financial / legal predictions. Spoken answers stay shorter than
+  /// written ones. Shared by every prompt builder so the tone is one place.
+  static const oraclePersona = 'You are the mindreader.quest oracle: calm, '
+      'restrained, contextual and symbolic. You speak in grounded psychological '
+      'language — reflective insight, never fortune-teller kitsch, never '
+      'mysticism, never hard predictions. You NEVER give categorical medical, '
+      'financial or legal predictions or advice. When an answer will be spoken '
+      'aloud, keep it shorter than a written answer — concise enough to be read '
+      'in one breath.';
+
   /// Cohesive spread synthesis: worker → Gemini Flash → local engine.
   /// Never throws; the local synthesis is the guaranteed result.
   /// [type] is the tarot template; Lenormand/Rune casts pass [spreadLabel]
@@ -487,8 +500,7 @@ class OracleSynthesisService {
     final fallback = _clarifierFallback(question, newSlot, previous);
     if (!hasPrimary && !hasCloud) return fallback;
     final b = StringBuffer();
-    b.writeln('You are the mindreader.quest oracle: grounded, psychological, '
-        'modern. No kitsch, no mysticism.');
+    b.writeln(oraclePersona);
     b.writeln('The reader already has this reading on the table:');
     for (final s in previous) {
       final pc = s.card;
@@ -574,9 +586,7 @@ class OracleSynthesisService {
     final faceUp = slots.where((s) => s.card != null).toList();
     if (faceUp.isEmpty) return null;
     final b = StringBuffer();
-    b.writeln('You are the mindreader.quest oracle: grounded, psychological, '
-        'modern. No fortune-teller kitsch, no mysticism, no predictions — '
-        'reflective insight only.');
+    b.writeln(oraclePersona);
     b.writeln('Spread: $spreadLabel (${faceUp.length} ${system.unit}s). '
         '$focusLine');
     if (profileContext != null && profileContext.isNotEmpty) {
@@ -628,8 +638,7 @@ class OracleSynthesisService {
     final fallback = _chatFallback(question, slots);
     if (!hasPrimary && !hasCloud) return fallback;
     final b = StringBuffer();
-    b.writeln('You are the mindreader.quest oracle: grounded, psychological, '
-        'modern. No kitsch, no mysticism.');
+    b.writeln(oraclePersona);
     b.writeln('Spread: ${spreadLabel ?? (type ?? SpreadType.three).label}.');
     for (final s in slots) {
       final c = s.card;
@@ -677,6 +686,112 @@ class OracleSynthesisService {
     return fallback;
   }
 
+  /// A Live Oracle FREEFORM turn (4.5): interprets the freely-laid cards in
+  /// the light of the reader's [intention] and returns a validated
+  /// [OracleActionCommand] (text + an optional requested action). Same dual
+  /// pipeline (worker → cloud → local); the local fallback is deterministic
+  /// and always [OracleAction.respond] — it never requests a state change.
+  Future<OracleActionCommand> interpretFreeform({
+    required String intention,
+    required List<DealtCardSlot> slots,
+    DivinationSystem system = DivinationSystem.tarot,
+    List<ChatMessage> history = const [],
+    String? profileContext,
+  }) async {
+    final fallbackText = _freeformFallback(intention, slots);
+    if (!hasPrimary && !hasCloud) {
+      return OracleActionCommand(
+        action: OracleAction.respond,
+        text: fallbackText,
+      );
+    }
+
+    final b = StringBuffer();
+    b.writeln(oraclePersona);
+    b.writeln('This is a LIVE ORACLE freeform session: the reader laid cards '
+        'freely, without a fixed spread.');
+    if (intention.trim().isNotEmpty) {
+      b.writeln('The reader\'s intention: ${intention.trim()}.');
+    }
+    final faceUp = slots.where((s) => s.card != null).toList();
+    if (faceUp.isEmpty) {
+      b.writeln('No cards have been laid yet.');
+    } else {
+      b.writeln('Cards laid so far, in order:');
+      for (final s in faceUp) {
+        final c = s.card!;
+        b.writeln('- ${s.index + 1}. ${c.name} (${orientationWord(s)}), '
+            'element ${c.element.label}. ${meaningFor(s)}');
+      }
+    }
+    if (history.isNotEmpty) {
+      b.writeln('Dialog so far:');
+      for (final m in history) {
+        b.writeln('  ${m.role}: ${m.text.replaceAll('\n', ' ')}');
+      }
+    }
+    if (profileContext != null && profileContext.isNotEmpty) {
+      b.writeln('Reader context: $profileContext.');
+    }
+    b.writeln('Interpret these cards in the light of the intention. Then '
+        'request ONE next step by replying as strict JSON only: '
+        '{"action": "<respond|suggestSpread|requestNextCard|'
+        'requestClarifier|requestReveal|askQuestion|summarizeSpread|'
+        'completeReading>", "text": "<your spoken answer>"}. '
+        'You may only REQUEST; you must never invent cards, change a card\'s '
+        'identity or orientation, or bypass limits, PRO or history. When no '
+        'action is needed, use "respond".');
+
+    try {
+      if (hasPrimary) {
+        final raw = await _chat(
+          url: primaryWorkerUrl,
+          key: primaryWorkerKey,
+          model: primaryChatModel,
+          timeout: primaryTimeout,
+          prompt: b.toString(),
+        );
+        if (raw.isNotEmpty) return parseOracleActionResponse(raw);
+      }
+      if (hasCloud) {
+        final raw = await _chat(
+          url: cloudUrl,
+          key: cloudKey,
+          model: cloudModel,
+          timeout: cloudTimeout,
+          prompt: b.toString(),
+        );
+        if (raw.isNotEmpty) return parseOracleActionResponse(raw);
+      }
+    } catch (e) {
+      debugPrint(
+          'oracle: freeform endpoints failed (${e.runtimeType}), local reading');
+    }
+    return OracleActionCommand(action: OracleAction.respond, text: fallbackText);
+  }
+
+  /// Offline freeform reading: the intention + the dominant element axis +
+  /// the loudest card's reflection. Deterministic and action-free.
+  String _freeformFallback(String intention, List<DealtCardSlot> slots) {
+    final faceUp = [for (final s in slots) if (s.card != null) s];
+    if (faceUp.isEmpty) {
+      return 'State your intention, lay a few cards freely — no spread is '
+          'required — and I will read them as they fall.';
+    }
+    final balance = elementalBalance(slots);
+    final dominant = dominantElements(balance);
+    final last = faceUp.last.card!;
+    final axis = dominant.isEmpty
+        ? 'the elements are balanced'
+        : '${dominant.map((e) => e.trait.toLowerCase()).join(' and ')} '
+            'keeps leading the reading';
+    final intent = intention.trim().isEmpty
+        ? ''
+        : 'Holding your intention — ${intention.trim()} — ';
+    return '$intent$axis. '
+        '${last.name} stays the loudest voice here: ${last.reflection}';
+  }
+
   /// Offline conversational answer: the dominant element axis + the
   /// loudest card's reflection question, closed toward the reader's question.
   String _chatFallback(String question, List<DealtCardSlot> slots) {
@@ -718,7 +833,7 @@ class OracleSynthesisService {
             'messages': [
               {
                 'role': 'system',
-                'content': 'You are a grounded psychological tarot oracle.',
+                'content': oraclePersona,
               },
               {'role': 'user', 'content': prompt},
             ],

@@ -8,6 +8,7 @@ import 'state/app_settings_controller.dart';
 import 'state/astral_controller.dart';
 import 'state/deck_pack_controller.dart';
 import 'state/live_reading_controller.dart';
+import 'state/live_oracle_controller.dart';
 import 'state/oracle_session_controller.dart';
 import 'state/session_history_controller.dart';
 import 'state/spread_controller.dart';
@@ -36,6 +37,10 @@ class MindreaderApp extends StatelessWidget {
         // The Guided Physical Spread process (FSM). Holds NO cards — those
         // stay in SpreadController; this only orchestrates the interaction.
         ChangeNotifierProvider(create: (_) => LiveReadingController()),
+        // The Live Oracle FREEFORM session state (intention + last requested
+        // action). Holds NO cards and NO dialogue — those stay in
+        // SpreadController / OracleSessionController respectively.
+        ChangeNotifierProvider(create: (_) => LiveOracleController()),
         ChangeNotifierProvider(create: (_) => DeckPackController()),
         ChangeNotifierProvider(create: (_) => AstralController()),
         ChangeNotifierProvider(create: (_) => AppSettingsController()),
