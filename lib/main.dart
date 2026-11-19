@@ -6,6 +6,7 @@ import 'features/shell/main_navigation_shell.dart';
 import 'state/app_settings_controller.dart';
 import 'state/astral_controller.dart';
 import 'state/deck_pack_controller.dart';
+import 'state/live_reading_controller.dart';
 import 'state/oracle_session_controller.dart';
 import 'state/session_history_controller.dart';
 import 'state/spread_controller.dart';
@@ -28,6 +29,9 @@ class MindreaderApp extends StatelessWidget {
         // Table and the Oracle Chat share this single session source of
         // truth (stable sessionId + source/mode/status + messages).
         ChangeNotifierProvider(create: (_) => OracleSessionController()),
+        // The Guided Physical Spread process (FSM). Holds NO cards — those
+        // stay in SpreadController; this only orchestrates the interaction.
+        ChangeNotifierProvider(create: (_) => LiveReadingController()),
         ChangeNotifierProvider(create: (_) => DeckPackController()),
         ChangeNotifierProvider(create: (_) => AstralController()),
         ChangeNotifierProvider(create: (_) => AppSettingsController()),
