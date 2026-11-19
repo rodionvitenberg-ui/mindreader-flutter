@@ -79,6 +79,8 @@ class SpreadSessionSnapshot {
     this.readingStatus,
     this.completionStatus,
     this.voiceUsed,
+    this.customSpread,
+    this.pendingGuidedPosition,
   });
 
   /// An Astral (natal / horoscope / synastry / zodiac) conversation with no
@@ -157,6 +159,14 @@ class SpreadSessionSnapshot {
 
   /// True when voice input/output was used during this reading.
   final bool? voiceUsed;
+
+  /// A custom (non-template) spread definition identifier, when the reading
+  /// used one (null for template spreads and legacy snapshots).
+  final String? customSpread;
+
+  /// The guided-spread slot position the session was paused at, so a restored
+  /// guided reading can resume there (null when not a paused guided session).
+  final int? pendingGuidedPosition;
 
   /// Runtime identity: the stable [sessionId] when present, else the legacy
   /// [timestamp] — old and new snapshots share one fallback.
@@ -260,6 +270,9 @@ class SpreadSessionSnapshot {
     if (readingStatus != null) 'readingStatus': readingStatus!.name,
     if (completionStatus != null) 'completionStatus': completionStatus,
     if (voiceUsed != null) 'voiceUsed': voiceUsed,
+    if (customSpread != null) 'customSpread': customSpread,
+    if (pendingGuidedPosition != null)
+      'pendingGuidedPosition': pendingGuidedPosition,
   };
 
   static SpreadSessionSnapshot fromJson(Map<String, dynamic> json) {
@@ -330,6 +343,8 @@ class SpreadSessionSnapshot {
       ),
       completionStatus: json['completionStatus'] as bool?,
       voiceUsed: json['voiceUsed'] as bool?,
+      customSpread: json['customSpread'] as String?,
+      pendingGuidedPosition: json['pendingGuidedPosition'] as int?,
     );
   }
 

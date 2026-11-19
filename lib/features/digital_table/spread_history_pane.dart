@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/models/reading_session_badge.dart';
+import '../../core/models/reading_source.dart';
 import '../../core/theme/app_colors.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/session_history_controller.dart';
@@ -355,8 +357,17 @@ class _SessionTile extends StatelessWidget {
                       const SizedBox(width: 6),
                       if (isAstral)
                         _AstralBadge(kind: session.kind)
-                      else
+                      else ...[
+                        if (session.readingSource == ReadingSource.physical)
+                          _FlowBadge(
+                            label: readingSessionBadge(
+                              source: session.readingSource,
+                              mode: session.readingMode,
+                            ),
+                          ),
+                        const SizedBox(width: 4),
                         _NotebookTag(label: session.notebook),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 3),
@@ -513,6 +524,36 @@ class _AstralBadge extends StatelessWidget {
           letterSpacing: 1.0,
           fontWeight: FontWeight.w700,
           color: AppColors.lavender,
+        ),
+      ),
+    );
+  }
+}
+
+/// The flow badge marking a physical reading's origin: GUIDED / LIVE /
+/// PHYSICAL. Digital readings show no flow badge (DIGITAL is the implicit
+/// default), keeping the common case uncluttered.
+class _FlowBadge extends StatelessWidget {
+  const _FlowBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.indigo.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.indigo.withValues(alpha: 0.55)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.jetBrainsMono(
+          fontSize: 7,
+          letterSpacing: 1.0,
+          fontWeight: FontWeight.w700,
+          color: AppColors.harmonyCyan,
         ),
       ),
     );
