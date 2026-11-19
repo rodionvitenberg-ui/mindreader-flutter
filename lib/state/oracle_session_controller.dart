@@ -108,6 +108,11 @@ class OracleSessionController extends SynthesisSession {
     ReadingMode? readingMode,
     ReadingStatus? readingStatus,
   }) {
+    // Restoring a different conversation is a session replacement: bump the
+    // epoch so a late async answer from the conversation being left is
+    // rejected instead of mutating the restored one (same guard as reset /
+    // beginSession).
+    _epoch++;
     _sessionId = sessionId;
     _readingSource = readingSource ?? ReadingSource.digital;
     _readingMode = readingMode ?? ReadingMode.standard;
