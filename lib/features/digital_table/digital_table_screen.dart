@@ -133,12 +133,12 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
   /// Content-space top-left of dealt slot [slotIndex]: deck bottom + the
   /// 52 px deck→pillar gap + stacked 220×360 slots with 56 px thread gaps.
   Offset _slotContentTopLeft(int slotIndex, double contentWidth) => Offset(
-        (contentWidth - deckWidth) / 2,
-        tableTopPad +
-            deckBoxHeight +
-            deckToPillarGap +
-            slotIndex * (deckHeight + slotGapPx),
-      );
+    (contentWidth - deckWidth) / 2,
+    tableTopPad +
+        deckBoxHeight +
+        deckToPillarGap +
+        slotIndex * (deckHeight + slotGapPx),
+  );
 
   /// The deck handed us an extracted card: deal the exact grabbed card and
   /// play ONE continuous flight from the release point into its slot.
@@ -158,7 +158,8 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     final contentBox =
         _contentKey.currentContext?.findRenderObject() as RenderBox?;
     if (deckBox == null || contentBox == null) return;
-    final start = deckBox.localToGlobal(Offset.zero, ancestor: contentBox) +
+    final start =
+        deckBox.localToGlobal(Offset.zero, ancestor: contentBox) +
         request.cardOffsetLocal;
     _flyCardToSlot(
       slotIndex,
@@ -182,7 +183,8 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     final contentBox =
         _contentKey.currentContext?.findRenderObject() as RenderBox?;
     if (deckBox == null || contentBox == null) return;
-    final start = deckBox.localToGlobal(Offset.zero, ancestor: contentBox) +
+    final start =
+        deckBox.localToGlobal(Offset.zero, ancestor: contentBox) +
         request.stoneOffsetLocal;
     _flyCardToSlot(
       slotIndex,
@@ -223,18 +225,20 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
       );
     });
     _flightCtl!
-        .animateWith(SpringSimulation(
-          spring,
-          0,
-          1,
-          (velocity / distance).clamp(-8.0, 8.0),
-        ))
+        .animateWith(
+          SpringSimulation(
+            spring,
+            0,
+            1,
+            (velocity / distance).clamp(-8.0, 8.0),
+          ),
+        )
         .whenCompleteOrCancel(() {
-      if (!mounted) return;
-      setState(() => _flight = null);
-      _flightCtl?.dispose();
-      _flightCtl = null;
-    });
+          if (!mounted) return;
+          setState(() => _flight = null);
+          _flightCtl?.dispose();
+          _flightCtl = null;
+        });
   }
 
   /// Overview mode: tapping the deck deals the next card DIRECTLY into its
@@ -281,12 +285,15 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     final isLandscape =
         MediaQuery.orientationOf(context) == Orientation.landscape;
 
-    final dealt = [for (final s in ctrl.slots) if (s.card != null) s];
+    final dealt = [
+      for (final s in ctrl.slots)
+        if (s.card != null) s,
+    ];
     Offset slotTopLeft(int i) => spreadSlotDesignTopLeftForCount(
-          ctrl.spreadCardCount,
-          i,
-          totalSlots: ctrl.slots.length,
-        );
+      ctrl.spreadCardCount,
+      i,
+      totalSlots: ctrl.slots.length,
+    );
     final rects = [
       for (var i = 0; i < ctrl.slots.length; i++)
         Rect.fromLTWH(
@@ -313,10 +320,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
               top: slotTopLeft(i).dy,
               width: deckWidth,
               height: deckHeight,
-              child: _OverviewSlot(
-                slot: ctrl.slots[i],
-                slotIndex: i,
-              ),
+              child: _OverviewSlot(slot: ctrl.slots[i], slotIndex: i),
             ),
         ],
       ),
@@ -345,19 +349,13 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 0, 4),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: deckPanel,
-            ),
+            child: Align(alignment: Alignment.centerLeft, child: deckPanel),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(12),
-              child: FittedBox(
-                fit: BoxFit.contain,
-                child: designCanvas,
-              ),
+              child: FittedBox(fit: BoxFit.contain, child: designCanvas),
             ),
           ),
         ],
@@ -391,11 +389,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
         Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              miniDeck,
-              const SizedBox(height: 8),
-              counterBadge,
-            ],
+            children: [miniDeck, const SizedBox(height: 8), counterBadge],
           ),
         ),
         Expanded(
@@ -405,10 +399,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
               child: SizedBox(
                 width: design.width * scale,
                 height: design.height * scale,
-                child: FittedBox(
-                  fit: BoxFit.fill,
-                  child: designCanvas,
-                ),
+                child: FittedBox(fit: BoxFit.fill, child: designCanvas),
               ),
             ),
           ),
@@ -430,29 +421,29 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     final pos = Offset.lerp(flight.start, flight.target, t)!;
     final flyingPiece = switch (system) {
       DivinationSystem.tarot => CardBack(
-          width: deckWidth,
-          height: deckHeight,
-          pack: tarotPack,
-        ),
+        width: deckWidth,
+        height: deckHeight,
+        pack: tarotPack,
+      ),
       DivinationSystem.lenormand => CardBack(
-          width: deckWidth,
-          height: deckHeight,
-          styleOverride:
-              context.read<DeckPackController>().activeLenormandPack.backStyle,
-          accentOverride:
-              context.read<DeckPackController>().activeLenormandPack.backAccentArgb,
-          secondaryOverride: context
-              .read<DeckPackController>()
-              .activeLenormandPack
-              .backSecondaryArgb,
-        ),
+        width: deckWidth,
+        height: deckHeight,
+        styleOverride: context
+            .read<DeckPackController>()
+            .activeLenormandPack
+            .backStyle,
+        accentOverride: context
+            .read<DeckPackController>()
+            .activeLenormandPack
+            .backAccentArgb,
+        secondaryOverride: context
+            .read<DeckPackController>()
+            .activeLenormandPack
+            .backSecondaryArgb,
+      ),
       DivinationSystem.runes => const Center(
-          child: SizedBox(
-            width: 150,
-            height: 178,
-            child: _FlightStone(),
-          ),
-        ),
+        child: SizedBox(width: 150, height: 178, child: _FlightStone()),
+      ),
     };
     return Positioned(
       left: pos.dx,
@@ -556,8 +547,10 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
                               const SizedBox(height: deckToPillarGap),
                               BoardPillarView(
                                 onTapFaceUp: (slotIndex) =>
-                                    ReadingBottomSheet.show(context,
-                                        cardIndex: slotIndex),
+                                    ReadingBottomSheet.show(
+                                      context,
+                                      cardIndex: slotIndex,
+                                    ),
                               ),
                               const SizedBox(height: 32),
                             ],
@@ -582,7 +575,11 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
                           AnimatedBuilder(
                             animation: _flightCtl!,
                             builder: (context, _) => _flightOverlay(
-                                ctrl.system, pack, flight, _flightCtl!.value),
+                              ctrl.system,
+                              pack,
+                              flight,
+                              _flightCtl!.value,
+                            ),
                           ),
                       ],
                     ),
@@ -681,47 +678,48 @@ class _SpreadSelectionView extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       bottom: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 48,
-            child: Stack(
-              children: [
-                Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: _SystemSelector(
-                      ctrl: context.watch<SpreadController>(),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 48,
+              child: Stack(
+                children: [
+                  Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: _SystemSelector(
+                        ctrl: context.watch<SpreadController>(),
+                      ),
                     ),
                   ),
-                ),
-                const Positioned(
-                  left: 12,
-                  top: 6,
-                  child: _ProfileAvatarButton(),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-            child: Text(
-              'Choose Spread',
-              style: GoogleFonts.cormorantGaramond(
-                fontSize: 30,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                  const Positioned(
+                    left: 12,
+                    top: 6,
+                    child: _ProfileAvatarButton(),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SpreadBlueprintCarousel(),
-        ],
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+              child: Text(
+                'Choose Spread',
+                style: GoogleFonts.cormorantGaramond(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const SpreadBlueprintCarousel(),
+          ],
+        ),
       ),
     );
   }
 }
-
 
 /// Circular obsidian-lavender profile avatar (36×36) in the header's top-left
 /// corner: the reader's initial (or an arcane glyph when the profile is
@@ -742,9 +740,8 @@ class _ProfileAvatarButton extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: () {
         HapticFeedback.selectionClick();
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-        );
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
       },
       child: Container(
         width: 36,
@@ -808,7 +805,11 @@ class _SystemSelector extends StatelessWidget {
 /// Spread ↔ Focus view switch in the top table bar (pill segmented toggle):
 /// SPREAD VIEW first (left, active by default), FOCUS VIEW second (right).
 class _ViewModeToggle extends StatelessWidget {
-  const _ViewModeToggle({super.key, required this.mode, required this.onChanged});
+  const _ViewModeToggle({
+    super.key,
+    required this.mode,
+    required this.onChanged,
+  });
 
   final TableViewMode mode;
   final ValueChanged<TableViewMode> onChanged;
@@ -965,11 +966,11 @@ class _DeckCounterBadge extends StatelessWidget {
               ctrl.cancelClarifierScan();
             }
           : canReset
-              ? () {
-                  HapticFeedback.selectionClick();
-                  onReset!();
-                }
-              : null,
+          ? () {
+              HapticFeedback.selectionClick();
+              onReset!();
+            }
+          : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
@@ -1063,26 +1064,26 @@ class _OverviewDeckState extends State<_OverviewDeck>
               // hero deck).
               child: switch (widget.system) {
                 DivinationSystem.tarot => CardBack(
-                    width: w,
-                    height: h,
-                    pack: widget.pack,
-                  ),
+                  width: w,
+                  height: h,
+                  pack: widget.pack,
+                ),
                 DivinationSystem.lenormand => CardBack(
-                    width: w,
-                    height: h,
-                    styleOverride: context
-                        .watch<DeckPackController>()
-                        .activeLenormandPack
-                        .backStyle,
-                    accentOverride: context
-                        .watch<DeckPackController>()
-                        .activeLenormandPack
-                        .backAccentArgb,
-                    secondaryOverride: context
-                        .watch<DeckPackController>()
-                        .activeLenormandPack
-                        .backSecondaryArgb,
-                  ),
+                  width: w,
+                  height: h,
+                  styleOverride: context
+                      .watch<DeckPackController>()
+                      .activeLenormandPack
+                      .backStyle,
+                  accentOverride: context
+                      .watch<DeckPackController>()
+                      .activeLenormandPack
+                      .backAccentArgb,
+                  secondaryOverride: context
+                      .watch<DeckPackController>()
+                      .activeLenormandPack
+                      .backSecondaryArgb,
+                ),
                 DivinationSystem.runes => const _OverviewStonePile(),
               },
             ),
@@ -1139,8 +1140,9 @@ class _OverviewSlotState extends State<_OverviewSlot>
     final card = slot.card;
     if (card == null) {
       final shorts = context.read<SpreadController>().spreadSlotRoleShorts;
-      final shortRole =
-          widget.slotIndex < shorts.length ? shorts[widget.slotIndex] : 'Clarifier';
+      final shortRole = widget.slotIndex < shorts.length
+          ? shorts[widget.slotIndex]
+          : 'Clarifier';
       return Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(deckWidth * 0.06),
@@ -1188,8 +1190,9 @@ class _OverviewSlotState extends State<_OverviewSlot>
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(deckWidth * 0.06),
                     border: Border.all(
-                      color: card.element.accent
-                          .withValues(alpha: (1 - v) * 0.85),
+                      color: card.element.accent.withValues(
+                        alpha: (1 - v) * 0.85,
+                      ),
                       width: 1.6,
                     ),
                   ),
@@ -1258,4 +1261,3 @@ class _OverviewStonePile extends StatelessWidget {
     );
   }
 }
-

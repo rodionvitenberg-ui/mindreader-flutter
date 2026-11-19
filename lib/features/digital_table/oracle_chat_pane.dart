@@ -124,14 +124,16 @@ class _OracleChatPaneState extends State<OracleChatPane> {
       if (messenger != null) {
         messenger
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(
-            duration: Duration(seconds: 3),
-            backgroundColor: AppColors.surface,
-            content: Text(
-              'Type your question in the input bar first, then tap +1 CARD.',
-              style: TextStyle(color: Colors.white, fontSize: 12),
+          ..showSnackBar(
+            const SnackBar(
+              duration: Duration(seconds: 3),
+              backgroundColor: AppColors.surface,
+              content: Text(
+                'Type your question in the input bar first, then tap +1 CARD.',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
             ),
-          ));
+          );
       }
       widget.onFocusInput();
       return;
@@ -144,7 +146,8 @@ class _OracleChatPaneState extends State<OracleChatPane> {
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
     final session = widget.session;
-    final hasContent = session.generatingInitial ||
+    final hasContent =
+        session.generatingInitial ||
         session.hasSynthesis ||
         session.chapters.isNotEmpty ||
         session.messages.isNotEmpty;
@@ -159,9 +162,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
             onResumeCamera: widget.onResumeCamera,
           ),
           Expanded(
-            child: hasContent
-                ? _chatStream(ctrl, session)
-                : _emptyState(ctrl),
+            child: hasContent ? _chatStream(ctrl, session) : _emptyState(ctrl),
           ),
           // Suggested clarifier actions: a fixed footer of the chat pane
           // (Gemini-style suggestion chips) — always reachable, never
@@ -200,10 +201,13 @@ class _OracleChatPaneState extends State<OracleChatPane> {
       children.add(_SynthesisBubble(synthesis: session.initial!));
     }
     for (final chapter in session.chapters) {
-      children.add(_UserBubble(
-        text: 'You asked: ${chapter.question} — pulled '
-            '${chapter.cardName}${chapter.isReversed ? ' (reversed)' : ''}',
-      ));
+      children.add(
+        _UserBubble(
+          text:
+              'You asked: ${chapter.question} — pulled '
+              '${chapter.cardName}${chapter.isReversed ? ' (reversed)' : ''}',
+        ),
+      );
       children.add(
         _OracleBubble(
           text: chapter.text,
@@ -216,10 +220,12 @@ class _OracleChatPaneState extends State<OracleChatPane> {
     // the synthesis (or the latest clarifier reading) and recomputed from
     // the live table — at the 10-card ceiling they become a lock note.
     if (session.hasSynthesis && !session.generatingInitial) {
-      children.add(_ClarifierSuggestions(
-        slots: ctrl.slots,
-        onSelect: widget.onClarifierQuestion,
-      ));
+      children.add(
+        _ClarifierSuggestions(
+          slots: ctrl.slots,
+          onSelect: widget.onClarifierQuestion,
+        ),
+      );
     }
     for (final message in session.messages) {
       switch (message.role) {
@@ -243,87 +249,100 @@ class _OracleChatPaneState extends State<OracleChatPane> {
       ),
     );
   }
+
   Widget _emptyState(SpreadController ctrl) {
     final ready = ctrl.initialSpreadAllFaceUp;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.auto_awesome,
-            size: 34,
-            color: AppColors.lavender.withValues(alpha: 0.8),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            ready ? 'YOUR SPREAD IS READY' : 'NO READING YET',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 12,
-              letterSpacing: 2.2,
-              fontWeight: FontWeight.w700,
-              color: AppColors.lavender,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              ready
-                  ? 'Synthesize the spread and the Oracle will speak.'
-                  : 'Deal and flip your spread on the table, then come back — '
-                      'or just swipe left.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                height: 1.4,
-                color: AppColors.textMuted,
-              ),
-            ),
-          ),
-          if (ready) ...[
-            const Padding(
-              padding: EdgeInsets.only(bottom: 10),
-              child: ReadingSubjectToggle(),
-            ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                widget.onSynthesize();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 11,
+    // Scrollable + centered: on a tall screen the empty state is vertically
+    // centered, and on a short/landscape screen it scrolls instead of
+    // overflowing the Column.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.auto_awesome,
+                  size: 34,
+                  color: AppColors.lavender.withValues(alpha: 0.8),
                 ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.lavender.withValues(alpha: 0.24),
-                      AppColors.indigo.withValues(alpha: 0.14),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.lavender, width: 1.2),
-                ),
-                child: Text(
-                  '✦ SYNTHESIZE IN CHAT →',
+                const SizedBox(height: 14),
+                Text(
+                  ready ? 'YOUR SPREAD IS READY' : 'NO READING YET',
                   style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
-                    letterSpacing: 1.8,
+                    fontSize: 12,
+                    letterSpacing: 2.2,
                     fontWeight: FontWeight.w700,
                     color: AppColors.lavender,
                   ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Text(
+                    ready
+                        ? 'Synthesize the spread and the Oracle will speak.'
+                        : 'Deal and flip your spread on the table, then come back — '
+                              'or just swipe left.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      height: 1.4,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ),
+                if (ready) ...[
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 10),
+                    child: ReadingSubjectToggle(),
+                  ),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.mediumImpact();
+                      widget.onSynthesize();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 11,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.lavender.withValues(alpha: 0.24),
+                            AppColors.indigo.withValues(alpha: 0.14),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.lavender,
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Text(
+                        '✦ SYNTHESIZE IN CHAT →',
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 11,
+                          letterSpacing: 1.8,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.lavender,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ],
-        ],
+          ),
+        ),
       ),
     );
   }
 }
-
 
 /// Pinned spread header strip: mini icons of the dealt cards + elemental
 /// balance badges. Tapping it (or swiping back) slides to the table.
@@ -335,7 +354,10 @@ class _SpreadHeaderStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dealt = [for (final s in ctrl.slots) if (s.card != null) s];
+    final dealt = [
+      for (final s in ctrl.slots)
+        if (s.card != null) s,
+    ];
     final balance = elementalBalance(ctrl.slots);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -351,11 +373,7 @@ class _SpreadHeaderStrip extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.chevron_left,
-              size: 18,
-              color: AppColors.lavender,
-            ),
+            const Icon(Icons.chevron_left, size: 18, color: AppColors.lavender),
             const SizedBox(width: 2),
             Text(
               'CURRENT SPREAD',
@@ -430,8 +448,7 @@ class _MiniCardGlyph extends StatelessWidget {
               color: accent,
             ),
           ),
-          if (reversed)
-            Text('↓', style: TextStyle(fontSize: 7, color: accent)),
+          if (reversed) Text('↓', style: TextStyle(fontSize: 7, color: accent)),
         ],
       ),
     );
@@ -464,7 +481,6 @@ class _ElementMiniBadge extends StatelessWidget {
     );
   }
 }
-
 
 /// Full-width chat bubbles — no narrow boxed modals.
 class _BubbleShell extends StatelessWidget {
@@ -515,7 +531,9 @@ class _UserBubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.lavender.withValues(alpha: 0.14),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.lavender.withValues(alpha: 0.6)),
+            border: Border.all(
+              color: AppColors.lavender.withValues(alpha: 0.6),
+            ),
           ),
           child: Text(
             text,
@@ -551,7 +569,10 @@ class _OracleBubble extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('✦', style: TextStyle(fontSize: 11, color: AppColors.lavender)),
+              const Text(
+                '✦',
+                style: TextStyle(fontSize: 11, color: AppColors.lavender),
+              ),
               const SizedBox(width: 6),
               Text(
                 header ?? 'ORACLE',
@@ -614,8 +635,6 @@ class _SystemBubble extends StatelessWidget {
   }
 }
 
-
-
 /// The AI-generated +1 Clarifier questions: 2-3 spread-specific probes
 /// that dynamically reference the ACTUAL cards and elemental tensions on
 /// the table. Tapping one arms the deck for exactly ONE card (the
@@ -667,10 +686,7 @@ class _ClarifierSuggestions extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           for (final q in questions) ...[
-            _SuggestionCard(
-              label: '🃏 +1 CARD: $q',
-              onTap: () => onSelect(q),
-            ),
+            _SuggestionCard(label: '🃏 +1 CARD: $q', onTap: () => onSelect(q)),
             const SizedBox(height: 6),
           ],
         ],
