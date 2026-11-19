@@ -7,11 +7,14 @@ import '../../core/data/intention_prompts.dart' show tableContextChips;
 import '../../core/models/dealt_card_slot.dart';
 import '../../core/models/natal_chart.dart';
 import '../../core/models/oracle_handoff.dart';
+import '../../core/models/reading_mode.dart';
+import '../../core/models/reading_source.dart';
 import '../../core/models/zodiac_forecast.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../state/astral_controller.dart';
+import '../../state/oracle_session_controller.dart';
 import '../../state/session_history_controller.dart';
 import '../../state/spread_controller.dart';
 import '../../state/spread_session_snapshot.dart';
@@ -65,9 +68,10 @@ class _TableWorkspaceState extends State<TableWorkspace>
   int _pane = tablePane;
 
   late final SpreadController _ctrl = context.read<SpreadController>();
-  final SynthesisSession _synthesis = SynthesisSession();
-  late final SessionHistoryController _history =
-      context.read<SessionHistoryController>();
+  late final OracleSessionController _session = context
+      .read<OracleSessionController>();
+  late final SessionHistoryController _history = context
+      .read<SessionHistoryController>();
 
   late final AnimationController _cosmosCtl = AnimationController(
     vsync: this,
@@ -113,8 +117,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
     _cosmosCtl.dispose();
     _capsuleText.dispose();
     _capsuleFocus.dispose();
-    _synthesis.dispose();
-    // The archive is owned by the root provider — never disposed here.
+    // The dialogue session and the archive are owned by the root providers —
+    // never disposed here.
     super.dispose();
   }
 
@@ -142,8 +146,9 @@ class _TableWorkspaceState extends State<TableWorkspace>
   Future<void> _runAstralReading(OracleHandoff handoff) async {
     // A fresh Astral reading replaces the previous astral thread and starts a
     // new history entry (astral dialogues were never persisted before).
-    _synthesis.reset();
+    _session.reset();
     _sessionTimestamp = DateTime.now().toIso8601String();
+    _session.beginSession(sessionId: _sessionTimestamp);
     _sessionKind = _sessionKindFor(handoff.kind);
     _astralTitle = _astralTitleFor(handoff);
     _astralChartId = handoff.chart?.id;
@@ -153,9 +158,10 @@ class _TableWorkspaceState extends State<TableWorkspace>
     _astralZodiacSign = handoff.zodiacSign;
     _astralZodiacForecast = handoff.zodiacForecast;
 
-    _synthesis.addUserMessage(handoff.prompt);
-    _synthesis.beginAnswer();
+    _session.addUserMessage(handoff.prompt);
+    _session.beginAnswer();
     _goToPane(chatPane);
+    final epoch = _session.epoch;
     await _captureSession(); // persist the moment the CTA is tapped
     final answer = await OracleSynthesisService().synthesizeNatalReading(
       prompt: handoff.prompt,
@@ -164,25 +170,26 @@ class _TableWorkspaceState extends State<TableWorkspace>
       horoscope: handoff.horoscope,
       zodiacSign: handoff.zodiacSign,
       zodiacForecast: handoff.zodiacForecast,
-      history: _synthesis.messages,
+      history: _session.messages,
     );
-    if (!mounted) return;
-    _synthesis.addOracleMessage(answer);
-    _synthesis.finishAnswer();
+    if (!mounted || !_session.isCurrentSession(epoch)) return;
+    _session.addOracleMessage(answer);
+    _session.finishAnswer();
     await _captureSession();
   }
 
   static SessionKind _sessionKindFor(OracleHandoffKind kind) => switch (kind) {
-        OracleHandoffKind.natalChart => SessionKind.natalChartReading,
-        OracleHandoffKind.synastry => SessionKind.synastryReading,
-        OracleHandoffKind.horoscope => SessionKind.horoscopeReading,
-        OracleHandoffKind.zodiac => SessionKind.zodiacReading,
-      };
+    OracleHandoffKind.natalChart => SessionKind.natalChartReading,
+    OracleHandoffKind.synastry => SessionKind.synastryReading,
+    OracleHandoffKind.horoscope => SessionKind.horoscopeReading,
+    OracleHandoffKind.zodiac => SessionKind.zodiacReading,
+  };
 
   static String _astralTitleFor(OracleHandoff handoff) {
     final chart = handoff.chart;
     return switch (handoff.kind) {
-      OracleHandoffKind.natalChart => '${chart?.profileName ?? 'Natal'} · Natal',
+      OracleHandoffKind.natalChart =>
+        '${chart?.profileName ?? 'Natal'} · Natal',
       OracleHandoffKind.horoscope =>
         '${chart?.profileName ?? 'Natal'} · Horoscope',
       OracleHandoffKind.synastry =>
@@ -195,34 +202,36 @@ class _TableWorkspaceState extends State<TableWorkspace>
   // ---- clarifier expansion (moved from the old synthesis panel) ----
 
   void _maybeExpandClarifiers() {
-    if (!_synthesis.hasSynthesis) return;
+    if (!_session.hasSynthesis) return;
     for (final s in _ctrl.slots) {
       if (s.index < _ctrl.initialSpreadCardCount) continue;
       if (s.state != SlotState.faceUp || s.card == null) continue;
-      if (_synthesis.chapterForSlot(s.index) != null) continue;
+      if (_session.chapterForSlot(s.index) != null) continue;
       final chapter = ClarifierChapter(
         slotIndex: s.index,
         question: s.userContext ?? 'Clarifier',
         cardName: s.card!.name,
         isReversed: s.isReversed,
       );
-      _synthesis.addPendingChapter(chapter);
+      _session.addPendingChapter(chapter);
       _generateClarifier(chapter);
     }
   }
 
   Future<void> _generateClarifier(ClarifierChapter chapter) async {
     final slot = _ctrl.slots.firstWhere((s) => s.index == chapter.slotIndex);
-    final previous =
-        _ctrl.slots.where((s) => s.index < chapter.slotIndex).toList();
+    final previous = _ctrl.slots
+        .where((s) => s.index < chapter.slotIndex)
+        .toList();
+    final epoch = _session.epoch;
     final text = await OracleSynthesisService().synthesizeClarifier(
       question: chapter.question,
       newSlot: slot,
       previous: previous,
       profileContext: context.read<UserProfileController>().oracleContext,
     );
-    if (!mounted) return;
-    _synthesis.completeChapter(chapter.slotIndex, text);
+    if (!mounted || !_session.isCurrentSession(epoch)) return;
+    _session.completeChapter(chapter.slotIndex, text);
     await _captureSession();
   }
   // ---- synthesis ----
@@ -230,17 +239,18 @@ class _TableWorkspaceState extends State<TableWorkspace>
   /// Runs the structured AI synthesis and slides the PageView into the
   /// Oracle AI Chat (Pane 1).
   Future<void> _runSynthesis() async {
-    if (_synthesis.generatingInitial) return;
-    if (_synthesis.hasSynthesis) {
+    if (_session.generatingInitial) return;
+    if (_session.hasSynthesis) {
       _goToPane(chatPane);
       return;
     }
-    _synthesis.startGenerating();
+    _session.startGenerating();
     setState(() {});
     final contexts = {
       for (final s in _ctrl.slots)
         if (s.userContext != null) s.index: s.userContext!,
     };
+    final epoch = _session.epoch;
     final result = await OracleSynthesisService().synthesizeStructured(
       slots: _ctrl.slots,
       type: _ctrl.spreadType,
@@ -253,14 +263,21 @@ class _TableWorkspaceState extends State<TableWorkspace>
       slotContexts: contexts,
       profileContext: context.read<UserProfileController>().oracleContext,
     );
-    if (!mounted) return;
-    _synthesis.markInitial(result);
+    if (!mounted || !_session.isCurrentSession(epoch)) return;
+    _session.markInitial(result);
     // A spread synthesized after an Astral reading starts its own history
     // entry instead of overwriting the astral one.
     if (_sessionKind != SessionKind.divinationSpread) _sessionTimestamp = null;
     _sessionKind = SessionKind.divinationSpread;
     _clearAstralContext();
     _sessionTimestamp ??= DateTime.now().toIso8601String();
+    // The reading is now an active session: stable id + provenance
+    // (source mapped once from the table-level source mode).
+    _session.beginSession(
+      sessionId: _sessionTimestamp,
+      source: ReadingSourceX.fromTableSourceMode(_ctrl.sourceMode),
+      mode: ReadingMode.standard,
+    );
     await _captureSession();
     if (!mounted) return;
     HapticFeedback.mediumImpact();
@@ -271,45 +288,52 @@ class _TableWorkspaceState extends State<TableWorkspace>
   /// the dealt cards, an Astral reading only its conversation.
   Future<void> _captureSession() async {
     if (_sessionKind != SessionKind.divinationSpread) {
-      if (_synthesis.messages.isEmpty) return;
+      if (_session.messages.isEmpty) return;
       final timestamp = _sessionTimestamp ?? DateTime.now().toIso8601String();
       _sessionTimestamp = timestamp;
-      await _history.upsert(SpreadSessionSnapshot.astral(
-        timestamp: timestamp,
-        kind: _sessionKind,
-        title: _astralTitle ?? 'Astral reading',
-        natalChartId: _astralChartId,
-        messages: [..._synthesis.messages],
-      ));
+      await _history.upsert(
+        SpreadSessionSnapshot.astral(
+          timestamp: timestamp,
+          kind: _sessionKind,
+          title: _astralTitle ?? 'Astral reading',
+          natalChartId: _astralChartId,
+          messages: [..._session.messages],
+        ),
+      );
       return;
     }
-    if (!_synthesis.hasSynthesis) return;
-    final timestamp =
-        _sessionTimestamp ?? DateTime.now().toIso8601String();
+    if (!_session.hasSynthesis) return;
+    final timestamp = _sessionTimestamp ?? DateTime.now().toIso8601String();
     _sessionTimestamp = timestamp;
-    await _history.upsert(SpreadSessionSnapshot.capture(
-      ctrl: _ctrl,
-      session: _synthesis,
-      timestamp: timestamp,
-      notebook: SessionHistoryController.notebookFor(_ctrl),
-    ));
+    await _history.upsert(
+      SpreadSessionSnapshot.capture(
+        ctrl: _ctrl,
+        session: _session,
+        timestamp: timestamp,
+        notebook: SessionHistoryController.notebookFor(_ctrl),
+        sessionId: _session.sessionId,
+        readingSource: _session.readingSource,
+        readingMode: _session.readingMode,
+        readingStatus: _session.readingStatus,
+      ),
+    );
   }
 
   // ---- Oracle AI Chat (Pane 1) ----
 
   Future<void> _askOracle(String question) async {
     if (_sessionKind == SessionKind.divinationSpread &&
-        !_synthesis.hasSynthesis) {
-      _synthesis.addSystemMessage(
+        !_session.hasSynthesis) {
+      _session.addSystemMessage(
         'The reading is not synthesized yet — deal and flip your spread '
         'on the table, then tap ✦ SYNTHESIZE IN CHAT.',
       );
       return;
     }
-    _synthesis.addUserMessage(question);
-    _synthesis.beginAnswer();
-    final profileContext =
-        context.read<UserProfileController>().oracleContext;
+    _session.addUserMessage(question);
+    _session.beginAnswer();
+    final profileContext = context.read<UserProfileController>().oracleContext;
+    final epoch = _session.epoch;
     await _captureSession(); // persist the turn immediately
     final oracle = OracleSynthesisService();
     final answer = _sessionKind == SessionKind.divinationSpread
@@ -318,7 +342,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
             slots: _ctrl.slots,
             type: _ctrl.spreadType,
             spreadLabel: _ctrl.spreadLabel,
-            history: _synthesis.messages,
+            history: _session.messages,
             profileContext: profileContext,
           )
         : await oracle.synthesizeNatalReading(
@@ -328,11 +352,11 @@ class _TableWorkspaceState extends State<TableWorkspace>
             horoscope: _astralHoroscope,
             zodiacSign: _astralZodiacSign,
             zodiacForecast: _astralZodiacForecast,
-            history: _synthesis.messages,
+            history: _session.messages,
           );
-    if (!mounted) return;
-    _synthesis.addOracleMessage(answer);
-    _synthesis.finishAnswer();
+    if (!mounted || !_session.isCurrentSession(epoch)) return;
+    _session.addOracleMessage(answer);
+    _session.finishAnswer();
     await _captureSession();
   }
 
@@ -389,7 +413,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
       widget.onOpenCameraClarifier?.call();
       return;
     }
-    _synthesis.addSystemMessage(
+    _session.addSystemMessage(
       'Clarifier armed: "$question" — the deck unlocked exactly one card. '
       'Pull it and flip it face-up to hear the answer.',
     );
@@ -399,7 +423,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
 
   void _scanClarifier() {
     _ctrl.requestClarifierScan(
-      _ctrl.pendingClarifierQuestion ?? 'What else does the table want to show?',
+      _ctrl.pendingClarifierQuestion ??
+          'What else does the table want to show?',
     );
     widget.onOpenCameraClarifier?.call();
   }
@@ -411,7 +436,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
     _sessionTimestamp = null;
     _sessionKind = SessionKind.divinationSpread;
     _clearAstralContext();
-    _synthesis.reset();
+    _session.reset();
     _ctrl.exitSpread();
     HapticFeedback.mediumImpact();
     _goToPane(tablePane);
@@ -445,10 +470,14 @@ class _TableWorkspaceState extends State<TableWorkspace>
         cards: snapshot.toRestoreCards(),
         sessionNotes: snapshot.sessionNotes,
       );
-      _synthesis.restore(
+      _session.restoreSession(
         initial: snapshot.synthesis,
         chapters: snapshot.chapters,
         messages: snapshot.messages,
+        sessionId: snapshot.sessionId,
+        readingSource: snapshot.readingSource,
+        readingMode: snapshot.readingMode,
+        readingStatus: snapshot.readingStatus,
       );
     } else {
       // Astral sessions carry no dealt cards: restore the conversation only
@@ -466,10 +495,14 @@ class _TableWorkspaceState extends State<TableWorkspace>
           }
         }
       }
-      _synthesis.restore(
+      _session.restoreSession(
         initial: null,
         chapters: const [],
         messages: snapshot.messages,
+        sessionId: snapshot.sessionId,
+        readingSource: snapshot.readingSource,
+        readingMode: snapshot.readingMode,
+        readingStatus: snapshot.readingStatus,
       );
     }
     HapticFeedback.mediumImpact();
@@ -629,7 +662,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
               children: [
                 const DigitalTableScreen(),
                 OracleChatPane(
-                  session: _synthesis,
+                  session: _session,
                   capsuleText: _capsuleText,
                   onBackToTable: () => _goToPane(tablePane),
                   onSynthesize: _runSynthesis,
@@ -650,6 +683,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
       ),
     );
   }
+
   /// Pane 0 (Digital Table): the armed-clarifier banner + the PERMANENT
   /// dormant/ignited ✦ SYNTHESIZE IN CHAT CTA — a pure tactile sanctuary,
   /// no chat UI. Pane 1 (Oracle AI Chat): the context chips + the shared
@@ -681,8 +715,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
               SynthesizeChatCta(
                 key: const ValueKey('synthesize-cta'),
                 ignited: ctrl.initialSpreadAllFaceUp,
-                synthesized: _synthesis.hasSynthesis,
-                generating: _synthesis.generatingInitial,
+                synthesized: _session.hasSynthesis,
+                generating: _session.generatingInitial,
                 faceUp: _baseFaceUp(ctrl),
                 total: ctrl.spreadCardCount,
                 onTap: _runSynthesis,
@@ -710,10 +744,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
             bottom: 64,
             left: 0,
             right: 0,
-            child: CosmosSendBurst(
-              animation: _cosmosCtl,
-              label: _cosmosLabel,
-            ),
+            child: CosmosSendBurst(animation: _cosmosCtl, label: _cosmosLabel),
           ),
       ],
     );
@@ -732,7 +763,6 @@ class _TableWorkspaceState extends State<TableWorkspace>
     return n;
   }
 }
-
 
 /// Context pills docked above the input capsule on the Oracle AI Chat
 /// pane: SINGLE-SELECT radio behavior (one active pill at a time, tap
@@ -888,6 +918,3 @@ class _SheetAction extends StatelessWidget {
     );
   }
 }
-
-
-

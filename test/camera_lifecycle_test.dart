@@ -83,6 +83,22 @@ class _FakeCameraPlatform extends CameraPlatform {
       const Stream.empty();
 }
 
+/// Drives the binding through the LEGAL AppLifecycleState transition chain.
+/// Jumping straight to `paused`/`resumed` trips `AppLifecycleListener`'s
+/// transition assertions, so backgrounding goes inactive -> hidden -> paused
+/// and foregrounding goes hidden -> inactive -> resumed.
+void _driveLifecycleTo(WidgetTester tester, AppLifecycleState target) {
+  if (target == AppLifecycleState.paused) {
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+  } else if (target == AppLifecycleState.resumed) {
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+  }
+}
+
 void main() {
   late _FakeCameraPlatform fake;
 
@@ -146,5 +162,59 @@ void main() {
     // every acquired camera is disposed (or never acquired at all).
     await tester.pump(const Duration(milliseconds: 100));
     expect(fake.disposeCalls, greaterThanOrEqualTo(fake.createCalls));
+  });
+
+  testWidgets('app backgrounding releases the camera; resume re-acquires it',
+      (tester) async {
+    await tester.pumpWidget(const MindreaderApp());
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('CAMERA'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    expect(fake.createCalls, 1);
+    expect(fake.initCalls, 1);
+
+    // Backgrounding the app must kill the hardware immediately.
+    _driveLifecycleTo(tester, AppLifecycleState.paused);
+    await tester.pump();
+    await tester.pump();
+    expect(fake.disposeCalls, 1);
+
+    // Resuming while still on the CAMERA tab re-acquires the hardware.
+    _driveLifecycleTo(tester, AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    expect(fake.createCalls, 2);
+    expect(fake.initCalls, 2);
+  });
+
+  testWidgets('resume on a non-camera tab does not re-open the camera',
+      (tester) async {
+    await tester.pumpWidget(const MindreaderApp());
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('CAMERA'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    await tester.tap(find.text('ALMANAC'));
+    await tester.pump();
+    await tester.pump();
+    expect(fake.disposeCalls, 1);
+    final createdAfterLeave = fake.createCalls;
+
+    // Background then resume while ALMANAC is on top: the camera must stay off.
+    _driveLifecycleTo(tester, AppLifecycleState.paused);
+    await tester.pump();
+    _driveLifecycleTo(tester, AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.pump();
+
+    expect(fake.createCalls, createdAfterLeave);
   });
 }

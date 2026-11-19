@@ -1,6 +1,9 @@
 import '../core/models/chat_message.dart';
 import '../core/models/divination_system.dart';
 import '../core/models/lenormand_spread.dart';
+import '../core/models/reading_mode.dart';
+import '../core/models/reading_source.dart';
+import '../core/models/reading_status.dart';
 import '../core/models/rune_cast.dart';
 import '../core/models/spread_type.dart';
 import '../core/services/oracle_synthesis_service.dart';
@@ -34,11 +37,11 @@ class RestoredSpreadCard {
   final String? userContext;
 
   Map<String, dynamic> toJson() => {
-        'cardId': cardId,
-        'reversed': reversed,
-        'role': role,
-        if (userContext != null) 'userContext': userContext,
-      };
+    'cardId': cardId,
+    'reversed': reversed,
+    'role': role,
+    if (userContext != null) 'userContext': userContext,
+  };
 
   static RestoredSpreadCard fromJson(Map<String, dynamic> json) =>
       RestoredSpreadCard(
@@ -70,6 +73,12 @@ class SpreadSessionSnapshot {
     this.kind = SessionKind.divinationSpread,
     this.astralSessionTitle,
     this.natalChartId,
+    this.sessionId,
+    this.readingSource,
+    this.readingMode,
+    this.readingStatus,
+    this.completionStatus,
+    this.voiceUsed,
   });
 
   /// An Astral (natal / horoscope / synastry / zodiac) conversation with no
@@ -80,20 +89,19 @@ class SpreadSessionSnapshot {
     required String title,
     required List<ChatMessage> messages,
     String? natalChartId,
-  }) =>
-      SpreadSessionSnapshot(
-        timestamp: timestamp,
-        spreadType: SpreadType.three,
-        notebook: 'All Readings',
-        cards: const [],
-        sessionNotes: const [],
-        synthesis: null,
-        chapters: const [],
-        messages: messages,
-        kind: kind,
-        astralSessionTitle: title,
-        natalChartId: natalChartId,
-      );
+  }) => SpreadSessionSnapshot(
+    timestamp: timestamp,
+    spreadType: SpreadType.three,
+    notebook: 'All Readings',
+    cards: const [],
+    sessionNotes: const [],
+    synthesis: null,
+    chapters: const [],
+    messages: messages,
+    kind: kind,
+    astralSessionTitle: title,
+    natalChartId: natalChartId,
+  );
 
   /// Identity + local persistence key (ISO-8601).
   final String timestamp;
@@ -128,13 +136,45 @@ class SpreadSessionSnapshot {
   /// The natal profile the Astral session was read from (null if none).
   final String? natalChartId;
 
+  /// Stable session id shared across Camera/Table/Oracle for ONE reading.
+  /// Optional for backward compatibility: legacy snapshots have none and
+  /// fall back to [timestamp] (see [effectiveSessionId]); the archive key
+  /// stays [timestamp] regardless.
+  final String? sessionId;
+
+  /// Session-level origin of the reading (null for legacy snapshots).
+  final ReadingSource? readingSource;
+
+  /// How the reading was driven (null for legacy snapshots).
+  final ReadingMode? readingMode;
+
+  /// Live lifecycle status at capture time (null for legacy snapshots).
+  final ReadingStatus? readingStatus;
+
+  /// True when the reading reached a completed end-state, false when it was
+  /// abandoned/incomplete, null when unknown (legacy snapshots).
+  final bool? completionStatus;
+
+  /// True when voice input/output was used during this reading.
+  final bool? voiceUsed;
+
+  /// Runtime identity: the stable [sessionId] when present, else the legacy
+  /// [timestamp] — old and new snapshots share one fallback.
+  String get effectiveSessionId => sessionId ?? timestamp;
+
   /// Captures the current table + session state into a serializable
-  /// snapshot (history upsert).
+  /// snapshot (history upsert). The optional session metadata is read from
+  /// the shared [OracleSessionController] by the caller (passed explicitly
+  /// to avoid a circular import between the snapshot and the controller).
   static SpreadSessionSnapshot capture({
     required SpreadController ctrl,
     required SynthesisSession session,
     required String timestamp,
     required String notebook,
+    String? sessionId,
+    ReadingSource? readingSource,
+    ReadingMode? readingMode,
+    ReadingStatus? readingStatus,
   }) {
     return SpreadSessionSnapshot(
       timestamp: timestamp,
@@ -166,47 +206,61 @@ class SpreadSessionSnapshot {
             )..text = c.text,
       ],
       messages: [...session.messages],
+      sessionId: sessionId,
+      readingSource: readingSource,
+      readingMode: readingMode,
+      readingStatus: readingStatus,
     );
   }
 
   List<({int cardId, bool reversed, String role, String? userContext})>
-      toRestoreCards() => [
-            for (final c in cards)
-              (cardId: c.cardId, reversed: c.reversed, role: c.role, userContext: c.userContext),
-          ];
+  toRestoreCards() => [
+    for (final c in cards)
+      (
+        cardId: c.cardId,
+        reversed: c.reversed,
+        role: c.role,
+        userContext: c.userContext,
+      ),
+  ];
 
   Map<String, dynamic> toJson() => {
-        'timestamp': timestamp,
-        'system': system.name,
-        'spreadType': spreadType.name,
-        'lenormandSpread': lenormandSpread.name,
-        'runeCast': runeCast.name,
-        'notebook': notebook,
-        'cards': [for (final c in cards) c.toJson()],
-        'sessionNotes': sessionNotes,
-        if (synthesis != null)
-          'synthesis': {
-            'narrative': synthesis!.narrative,
-            'elementalAlchemy': synthesis!.elementalAlchemy,
-            'verdict': synthesis!.verdict,
-            'followUp': synthesis!.followUp,
-          },
-        'chapters': [
-          for (final c in chapters)
-            {
-              'slotIndex': c.slotIndex,
-              'question': c.question,
-              'cardName': c.cardName,
-              'isReversed': c.isReversed,
-              'text': c.text,
-            },
-        ],
-        'messages': [for (final m in messages) m.toJson()],
-        'kind': kind.name,
-        if (astralSessionTitle != null)
-          'astralSessionTitle': astralSessionTitle,
-        if (natalChartId != null) 'natalChartId': natalChartId,
-      };
+    'timestamp': timestamp,
+    'system': system.name,
+    'spreadType': spreadType.name,
+    'lenormandSpread': lenormandSpread.name,
+    'runeCast': runeCast.name,
+    'notebook': notebook,
+    'cards': [for (final c in cards) c.toJson()],
+    'sessionNotes': sessionNotes,
+    if (synthesis != null)
+      'synthesis': {
+        'narrative': synthesis!.narrative,
+        'elementalAlchemy': synthesis!.elementalAlchemy,
+        'verdict': synthesis!.verdict,
+        'followUp': synthesis!.followUp,
+      },
+    'chapters': [
+      for (final c in chapters)
+        {
+          'slotIndex': c.slotIndex,
+          'question': c.question,
+          'cardName': c.cardName,
+          'isReversed': c.isReversed,
+          'text': c.text,
+        },
+    ],
+    'messages': [for (final m in messages) m.toJson()],
+    'kind': kind.name,
+    if (astralSessionTitle != null) 'astralSessionTitle': astralSessionTitle,
+    if (natalChartId != null) 'natalChartId': natalChartId,
+    if (sessionId != null) 'sessionId': sessionId,
+    if (readingSource != null) 'readingSource': readingSource!.name,
+    if (readingMode != null) 'readingMode': readingMode!.name,
+    if (readingStatus != null) 'readingStatus': readingStatus!.name,
+    if (completionStatus != null) 'completionStatus': completionStatus,
+    if (voiceUsed != null) 'voiceUsed': voiceUsed,
+  };
 
   static SpreadSessionSnapshot fromJson(Map<String, dynamic> json) {
     final synthesisJson = json['synthesis'] as Map<String, dynamic>?;
@@ -237,8 +291,7 @@ class SpreadSessionSnapshot {
         for (final raw in (json['cards'] as List? ?? const []))
           RestoredSpreadCard.fromJson(raw as Map<String, dynamic>),
       ],
-      sessionNotes:
-          (json['sessionNotes'] as List? ?? const []).cast<String>(),
+      sessionNotes: (json['sessionNotes'] as List? ?? const []).cast<String>(),
       synthesis: synthesisJson == null
           ? null
           : StructuredSynthesis(
@@ -262,6 +315,21 @@ class SpreadSessionSnapshot {
       ),
       astralSessionTitle: json['astralSessionTitle'] as String?,
       natalChartId: json['natalChartId'] as String?,
+      sessionId: json['sessionId'] as String?,
+      readingSource: _enumOrNullable<ReadingSource>(
+        ReadingSource.values,
+        json['readingSource'] as String?,
+      ),
+      readingMode: _enumOrNullable<ReadingMode>(
+        ReadingMode.values,
+        json['readingMode'] as String?,
+      ),
+      readingStatus: _enumOrNullable<ReadingStatus>(
+        ReadingStatus.values,
+        json['readingStatus'] as String?,
+      ),
+      completionStatus: json['completionStatus'] as bool?,
+      voiceUsed: json['voiceUsed'] as bool?,
     );
   }
 
@@ -289,3 +357,13 @@ T _enumOr<T extends Enum>(List<T> values, String? name, T fallback) {
   return fallback;
 }
 
+/// Nullable variant of [_enumOr] for fields that did not exist in legacy
+/// snapshots: missing or unknown names fall back to null (forward
+/// compatible), so old JSON loads without error.
+T? _enumOrNullable<T extends Enum>(List<T> values, String? name) {
+  if (name == null) return null;
+  for (final v in values) {
+    if (v.name == name) return v;
+  }
+  return null;
+}

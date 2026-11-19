@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/reading_mode.dart';
+
 /// Local-first spread history. No accounts, no cloud — the device is the
 /// single store of truth.
 class LocalStorageService {
@@ -30,6 +32,9 @@ class LocalStorageService {
 
   // Digital Table view mode (Iteration 4): SPREAD VIEW is the default.
   static const _tableSpreadOverviewKey = 'table_view_spread';
+
+  // Camera reading mode (Phase 1): the last physical mode chosen in Camera.
+  static const _cameraModeKey = 'camera_mode';
 
   static const _userProfileKey = 'user_profile_v1';
 
@@ -244,6 +249,23 @@ class LocalStorageService {
   Future<void> saveTableSpreadOverview(bool isSpread) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_tableSpreadOverviewKey, isSpread);
+  }
+
+  // ---- camera reading mode (Phase 1 — Camera UI) ----
+
+  /// Last chosen physical reading mode in the Camera. Returns null when
+  /// nothing was saved yet (the caller owns the QUICK SCAN default) or when
+  /// the stored name is no longer a valid mode.
+  Future<ReadingMode?> loadCameraMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_cameraModeKey);
+    if (raw == null) return null;
+    return ReadingMode.values.asNameMap()[raw];
+  }
+
+  Future<void> saveCameraMode(ReadingMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_cameraModeKey, mode.name);
   }
 
   // ---- Local-only user profile (Zero-Knowledge, device storage) ----

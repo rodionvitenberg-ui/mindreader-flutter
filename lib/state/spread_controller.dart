@@ -557,14 +557,59 @@ class SpreadController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Camera handoff: rebuilds the table with the exact scanned spread,
-  /// every card materialized FACE UP with threads ready. The session
-  /// switches to [TableSourceMode.physicalCameraSync] and to the TAROT
-  /// system — the phygital scanner photographs a physical tarot deck.
-  void loadScannedSpreadFaceUp(List<(TarotCard, bool)> cards) {
+  /// Camera handoff (Phase 2): rebuilds the table with the exact scanned
+  /// spread, every card FACE UP with threads ready. Generalized over all
+  /// three systems; the chosen spread (or Freeform) supplies the slot roles.
+  /// Extra cards are NEVER dropped — Freeform keeps every card (generic
+  /// `Card N` roles beyond the template). The digital ledger is untouched
+  /// (full reset + shuffle, never a fake `dealCardAt`).
+  void loadScannedSpread({
+    required DivinationSystem system,
+    required List<DivinationCard> cards,
+    required List<bool> reversed,
+    SpreadType? spreadType,
+    LenormandSpread? lenormandSpread,
+    RuneCast? runeCast,
+  }) {
     if (cards.isEmpty) return;
-    _system = DivinationSystem.tarot;
-    _spreadType = spreadTypeForCount(cards.length);
+    _system = system;
+    _deckSize = switch (system) {
+      DivinationSystem.tarot => tarotDeck.length,
+      DivinationSystem.lenormand => lenormandDeck.length,
+      DivinationSystem.runes => elderFuthark.length,
+    };
+
+    // Resolve slot roles: an explicit template wins; otherwise (Freeform)
+    // fall back to the count-based default and pad generic roles so NO card
+    // is ever dropped, even beyond the canonical template count.
+    List<String> roles;
+    if (spreadType != null) {
+      _spreadType = spreadType;
+      roles = spreadType.slotRoles;
+    } else if (lenormandSpread != null) {
+      _lenormandSpread = lenormandSpread;
+      roles = lenormandSpread.slotRoles;
+    } else if (runeCast != null) {
+      _runeCast = runeCast;
+      roles = runeCast.slotRoles;
+    } else {
+      roles = const [];
+      switch (system) {
+        case DivinationSystem.tarot:
+          _spreadType = spreadTypeForCount(cards.length);
+          roles = _spreadType.slotRoles;
+          break;
+        case DivinationSystem.lenormand:
+          _lenormandSpread = lenormandSpreadForCount(cards.length);
+          roles = _lenormandSpread.slotRoles;
+          break;
+        case DivinationSystem.runes:
+          _runeCast = runeCastForCount(cards.length);
+          roles = _runeCast.slotRoles;
+          break;
+      }
+    }
+
     _isSpreadActive = true; // land directly on the Active Digital Table
     _clarifierCount = 0;
     _pendingClarifierQuestion = null;
@@ -573,14 +618,26 @@ class SpreadController extends ChangeNotifier {
     _pendingChip = null;
     _pendingNote = null;
     _slots = List.generate(cards.length, (i) {
-      final slot = DealtCardSlot(index: i, role: _spreadType.slotRoles[i]);
+      final role = i < roles.length ? roles[i] : 'Card ${i + 1}';
+      final slot = DealtCardSlot(index: i, role: role);
       slot.fromPhysicalCard = true;
-      slot.placeCardFaceUp(TarotDivinationCard(cards[i].$1), cards[i].$2);
+      slot.placeCardFaceUp(cards[i], i < reversed.length ? reversed[i] : false);
       return slot;
     });
     _resetDeck();
     shuffleDeck();
     notifyListeners();
+  }
+
+  /// Legacy TAROT-only entry point (pre-Phase 2). Delegates to
+  /// [loadScannedSpread] so existing callers/tests keep working.
+  void loadScannedSpreadFaceUp(List<(TarotCard, bool)> cards) {
+    loadScannedSpread(
+      system: DivinationSystem.tarot,
+      cards: [for (final c in cards) TarotDivinationCard(c.$1)],
+      reversed: [for (final c in cards) c.$2],
+      spreadType: spreadTypeForCount(cards.length),
+    );
   }
 
   /// Clears the table AND physically returns every dealt card into the

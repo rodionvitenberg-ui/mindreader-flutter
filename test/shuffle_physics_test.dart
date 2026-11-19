@@ -8,9 +8,12 @@ import 'package:mindreader/core/theme/app_colors.dart';
 import 'package:mindreader/features/digital_table/widgets/shuffle_physics.dart';
 
 void main() {
-  test('hero deck geometry matches the spec: 220×360, 0.35 px layers', () {
-    expect(deckWidth, 220.0);
-    expect(deckHeight, 360.0);
+  test('hero deck geometry matches the spec: 168×275, 0.35 px layers', () {
+    // Two-step Table refactor: the hero deck was re-scaled to the Almanac
+    // 220:360 aspect at its ~168 px tile width (220×360 → 168×275). The
+    // per-layer thickness is unchanged.
+    expect(deckWidth, 168.0);
+    expect(deckHeight, 275.0);
     expect(layerThicknessPx, 0.35);
   });
 

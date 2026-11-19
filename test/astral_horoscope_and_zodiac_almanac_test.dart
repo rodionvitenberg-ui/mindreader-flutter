@@ -16,40 +16,42 @@ import 'package:mindreader/main.dart';
 import 'package:mindreader/state/app_settings_controller.dart';
 import 'package:mindreader/state/astral_controller.dart';
 import 'package:mindreader/state/deck_pack_controller.dart';
+import 'package:mindreader/state/oracle_session_controller.dart';
 import 'package:mindreader/state/session_history_controller.dart';
 import 'package:mindreader/state/spread_controller.dart';
 import 'package:mindreader/state/spread_session_snapshot.dart';
 import 'package:mindreader/state/user_profile_controller.dart';
 import 'package:provider/provider.dart';
 
+import 'helpers/table_test_helpers.dart';
+
 /// Iteration 3 — the ASTRAL 2-window architecture, Astral session auto-save
 /// into History and the Almanac's 4th ZODIAC tab.
 
 NatalChart _chart(String name) => NatalCalculatorService.calculateNatalChart(
-      id: 'chart-$name',
-      profileName: name,
-      birthDateUtc: DateTime.utc(1988, 6, 15, 14, 30),
-      birthLocalYear: 1988,
-      birthLocalMonth: 6,
-      birthLocalDay: 15,
-      birthLocalHour: 20,
-      birthLocalMinute: 30,
-      timeKnown: true,
-      cityName: 'Bishkek',
-      country: 'Kyrgyzstan',
-      latitude: 42.87,
-      longitude: 74.57,
-      timezoneOffsetHours: 6,
-      houseSystem: HouseSystem.placidus,
-      createdAt: DateTime.utc(2026, 11, 17),
-    );
+  id: 'chart-$name',
+  profileName: name,
+  birthDateUtc: DateTime.utc(1988, 6, 15, 14, 30),
+  birthLocalYear: 1988,
+  birthLocalMonth: 6,
+  birthLocalDay: 15,
+  birthLocalHour: 20,
+  birthLocalMinute: 30,
+  timeKnown: true,
+  cityName: 'Bishkek',
+  country: 'Kyrgyzstan',
+  latitude: 42.87,
+  longitude: 74.57,
+  timezoneOffsetHours: 6,
+  houseSystem: HouseSystem.placidus,
+  createdAt: DateTime.utc(2026, 11, 17),
+);
 
 class _FakeHistoryStorage extends LocalStorageService {
   final List<Map<String, dynamic>> entries = [];
 
   @override
-  Future<List<Map<String, dynamic>>> loadSessions() async =>
-      List.of(entries);
+  Future<List<Map<String, dynamic>>> loadSessions() async => List.of(entries);
 
   @override
   Future<void> upsertSession(Map<String, dynamic> entry) async {
@@ -61,25 +63,8 @@ class _FakeHistoryStorage extends LocalStorageService {
   Future<void> deleteAllSessions() async => entries.clear();
 }
 
-/// Swipes horizontally until [pane] is active (800 px test viewport).
-Future<void> _goToPane(WidgetTester tester, int pane) async {
-  final controller = tester.widget<PageView>(find.byType(PageView)).controller!;
-  var current = controller.page!.round();
-  while (current != pane) {
-    await tester.dragFrom(
-      const Offset(200, 300),
-      Offset(current < pane ? -600 : 600, 0),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
-    while (controller.position.isScrollingNotifier.value) {
-      await tester.pump(const Duration(milliseconds: 250));
-    }
-    await tester.pump();
-    current = controller.page!.round();
-  }
-}
-
+/// Swipes horizontally until [pane] is active (800 px test viewport) — the
+/// bounded, diagnosable helper lives in `helpers/table_test_helpers.dart`.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -146,25 +131,27 @@ void main() {
       expect(b.overallTheme, a.overallTheme);
     });
 
-    test('the zodiac almanac covers 12 signs, 3 per element, 4 per modality',
-        () {
-      expect(zodiacAlmanac.length, 12);
-      for (final e in Element.values) {
-        expect(zodiacEntriesForElement(e).length, 3);
-      }
-      for (final m in ZodiacModality.values) {
-        expect(zodiacEntriesForModality(m).length, 4);
-      }
-      for (final entry in zodiacAlmanac) {
-        expect(entry.dateRange, isNotEmpty);
-        expect(entry.keywords.length, 3);
-        expect(entry.archetype, isNotEmpty);
-        expect(entry.shadow, isNotEmpty);
-        expect(entry.loveStyle, isNotEmpty);
-        expect(entry.careerVector, isNotEmpty);
-        expect(entry.houseAffinity, inInclusiveRange(1, 12));
-      }
-    });
+    test(
+      'the zodiac almanac covers 12 signs, 3 per element, 4 per modality',
+      () {
+        expect(zodiacAlmanac.length, 12);
+        for (final e in Element.values) {
+          expect(zodiacEntriesForElement(e).length, 3);
+        }
+        for (final m in ZodiacModality.values) {
+          expect(zodiacEntriesForModality(m).length, 4);
+        }
+        for (final entry in zodiacAlmanac) {
+          expect(entry.dateRange, isNotEmpty);
+          expect(entry.keywords.length, 3);
+          expect(entry.archetype, isNotEmpty);
+          expect(entry.shadow, isNotEmpty);
+          expect(entry.loveStyle, isNotEmpty);
+          expect(entry.careerVector, isNotEmpty);
+          expect(entry.houseAffinity, inInclusiveRange(1, 12));
+        }
+      },
+    );
   });
 
   group('ASTRAL 3-window workspace', () {
@@ -215,8 +202,9 @@ void main() {
   });
 
   group('Astral history', () {
-    testWidgets('shows the cosmic badge and restores the conversation',
-        (tester) async {
+    testWidgets('shows the cosmic badge and restores the conversation', (
+      tester,
+    ) async {
       final history = SessionHistoryController(storage: _FakeHistoryStorage());
       await history.load();
       await history.upsert(
@@ -263,8 +251,9 @@ void main() {
   });
 
   group('Astral auto-save', () {
-    testWidgets('saves a natal handoff to History and restores it into chat',
-        (tester) async {
+    testWidgets('saves a natal handoff to History and restores it into chat', (
+      tester,
+    ) async {
       final chart = _chart('Self');
       final report = NatalCalculatorService.computeDailyHoroscope(
         chart,
@@ -276,11 +265,13 @@ void main() {
         MultiProvider(
           providers: [
             ChangeNotifierProvider(create: (_) => SpreadController()),
+            ChangeNotifierProvider(create: (_) => OracleSessionController()),
             ChangeNotifierProvider(create: (_) => DeckPackController()),
             ChangeNotifierProvider(create: (_) => AstralController()),
             ChangeNotifierProvider(create: (_) => AppSettingsController()),
             ChangeNotifierProvider(
-                create: (_) => SessionHistoryController()..load()),
+              create: (_) => SessionHistoryController()..load(),
+            ),
             ChangeNotifierProvider(create: (_) => UserProfileController()),
           ],
           child: MaterialApp(
@@ -303,7 +294,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       // The handoff lands on Pane 1 (chat) and is auto-saved into History.
-      await _goToPane(tester, 2);
+      await goToPane(tester, 2);
       expect(find.text('☉ NATAL'), findsOneWidget);
       expect(find.text('SELF · NATAL'), findsOneWidget);
 
@@ -317,8 +308,9 @@ void main() {
   });
 
   group('Almanac ZODIAC tab', () {
-    testWidgets('4th tab filters by element + modality and opens the sheet',
-        (tester) async {
+    testWidgets('4th tab filters by element + modality and opens the sheet', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(400, 2000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -356,15 +348,13 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('zodiac-tile-scorpio')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      expect(
-        find.byKey(const ValueKey('zodiac-detail-sheet')),
-        findsOneWidget,
-      );
+      expect(find.byKey(const ValueKey('zodiac-detail-sheet')), findsOneWidget);
       expect(find.text('CORE ARCHETYPE'), findsOneWidget);
 
       // Jump to the sign's Horoscope in ASTRAL.
-      await tester
-          .ensureVisible(find.byKey(const ValueKey('zodiac-open-horoscope')));
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('zodiac-open-horoscope')),
+      );
       await tester.tap(find.byKey(const ValueKey('zodiac-open-horoscope')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -374,4 +364,3 @@ void main() {
     });
   });
 }
-

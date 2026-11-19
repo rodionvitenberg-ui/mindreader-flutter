@@ -6,6 +6,7 @@ import 'package:mindreader/core/data/intention_prompts.dart';
 import 'package:mindreader/core/data/tarot_deck_data.dart';
 import 'package:mindreader/core/models/dealt_card_slot.dart';
 import 'package:mindreader/core/models/divination_card.dart';
+import 'package:mindreader/core/models/divination_system.dart';
 import 'package:mindreader/core/models/spread_type.dart';
 import 'package:mindreader/core/models/tarot_card_model.dart';
 import 'package:mindreader/core/services/oracle_synthesis_service.dart';
@@ -204,6 +205,52 @@ void main() {
       expect(c.remaining, remainingBefore);
       // A second scan without arming does nothing.
       expect(c.completeClarifierScan(tarotDeck[1], false), isNull);
+    });
+
+    test('freeform handoff keeps every card beyond the template count', () {
+      final c = SpreadController(random: Random(12));
+      // 8 tarot cards — no 8-card template, so the handoff is Freeform.
+      final cards = [
+        for (var i = 0; i < 8; i++) TarotDivinationCard(tarotDeck[i]),
+      ];
+      c.loadScannedSpread(
+        system: DivinationSystem.tarot,
+        cards: cards,
+        reversed: List.filled(8, false),
+      );
+      // ALL 8 cards are preserved, never silently dropped.
+      expect(c.slots.length, 8);
+      expect(c.slots.every((s) => s.state == SlotState.faceUp), isTrue);
+      // The 8th card falls back to a generic role (no template covers 8).
+      expect(c.slots[7].role, 'Card 8');
+    });
+
+    test('loadScannedSpread is idempotent — repeated calls never duplicate',
+        () {
+      final c = SpreadController(random: Random(13));
+      c.loadScannedSpread(
+        system: DivinationSystem.tarot,
+        cards: [
+          TarotDivinationCard(tarotDeck[0]),
+          TarotDivinationCard(tarotDeck[1]),
+          TarotDivinationCard(tarotDeck[2]),
+        ],
+        reversed: [false, false, false],
+        spreadType: SpreadType.three,
+      );
+      expect(c.slots.length, 3);
+      // Same payload again → still 3 cards (full replace, no append).
+      c.loadScannedSpread(
+        system: DivinationSystem.tarot,
+        cards: [
+          TarotDivinationCard(tarotDeck[0]),
+          TarotDivinationCard(tarotDeck[1]),
+          TarotDivinationCard(tarotDeck[2]),
+        ],
+        reversed: [false, false, false],
+        spreadType: SpreadType.three,
+      );
+      expect(c.slots.length, 3);
     });
   });
 

@@ -3,32 +3,40 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/main.dart';
 import 'package:mindreader/features/digital_table/widgets/interactive_deck_widget.dart';
 import 'package:mindreader/features/digital_table/widgets/shuffle_physics.dart';
-import 'package:mindreader/features/digital_table/widgets/spread_blueprint_carousel.dart';
 import 'package:mindreader/features/digital_table/widgets/tarot_card_3d_widget.dart';
+
+import 'helpers/table_test_helpers.dart';
 
 void main() {
   /// Switches the table into FOCUS VIEW (the tactile hero-deck mode) after
-  /// boot, for the tests that exercise deck drag physics. SPREAD VIEW is now
-  /// the default, so these tests opt back into focus explicitly.
+  /// boot, for the tests that exercise deck drag physics. Also enters the
+  /// Active Table (Step 2) from the Step 1 "Choose Spread" picker.
   Future<void> focusMode(WidgetTester tester) async {
+    await activateSpread(tester, 'Triad Flow');
     await tester.tap(find.text('FOCUS VIEW'));
     await tester.pump();
   }
 
-  testWidgets('boots into the Digital Table: SPREAD VIEW is the default mode',
+  testWidgets(
+      'boots on the Step 1 picker; the Active Table opens in SPREAD VIEW',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    // The FOCUS/SPREAD toggle + the TAROT|LENORMAND|RUNES selector sit in
-    // the header, with the blueprint carousel directly below them.
-    expect(find.text('FOCUS VIEW'), findsOneWidget);
-    expect(find.text('SPREAD VIEW'), findsOneWidget);
+    // Step 1 (Choose Spread): the TAROT|LENORMAND|RUNES system switcher and
+    // the swipeable spread-blueprint row.
     expect(find.text('TAROT'), findsOneWidget);
     expect(find.text('LENORMAND'), findsOneWidget);
     expect(find.text('RUNES'), findsOneWidget);
-    // SPREAD VIEW is the default: the proportional mini-deck + empty slot
-    // placeholders are visible, NOT the full-size tactile hero deck.
+    expect(find.text('Choose Spread'), findsOneWidget);
+    expect(find.text('Triad Flow'), findsOneWidget);
+
+    // Enter the Active Table — SPREAD VIEW is the default mode.
+    await activateSpread(tester, 'Triad Flow');
+    expect(find.text('FOCUS VIEW'), findsOneWidget);
+    expect(find.text('SPREAD VIEW'), findsOneWidget);
+    // The proportional mini-deck + empty slot placeholders are visible,
+    // NOT the full-size tactile hero deck.
     expect(find.byKey(const ValueKey('overview-deck')), findsOneWidget);
     expect(find.byType(InteractiveDeckWidget), findsNothing);
     expect(find.text('TAP DECK TO DEAL'), findsOneWidget);
@@ -86,27 +94,30 @@ void main() {
     expect(find.text('READING CONTEXT'), findsNothing);
   });
 
-  testWidgets('header spread selector resets the table: pillar empty',
+  testWidgets('changing the spread from Step 1 resets the table to empty',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    // Sprint 2/3: the tappable header subtitle opens the compact selector.
-    await tester.tap(find.textContaining('3 · TRIAD FLOW'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('SPREAD METHOD'), findsOneWidget);
+    // Start on Triad Flow (3 slots).
+    await activateSpread(tester, 'Triad Flow');
+    expect(find.text('1 · State'), findsOneWidget);
 
-    await tester.tap(find.text('7 · HORSESHOE SYNTHESIS'));
+    // Return to Step 1 via the back button, then choose Horseshoe Synthesis.
+    await tester.tap(find.byKey(const ValueKey('table-back-button')));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Choose Spread'), findsOneWidget);
+    await activateSpread(tester, 'Horseshoe Synthesis');
 
-    // No placeholders: the pillar stays empty after switching the spread.
-    expect(find.text('Past'), findsNothing);
-    expect(find.text('Outcome'), findsNothing);
+    // The table starts empty in the new 7-slot geometry: the Triad labels
+    // are gone and the 7 Horseshoe placeholders are present.
+    expect(find.text('1 · State'), findsNothing);
+    expect(find.text('3 · Vector'), findsNothing);
+    expect(find.text('1 · Past'), findsOneWidget);
+    expect(find.text('7 · Outcome'), findsOneWidget);
+    // No old preamble roles anywhere.
     expect(find.text('Current State / Essence'), findsNothing);
-    // The header subtitle now carries the new spread label.
-    expect(find.textContaining('7 · HORSESHOE SYNTHESIS'), findsOneWidget);
   });
 
   testWidgets('mock camera scan hands the spread to the table face-up',
@@ -125,15 +136,23 @@ void main() {
     // 3-card default spread.
     await tester.tap(find.byKey(const ValueKey('shutter')));
     await tester.pump(); // start the lock-on ticker
-    await tester.pump(const Duration(milliseconds: 500)); // lock-on + handoff
+    await tester.pump(const Duration(milliseconds: 500)); // lock-on completes
+    await tester.pump();
+    // The Recognition Review sheet appears; confirm the proposed spread.
+    await tester.pump(const Duration(milliseconds: 400)); // review modal in
+    await tester.pump();
+    expect(find.text('3 RECOGNIZED'), findsOneWidget);
+    await tester.tap(find.text('CONFIRM & PLACE ON TABLE'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400)); // modal out + handoff
     await tester.pump();
     // Let the deck's post-handoff collapse timer + animation settle.
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
 
-    // Back on the Digital Table with no empty placeholders left.
-    expect(find.text('TAROT'), findsOneWidget);
+    // Back on the Active Digital Table with no empty placeholders left.
+    expect(find.byKey(const ValueKey('table-back-button')), findsOneWidget);
     expect(find.text('Current State / Essence'), findsNothing);
     expect(find.text('Vector / Action'), findsNothing);
     // All 3 scanned cards are face-up already.
@@ -162,8 +181,8 @@ void main() {
     // exactly the current scroll offset, so the bounce never overshoots.
     Future<void> scrollBackToDeck() async {
       final area = tester.getRect(find.byType(SingleChildScrollView).first);
-      // Sprint 4: no pane indicator — the deck rests under the header.
-      final resting = 118 + SpreadBlueprintCarousel.height + tableTopPad;
+      // Step 2: no carousel — the deck rests just under the 56px header.
+      const resting = 56.0 + tableTopPad;
       final delta = resting - tester.getTopLeft(deck).dy;
       if (delta > 4) {
         await tester.dragFrom(
@@ -216,7 +235,7 @@ void main() {
     await focusMode(tester);
 
     final deck = find.byType(InteractiveDeckWidget);
-    final resting = 118 + SpreadBlueprintCarousel.height + tableTopPad;
+    const resting = 56.0 + tableTopPad;
     expect(tester.getTopLeft(deck).dy, closeTo(resting, 0.1));
 
     await tester.dragFrom(tester.getCenter(deck), const Offset(0, 100));
@@ -273,22 +292,23 @@ void main() {
     expect(find.text('SWIPE ↓ TO DEAL'), findsOneWidget);
   });
 
-  testWidgets('deck switcher carousel changes the active pack on the fly',
+  testWidgets('almanac deck picker changes the active pack on the fly',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    // Default pack pill in the table header.
-    expect(find.text('RIDER-WAITE'), findsOneWidget);
+    // Deck selection moved from the table into the Almanac tab.
+    await tester.tap(find.text('ALMANAC'));
+    await tester.pump();
+    expect(find.text('RIDER-WAITE'), findsOneWidget); // active-pack pill
 
-    await tester.tap(find.text('RIDER-WAITE'));
+    await tester.tap(find.byKey(const ValueKey('almanac-pack-pill')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('DECK SELECTOR'), findsOneWidget);
     // Bring the second carousel tile into the viewport and let the page
-    // settle fully before tapping. (Two PageViews exist: the workspace
-    // panes + the carousel inside the sheet — target the sheet's last.)
+    // settle fully before tapping.
     await tester.drag(find.byType(PageView).last, const Offset(-400, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
@@ -304,7 +324,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    // The table header pill now shows the new active pack.
+    // The Almanac pack pill now shows the new active pack.
     expect(find.text('TAROT DE MARSEILLE'), findsOneWidget);
     expect(find.text('RIDER-WAITE'), findsNothing);
   });
@@ -341,6 +361,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await activateSpread(tester, 'Triad Flow');
 
     // SPREAD VIEW is the default: proportional mini-deck + empty slot
     // placeholders, NO full-size tactile deck.
@@ -400,6 +421,7 @@ void main() {
 
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await activateSpread(tester, 'Triad Flow');
 
     // SPREAD VIEW is the default — no toggle tap needed.
 

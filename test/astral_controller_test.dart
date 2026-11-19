@@ -90,7 +90,7 @@ void main() {
       ctrl = AstralController(storage: _FakeStorage());
     });
 
-    test('profile 1 and 2 generate on the free tier', () {
+    test('profile 1 and 2 generate (PRO restrictions disabled)', () {
       expect(ctrl.profiles, isEmpty);
       expect(ctrl.canCreateOrGenerateChart(), isTrue);
 
@@ -105,30 +105,28 @@ void main() {
       );
       expect(ctrl.profiles.length, 2);
       expect(ctrl.totalChartsGeneratedCount, 2);
-      expect(ctrl.canCreateOrGenerateChart(), isFalse);
+      // PRO restrictions are disabled centrally (kProRestrictionsEnabled =
+      // false), so the 2-profile free-tier cap does NOT apply.
+      expect(ctrl.canCreateOrGenerateChart(), isTrue);
     });
 
-    test('a 3rd free-tier chart is blocked and creates nothing', () {
+    test('a 3rd chart generates (PRO cap bypassed)', () {
       ctrl.generateChart(_chart('Self'));
       ctrl.generateChart(_chart('Partner'));
 
       expect(
         ctrl.generateChart(_chart('Third')),
-        AstralGenerateResult.proGateBlocked,
+        AstralGenerateResult.generated,
       );
-      expect(ctrl.profiles.length, 2);
-      expect(ctrl.totalChartsGeneratedCount, 2);
-      expect(ctrl.canCreateOrGenerateChart(), isFalse);
+      expect(ctrl.profiles.length, 3);
+      expect(ctrl.totalChartsGeneratedCount, 3);
+      expect(ctrl.canCreateOrGenerateChart(), isTrue);
     });
 
-    test('unlocking PRO lets the 3rd chart through', () {
-      ctrl.generateChart(_chart('Self'));
-      ctrl.generateChart(_chart('Partner'));
-      expect(
-        ctrl.generateChart(_chart('Third')),
-        AstralGenerateResult.proGateBlocked,
-      );
-
+    test('isProUnlocked is always true while PRO restrictions are disabled', () {
+      // The gate logic (free-tier cap / unlockPro) stays intact for the
+      // future commercial phase, but is bypassed centrally right now.
+      expect(ctrl.isProUnlocked, isTrue);
       ctrl.unlockPro();
       expect(ctrl.isProUnlocked, isTrue);
       expect(ctrl.canCreateOrGenerateChart(), isTrue);
@@ -136,7 +134,7 @@ void main() {
         ctrl.generateChart(_chart('Third')),
         AstralGenerateResult.generated,
       );
-      expect(ctrl.profiles.length, 3);
+      expect(ctrl.profiles.length, 1);
     });
 
     test('house system switches in place and never counts as a generation',

@@ -26,7 +26,7 @@ class DetectedCard {
 ///    crashes without any network/key.
 class VisionScannerService {
   VisionScannerService({http.Client? client})
-      : _client = client ?? http.Client();
+    : _client = client ?? http.Client();
 
   static const primaryWorkerUrl = String.fromEnvironment('PRIMARY_WORKER_URL');
   static const primaryWorkerKey = String.fromEnvironment('PRIMARY_WORKER_KEY');
@@ -67,13 +67,17 @@ class VisionScannerService {
     return Uint8List.fromList(img.encodeJpg(target, quality: 80));
   }
 
-  /// Detects [cardCount] cards (card + orientation) in a compressed JPEG.
+  /// Detects the cards (card + orientation) in a compressed JPEG.
   /// Worker → Gemini Flash → offline mock. Only throws on invalid args.
+  ///
+  /// [cardCount] is OPTIONAL: when omitted the engine reports however many
+  /// cards it actually finds (the count comes from the result list, not from
+  /// a caller-side guess).
   Future<List<DetectedCard>> detectSpread({
     required Uint8List jpeg,
-    required int cardCount,
+    int? cardCount,
   }) async {
-    if (cardCount < 1 || cardCount > tarotDeck.length) {
+    if (cardCount != null && (cardCount < 1 || cardCount > tarotDeck.length)) {
       throw ArgumentError.value(cardCount, 'cardCount', 'must be 1..78');
     }
     // 1) Local RTX 3080 worker first.
@@ -89,8 +93,10 @@ class VisionScannerService {
         );
       } catch (e) {
         // PC off / power outage / timeout / bad response — fall through.
-        debugPrint('vision: primary worker unreachable '
-            '(${e.runtimeType}), falling back to cloud');
+        debugPrint(
+          'vision: primary worker unreachable '
+          '(${e.runtimeType}), falling back to cloud',
+        );
       }
     }
     // 2) Gemini Flash cloud fallback.
@@ -105,8 +111,10 @@ class VisionScannerService {
           cardCount: cardCount,
         );
       } catch (e) {
-        debugPrint('vision: cloud endpoint failed '
-            '(${e.runtimeType}), offline mode');
+        debugPrint(
+          'vision: cloud endpoint failed '
+          '(${e.runtimeType}), offline mode',
+        );
       }
     }
     // 3) Offline deterministic safety net.
@@ -114,15 +122,19 @@ class VisionScannerService {
   }
 
   /// Deterministic per image: the same photo always yields the same spread.
-  List<DetectedCard> _mockDetect(Uint8List jpeg, int cardCount) {
+  /// When [cardCount] is omitted the mock derives a stable small count from
+  /// the image bytes itself (the count comes from the result, never from a
+  /// caller-side guess).
+  List<DetectedCard> _mockDetect(Uint8List jpeg, int? cardCount) {
     var seed = 17;
     for (var i = 0; i < jpeg.length; i += 97) {
       seed = (seed * 31 + jpeg[i]) & 0x7fffffff;
     }
     final rng = Random(seed);
     final ids = List<int>.generate(tarotDeck.length, (i) => i)..shuffle(rng);
+    final count = cardCount ?? (seed % 6) + 1;
     return [
-      for (var i = 0; i < cardCount; i++)
+      for (var i = 0; i < count; i++)
         DetectedCard(tarotDeck[ids[i]], rng.nextBool()),
     ];
   }
@@ -135,10 +147,13 @@ class VisionScannerService {
     required String model,
     required Duration timeout,
     required Uint8List jpeg,
-    required int cardCount,
+    int? cardCount,
   }) async {
     final b64 = base64Encode(jpeg);
     final cardNames = tarotDeck.map((c) => c.name).join(', ');
+    final countInstruction = cardCount == null
+        ? 'Detect every Rider-Waite tarot card visible in this photo.'
+        : 'Detect exactly $cardCount Rider-Waite tarot cards in this photo.';
     final response = await _client
         .post(
           Uri.parse(url),
@@ -155,8 +170,9 @@ class VisionScannerService {
                 'content': [
                   {
                     'type': 'text',
-                    'text': 'Detect exactly $cardCount Rider-Waite tarot cards in '
-                        'this photo. Reply ONLY with a JSON array: '
+                    'text':
+                        '$countInstruction '
+                        'Reply ONLY with a JSON array: '
                         '[{"name": "<card name>", "reversed": false}] using '
                         'only these names: $cardNames.',
                   },

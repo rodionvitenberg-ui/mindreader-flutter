@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/config/app_flags.dart';
 import '../core/models/natal_chart.dart';
 import '../core/services/local_storage_service.dart';
 import '../core/services/natal_calculator_service.dart';
@@ -45,7 +46,7 @@ class AstralController extends ChangeNotifier {
 
   int get totalChartsGeneratedCount => _totalChartsGeneratedCount;
 
-  bool get isProUnlocked => _isProUnlocked;
+  bool get isProUnlocked => kProRestrictionsEnabled ? _isProUnlocked : true;
 
   HouseSystem get activeHouseSystem =>
       activeProfile?.houseSystem ?? _defaultHouseSystem;
@@ -53,8 +54,10 @@ class AstralController extends ChangeNotifier {
   DailyHoroscopeReport? get activeHoroscope => _activeHoroscope;
 
   /// Free tier allows 2 charts — the saved-profile count AND the lifetime
-  /// generation count must stay under the cap. PRO is unlimited.
+  /// generation count must stay under the cap. PRO is unlimited. When
+  /// [kProRestrictionsEnabled] is false (pre-launch) the cap is bypassed.
   bool canCreateOrGenerateChart() =>
+      !kProRestrictionsEnabled ||
       _isProUnlocked ||
       (_profiles.length < maxFreeProfiles &&
           _totalChartsGeneratedCount < maxFreeProfiles);

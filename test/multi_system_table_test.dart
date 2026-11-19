@@ -8,57 +8,72 @@ import 'package:mindreader/main.dart';
 import 'package:mindreader/state/spread_controller.dart';
 import 'package:provider/provider.dart';
 
-/// SPRINT 1/2 — the redesigned Digital Table header and Almanac drive all
-/// three systems from the UI:
-/// * Row 1 FOCUS/SPREAD toggle (the static "DIGITAL TABLE" title is gone),
-/// * Row 2 TAROT | LENORMAND | RUNES selector,
-/// * Row 3 the system-filtered pack pill + the concise spread pill
-///   (no "78 IN DECK" counter, no RITUAL button),
+import 'helpers/table_test_helpers.dart';
+
+/// SPRINT 1/2 — the redesigned two-step Digital Table drives all three
+/// systems from the UI:
+/// * Step 1 (Choose Spread): the TAROT | LENORMAND | RUNES system switcher +
+///   ONE swipeable row of that system's spread blueprints.
+/// * Step 2 (Active Table): the [SPREAD VIEW | FOCUS VIEW] toggle + the
+///   tactile deck (or the 3D rune stone cluster).
 /// * RUNES swaps the paper deck for the 3D stone cluster.
 void main() {
-  /// SPREAD VIEW is the default; tests that exercise the hero deck/cast
-  /// physics opt back into FOCUS VIEW explicitly.
-  Future<void> focusMode(WidgetTester tester) async {
+  /// Enters the Active Table (Step 2) for a given system and switches to the
+  /// tactile FOCUS VIEW so the hero deck / stone cluster is on screen.
+  Future<void> focusSystem(
+    WidgetTester tester,
+    String systemLabel,
+    String spreadLabel,
+  ) async {
+    await activateSystem(tester, systemLabel, spreadLabel);
     await tester.tap(find.text('FOCUS VIEW'));
     await tester.pump();
   }
 
-  testWidgets('header: 3 clean rows, no old title / counter / ritual', (
-    tester,
-  ) async {
+  testWidgets(
+      'header: Step 1 owns the system switcher, Step 2 the clean view toggle',
+      (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    expect(find.text('DIGITAL TABLE'), findsNothing);
-    expect(find.text('RITUAL'), findsNothing);
-    expect(find.textContaining('IN DECK'), findsNothing);
-
-    // Row 1: the segmented view toggle.
-    expect(find.text('FOCUS VIEW'), findsOneWidget);
-    expect(find.text('SPREAD VIEW'), findsOneWidget);
-    // Row 2: the system selector.
+    // Step 1 (Choose Spread) hosts the TAROT | LENORMAND | RUNES switcher.
     expect(find.text('TAROT'), findsOneWidget);
     expect(find.text('LENORMAND'), findsOneWidget);
     expect(find.text('RUNES'), findsOneWidget);
-    // Row 3: pack + spread pills.
-    expect(find.byKey(const ValueKey('system-pack-pill')), findsOneWidget);
-    expect(find.byKey(const ValueKey('spread-selector-pill')), findsOneWidget);
+
+    // Enter the Active Table.
+    await activateSpread(tester, 'Triad Flow');
+
+    // Step 2 header: the reordered view toggle + the back button; no old
+    // chrome anywhere (title, counter, ritual button).
+    expect(find.text('FOCUS VIEW'), findsOneWidget);
+    expect(find.text('SPREAD VIEW'), findsOneWidget);
+    expect(find.byKey(const ValueKey('table-back-button')), findsOneWidget);
+    expect(find.text('DIGITAL TABLE'), findsNothing);
+    expect(find.text('RITUAL'), findsNothing);
+    expect(find.textContaining('IN DECK'), findsNothing);
+    // The old pack + spread pills are gone by design — the spread lives on
+    // Step 1's carousel, the system switcher lives on Step 1.
+    expect(find.byKey(const ValueKey('system-pack-pill')), findsNothing);
+    expect(find.byKey(const ValueKey('spread-selector-pill')), findsNothing);
+    expect(find.text('LENORMAND'), findsNothing);
+    expect(find.text('RUNES'), findsNothing);
   });
 
-  testWidgets('switching to LENORMAND swaps the pack pill and spread label', (
+  testWidgets('switching to LENORMAND swaps the deck to lenormand physics', (
     tester,
   ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await focusMode(tester);
 
+    // Step 1: switch the system, then start a Lenormand line.
     await tester.tap(find.text('LENORMAND'));
     await tester.pump();
+    expect(find.text('Lenormand Line'), findsOneWidget);
+    await activateSpread(tester, 'Lenormand Line');
+    await tester.tap(find.text('FOCUS VIEW'));
+    await tester.pump();
 
-    // Pack pill shows the active Lenormand pack.
-    expect(find.text('ANTIQUE PETIT LENORMAND'), findsOneWidget);
-    // Spread pill shows the Lenormand spread label.
-    expect(find.textContaining('3 · LENORMAND LINE'), findsOneWidget);
     // The card deck stays (Lenormand uses the same 3D card physics).
     expect(find.byType(InteractiveDeckWidget), findsOneWidget);
     expect(find.byType(InteractiveRuneStonesWidget), findsNothing);
@@ -69,15 +84,17 @@ void main() {
   ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await focusMode(tester);
 
+    // Step 1: switch to runes, then start the three Norns cast.
     await tester.tap(find.text('RUNES'));
+    await tester.pump();
+    expect(find.text('The Three Norns'), findsOneWidget);
+    await activateSpread(tester, 'The Three Norns');
+    await tester.tap(find.text('FOCUS VIEW'));
     await tester.pump();
 
     expect(find.byType(InteractiveDeckWidget), findsNothing);
     expect(find.byType(InteractiveRuneStonesWidget), findsOneWidget);
-    // Pack pill shows the active rune stone set.
-    expect(find.text('OBSIDIAN & LAVENDER QUARTZ'), findsOneWidget);
     // The cast hint replaces the deal hint.
     expect(find.text('SWIPE ↓ TO CAST'), findsOneWidget);
   });
@@ -122,10 +139,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await focusMode(tester);
-
-    await tester.tap(find.text('LENORMAND'));
-    await tester.pump();
+    await focusSystem(tester, 'LENORMAND', 'Lenormand Line');
 
     // Deal one card from the deck.
     final deck = find.byType(InteractiveDeckWidget);
@@ -142,10 +156,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await focusMode(tester);
-
-    await tester.tap(find.text('LENORMAND'));
-    await tester.pump();
+    await focusSystem(tester, 'LENORMAND', 'Lenormand Line');
 
     // Deal one card from the deck.
     final deck = find.byType(InteractiveDeckWidget);
@@ -184,10 +195,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await focusMode(tester);
-
-    await tester.tap(find.text('RUNES'));
-    await tester.pump();
+    await focusSystem(tester, 'RUNES', 'The Three Norns');
 
     final heap = find.byType(InteractiveRuneStonesWidget);
     expect(heap, findsOneWidget);

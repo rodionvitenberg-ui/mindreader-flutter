@@ -2,6 +2,9 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/models/chat_message.dart';
+import 'package:mindreader/core/models/reading_mode.dart';
+import 'package:mindreader/core/models/reading_source.dart';
+import 'package:mindreader/core/models/reading_status.dart';
 import 'package:mindreader/core/models/spread_type.dart';
 import 'package:mindreader/state/session_history_controller.dart';
 import 'package:mindreader/state/spread_controller.dart';
@@ -11,8 +14,7 @@ import 'package:mindreader/state/synthesis_session.dart';
 /// Sprint 2/3: the full-session snapshot round-trip — capture, JSON,
 /// restore — and the thematic notebook derivation.
 void main() {
-  test('snapshot round-trip preserves cards, notes, synthesis and dialog',
-      () {
+  test('snapshot round-trip preserves cards, notes, synthesis and dialog', () {
     final ctrl = SpreadController(random: Random(1));
     for (var i = 0; i < 3; i++) {
       ctrl.dealNextCard();
@@ -92,5 +94,79 @@ void main() {
     expect(copy.role, 'oracle');
     expect(copy.text, 'hi');
     expect(copy.slotIndex, 3);
+  });
+
+  test('new session metadata fields round-trip through JSON', () {
+    final snapshot = SpreadSessionSnapshot(
+      timestamp: '2026-11-18T12:00:00.000',
+      spreadType: SpreadType.three,
+      notebook: 'All Readings',
+      cards: const [],
+      sessionNotes: const [],
+      synthesis: null,
+      chapters: const [],
+      messages: const [],
+      sessionId: 'session-abc-123',
+      readingSource: ReadingSource.physical,
+      readingMode: ReadingMode.quickScan,
+      readingStatus: ReadingStatus.completed,
+      completionStatus: true,
+      voiceUsed: false,
+    );
+    final restored = SpreadSessionSnapshot.fromJson(snapshot.toJson());
+
+    expect(restored.sessionId, 'session-abc-123');
+    expect(restored.readingSource, ReadingSource.physical);
+    expect(restored.readingMode, ReadingMode.quickScan);
+    expect(restored.readingStatus, ReadingStatus.completed);
+    expect(restored.completionStatus, isTrue);
+    expect(restored.voiceUsed, isFalse);
+    expect(restored.effectiveSessionId, 'session-abc-123');
+  });
+
+  test('legacy JSON without new metadata keys loads with null defaults', () {
+    final legacy = <String, dynamic>{
+      'timestamp': '2026-11-17T10:00:00.000',
+      'system': 'tarot',
+      'spreadType': 'three',
+      'lenormandSpread': 'three',
+      'runeCast': 'three',
+      'notebook': 'All Readings',
+      'cards': <dynamic>[],
+      'sessionNotes': <dynamic>[],
+      'chapters': <dynamic>[],
+      'messages': <dynamic>[],
+      'kind': 'divinationSpread',
+    };
+    final restored = SpreadSessionSnapshot.fromJson(legacy);
+
+    expect(restored.sessionId, isNull);
+    expect(restored.readingSource, isNull);
+    expect(restored.readingMode, isNull);
+    expect(restored.readingStatus, isNull);
+    expect(restored.completionStatus, isNull);
+    expect(restored.voiceUsed, isNull);
+    expect(restored.effectiveSessionId, '2026-11-17T10:00:00.000');
+  });
+
+  test('unknown enum names fall back to null (forward compatible)', () {
+    final json = <String, dynamic>{
+      'timestamp': '2026-11-18T12:00:00.000',
+      'spreadType': 'three',
+      'notebook': 'All Readings',
+      'cards': <dynamic>[],
+      'sessionNotes': <dynamic>[],
+      'chapters': <dynamic>[],
+      'messages': <dynamic>[],
+      'kind': 'divinationSpread',
+      'readingSource': 'futureSource',
+      'readingMode': 'futureMode',
+      'readingStatus': 'futureStatus',
+    };
+    final restored = SpreadSessionSnapshot.fromJson(json);
+
+    expect(restored.readingSource, isNull);
+    expect(restored.readingMode, isNull);
+    expect(restored.readingStatus, isNull);
   });
 }

@@ -11,6 +11,7 @@ import 'package:mindreader/features/astral/widgets/daily_horoscope_card.dart';
 import 'package:mindreader/features/digital_table/table_workspace.dart';
 import 'package:mindreader/state/app_settings_controller.dart';
 import 'package:mindreader/state/deck_pack_controller.dart';
+import 'package:mindreader/state/oracle_session_controller.dart';
 import 'package:mindreader/state/session_history_controller.dart';
 import 'package:mindreader/state/spread_controller.dart';
 import 'package:mindreader/state/user_profile_controller.dart';
@@ -45,10 +46,10 @@ NatalChart _chart(String name, {DateTime? birthUtc, DateTime? birthLocal}) {
 NatalChart _selfChart() => _chart('Self');
 
 NatalChart _partnerChart() => _chart(
-      'Partner',
-      birthUtc: DateTime.utc(1991, 3, 21, 8, 5),
-      birthLocal: DateTime.utc(1991, 3, 21, 14, 5),
-    );
+  'Partner',
+  birthUtc: DateTime.utc(1991, 3, 21, 8, 5),
+  birthLocal: DateTime.utc(1991, 3, 21, 14, 5),
+);
 
 DailyHoroscopeReport _report(NatalChart chart) =>
     NatalCalculatorService.computeDailyHoroscope(
@@ -60,8 +61,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Synastry + horoscope engine', () {
-    test('cross-chart aspects pair A points with B points, tightest first',
-        () {
+    test('cross-chart aspects pair A points with B points, tightest first', () {
       final a = _selfChart();
       final b = _partnerChart();
       final aspects = NatalCalculatorService.computeSynastryAspects(a, b);
@@ -102,8 +102,7 @@ void main() {
       );
     });
 
-    test('DailyTransitItem JSON round-trip preserves the harmony register',
-        () {
+    test('DailyTransitItem JSON round-trip preserves the harmony register', () {
       const item = DailyTransitItem(
         title: 'Mars stirs your Moon',
         transitLabel: 'Transit Mars square Natal Moon',
@@ -170,8 +169,9 @@ void main() {
   });
 
   group('DailyHoroscopeCard', () {
-    testWidgets('renders the cosmic weather, moon house and transit cards',
-        (tester) async {
+    testWidgets('renders the cosmic weather, moon house and transit cards', (
+      tester,
+    ) async {
       final report = _report(_selfChart());
       await tester.pumpWidget(
         MaterialApp(
@@ -228,31 +228,34 @@ void main() {
     };
 
     for (final entry in charts.entries) {
-      testWidgets('shows the full ledger and live house switch for ${entry.key}',
-          (tester) async {
-        HouseSystem? switched;
-        await pumpDetail(tester, entry.value, onHouse: (s) => switched = s);
+      testWidgets(
+        'shows the full ledger and live house switch for ${entry.key}',
+        (tester) async {
+          HouseSystem? switched;
+          await pumpDetail(tester, entry.value, onHouse: (s) => switched = s);
 
-        expect(find.text('BIG THREE'), findsOneWidget);
-        expect(find.text('FULL PLACEMENTS'), findsOneWidget);
-        expect(find.text('ASPECT MATRIX'), findsOneWidget);
-        expect(find.text('Sun'), findsOneWidget);
-        expect(find.text('Ascendant'), findsOneWidget);
+          expect(find.text('BIG THREE'), findsOneWidget);
+          expect(find.text('FULL PLACEMENTS'), findsOneWidget);
+          expect(find.text('ASPECT MATRIX'), findsOneWidget);
+          expect(find.text('Sun'), findsOneWidget);
+          expect(find.text('Ascendant'), findsOneWidget);
 
-        await tester.ensureVisible(find.text('KOCH'));
-        await tester.tap(find.text('KOCH'));
-        await tester.pump();
+          await tester.ensureVisible(find.text('KOCH'));
+          await tester.tap(find.text('KOCH'));
+          await tester.pump();
 
-        expect(switched, HouseSystem.koch);
-        expect(find.textContaining('Кох'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      });
+          expect(switched, HouseSystem.koch);
+          expect(find.textContaining('Кох'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
     }
   });
 
   group('SynastrySummarySheet', () {
-    testWidgets('renders both charts and hands a synastry to the Oracle',
-        (tester) async {
+    testWidgets('renders both charts and hands a synastry to the Oracle', (
+      tester,
+    ) async {
       final a = _selfChart();
       final b = _partnerChart();
       OracleHandoff? captured;
@@ -277,8 +280,7 @@ void main() {
       expect(find.text('CROSS-CHART ASPECTS'), findsOneWidget);
       expect(find.textContaining('WATER'), findsOneWidget);
 
-      final cta =
-          find.text('✦ DISCUSS THIS SYNASTRY WITH THE ORACLE');
+      final cta = find.text('✦ DISCUSS THIS SYNASTRY WITH THE ORACLE');
       await tester.ensureVisible(cta);
       await tester.tap(cta);
       await tester.pump();
@@ -292,8 +294,9 @@ void main() {
   });
 
   group('ASTRAL to Oracle handoff', () {
-    testWidgets('streams the natal reading into the Oracle Chat pane',
-        (tester) async {
+    testWidgets('streams the natal reading into the Oracle Chat pane', (
+      tester,
+    ) async {
       final chart = _selfChart();
       final report = _report(chart);
       final handoff = ValueNotifier<OracleHandoff?>(null);
@@ -302,9 +305,11 @@ void main() {
         MultiProvider(
           providers: [
             ChangeNotifierProvider(create: (_) => SpreadController()),
+            ChangeNotifierProvider(create: (_) => OracleSessionController()),
             ChangeNotifierProvider(create: (_) => DeckPackController()),
             ChangeNotifierProvider(
-                create: (_) => SessionHistoryController()..load()),
+              create: (_) => SessionHistoryController()..load(),
+            ),
             ChangeNotifierProvider(create: (_) => AppSettingsController()),
             ChangeNotifierProvider(create: (_) => UserProfileController()),
           ],

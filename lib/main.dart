@@ -6,6 +6,7 @@ import 'features/shell/main_navigation_shell.dart';
 import 'state/app_settings_controller.dart';
 import 'state/astral_controller.dart';
 import 'state/deck_pack_controller.dart';
+import 'state/oracle_session_controller.dart';
 import 'state/session_history_controller.dart';
 import 'state/spread_controller.dart';
 import 'state/user_profile_controller.dart';
@@ -23,12 +24,18 @@ class MindreaderApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SpreadController()),
+        // One Oracle dialogue for the WHOLE app: the Camera, the Digital
+        // Table and the Oracle Chat share this single session source of
+        // truth (stable sessionId + source/mode/status + messages).
+        ChangeNotifierProvider(create: (_) => OracleSessionController()),
         ChangeNotifierProvider(create: (_) => DeckPackController()),
         ChangeNotifierProvider(create: (_) => AstralController()),
         ChangeNotifierProvider(create: (_) => AppSettingsController()),
         // One writer for the reading archive: the Table mutates it and the
         // ProfileScreen reads it for the device-migration backup.
-        ChangeNotifierProvider(create: (_) => SessionHistoryController()..load()),
+        ChangeNotifierProvider(
+          create: (_) => SessionHistoryController()..load(),
+        ),
         ChangeNotifierProvider(
           create: (context) => UserProfileController(
             history: context.read<SessionHistoryController>(),

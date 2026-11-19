@@ -8,10 +8,19 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/models/spread_type.dart';
+import '../../core/models/divination_card.dart';
+import '../../core/models/divination_system.dart';
+import '../../core/models/reading_mode.dart';
+import '../../core/models/reading_status.dart';
+import '../../core/services/local_storage_service.dart';
+import '../../core/services/spread_inference_service.dart';
 import '../../core/services/vision_scanner_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../state/oracle_session_controller.dart';
 import '../../state/spread_controller.dart';
+import 'widgets/camera_mode_selector.dart';
+import 'widgets/camera_top_hud.dart';
+import 'widgets/recognition_review_sheet.dart';
 
 /// Pillar 2: phygital pipeline. Native camera on Android/iOS with a
 /// simulated viewfinder + mock scan on desktop/emulator, dynamic lavender
@@ -39,13 +48,27 @@ class CameraScanScreen extends StatefulWidget {
 }
 
 class _CameraScanScreenState extends State<CameraScanScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   CameraController? _camera;
   bool _initError = false;
   bool _flashOn = false;
   bool _busy = false;
   bool _lockOn = false;
   int _detectedCount = 0;
+
+  /// The active physical reading mode (persisted across launches).
+  ReadingMode _mode = ReadingMode.quickScan;
+
+  /// Contextual viewfinder instruction per physical mode. Only the three
+  /// camera-driven modes are addressed; `standard` never reaches the Camera.
+  static const _modeInstructions = <ReadingMode, String>{
+    ReadingMode.quickScan: 'POINT AT YOUR SPREAD ON THE TABLE',
+    ReadingMode.guidedSpread: 'ALIGN EACH CARD TO A GUIDED SLOT',
+    ReadingMode.liveOracle: 'HOLD A CARD FOR THE LIVE ORACLE',
+  };
+
+  String get _modeInstruction =>
+      _modeInstructions[_mode] ?? 'POINT AT YOUR SPREAD ON THE TABLE';
 
   late final AnimationController _lockOnAnim;
 
@@ -57,10 +80,12 @@ class _CameraScanScreenState extends State<CameraScanScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _lockOnAnim = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
+    _loadCameraMode();
     // The camera opens ONLY when this tab is actually active.
     if (_mobileCameraAvailable && widget.isActiveTab) _initCamera();
   }
@@ -132,11 +157,28 @@ class _CameraScanScreenState extends State<CameraScanScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     final camera = _camera;
     _camera = null;
     if (camera != null) unawaited(camera.dispose());
     _lockOnAnim.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Backgrounding the app releases the camera exactly like leaving the tab
+    // (green privacy indicator goes dark); resuming re-acquires it ONLY while
+    // the CAMERA tab is still active — never while another tab is on top.
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      _releaseCamera();
+    } else if (state == AppLifecycleState.resumed) {
+      if (widget.isActiveTab && _mobileCameraAvailable && _camera == null) {
+        _initCamera();
+      }
+    }
   }
 
   Future<void> _toggleFlash() async {
@@ -146,17 +188,25 @@ class _CameraScanScreenState extends State<CameraScanScreen>
     if (mounted) setState(() {});
   }
 
-  /// Compress, detect, lock-on animation, then face-up handoff to the
-  /// Table. [bytes] == null runs the deterministic mock scan (desktop) —
-  /// mock bytes are a probe payload and skip JPEG re-compression.
-  /// When the table armed a single-card clarifier scan, only ONE card is
-  /// detected and appended as Card N+1 instead of replacing the spread.
+  /// Compress, detect, lock-on animation, then the Recognition Review and a
+  /// face-up handoff to the Table. [bytes] == null runs the deterministic
+  /// mock scan (desktop). When the table armed a single-card clarifier scan,
+  /// only ONE card is detected and appended as Card N+1.
+  ///
+  /// The vision recognizer is TAROT-only: for LENORMAND/RUNES we NEVER convert
+  /// a tarot result into another system — an honest manual fallback is shown.
   Future<void> _scan(Uint8List? bytes) async {
     if (_busy) return;
     final ctrl = context.read<SpreadController>();
     final clarifierScan = ctrl.clarifierScanRequested;
     setState(() => _busy = true);
     try {
+      // Amendment 4: no tarot→lenormand/runes conversion (main scan AND the
+      // single-card clarifier both photograph a physical TAROT deck).
+      if (ctrl.system != DivinationSystem.tarot) {
+        _showManualFallback(ctrl.system);
+        return;
+      }
       final jpeg = bytes == null
           ? Uint8List.fromList(List.generate(256, (i) => i & 0xff))
           : await VisionScannerService().compressJpeg(bytes);
@@ -171,17 +221,14 @@ class _CameraScanScreenState extends State<CameraScanScreen>
         _detectedCount = cards.length;
         _lockOn = true;
       });
-      _lockOnAnim.forward(from: 0).whenComplete(() {
-        if (!mounted) return;
-        if (clarifierScan) {
-          ctrl.completeClarifierScan(cards.first.card, cards.first.isReversed);
-        } else {
-          ctrl.loadScannedSpreadFaceUp(
-            [for (final d in cards) (d.card, d.isReversed)],
-          );
-        }
+      await _lockOnAnim.forward(from: 0);
+      if (!mounted || cards.isEmpty) return;
+      if (clarifierScan) {
+        ctrl.completeClarifierScan(cards.first.card, cards.first.isReversed);
         widget.onHandoff();
-      });
+      } else {
+        await _reviewAndHandoff(ctrl, cards);
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -191,6 +238,50 @@ class _CameraScanScreenState extends State<CameraScanScreen>
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Shows the Recognition Review, then places the confirmed spread on the
+  /// table and hands off to the Digital Table (Face-up, Focus/Spread ready).
+  Future<void> _reviewAndHandoff(
+    SpreadController ctrl,
+    List<DetectedCard> detected,
+  ) async {
+    final cards = [for (final d in detected) TarotDivinationCard(d.card)];
+    final reversed = [for (final d in detected) d.isReversed];
+    final inference = const SpreadInferenceService().infer(
+      SpreadInferenceInput(
+        system: DivinationSystem.tarot,
+        detectedCount: cards.length,
+      ),
+    );
+    final result = await RecognitionReviewSheet.show(
+      context,
+      cards: cards,
+      reversed: reversed,
+      inference: inference,
+    );
+    if (!mounted || result == null) return;
+    final spread = result.spread;
+    ctrl.loadScannedSpread(
+      system: DivinationSystem.tarot,
+      cards: result.cards,
+      reversed: result.reversed,
+      spreadType: spread?.tarot,
+      lenormandSpread: spread?.lenormand,
+      runeCast: spread?.rune,
+    );
+    widget.onHandoff();
+  }
+
+  void _showManualFallback(DivinationSystem system) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${system.label} physical scan needs manual card entry — '
+          'the camera recognizer reads TAROT only.',
+        ),
+      ),
+    );
   }
 
   Future<void> _capture() async {
@@ -203,6 +294,64 @@ class _CameraScanScreenState extends State<CameraScanScreen>
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked == null) return;
     await _scan(await picked.readAsBytes());
+  }
+
+  /// Restores the persisted reading mode (QUICK SCAN is the default).
+  /// `standard` is the digital-table reading and never a camera mode.
+  Future<void> _loadCameraMode() async {
+    try {
+      final stored = await LocalStorageService().loadCameraMode();
+      if (!mounted || stored == null || stored == ReadingMode.standard) {
+        return;
+      }
+      setState(() => _mode = stored);
+    } catch (_) {
+      // Storage unavailable — keep the QUICK SCAN default.
+    }
+  }
+
+  /// Switches the reading mode. A live guided/live session must be
+  /// confirmed first so the reader does not accidentally abandon it.
+  Future<void> _onModeSelected(ReadingMode next) async {
+    if (next == _mode) return;
+    final oracle = context.read<OracleSessionController>();
+    final sessionActive = oracle.readingStatus == ReadingStatus.active &&
+        (oracle.readingMode == ReadingMode.guidedSpread ||
+            oracle.readingMode == ReadingMode.liveOracle);
+    if (sessionActive) {
+      final confirmed = await _confirmModeSwitch();
+      if (!confirmed || !mounted) return;
+    }
+    setState(() => _mode = next);
+    LocalStorageService()
+        .saveCameraMode(next)
+        .then((_) {}, onError: (Object _) {});
+  }
+
+  Future<bool> _confirmModeSwitch() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        key: const ValueKey('camera-mode-confirm'),
+        backgroundColor: AppColors.surface,
+        title: const Text('Switch reading mode?'),
+        content: const Text(
+          'A guided reading is in progress. Switching modes leaves the '
+          'current session.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('SWITCH'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
   }
 
   @override
@@ -224,44 +373,31 @@ class _CameraScanScreenState extends State<CameraScanScreen>
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        for (final t in SpreadType.values)
-                          _CountChip(
-                            label: '${t.cardCount}',
-                            active: t == ctrl.spreadType,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              context
-                                  .read<SpreadController>()
-                                  .setSpreadType(t);
-                            },
-                          ),
-                      ],
-                    ),
-                    if (_mobileCameraAvailable) ...[
-                      _CircleIconButton(
-                        icon: _flashOn
-                            ? Icons.flash_on
-                            : Icons.flash_off_outlined,
-                        onTap: _toggleFlash,
-                      ),
-                      _CircleIconButton(
-                        icon: Icons.photo_library_outlined,
-                        onTap: _pickFromGallery,
-                      ),
-                    ],
-                  ],
+                child: CameraTopHud(
+                  system: ctrl.system,
+                  onSystemChanged: (s) {
+                    HapticFeedback.selectionClick();
+                    context.read<SpreadController>().setSystem(s);
+                  },
+                  flashOn: _flashOn,
+                  onToggleFlash: _toggleFlash,
+                  onPickGallery: _pickFromGallery,
+                  showActions: _mobileCameraAvailable,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: CameraModeSelector(
+                  value: _mode,
+                  onChanged: _onModeSelected,
                 ),
               ),
               const SizedBox(height: 14),
               Text(
                 ctrl.clarifierScanRequested
                     ? 'PHOTOGRAPH YOUR NEXT PHYSICAL CARD'
-                    : 'POINT AT YOUR SPREAD ON THE TABLE',
+                    : _modeInstruction,
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 9.5,
                   letterSpacing: 2.2,
@@ -355,70 +491,6 @@ class _SimulatedViewfinder extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _CountChip extends StatelessWidget {
-  const _CountChip({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(right: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-        decoration: BoxDecoration(
-          color: active
-              ? AppColors.lavender.withValues(alpha: 0.2)
-              : AppColors.canvas.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: active ? AppColors.lavender : AppColors.border,
-          ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 10,
-            color: active ? AppColors.lavender : AppColors.textMuted,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        margin: const EdgeInsets.only(left: 8),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.canvas.withValues(alpha: 0.55),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Icon(icon, size: 18, color: AppColors.textPrimary),
       ),
     );
   }

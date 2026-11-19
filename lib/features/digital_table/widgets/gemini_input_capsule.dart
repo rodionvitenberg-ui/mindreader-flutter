@@ -43,17 +43,42 @@ class GeminiInputCapsule extends StatefulWidget {
   State<GeminiInputCapsule> createState() => _GeminiInputCapsuleState();
 }
 
-class _GeminiInputCapsuleState extends State<GeminiInputCapsule> {
+class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
+    with WidgetsBindingObserver {
   late final TextEditingController _text =
       widget.controller ?? TextEditingController();
   bool _micListening = false;
   SpeechToText? _speech;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _speech?.stop();
     if (widget.controller == null) _text.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Backgrounding the app must silence the live mic IMMEDIATELY — the OS
+    // mic indicator goes dark; the typed text is preserved, nothing re-listens.
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      _stopMic();
+    }
+  }
+
+  Future<void> _stopMic() async {
+    if (!_micListening) return;
+    setState(() => _micListening = false);
+    await _speech?.stop();
   }
 
   void _submit() {
@@ -66,8 +91,7 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule> {
 
   Future<void> _toggleMic() async {
     if (_micListening) {
-      await _speech?.stop();
-      setState(() => _micListening = false);
+      await _stopMic();
       return;
     }
     _speech ??= SpeechToText();

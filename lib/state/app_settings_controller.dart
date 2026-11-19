@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/config/app_flags.dart';
 import '../core/l10n/app_strings.dart';
 import '../core/services/local_storage_service.dart';
 
@@ -23,7 +24,11 @@ class AppSettingsController extends ChangeNotifier {
   bool _isProUnlocked = false;
 
   AppLanguage get language => _language;
-  bool get isProUnlocked => _isProUnlocked;
+
+  /// The shared PRO flag. When [kProRestrictionsEnabled] is false (pre-launch)
+  /// every PRO gate reads `true` here, so all gated content is available while
+  /// the persisted flag + `unlockPro()` remain untouched for the future.
+  bool get isProUnlocked => kProRestrictionsEnabled ? _isProUnlocked : true;
 
   /// Restores the persisted language and PRO state. Non-destructive: an
   /// in-session choice made before the disk read lands is never cleared.

@@ -55,7 +55,7 @@ void main() {
     expect(find.text('СТОЛ'), findsNothing);
   });
 
-  testWidgets('monthly/annual PRO plans unlock the shared flag',
+  testWidgets('PRO sheet reports PRO ACTIVE (restrictions disabled)',
       (tester) async {
     await openProfile(tester);
 
@@ -63,14 +63,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    await tester.tap(find.text('PRO MONTHLY').last);
-    await tester.pump();
-    await tester.tap(find.text('ACTIVATE PRO'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    // PRO restrictions are disabled centrally (kProRestrictionsEnabled=false),
+    // so the sheet shows the ACTIVE state instead of an ACTIVATE CTA.
+    expect(find.text('PRO ACTIVE'), findsWidgets);
+    expect(find.text('ACTIVATE PRO'), findsNothing);
 
-    final settings =
-        tester.element(find.byType(ProfileScreen)).read<AppSettingsController>();
+    final settings = tester
+        .element(find.byType(ProfileScreen))
+        .read<AppSettingsController>();
     expect(settings.isProUnlocked, isTrue);
   });
 }

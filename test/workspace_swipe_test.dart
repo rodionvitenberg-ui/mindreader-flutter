@@ -8,6 +8,8 @@ import 'package:mindreader/main.dart';
 import 'package:mindreader/state/spread_controller.dart';
 import 'package:provider/provider.dart';
 
+import 'helpers/table_test_helpers.dart';
+
 /// Sprint 2/3 → 4 workspace tests: the 3-pane horizontal PageView, gesture
 /// disambiguation with the 3D deck, and the local history save/restore.
 /// Sprint 4: panes switch EXCLUSIVELY by horizontal swipe (the top 3-pill
@@ -38,31 +40,6 @@ void main() {
     await tester.pump();
   }
 
-  /// Swipes horizontally across the workspace until [pane] is the active
-  /// page (the test viewport is 800 px wide, so a drag must clear half a
-  /// page, >400 px, to snap into the next pane).
-  Future<void> goToPane(WidgetTester tester, int pane) async {
-    final controller =
-        tester.widget<PageView>(find.byType(PageView)).controller!;
-    var current = controller.page!.round();
-    while (current != pane) {
-      await tester.dragFrom(
-        const Offset(200, 300),
-        Offset(current < pane ? -600 : 600, 0),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 700));
-      // The drag release ends in a fling whose ballistic keeps the
-      // PageView's scrollable in pointer-ignoring mode — pump until the
-      // activity fully settles so taps on the pane content land.
-      while (controller.position.isScrollingNotifier.value) {
-        await tester.pump(const Duration(milliseconds: 250));
-      }
-      await tester.pump();
-      current = controller.page!.round();
-    }
-  }
-
   Future<void> dealFlipAndSynthesize(WidgetTester tester) async {
     for (var i = 0; i < 3; i++) {
       await dealOne(tester);
@@ -83,8 +60,13 @@ void main() {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    // Pane 0: the Digital Table.
+    // Step 1 (Choose Spread): the TAROT|LENORMAND|RUNES system switcher.
     expect(find.text('TAROT'), findsOneWidget);
+    expect(find.text('NO READING YET'), findsNothing);
+
+    // Enter the Active Digital Table (Step 2).
+    await activateSpread(tester, 'Triad Flow');
+    expect(find.byKey(const ValueKey('overview-deck')), findsOneWidget);
     expect(find.text('NO READING YET'), findsNothing);
 
     // Swipe left on the table background (never on the deck) → Pane 1.
@@ -95,7 +77,7 @@ void main() {
     // Swipe once more → Pane 2: Spread History & Notebooks (PRO).
     await goToPane(tester, 2);
     expect(find.text('SPREAD HISTORY'), findsOneWidget);
-    expect(find.text('PRO'), findsOneWidget);
+    expect(find.text('PRO ∞'), findsOneWidget);
     expect(find.text('NEW SPREAD · НОВЫЙ РАСКЛАД'), findsOneWidget);
     expect(find.text('ALL READINGS'), findsOneWidget);
     expect(find.text('RELATIONSHIPS'), findsOneWidget);
@@ -103,7 +85,7 @@ void main() {
 
     // Swipe right twice → back on the Digital Table.
     await goToPane(tester, 0);
-    expect(find.text('TAROT'), findsOneWidget);
+    expect(find.byKey(const ValueKey('overview-deck')), findsOneWidget);
   });
 
   testWidgets(
@@ -111,6 +93,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await activateSpread(tester, 'Triad Flow');
     await focusMode(tester);
 
     final deck = find.byType(InteractiveDeckWidget);
@@ -119,9 +102,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 900));
     await tester.pump();
 
-    // Still on the Digital Table pane; the deck kept its full 220×388 box
+    // Still on the Digital Table pane; the deck kept its full 168×303 box
     // (the PageView never stole the riffle gesture).
-    expect(find.text('TAROT'), findsOneWidget);
+    expect(find.byType(InteractiveDeckWidget), findsOneWidget);
     expect(find.text('NO READING YET'), findsNothing);
     expect(tester.getSize(deck), const Size(deckWidth, deckBoxHeight));
 
@@ -137,6 +120,7 @@ void main() {
       '(cards + conversation)', (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await activateSpread(tester, 'Triad Flow');
     await focusMode(tester);
     await dealFlipAndSynthesize(tester);
 
@@ -155,16 +139,21 @@ void main() {
     expect(find.text('SPREAD HISTORY'), findsOneWidget);
     expect(find.text('3 · TRIAD FLOW'), findsOneWidget);
 
-    // Start a fresh table through the archive action.
+    // Start a fresh table through the archive action. NEW SPREAD exits back
+    // to Step 1 (Choose Spread) and clears the table.
     await tester.tap(find.text('NEW SPREAD · НОВЫЙ РАСКЛАД'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pump();
     final ctrl = tester
-        .element(find.byType(InteractiveDeckWidget))
+        .element(find.byType(PageView))
         .read<SpreadController>();
     expect(ctrl.dealtCount, 0);
     expect(ctrl.remaining, 78);
+
+    // NEW SPREAD lands on Step 1; re-enter the Active Table before swiping
+    // to the history pane.
+    await activateSpread(tester, 'Triad Flow');
 
     // 1-tap restore: it lands on the ORACLE CHAT (Pane 1) with the exact
     // conversation restored — no jarring jump back to the raw table.

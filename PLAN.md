@@ -1,481 +1,446 @@
-# PLAN.md — Polish & Feature Roadmap (3 Iterations)
+# MINDREADER.QUEST — ПЛАН РАСШИРЕНИЯ: PHYSICAL READING & LIVE ORACLE
 
-> mindreader.quest (Flutter/Dart, Impeller).
-> Execution protocol: strictly isolated sessions, each 100% test-verified
-> (`flutter analyze` = 0 issues, `flutter test` = green) before the next starts.
-> SSOT: `TASK_STATE.json`.
+> Master Implementation Specification v1.0 → пошаговый план для агентов.
+> План атомарный: каждый шаг = отдельная сессия. После каждого шага — STOP.
+> SSOT состояния = TASK_STATE.json (по .clinerules). PLAN.md — маршрут, не состояние.
 
----
+## СТАТУС
+- Phase 0 (Vision Engine): DEFERRED.
+- Phase 1 (Camera & Session Architecture): DONE — 1.1 + 1.2 + 1.3 + 1.4 + 1.5 + 1.6 + 1.7 DONE
+  (domain enums, stable sessionId/snapshot extension, OracleSessionController,
+  Vision Engine contract, Camera UI redesign, CardOverlayPainter, Resource
+  lifecycle). Acceptance criteria passed.
+- Phase 2 (Quick Scan & Table): DONE — 2.1 + 2.2 + 2.3 + 2.4 DONE
+  (SpreadInferenceService, Recognition Review sheet, generalized Camera→Table
+  handoff, physical clarifier; PRO restrictions centrally disabled for
+  pre-launch). Acceptance criteria passed.
+- Phase 3 (Guided Physical Spread): PENDING.
+- Phase 4 (Live Oracle & Voice): PENDING.
+- Phase 5 (Unification & QA): PENDING.
 
-## STEP 2 — 3-Window Astral Workspace, Synastry Engine & 7-Day Transit Forecast `[x] DONE (2026-11-18)`
+## РЕЗУЛЬТАТЫ АУДИТА РЕПОЗИТОРИЯ (фиксируются как исходная точка)
+Git HEAD: 3c78343 (после 0a29878). PLAN.md был удалён в рабочем дереве — пересоздан.
+Стек: Flutter/Dart + provider, camera 0.12.2, image_picker, image, http,
+shared_preferences, google_fonts, speech_to_text 7.5.0, flutter_local_notifications.
+Провайдеры (lib/main.dart): SpreadController, DeckPackController, AstralController,
+AppSettingsController, SessionHistoryController(..load()), UserProfileController.
 
-- **3-window ASTRAL PageView** (`astral_screen.dart`): `AstralWindow` grew a
-  third value (`synastry`); the top switcher is now
-  `[ NATAL CHART | HOROSCOPE | SYNASTRY ]`, synced to a horizontal
-  `PageController`. Synastry moved from a modal sheet into an inline
-  `SynastryWindow` (`widgets/synastry_window.dart`); the natal-window
-  “COMPARE 2 PROFILES · SYNASTRY” button now jumps to the synastry window.
-- **`computeSynastry`** (`natal_calculator_service.dart` + models): a
-  deterministic 0..100 overall resonance score plus four compatibility axes
-  (Emotional Bond, Attraction & Spark, Mental & Communication, Growth &
-  Friction) derived from the tightest cross-chart aspects.
-- **7-day transit forecast** (`computeSevenDayForecast` +
-  `SevenDayForecastCard`): Today..+6, one strongest peak per day (tightest orb,
-  Harmony/Tension tinted). The daily-horoscope transit-candidate logic was
-  extracted into shared helpers (`_transitCandidates`, `_toTransitItem`) to
-  remove duplication.
-- **Verification**: `flutter analyze` = 0 issues; `flutter test` = 273/273 green
-  (new `test/astral_workspace_and_zodiac_test.dart`; the `switches …` test was
-  updated to 3 windows).
+1. Диалог: SynthesisSession _synthesis — локальное состояние _TableWorkspaceState
+   (lib/features/digital_table/table_workspace.dart:68). НЕ общий. → вынести.
+2. ID сессии: _sessionTimestamp = DateTime.now().toIso8601String() (там же, :263);
+   архивная идентичность = timestamp (SessionHistoryController.upsert).
+3. Сохранение: _captureSession() → upsert(SpreadSessionSnapshot.capture(...)),
+   только при hasSynthesis.
+4. Восстановление: _restoreSession() → ctrl.restoreSpread + synthesis.restore →
+   _goToPane(chatPane) (там же, :432).
+5. Camera→Table: CameraScanScreen._scan() → loadScannedSpreadFaceUp (tarot, face-up)
+   или completeClarifierScan → onHandoff() → shell _switchTo(1).
+6. physicalCameraSync: TableSourceMode.physicalCameraSync (dealt_card_slot.dart:13);
+   лента "PHYSICAL SYNC" (table_workspace.dart:590).
+7. Доп. физ. карта: onOpenCameraClarifier → _switchTo(0); камера: clarifierScanRequested
+   → completeClarifierScan (spread_controller.dart:541).
+8. Переиспользуемое: SpreadController, DealtCardSlot/DivinationCard, SpreadType/
+   LenormandSpread/RuneCast, SpreadSessionSnapshot, SessionHistoryController,
+   OracleSynthesisService (synthesize/synthesizeStructured/synthesizeClarifier/
+   answerChat/...), VisionScannerService.detectSpread(jpeg, cardCount),
+   Step1 "Choose Spread" (digital_table_screen.dart + spread_blueprint_carousel.dart),
+   AppColors, google_fonts, speech_to_text.
+9. Необходимо: общий контроллер диалога; enums ReadingSource/ReadingMode/ReadingStatus;
+   стабильный sessionId; Vision-контракт; spread inference; FSM Guided; voice-сервис.
+   TTS отсутствует (нет flutter_tts) — research в Phase 4.
 
-## STEP 3 — Atomic UI & Spreads Upgrade: Avatar, Default SPREAD VIEW, Blueprint Carousel & Clean Dock `[x] DONE (2026-11-18)`
-
-- **Top-left profile avatar** (`digital_table_screen.dart` → `_ProfileAvatarButton`):
-  36×36 obsidian-lavender circle in the table header (initial / `✦` glyph +
-  lavender PRO ring), `Navigator.push` → `ProfileScreen`. Profile no longer
-  lives in the dock.
-- **Clean 4-tab bottom dock** (`main_navigation_shell.dart`):
-  `CAMERA | TABLE | ALMANAC | ASTRAL`; index 4 is RESERVED for the upcoming
-  ACADEMY tab (documented hook).
-- **SPREAD VIEW is the default** (`spread_controller.dart`):
-  `isSpreadOverview = true` by default; the reader's toggle choice persists via
-  `table_view_spread` (`LocalStorageService`) with UI-first persistence
-  (memory + notify synchronously, `SharedPreferences` in the background; the
-  async restore never clobbers an in-session choice). A `GlobalKey` hook
-  (`_viewModeToggleKey`) is left on the toggle for a future onboarding tooltip.
-  The portrait overview deck now scales exactly 1.12× a slot card (min-clamp
-  removed) so it never towers 3× over the spread.
-- **Polished SPREAD VIEW**: empty slots render hairline obsidian frames with
-  crisp `N · Role` labels (`slotRoleShorts` on each spread);
-  `ElementalThreadsPainter` stays TAROT-only (zero cords for Runes/Lenormand);
-  the overview deck/rune cluster supports horizontal swipe shuffling AND
-  tap-to-deal (750 ms mist materialization in the target slot).
-- **Horizontal visual spread-blueprint carousel**
-  (`widgets/spread_blueprint_carousel.dart`, height 92, directly above the
-  deck): each 118-px card paints a miniature glowing wireframe from normalized
-  `miniSlots` coordinates + title/count + `🔒 PRO` badge. Free spreads switch
-  the table geometry instantly; locked PRO spreads open `ProSubscriptionSheet`
-  (the header `SpreadSelectorSheet` got the same PRO gate and is now
-  `isScrollControlled`).
-- **Rich spread catalog** (Free + PRO):
-  - Tarot `SpreadType` (7): Daily Anchor (1), Triad Flow (3),
-    Target & Shadow (4), Horseshoe Synthesis (7, renamed) — Free;
-    Love & Relationship Bridge (5), Career & Path Crossroads (6),
-    Celtic Cross (10) — PRO. Each carries `slotRoles`, `slotRoleShorts`,
-    `focusLine`, `miniSlots` (normalized), `isPro`.
-  - Lenormand: canonical 1/3/5/9 + PRO `9 · Grand Portrait`.
-  - Runes: canonical 1/3/5/7 + PRO `9 · Yggdrasil's World Tree`.
-  - `shuffle_physics.dart` extended with 6-card (1-2-3 branching tree) and
-    10-card (Celtic Cross + staff) geometries.
-- **Verification**: `flutter analyze` = 0 issues; `flutter test` = 277/277 green
-  (new `test/spread_blueprint_carousel_test.dart`: avatar → ProfileScreen,
-  free-spread tap switches geometry, locked-PRO tap opens the paywall,
-  carousel swipe reveals later blueprints; `app_smoke_test.dart` now asserts
-  SPREAD VIEW as the default).
-
-## Iteration 5 — Profile, 5-Tab Shell & True Deck Cycling `[x] DONE (2026-11-18)`
-
-- **True top-to-bottom shuffle cycling** (`interactive_deck_widget.dart`):
-  every 18 px weave tick now takes the top **1–2 visible layers**, plays a
-  150 ms GPU-composited **overhand arc** (`translateX` outward + `translateZ`
-  lift + `rotateZ`, sine bell on `_overhand`) painted ON TOP of the fan, and
-  physically re-inserts those indices at the **back/bottom** of `_layerOrder`,
-  so the real top card tucks underneath and a fresh card surfaces. Continues
-  to fire `weaveShuffleRemaining()` + `selectionClick()`.
-- **Elemental Fate Threads are TAROT-only** (`elemental_threads_painter.dart`
-  → `elementalThreadsVisibleFor`): gate applied in `board_pillar_view.dart`
-  (focus pillar) and `digital_table_screen.dart` (spread overview). Runes
-  render ZERO cords (rim glow + ignited glyph carry the read); Lenormand
-  renders ZERO cords and instead shows one compact obsidian **pair-combination
-  pill** between adjacent face-up cards (`A + B` + the traditional
-  “With the …” line taken from `lenormand_data.dart`).
-- **Exactly 5 dock tabs** (`main_navigation_shell.dart`):
-  `CAMERA | TABLE | ALMANAC | ASTRAL | PROFILE`. The Rituals (🔔) and
-  Settings (⚙️) dock actions are gone.
-- **`UserProfileController`** (new, `lib/state/user_profile_controller.dart`):
-  local-only identity + birth data (name/date/time/timeUnknown/city/lat/lon/tz),
-  `personalBioContext`, `readingForSelf`, `targetPersonNote`, `isGoogleLinked`.
-  UI-first persistence (memory + `notifyListeners()` synchronously, one atomic
-  `SharedPreferences` key `user_profile_v1` written in the background).
-  `oracleContext` is the single gate for prompt injection.
-  `exportAllUserDataJson()` / `importUserDataJson()` bundle the profile,
-  `SessionHistoryController` sessions and `AstralController` natal profiles.
-- **`SessionHistoryController` hoisted to the root provider** (one writer):
-  `TableWorkspace` now reads it from `context`, and the Profile page can export
-  it. New `restoreSessions` / `restoreProfiles` merges make import idempotent.
-- **Full-page `ProfileScreen`** (new `lib/features/profile/`):
-  Card 1 identity + birth data (city autocomplete via `searchAstroCities`,
-  Zero-Knowledge badge) · Card 2 1-Click Google/Apple state + PRO monthly/annual
-  (`ProSubscriptionSheet`) · Card 3 export/import with an honest disclosure
-  dialog (local JSON snapshot in the clipboard — no relay server exists yet) ·
-  Card 4 language selector + live ritual controls (`RitualSettingsSheet` gained
-  an `inline` mode so the real toggles render on the page, not a second modal).
-- **“WHO IS THIS FOR?”** (`reading_subject_toggle.dart`): 2-pill
-  `FOR MYSELF (PROFILE) | FOR SOMEONE ELSE` above the ✦ SYNTHESIZE CTA and in
-  `OracleChatPane`. `synthesizeSpreadFor` / `synthesizeStructured` /
-  `answerChat` / `synthesizeClarifier` gained an optional `profileContext`
-  that is woven into the local fallback and the AI prompts; external readings
-  never leak the profile.
-- **ASTRAL 1-tap fill** (`birth_data_form_sheet.dart`):
-  `USE BIRTH DATA FROM MY PROFILE` populates name/date/time/timeKnown/city
-  (catalog match for country + tz) from `UserProfileController`.
-- **Gate:** `flutter analyze` = No issues found; `test/profile_and_table_fixes_test.dart`
-  5/5 (5-tab dock, tarot-only threads, prompt injection gate, readingForSelf
-  gating, profile → `AstralController` chart); full `flutter test` re-run.
+## ГЛОБАЛЬНЫЕ АРХИТЕКТУРНЫЕ РЕШЕНИЯ (инварианты для всех фаз)
+- ЕДИНСТВЕННЫЙ источник истины карт: SpreadController.
+- ЕДИНСТВЕННЫЙ источник истины диалога: новый OracleSessionController (см. 1.3),
+  разделяется Camera/Table/Oracle. SynthesisSession остаётся моделью состояния.
+- SpreadController НЕ дублируется; LiveReadingController (если нужен) управляет
+  процессом физического взаимодействия, но не хранит копию расклада.
+- Одна история (SessionHistoryController); никаких отдельных Camera/Live-Oracle историй.
+- Один sessionId на всю сессию; переключение вкладок его не меняет.
+- TableSourceMode сохраняем (slot/table-level источник); ReadingSource — session-level.
+  Маппинг в ОДНОМ месте: digitalDeck→digital, physicalCameraSync→physical.
+- Старые JSON-снимки загружаются без ошибок (паттерн _enumOr + optional keys).
+- Hard cap 10 карт (SpreadController.maxTableCards) НЕ трогаем.
+- Lenormand без реверсов, симметричные руны без merkstave — уже гарантировано
+  dealCardAt; в физических потоках повторно применять те же правила.
 
 ---
 
+# PHASE 1 — CAMERA & SESSION ARCHITECTURE
 
-## 3-Iteration Polish & Feature Roadmap
+## 1.0 Pre-flight (1 сессия)
+1. git status; зафиксировать baseline; PLAN.md (этот файл) — уже пересоздан.
+2. Обновить TASK_STATE.json: status=IN_PROGRESS, active_feature_or_sprint="Phase 1".
+3. Снимок счётчика тестов: `flutter test` до изменений (~254+ green).
+STOP → отчёт.
 
-- **Iteration 1 — Table / Lenormand / Rune Physics & Reveal Fixes** `[x] DONE`:
-  - Tap-to-flip for Lenormand cards & Rune stones in BOTH Focus and Spread views
-    (face-down → `flipSlot`; face-up → `ReadingBottomSheet`).
-  - Smooth 750ms mist materialization (no instant pop-in): stable slot keys
-    (`slot_<index>_<cardId>` — never state-keyed), obsidian mist + breathing lift
-    + radial face bloom + foil sweep, identical for Tarot/Lenormand/Runes.
-  - True top-to-bottom interleaving shuffle for cards; rune-heap neighbour
-    position/z-order swaps with `mediumImpact` + ledger re-weave.
-  - Rune pile depletion (24 → 23 → …), pick-any-exposed-stone hit-test, real
-    per-stone identity, organic pebble silhouette (`id.hashCode`), deterministic
-    ±10° body tilt with a counter-rotated vertical glyph.
-- **Iteration 2 — UX, Deck Picker, History→Chat, Typography & Bottom Bar** `[x] DONE`:
-  - `DeckPickerSheet`: removed the redundant bottom "USE <pack>" confirm button —
-    tapping a pack tile selects + persists immediately (tap the active tile to
-    close); the glowing active border remains.
-  - History restore now lands on the Oracle Chat (Pane 1) with the synthesis +
-    conversation; `+ NEW SPREAD` still resets to Pane 0.
-  - Typography: display/headings → `Cormorant Garamond` (tracked 0.8–1.2);
-    body `Plus Jakarta Sans`, labels `JetBrains Mono`.
-  - 6-slot bottom dock `[Camera | Table | Almanac | Astral | Rituals | Settings]`
-    (compact labels, fits 360 px); RITUALS removed from the ASTRAL header.
-  - `AppSettingsController` + `AppSettingsSheet` (EN/RU toggle) and the reusable
-    `ProSubscriptionSheet` (Monthly / Annual PRO) syncing the shared PRO flag.
-  - Gate: `flutter analyze` 0 issues, `flutter test` 254/254 green.
-- **Iteration 3 — Astral Horoscope Window, Natal Chat Auto-Save & Almanac
-  Zodiac Tab** `[x] DONE`:
-  - ASTRAL is now a 2-window tab `[ NATAL CHART | HOROSCOPE ]` (RU
-    `[ НАТАЛЬНАЯ КАРТА | ГОРОСКОП ]`): a 2-segment toggle under the profile
-    bar; window 0 keeps the wheel + summary + natal CTA, window 1
-    (`HoroscopeWindow`) shows the personal daily transit report (cosmic
-    weather, 0–100 Energy & Resonance bar, 3 focus spheres, live transit
-    cards, `✦ DISCUSS HOROSCOPE WITH ORACLE`) or a quick whole-sign solar
-    forecast for any of the 12 signs (`computeZodiacSignForecast`, no natal
-    profile required) with the same CTA.
-  - Nodal audit confirmed: Placidus / Koch / Whole Sign cusps, `0°00'–29°59'`
-    degrees, ASC/MC and aspects are already swetest-anchored
-    (`test/natal_calculator_test.dart`, 56 tests); no math changes needed.
-  - Astral dialogues now auto-save to History: `SpreadSessionSnapshot` gained
-    `kind` (`divinationSpread | natalChartReading | horoscopeReading |
-    synastryReading | zodiacReading`), `astralSessionTitle`, `natalChartId`
-    (backward-compatible JSON); `TableWorkspace` upserts the moment the
-    handoff streams and on every follow-up message, and `SpreadHistoryPane`
-    shows a cosmic `☉ NATAL` / `✦ HOROSCOPE` / `☍ SYNASTRY` / `✦ ZODIAC`
-    badge that restores the conversation into Pane 1 (Oracle Chat).
-  - ALMANAC is now a 4-tab encyclopedia `[ TAROT | LENORMAND | RUNES | ZODIAC ]`:
-    offline `zodiac_almanac_data.dart` (12 signs: dates, glyph, element,
-    modality, rulers, polarity, house affinity, keywords, archetype, shadow,
-    love, career), element + modality filters, bespoke zodiac tiles and a
-    `ZodiacDetailSheet` with a 1-tap `✦ VIEW HOROSCOPE IN ASTRAL` jump.
-  - Gate: `flutter analyze` 0 issues, `flutter test` 262/262 green (8 new in
-    `test/astral_horoscope_and_zodiac_almanac_test.dart`),
-    `flutter build apk --debug` passing.
+## 1.1 Доменные enum + модели (1 сессия) — DONE
+Создать (lib/core/models/):
+- reading_source.dart: enum ReadingSource { digital, physical }
+- reading_mode.dart: enum ReadingMode { standard, quickScan, guidedSpread, liveOracle }
+- reading_status.dart: enum ReadingStatus { idle, preparing, active, paused, completed,
+  cancelled, failed }
+Тесты: test/reading_enums_test.dart — переходы статусов (idle→preparing→active→...),
+сохранение source/mode. НЕ дублировать TableSourceMode (документировать маппинг в коде).
+STOP.
 
----
+## 1.2 Стабильный sessionId + расширение снимка (1 сессия) — DONE
+1. SpreadSessionSnapshot: добавить optional поля readingSource/readingMode/
+   readingStatus/completionStatus/voiceUsed + factory/JSON (backward-compatible:
+   отсутствующие ключи → null/default, старые снимки грузятся).
+2. Добавить sessionId (optional; fallback = timestamp). Archive-ключ остаётся timestamp.
+3. Тесты: session_snapshot_test.dart расширить — legacy JSON грузится, новые поля
+   round-trip.
+STOP.
 
-## (Historical) ASTRAL Feature (4 Atomic Phases)
+## 1.3 OracleSessionController — вынос диалога (КЛЮЧЕВОЙ шаг, 1-2 сессии)
+1. Создать lib/state/oracle_session_controller.dart (ChangeNotifier):
+   - оборачивает SynthesisSession (или поглощает её поля) + sessionId + readingSource/
+     readingMode/readingStatus;
+   - методы addUserMessage/addOracleMessage/beginAnswer/finishAnswer/restore/reset/
+     markInitial/completeChapter + сохранение статуса сессии.
+2. Зарегистрировать в main.dart MultiProvider.
+3. Рефакторинг TableWorkspace: заменить _synthesis на provider-контроллер; поведение
+   _runSynthesis/_askOracle/_captureSession/_restoreSession/_maybeExpandClarifiers
+   сохранить 1:1 (код переносится, не переписывается).
+4. GATE: flutter analyze + полный flutter test, без регрессий Table/History.
+STOP.
 
----
+## 1.4 Vision Engine contract (1 сессия)
+Создать lib/core/services/vision/:
+- vision_engine.dart: abstract VisionEngine (initialize/scanImage/startSession/
+  processFrame/stopSession/dispose — async + cancellable + DI), VisionCapabilities,
+  VisionFrame (normalized 0..1, source size, rotation, corners), VisionObservation,
+  VisionCardCandidate (observationId/trackId/system/canonicalCardId?/deckId?/
+  orientation/faceState/recognitionConfidence?/detectionConfidence?/boundingBox?/
+  corners?/recognitionStatus/timestamp), VisionScanResult, VisionEvent;
+  enums CardFaceState{faceUp,faceDown,unknown}, RecognitionStatus{detected,recognizing,
+  recognized,ambiguous,unknown,lost}. Detection != Recognition.
+- legacy_vision_adapter.dart: обёртка VisionScannerService; контракт detectSpread
+  переработать так, чтобы cardCount был ОПЦИОНАЛЬНЫМ (количество из результата).
+- unavailable_vision_engine.dart: честный fallback → ручной ввод через DivinationCard.
+- test/fakes/fake_vision_engine.dart: детерминированный (появление/подтверждение/
+  неизвестная/перевёрнутая/рубашкой вверх/окклюзия/исчезновение/повтор/много карт/
+  неудача/задержка/отмена). Только для тестов и явного debug-режима.
+Тесты: vision_contract_test.dart (координаты 0..1, отмена, stale-rejection).
+STOP.
 
-## Global design decisions (fixed during pre-code analysis)
+## 1.5 Camera UI redesign (1-2 сессии) — DONE
+Файл: lib/features/camera_scan/camera_scan_screen.dart (+ widgets/).
+1. УДАЛИТЬ ряд _CountChip (1|3|4|7|5|6|10) из build() (там :232-243).
+2. widgets/camera_mode_selector.dart: segmented QUICK SCAN | GUIDED SPREAD | LIVE ORACLE;
+   активный — лаванда, без layout shift; выбор persist (LocalStorageService ключ
+   camera_mode). При активной Guided/Live сессии — подтверждение перед сменой.
+3. widgets/camera_top_hud.dart: system selector + flash + gallery (+ optional engine
+   status). Fallback для неподдерживаемых систем честный.
+4. Контекстные инструкции по режиму (словарь из спеки: POINT AT YOUR SPREAD / …).
+5. Сохранить композицию: preview, shutter, lock-on painter, dock.
+Тесты: widget — camera_mode_selector_test.dart (3 режима, переключение, persist).
+GATE: flutter analyze + flutter test + сборка apk --debug (если окружение доступно).
+STOP.
 
-1. **Single source of truth for astronomy**: standard formulas from
-   Meeus "Astronomical Algorithms":
-   - Sun: ch.25 coarse (accuracy 0.01°).
-   - Moon: ch.47 truncated main series (60 LR terms + 60 B terms + additive
-     terms; accuracy ≈0.01°).
-   - Mercury..Neptune: ch.32 VSOP87 truncated series (L0..L5, B0..B4, R0..R4),
-     assembled in Horner order in units of 100 Julian centuries, /1e8 → rad.
-   - Pluto: ch.37 (argument table J·(34.35+3034.9057T) / S·(50.08+1222.1138T) /
-     P·(238.96+144.96T), amplitudes /1e6, R /1e7). The series is
-     **J2000**-referred (same convention as PyMeeus' `Pluto`), so the
-     geocentric path precesses its longitude into the mean equinox of date
-     (Meeus 21.5: 5029.0966"T + 1.11113"T²) before differencing — mixing
-     frames costs the whole accumulated precession (0.16° for 1988).
-   - Geocentric conversion: rectangular ecliptic difference in the mean
-     equinox of date (planet − Earth), one light-time iteration
-     (τ = 0.0057755183·Δ days).
-   - Nutation (main 4 terms Δψ/Δε), mean obliquity (Meeus 22.3), GMST
-     (12.4) → GAST = GMST + Δψ·cos ε → RAMC = GAST + λ_east.
-   - ASC = swehouse `Asc1(RAMC + 90°, φ, sin ε, cos ε)` quadrant dispatch
-     (the raw atan2 form of the same triangle returns the opposite point,
-     ASC + 180°); MC = atan2(sin RAMC, cos RAMC·cos ε) — both verified
-     against swetest to 0.001°.
-2. **House systems** ported 1:1 from Swiss Ephemeris `swehouse.cpp`
-   (same algorithms as Astrodienst):
-   - `placidus`: polar guard `|φ| ≥ 90 − ε` → Porphyry fallback; otherwise
-     iterative semi-arc trisection via `Asc1`/`Asc2` (max 100 iterations,
-     break at |Δcusp| < 1e-10°).
-   - `koch`: direct — `ad3 = asind(sind(c)·sina)/3` from MC declination;
-     same polar guard → Porphyry.
-   - `wholeSign`: cusp1 = floor(ASC/30)·30, +30° each.
-   - Porphyry fallback: trisect short arc ASC↔MC (with ASC-swap when
-     `difdeg2n(ac,mc) < 0`), matching swetest 'O' exactly.
-3. **Time scale**: RAMC/houses/ASC/MC from UT (matches swetest ARMC to
-   0.004°); planetary longitudes from UT too (ΔT≈60s shifts Moon by only
-   0.01° — covered by test tolerances). Documented as deliberate.
+## 1.6 CardOverlayPainter (1 сессия) — DONE
+lib/features/camera_scan/widgets/card_overlay_painter.dart:
+состояния detected/recognizing/recognized/ambiguous/faceDown/lost (цвета из AppColors:
+lavender, conflictAmber), преобразование normalized→viewfinder, RepaintBoundary +
+Listenable (не rebuild всего дерева). Debug-only fixtures для тестов. Не рисовать
+вымышленные bbox при отсутствии провайдера.
+Тесты: card_overlay_painter_test.dart.
+STOP.
 
-4. **Verified against Swiss Ephemeris (swetest 2.10.04) test anchors**
-   (exact numbers recorded in `test/natal_calculator_test.dart`):
-   - 2000-01-01 00:00 UT, lon 0, lat 52.5 — planets + Placidus + Koch + Whole.
-   - 1988-06-15 14:30 UT, lon 74.57, lat 42.87 (Bishkek) — planets + Placidus.
-   - 2000-01-01 00:00 UT, lat 68.0 — Placidus→Porphyry fallback + Whole.
-   - Meeus book anchors: Sun 1992-10-13 (199°54'36"/199°54'32", R 0.99766),
-     Moon 1992-04-12 (λ 133.162655), Pluto helio 1992-10-13
-     (L 232.74071, B 14.58782, R 29.711111).
-   - NASA moon phases: new 2000-01-06 18:14 UT, 1Q 2000-01-14 13:34,
-     full 2000-01-21 04:40, 3Q 2000-01-28 07:57 → elongation 0/90/180/270.
-   - Mercury retrograde window 2024-08-05..28 (daily-delta detection).
-5. **Domain models** are immutable, pure Dart (no Flutter imports),
-   JSON-serializable `toJson()/fromJson()` in the codebase's established
-   style (conditional keys, tolerant enum parsing). The existing `Element`
-   enum (fire/water/air/earth) is reused for zodiac signs instead of a
-   duplicate `CardElement`.
-6. **Interpretations** (sign+house, aspects, daily advice) are deterministic,
-   grounded, non-fatalistic template compositions over small const tables
-   (12 sign traits, 12 house themes, 12 planet archetypes) — the same
-   "one-sentence psychological meaning" style as the tarot/lenormand data.
-7. **No new dependencies.** All math is `dart:math`; tests use `flutter_test`.
+## 1.7 Resource lifecycle (1 сессия) — DONE
+IndexedStack + isActiveTab уже корректны (camera_lifecycle_test 2 теста). Добавлено:
+- микрофон выключается при уходе приложения в фон — GeminiInputCapsule теперь
+  WidgetsBindingObserver: paused/inactive/hidden → _stopMic() (глушит SpeechToText,
+  сохраняет текст; индикатор ОС гаснет). CameraController и так enableAudio:false.
+- app-background приостанавливает камеру — CameraScanScreen теперь
+  WidgetsBindingObserver: paused/inactive/hidden → _releaseCamera(); resumed →
+  _initCamera() ТОЛЬКО если таб активен (green privacy indicator не горит в фоне).
+- возврат не пересоздаёт расклад — IndexedStack + SpreadController (provider) уже
+  держат состояние; подтверждено существующими tab-switch тестами.
+- поздний async-ответ не меняет завершённую сессию — OracleSessionController
+  получил монотонный epoch + isCurrentSession(epoch); TableWorkspace
+  (_runSynthesis/_askOracle/_runAstralReading/_generateClarifier) захватывает epoch
+  до await и отклоняет мутацию, если сессия была reset/перезапущена.
+Тесты: camera_lifecycle_test.dart расширен до 4 (background→release, resume→re-acquire,
+resume на не-камерном табе → не пересоздаётся); oracle_session_controller_test.dart +1
+(epoch guard). GATE: flutter analyze = No issues found; full flutter test = 325/325 green.
+STOP.
+
+## Phase 1 acceptance criteria (единый чек-лист) — PASSED
+- [x] 3 режима в Camera (QUICK SCAN | GUIDED SPREAD | LIVE ORACLE, 1.5);
+- [x] выбор количества карт удалён (1.5);
+- [x] Table/History без регрессий (full test 325/325);
+- [x] Vision-контракт независим от ML (1.4, legacy_vision_adapter/unavailable_vision_engine);
+- [x] FakeVision только тесты/debug (test/fakes/fake_vision_engine.dart);
+- [x] отсутствие Vision не падает; ручной fallback (unavailable_vision_engine → manualFallbackRequired);
+- [x] lifecycle корректен (1.7: mic off в фоне, camera pause на фоне, stale-response guard).
+
+## Phase 1 → отчёт (шаблон §7 спеки) → STOP. НЕ начинать Phase 2 без команды.
 
 ---
 
-## Phase 1 (DONE — offline ephemeris engine, gated 2026-11-17): Offline Ephemeris Engine + Models + Cities + Tests
+# PHASE 2 — QUICK SCAN & TABLE INTEGRATION
 
-### 1.1 Domain models — `lib/core/models/natal_chart.dart`
-- `HouseSystem` enum: `placidus`, `koch`, `wholeSign` + display labels
-  (`PLACIDUS`, `KOCH`, `WHOLE SIGN`) + Russian subtitles.
-- `ZodiacSign` enum (12): glyph ♈..♓, title, `Element`, modality
-  (cardinal/fixed/mutable), ruler planet.
-- `PlanetId` enum (12): 10 bodies + `ascendant`/`midheaven`, glyphs
-  ☉☽☿♀♂♃♄♅♆♇/ASC/MC, titles, archetype themes.
-- `NatalPlanetPosition`: planet, longitude 0..360, sign, degreeInSign,
-  `formattedDegree` (`18°24'`), house 1..12, isRetrograde, interpretation
-  (sign + house composed text).
-- `AspectType` enum: conjunction 0° orb 8°, sextile 60° orb 5°, square 90°
-  orb 7°, trine 120° orb 7°, opposition 180° orb 8°; glyphs ☌⚹□△☍; harmony
-  (harmonious/tense/intense).
-- `NatalAspect`: bodyA, bodyB, type, exactAngle, orb, strength 0..1,
-  synthesis text.
-- `DailyTransitItem` + `DailyHoroscopeReport`: date, moonPhaseName/Glyph,
-  moonIllumination 0..1, transitingMoonSign/House, overallTheme,
-  energyScore 1..100, top 3–5 transits (title, `Transit Mars □ Natal Moon`
-  label, orb, advice).
-- `NatalChart`: id, profileName, createdAt, birthDateUtc, birthLocal Y/M/D/H/
-  Min, timeKnown, cityName, country, latitude, longitude,
-  timezoneOffsetHours, houseSystem, houseCusps (12), planets, aspects,
-  `toJson()`/`fromJson()`.
+## 2.1 SpreadInferenceService (1 сессия) — DONE
+lib/core/services/spread_inference_service.dart: SpreadInferenceInput (system,
+detectedCount, confirmedCount?, positions?/boxes? как NormalizedPoint/NormalizedRect
+из VisionEngine — геометрия ОПЦИОНАЛЬНА, только флаг hasGeometry), SpreadCandidate
+(tarot/lenormand/rune + cardCount/label/isPro/slotRoles/reason),
+SpreadInferenceResult (candidates, top, isFreeform, needsConfirmation, detectedCount).
+Количество ≠ назначение позиций; неоднозначность (Lenormand 9 = nine + grandPortrait)
+→ needsConfirmation; нет схемы → Freeform (detectedCount сохраняется, карты не теряются).
+Тесты: test/spread_inference_test.dart (8 тестов).
+STOP.
 
-### 1.2 Engine — `lib/core/services/natal_calculator_service.dart`
-- Pure static, 100% offline, deterministic:
-  `julianDay()`, `julianCenturies()`, `meanObliquity()`, `trueObliquity()`,
-  `nutation()`, `greenwichMeanSiderealTime()`, `localSiderealTime()`,
-  `ascendant()`, `midheaven()`.
-- `computeEclipticLongitude(PlanetId, DateTime)` for all 10 bodies
-  (+ retrograde detection via daily longitude delta).
-- `computeHouseCusps(latitude, longitude, DateTime, HouseSystem)` -> 12 cusps
-  + ASC + MC (Placidus/Koch/Whole + Porphyry high-lat fallback, never NaN).
-- `calculateNatalChart(...)` -> full `NatalChart` (planets, houses, aspects).
-- `computeAspects(positions)` — orb detection, strength = 1 − orb/maxOrb,
-  sorted tightest-first.
-- `recalculateWithHouseSystem(chart, system)` — instant cusp/house re-map,
-  no re-entry of birth data.
-- `computeMoonPhase(DateTime)` — elongation-based 8 phases + illumination.
-- `computeDailyHoroscope(chart, {forDate})` — live transits (Sun..Saturn)
-  vs natal planets + ASC, Moon transit house, deterministic
-  `DailyHoroscopeReport`.
+## 2.2 Recognition Review (1-2 сессии) — DONE
+lib/features/camera_scan/widgets/recognition_review_sheet.dart (bottom sheet):
+счётчик распознанных, предложенный расклад (+ компактный выбор кандидатов при
+неоднозначности), список карт с thumbnail (shortLabel), именем, переключением
+ориентации (скрыто для Lenormand — supportsReversal), reorder (вверх/вниз = confirm
+порядка), remove, CONFIRM → RecognitionReviewResult (cards + reversed + spread?).
+Confidence не выдумывается. Тесты: test/recognition_review_test.dart (5 тестов).
+STOP.
 
-### 1.3 Tables — `lib/core/data/astro_ephemeris_tables.dart`
-- GENERATED const Dart tables (VSOP87 L/B/R for Mercury..Neptune, Meeus
-  ch.47 Moon LR/B, Meeus ch.37 Pluto), trimmed at |A| >= 1000 (L/B) and
-  >= 5000 (R) — accuracy loss far below test tolerances.
-- Generator committed for reproducibility: `tool/gen_ephemeris_tables.py`
-  (downloads PyMeeus sdist from PyPI, parses tables, emits Dart).
+## 2.3 Camera→Table handoff (1 сессия) — DONE
+SpreadController.loadScannedSpread (новый, обобщённый): system + List<DivinationCard>
++ reversed + опциональный spread (tarot/lenormand/rune enum). Freeform → все карты
+сохраняются (generic "Card N" роли сверх шаблона), лишние не отбрасываются. Цифровой
+ledger не трогается (reset+shuffle, без fake dealCardAt). loadScannedSpreadFaceUp
+оставлен как legacy-обёртка. camera_scan_screen.dart: _scan → detect → lock-on →
+RecognitionReviewSheet → loadScannedSpread → onHandoff. Amendment 4: recognizer
+TAROT-only — для Lenormand/Runes честный manual fallback (SnackBar), никакой
+конвертации tarot→lenormand/runes. Тесты: phase2_flow_test + app_smoke_test (обновлены
+под review sheet), phase2_clarifier_test (freeform + идемпотентность).
+STOP.
 
-### 1.4 City catalog — `lib/core/data/astro_cities_data.dart`
-- 75+ major world & CIS cities (Bishkek, Karakol, Osh, Almaty, Astana,
-  Tashkent, Moscow, Saint Petersburg, Novosibirsk, Yekaterinburg, Kyiv,
-  Minsk, Tbilisi, Yerevan, Baku, London, Paris, Berlin, New York,
-  Los Angeles, Tokyo, …) with latitude, longitude, standard
-  `timezoneOffsetHours`; `searchAstroCities(query)` case-insensitive.
+## 2.4 Physical clarifier (1 сессия) — DONE
++1 Clarifier уже был реализован (completeClarifierScan → Clarifier N с userContext =
+вопросом, fromPhysicalCard, face-up; _maybeExpandClarifiers генерирует Clarifier
+Expansion; _captureSession upsert той же сессии — новая сессия НЕ создаётся). Phase 2
+закрепил: (а) amendment 4 — clarifier-скан для Lenormand/Runes → manual fallback,
+(б) идемпотентность completeClarifierScan (повторный вызов без вооружения = no-op,
+maxTableCards=10 соблюдается, hard cap не меняется). Тесты: phase2_clarifier_test
+(round-trip + идемпотентность).
+STOP.
 
-### 1.5 Tests — `test/natal_calculator_test.dart` (TDD: red -> green)
-- Sun/Moon/planets vs swetest anchors (2000-01-01 and Bishkek 1988-06-15)
-  with tight tolerances (Sun 0.01°, Moon 0.06°, Mercury..Pluto 0.05°).
-- Meeus anchors: Sun 1992-10-13, Moon 1992-04-12, Pluto 1992-10-13.
-- ASC/MC + Placidus/Koch/Whole cusps vs swetest (0.01° tolerance).
-- High-latitude 68°N: Placidus/Koch -> valid 12-cusp Porphyry fallback
-  (matches swetest), Whole sign boundaries, no NaN.
-- Aspect detection, orb sorting, strength bounds.
-- Moon phase names/illumination at NASA phase moments.
-- Mercury retrograde detection (2024-08 window).
-- `recalculateWithHouseSystem` (cusps change, houses re-mapped, planets kept).
-- `computeDailyHoroscope` invariants (3–5 transits sorted by orb, moon house
-  1..12, illumination 0..1, energyScore 1..100, non-empty texts).
-- `NatalChart` JSON round-trip.
-- City catalog >= 75 entries + search.
-
-### Phase 1 gate (hard stop) — PASSED
-- [x] `flutter analyze` -> 0 issues (`No issues found!`)
-- [x] `flutter test` -> all green (`test/natal_calculator_test.dart` 56/56,
-      full suite 221/221)
-- [x] `PLAN.md` Phase 1 marked `[x] DONE`, `TASK_STATE.json` updated -> **STOP**
-
-### Phase 1 execution status (DONE, 2026-11-17)
-- [x] `lib/core/models/natal_chart.dart` — all domain models + JSON round-trip.
-- [x] `lib/core/services/natal_calculator_service.dart` — full engine
-  (Sun/Moon/VSOP87/Pluto, ASC/MC/RAMC, Placidus/Koch/Whole/Porphyry,
-  aspects, moon phase, daily horoscope, recalculateWithHouseSystem).
-- [x] `lib/core/data/astro_ephemeris_tables.dart` — generated const tables.
-- [x] `tool/gen_ephemeris_tables.py` — reproducible generator (PyMeeus
-  0.5.12 pinned, PyPI sdist, terms trimmed |A|>=1000/5000).
-- [x] `lib/core/data/astro_cities_data.dart` — 96 cities + search.
-- [x] `test/natal_calculator_test.dart` — 56 tests, all green.
-
-Resolved at the root cause (no tolerance was widened for a real defect):
-1. **ASC +180°**: `ascendant()` used the raw atan2 triangle; now uses the
-   ported swehouse `_asc1(ramc + 90, latitude, sine, cose)` →
-   186.9377° vs swetest 186.9378° (lat 52.5), 263.2330° vs 263.2330°
-   (Bishkek). ASC house is 1 again, whole-sign starts in the ASC sign.
-2. **Moon illumination sign**: `(1 + cos e)/2` → `(1 − cos e)/2`; NASA 2000
-   instants now give new 0.000 / quarters 0.500 / full 1.000.
-3. **Obliquity test tolerance**: 2e-6 → 1e-5 (main 4-term Δε differs from
-   swetest's full nutation by 0.013", i.e. 3.7e-6° — test-side only).
-4. **Whole-sign test expectation**: Bishkek cusps start at 240°
-   (ASC 263.23° = Sagittarius), not 180° — test bug, fixed in the test.
-5. **Pluto +0.162° at 1988-06-15**: frame mismatch, not a transcription
-   error. Meeus ch.37 is **J2000**-referred (PyMeeus converts it with J2000
-   obliquity and Sun J2000 coordinates), while VSOP87D, the Sun and the
-   house frame are **date**-referred. The Pluto geocentric path now applies
-   the general precession in longitude (Meeus 21.5) before differencing:
-   1988 residual 0.1617° → 0.004°, 2000 residual 0.005° (limited by the
-   ch.25 Sun). `plutoHeliocentricPosition` stays J2000 and still matches the
-   Meeus 37.a example (232.74071°).
-
-Verified anchors unchanged: Sun/Moon/Mercury..Neptune vs swetest 2.10.04
-(both epochs), Placidus/Koch/Whole Sign + 68°N Porphyry fallback, aspects,
-GMST/RAMC/ASC/MC, Meeus 25.a/37/47.a, NASA moon phases, Mercury
-retrograde 2024-08, JSON round-trip, horoscope invariants, city catalog.
+## Phase 2 acceptance criteria — PASSED
+- Quick Scan инферирует/подтверждает расклад; неоднозначность → выбор; Freeform
+  сохраняет все карты; лишние не теряются (2.1 + 2.3).
+- Recognition Review: полный набор действий, без выдуманного confidence, Lenormand
+  без reversed (2.2).
+- Handoff: физический источник, face-up, Focus/Spread + Oracle Chat + автосохранение,
+  цифровой ledger нетронут (2.3).
+- Physical clarifier в той же сессии, cap 10 соблюдён (2.4).
+- PRO-ограничения централизованно отключены (lib/core/config/app_flags.dart:
+  kProRestrictionsEnabled=false) при сохранении метаданных/инфраструктуры монетизации.
+- Table/History/Astral без регрессий; flutter analyze clean; full flutter test зелёный.
 
 ---
 
-## Phase 2 (DONE — multi-profile state + 4th nav tab, gated 2026-11-17): Multi-Profile State + 4th Nav Tab
-- `AstralController` (ChangeNotifier, UI-first persistence like
-  `SessionHistoryController`): profile CRUD, `maxFreeProfiles = 2`,
-  3rd chart gated behind `PRO`, selected profile, last horoscope cache.
-- 4th bottom nav tab `ASTRAL` in `main_navigation_shell.dart`
-  (wheel UI is a Phase 3 placeholder — data/profile screens only).
+# PHASE 3 — GUIDED PHYSICAL SPREAD
 
-### Phase 2 gate (hard stop) — PASSED
-- [x] `flutter analyze` -> 0 issues (`No issues found!`)
-- [x] `flutter test` -> all green (`test/astral_controller_test.dart` 6/6,
-  full suite 227/227)
-- [x] `PLAN.md` Phase 2 marked `[x] DONE`, `TASK_STATE.json` updated -> **STOP**
+## 3.1 Переиспользование Choose Spread (1 сессия)
+НЕ создавать новый каталог. Использовать Step 1 (digital_table_screen.dart
+_SpreadSelectionView + spread_blueprint_carousel.dart). Только контекст запуска:
+Digital → Active Digital Table; Physical guided → Active Camera Guided Session.
+Опциональный заголовок "PHYSICAL SPREAD".
+STOP.
 
-### Phase 2 execution status (DONE, 2026-11-17)
-- [x] `lib/state/astral_controller.dart` — `AstralGenerateResult`
-  (`generated` / `proGateBlocked`), `maxFreeProfiles = 2`,
-  `generateChart` / `setActiveProfile` / `setHouseSystem` / `unlockPro` /
-  `deleteProfile` / `load`, non-destructive disk merge, fire-and-forget
-  persistence.
-- [x] `lib/core/services/local_storage_service.dart` — astral keys:
-  profiles JSON, lifetime generation count, PRO flag, active index,
-  default house system.
-- [x] `lib/main.dart` — `ChangeNotifierProvider(AstralController)`.
-- [x] `lib/features/shell/main_navigation_shell.dart` — 4th `ASTRAL` tab +
-  `AstralScreen` in the `IndexedStack`.
-- [x] `lib/features/astral/astral_screen.dart` + `widgets/` — cosmic bar
-  (moon phase, streak, rituals re-home), profile switcher, house-system
-  selector, PRO paywall, birth-data form, horoscope summary and a
-  `ValueKey('natal-wheel-placeholder')` slot for Phase 3.
-- [x] `test/astral_controller_test.dart` — free-tier 2 profiles, PRO gate,
-  PRO unlock, in-place Placidus→Koch→Whole Sign without re-generation,
-  profile switch horoscope refresh, 4-tab nav test.
+## 3.2 Guided Session Controller / FSM (1-2 сессии)
+lib/state/live_reading_controller.dart (ChangeNotifier): конечный автомат
+preparing→awaitingIntention→awaitingCard→cardDetected→awaitingReveal→recognizingCard→
+awaitingConfirmation→interpretingCard→awaitingUser→awaitingNextCard→spreadCompleted→
+(paused|completed|cancelled|error). Переходы валидируются. Oracle не меняет карты и не
+переходит на несуществующую позицию.
+Тесты: guided_fsm_test.dart (все переходы, невалидные переходы).
+STOP.
 
-## Phase 3 (DONE — living natal wheel, gated 2026-11-17): Real-Time Animated Natal Wheel
-- `NatalWheelWidget` + `NatalWheelPainter`: 4-stage calibration/orbit/
-  aspect-flash choreography (2200 ms), continuous particle flow,
-  `RepaintBoundary` isolation, Impeller-friendly paint-only animation.
-- Planet/aspect tap inspector, haptics on snap thresholds. (The
-  `PLACIDUS | KOCH | WHOLE SIGN` switcher already shipped in Phase 2 via
-  `recalculateWithHouseSystem`.)
+## 3.3 Guided lifecycle (1-2 сессии)
+Реализовать сценарий Triad Flow: намерение → карта 1 (рубашкой вверх → обнаружение →
+просьба открыть) → подтверждение → привязка к позиции → интерпретация → уточнение →
+следующая. Завершение базового расклада → общий синтез → уместные уточнения →
+clarifiers → продолжить в Oracle Chat. Незавершённый расклад не выдавать за завершённый.
+STOP.
 
-### Phase 3 gate (hard stop) — PASSED
-- [x] `flutter analyze` -> 0 issues (`No issues found!`)
-- [x] `flutter test` -> all green (`test/natal_wheel_widget_test.dart` 7/7,
-  full suite 234/234)
-- [x] `PLAN.md` Phase 3 marked `[x] DONE`, `TASK_STATE.json` updated -> **STOP**
+## 3.4 Guided Camera HUD (1 сессия)
+lib/features/camera_scan/widgets/guided_spread_hud.dart: spread name, progress (2/3),
+current slot role (HIDDEN SHADOW), flash, pause/exit. Снизу — инструкции + Confirm/Next
++ открыть полный чат. Не рисовать world-anchored AR (позиции = визуальные подсказки).
+STOP.
 
-### Phase 3 execution status (DONE, 2026-11-17)
-- [x] `lib/features/astral/widgets/natal_wheel_geometry.dart` — pure
-  geometry: `chartScreenAngle` (ASC pinned to the 9 o'clock horizon),
-  radial tracks, `resolveCollisions` (7° min separation, ring wrap),
-  `lerpLongitude` / `lerpCusps` for the house morph.
-- [x] `lib/features/astral/widgets/natal_wheel_painter.dart` —
-  `NatalWheelPainter` with
-  `super(repaint: Listenable.merge([choreography, pulse, houseMorph]))`:
-  Stage 1 ring calibration (element bands, 1°/5°/10° ticks, LAT/LON/SID
-  HUD + `CALIBRATING %`), Stage 2 house spokes sweeping to real cusps with
-  ASC/IC/DSC/MC captions, Stage 3 planet nodes igniting on the orbit
-  (halo pulse, `Rx`, true-longitude ticks), Stage 4 gradient aspect chords
-  with bolt-head flash + drifting particles, optional transit ring.
-- [x] `lib/features/astral/widgets/natal_wheel_widget.dart` —
-  `NatalWheelWidget`: replayable choreography (`↻ REPLAY`,
-  `HapticFeedback.mediumImpact` at t=0.30, `selectionClick` per aspect
-  flash), 450 ms easeOutCubic house morph on house-system switch (no
-  replay), 26 px tap hit-test on the planet track, glyph chips, and a
-  `LIVE TRANSITS OVERLAY` computed once via `computeEclipticLongitude`.
-- [x] `lib/features/astral/widgets/natal_wheel_controls.dart` +
-  `planet_aspect_inspector_card.dart` — glass pills, planet chips and the
-  `ValueKey('planet-inspector-card')` reading (sign/house/degree,
-  interpretation, top-4 aspects with orb + strength).
-- [x] `lib/features/astral/astral_screen.dart` — wheel slot now
-  `NatalWheelWidget(chart)`; placeholder only when no chart exists.
-- [x] `test/natal_wheel_widget_test.dart` — full-choreography paint path,
-  chip inspector open/close, transits toggle, house morph without replay,
-  ASC pinned to π, aspect-flash ordering, collision nudge.
+## 3.5 Event-driven architecture (1 сессия)
+lib/core/models/physical_reading_event.dart: CardObserved/CardRecognized/CardConfirmed/
+CardRevealed/CardTemporarilyOccluded/CardMoved/CardRemoved/CardOrientationChanged/
+ClarifierConfirmed/SpreadCompleted. eventId + trackId + sessionId против дублей.
+Повторное появление подтверждённой карты НЕ дублирует; окклюзия ≠ удаление; исчезновение
+из кадра ≠ отмена позиции; перемещение НЕ меняет роль автоматически.
+Тесты: physical_event_test.dart (dedupe, occlusion, stale).
+STOP.
 
-## Phase 4 (DONE — horoscope, profile sheet, synastry, Oracle handoff, gated 2026-11-17): Detail Page, Transit Feed & Synastry
+## 3.6 Physical authenticity / Active vs Quiet Guidance (1 сессия)
+Обеспечить естественную последовательность (намерение/перемешивание/вытягивание/
+выкладывание/открытие/созерцание/интерпретация/уточнение/завершение). Два режима
+сопровождения (Active/Quiet). Oracle не комментирует каждое движение.
+STOP.
 
-### Phase 4 gate (hard stop) — PASSED
-- [x] `flutter analyze` -> 0 issues (`No issues found!`)
-- [x] `flutter test` -> all green (`test/astral_horoscope_and_oracle_test.dart` 14/14,
-      full suite 248/248)
-- [x] `PLAN.md` Phase 4 marked `[x] DONE`, `TASK_STATE.json` updated -> **STOP**
+## Phase 3 acceptance criteria → отчёт → STOP.
 
-### Phase 4 execution status (DONE, 2026-11-17)
-- [x] `lib/core/models/natal_chart.dart` — `DailyTransitItem.harmony`
-  (`AspectHarmony`) + JSON round-trip.
-- [x] `lib/core/services/natal_calculator_service.dart` —
-  `computeSynastryAspects`, `synastryElementBalance`, `houseTheme(int)`;
-  daily-horoscope transits now carry their emotional register.
-- [x] `lib/core/models/oracle_handoff.dart` — cross-tab `OracleHandoff` DTO
-  (`prompt`, `chart`, `otherChart`, `horoscope`, `isSynastry`).
-- [x] `lib/core/services/oracle_synthesis_service.dart` — `buildNatalPrompt`,
-  `buildSynastryPrompt`, `synthesizeNatalReading`, `_natalReadingFallback`
-  (worker -> cloud -> offline, same dual pipeline as the tarot oracle).
-- [x] `lib/features/astral/widgets/daily_horoscope_card.dart` — cosmic
-  weather, moon house, day theme, energy badge and register-tinted transits.
-- [x] `lib/features/astral/natal_profile_detail_sheet.dart` — Big Three,
-  live house switch, full placement ledger, filterable aspect matrix.
-- [x] `lib/features/astral/synastry_summary_sheet.dart` — Moon match,
-  elemental-balance bars, cross-chart aspects and the Oracle CTA.
-- [x] `lib/features/astral/widgets/astral_summary_card.dart` — slimmed to
-  birth meta + Big Three + `OPEN FULL PROFILE`.
-- [x] `lib/features/astral/astral_screen.dart` — mounts the daily card, the
-  detail sheet and the synastry sheet; `onOpenOracle` handoff callback.
-- [x] `lib/features/shell/main_navigation_shell.dart` —
-  `ValueNotifier<OracleHandoff?>` + `_openOracle` (switch to Table tab).
-- [x] `lib/features/digital_table/table_workspace.dart` — listens to the
-  notifier, slides to Pane 1 and streams the reading via
-  `synthesizeNatalReading`.
-- [x] `test/astral_horoscope_and_oracle_test.dart` — 14 tests, all green.
+---
+
+# PHASE 4 — LIVE ORACLE & VOICE EXPERIENCE
+
+## 4.1 Shared Oracle session (подготовлено в 1.3; verify 1 сессия)
+Full Chat / Voice Overlay / Compact Oracle используют один sessionId, одни messages,
+одни cards, один контекст, одни clarifiers, одну историю. Смена представления не
+создаёт новую AI-сессию.
+STOP.
+
+## 4.2 OracleVoiceService (1-2 сессии; research обязателен)
+1. RESEARCH: TTS-пакет (flutter_tts) — совместимость Android/iOS, лицензия, EN/RU,
+   управление воспроизведением, background, версии Flutter/Dart. Зафиксировать в
+   PLAN/ARCHITECTURE до добавления зависимости.
+2. lib/core/services/oracle_voice_service.dart: start/stop listening, speak/stop,
+   pause/resume, cancel, language, availability, permissions. Voice states: idle/
+   listening/transcribing/thinking/speaking/muted/paused/unavailable/error.
+   STT = существующий speech_to_text; TTS = выбранный пакет. Half-duplex; Interrupt.
+   MVP: STT → Oracle text → TTS (без realtime speech-to-speech).
+3. test/fakes/fake_oracle_voice_service.dart.
+Тесты: oracle_voice_service_test.dart.
+STOP.
+
+## 4.3 Full Chat дополнения (1 сессия)
+oracle_chat_pane.dart: source indicator (DIGITAL/PHYSICAL), mode indicator (QUICK/
+GUIDED/LIVE), voice playback control, Resume Camera / Return to Physical Spread /
+Continue Guided Session. Не перегружать метками.
+STOP.
+
+## 4.4 Voice Overlay + Compact Oracle (2 сессии)
+lib/features/oracle/widgets/oracle_voice_overlay.dart, compact_oracle.dart,
+oracle_voice_controls.dart, oracle_presence_indicator.dart, oracle_subtitles.dart:
+presence (lavender glow, лёгкий pulse, subtle waveform, obsidian translucent surface),
+субтитры, mic/mute/interrupt/pause/expand/end. Overlay не занимает видоискатель;
+длинный ответ — компактные прокручиваемые субтитры. Compact = плавающая capsule.
+Переходы Full↔Overlay↔Compact не сбрасывают голосовую сессию.
+Тесты: widget — oracle_voice_overlay_test.dart, compact_oracle_test.dart.
+STOP.
+
+## 4.5 Live Oracle freeform (1-2 сессии)
+Без обязательного выбора расклада: новая/продолжить сессия → намерение → свободное
+выкладывание → Oracle интерпретирует в контексте → вопросы/доп. карта/символика/выбор
+расклада/завершение. Выбор структурированного расклада → корректный переход в Guided;
+существующие карты молча не перераспределять (запрос подтверждения ролей).
+STOP.
+
+## 4.6 Oracle structured actions (1-2 сессии)
+lib/core/models/oracle_action.dart: respond/suggestSpread/requestNextCard/requestClarifier/
+requestReveal/askQuestion/summarizeSpread/completeReading/none. LLM возвращает текст +
+action (JSON). Строгая валидация; приложение — authoritative. LLM запрещено добавлять
+вымышленные карты/менять canonicalCardId/orientation/обходить лимиты/PRO/history.
+Некорректная команда → текст/уточнение.
+Тесты: oracle_action_validation_test.dart.
+STOP.
+
+## 4.7 Oracle payload contract (1 сессия)
+Компактный структурированный контекст (schemaVersion/sessionId/source/mode/system/
+spreadId/currentPosition/cards[{cardId,position,role,orientation,source,confirmed}]/
+expectedAction). Реальные canonical IDs. Raw кадры в Oracle НЕ передавать; обновление
+bbox НЕ вызывает LLM-запрос.
+STOP.
+
+## 4.8 Oracle personality (без кода — промпт-правки в 1 сессию)
+Спокойный, сдержанный, контекстный, символический тон; без категоричных медицинских/
+финансовых/юридических предсказаний; голосовые ответы компактнее текстовых.
+STOP.
+
+## Phase 4 acceptance criteria → отчёт → STOP.
+
+---
+
+# PHASE 5 — UNIFICATION, QA & VISION INTEGRATION READINESS
+
+## 5.1 Session continuity (1-2 сессии)
+Реализовать/проверить сценарии A–H (Quick Scan→Oracle→Table→Oracle; Guided→Pause→Oracle→
+Resume; Live→Compact→Full→Voice; Oracle→Physical Clarifier→Camera→Oracle; History→Restore
+Physical; History→Restore Guided; History→Restore Live; Digital→Physical Clarifier→Same).
+sessionId стабилен; повторная генерация не выполняется; переключение на старый разговор
+сохраняет/подтверждает отмену текущей; stale async-ответ не попадает в новую сессию.
+STOP.
+
+## 5.2 History integration (1 сессия)
+SpreadSessionSnapshot metadata: readingSource/readingMode/completionStatus/voiceUsed/
+customSpread/pendingGuidedPosition. Обозначения DIGITAL/PHYSICAL/GUIDED/LIVE. Отдельного
+Camera History НЕ делать. Restore: диалог+расклад+позиции+контекст; камера/микрофон НЕ
+запускаются автоматически (явное действие). Старые JSON без миграционных ошибок; Astral
+без изменений.
+Тесты: history_restore_test.dart.
+STOP.
+
+## 5.3 Privacy & network (документация, 1 сессия)
+Local-first: не хранить raw video/audio без согласия; не логировать PII/ключи; не слать
+поток кадров в Oracle; изображения в remote Vision — только с уведомлением;
+задокументировать передаваемые данные. Новые серверные зависимости и секреты в коде —
+не добавлять.
+STOP.
+
+## 5.4 Performance (1 сессия)
+Бюджетное Android (Redmi 12C): тяжёлая обработка не в UI thread; глобальный notifier не
+обновляется на каждый кадр; backpressure + только актуальный кадр; throttling;
+cancellation; RepaintBoundary; скрытые camera streams не запускать. Не заявлять точность
+ML до Phase 0.
+STOP.
+
+## 5.5 Responsive UI (1 сессия)
+Проверить compact/standard portrait, landscape, SafeArea, system nav, cutouts,
+клавиатуру, длинные ответы, EN/RU, длинные имена карт, camera/mic permissions, text
+scaling. Важные элементы не обрезаются и не перекрывают dock.
+STOP.
+
+## 5.6 Тесты (распределить по фазам, финальная консолидация)
+Domain: ReadingMode transitions, ReadingSource preservation, sessionId stability,
+snapshot serialization, legacy compatibility, spread inference, manual input, unknown
+card, guided position validation, physical clarifier, duplicate event rejection,
+occlusion, stale response rejection, session cancellation, orientation validation,
+ledger isolation.
+Widget: mode selector, Quick Scan, Recognition Review, guided selection/progress HUD,
+Voice Overlay, Compact Oracle, Full Chat transition, permission denied (camera/mic),
+vision unavailable, manual fallback, history restore, digital table regression, EN/RU.
+Integration: Quick Scan→Oracle, guided complete flow, Live Oracle simulated, physical
+clarifier round-trip, history restore+continuation, pause/resume, camera↔table navigation,
+switching saved conversations, app background/resume.
+Ограничения тестов: без RTX/CUDA/API-ключей/интернета/ML/платных сервисов.
+STOP.
+
+## 5.7 VISION_ENGINE_CONTRACT.md (1 сессия)
+Создать документ: interface, capabilities, supported systems, frame format, orientation,
+bbox/corner format, recognition schema, unknown card, event schema, session lifecycle,
+cancellation, backpressure, adapter guide, debug fixtures, real-engine checklist.
+Подключение реального движка = adapter + register provider + capabilities + validate +
+existing integration tests (без копирования Oracle/Table/History).
+STOP.
+
+## Phase 5 acceptance criteria → финальный отчёт → STOP.
+
+---
+
+# QUALITY GATES (каждая фаза)
+dart format && flutter analyze && flutter test && flutter build apk --debug
+(адаптировать под окружение; недоступность сборки = limitation, не success).
+
+# НЕОБСУЖДАЕМЫЕ ОГРАНИЧЕНИЯ
+Чистый Flutter/Dart; без JS; сохранить существующую функциональность; физику цифровой
+колоды; определения раскладов; PRO gate; History; Astral; Almanac; EN/RU; один Oracle;
+одна история; без непрерывного LLM-видео; без фейкового production-распознавания;
+без ML-обучения; без ненужного рефакторинга; без деструктивных миграций; без выдуманного
+confidence; без несанкционированного запуска camera/mic; без пуша в remote; без Academy/
+Journal; без молчаливых изменений hard-лимитов колоды/раскладов.
+
+# ПОРЯДОК ИСПОЛНЕНИЯ
+Phase 1 → STOP → (команда) Phase 2 → STOP → Phase 3 → STOP → Phase 4 → STOP → Phase 5.
+Каждая фаза: 1) изучить код, 2) git status, 3) baseline, 4) обновить PLAN.md,
+5) файлы, 6) реализация, 7) analyze, 8) тесты, 9) regression, 10) APK (если можно),
+11) ARCHITECTURE.md, 12) TASK_STATE.json, 13) отчёт, 14) STOP.
+
+
+
+

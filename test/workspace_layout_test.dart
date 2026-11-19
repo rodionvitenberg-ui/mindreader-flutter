@@ -4,6 +4,8 @@ import 'package:mindreader/features/digital_table/widgets/gemini_input_capsule.d
 import 'package:mindreader/features/digital_table/widgets/synthesize_chat_cta.dart';
 import 'package:mindreader/main.dart';
 
+import 'helpers/table_test_helpers.dart';
+
 /// Sprint 4 layout contract:
 /// * Pane 0 (Digital Table) — a pure tactile sanctuary: NO capsule, NO
 ///   context chips; only the permanently-anchored dormant Synthesize CTA.
@@ -11,32 +13,15 @@ import 'package:mindreader/main.dart';
 ///   and the interactive context chips.
 /// * Panes switch exclusively by horizontal swipe (the top 3-pill bar is
 ///   gone).
+///
+/// Two-step entry: the app boots on Step 1 (Choose Spread). These tests
+/// activate a spread first to reach the Active Digital Table (Step 2).
 void main() {
-  Future<void> goToPane(WidgetTester tester, int pane) async {
-    final controller =
-        tester.widget<PageView>(find.byType(PageView)).controller!;
-    var current = controller.page!.round();
-    while (current != pane) {
-      await tester.dragFrom(
-        const Offset(200, 300),
-        Offset(current < pane ? -600 : 600, 0),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 700));
-      // Settle the post-drag fling ballistic — while it runs, the
-      // PageView's scrollable ignores pointer events.
-      while (controller.position.isScrollingNotifier.value) {
-        await tester.pump(const Duration(milliseconds: 250));
-      }
-      await tester.pump();
-      current = controller.page!.round();
-    }
-  }
-
   testWidgets('Pane 0 keeps no chat UI: only the dormant Synthesize CTA',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await activateSpread(tester, 'Triad Flow');
 
     // No top 3-pill nav bar anymore ('TABLE' only remains on the bottom
     // navigation dock).
@@ -60,6 +45,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await activateSpread(tester, 'Triad Flow');
     await goToPane(tester, 1);
 
     expect(find.byType(GeminiInputCapsule), findsOneWidget);
@@ -75,6 +61,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await activateSpread(tester, 'Triad Flow');
     await goToPane(tester, 1);
 
     // Tapping a pill activates it with a soft glow — NO ✓ icon is ever

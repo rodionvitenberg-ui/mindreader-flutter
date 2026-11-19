@@ -28,44 +28,44 @@ void main() {
     expect(find.text('PERSONAL CONTEXT & BIRTH DATA'), findsOneWidget);
   });
 
-  testWidgets('carousel: tapping a FREE spread switches the table geometry',
+  testWidgets('carousel: tapping a FREE spread activates that table geometry',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    // Default is Triad Flow (3 slots).
-    expect(find.text('3 · Triad Flow'), findsOneWidget);
-    expect(find.text('3 · Vector'), findsOneWidget);
+    // Step 1 picker defaults to Triad Flow (3 slots); free blueprints are
+    // shown on the swipeable row (the "N · " prefix is stripped).
+    expect(find.text('Triad Flow'), findsOneWidget);
+    expect(find.text('Target & Shadow'), findsOneWidget);
 
-    await tester.tap(find.text('4 · Target & Shadow'));
+    await tester.tap(find.text('Target & Shadow'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
-    final ctrl = tester
-        .element(find.byType(SpreadBlueprintCarousel))
-        .read<SpreadController>();
+    final ctrl =
+        tester.element(find.byType(PageView)).read<SpreadController>();
     expect(ctrl.spreadType, SpreadType.four);
-    // The header pill + the 4 numbered slot labels reflect the new geometry.
-    expect(find.textContaining('4 · TARGET & SHADOW'), findsOneWidget);
+    // The 4 numbered slot labels reflect the new geometry on the Active Table.
     expect(find.text('1 · Shore'), findsOneWidget);
     expect(find.text('4 · Turning'), findsOneWidget);
     expect(find.text('3 · Vector'), findsNothing);
   });
 
-  testWidgets('carousel: tapping a LOCKED PRO spread opens the paywall',
+  testWidgets('carousel: tapping a PRO spread now selects it (PRO disabled)',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
 
-    await tester.tap(find.text('5 · Love & Relationship Bridge'));
+    // PRO restrictions are disabled centrally, so a PRO blueprint selects and
+    // activates like any free spread (no paywall).
+    await tester.tap(find.text('Love & Relationship Bridge'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('ACTIVATE PRO'), findsOneWidget);
-    // The active spread is unchanged — the locked blueprint never applies.
-    final ctrl = tester
-        .element(find.byType(SpreadBlueprintCarousel))
-        .read<SpreadController>();
-    expect(ctrl.spreadType, SpreadType.three);
+    final ctrl =
+        tester.element(find.byType(PageView)).read<SpreadController>();
+    expect(ctrl.spreadType, SpreadType.loveBridge);
+    expect(ctrl.isSpreadActive, isTrue);
   });
 
   testWidgets('carousel: swiping left reveals later blueprints',
@@ -75,12 +75,12 @@ void main() {
 
     await tester.drag(
       find.byType(SpreadBlueprintCarousel),
-      const Offset(-500, 0),
+      const Offset(-600, 0),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
     // The final PRO blueprint is now built and tappable.
-    expect(find.text('10 · Celtic Cross'), findsOneWidget);
+    expect(find.text('Celtic Cross'), findsOneWidget);
   });
 }

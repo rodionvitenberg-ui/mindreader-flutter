@@ -8,6 +8,8 @@ import 'package:mindreader/main.dart';
 import 'package:mindreader/state/spread_controller.dart';
 import 'package:provider/provider.dart';
 
+import 'helpers/table_test_helpers.dart';
+
 /// Sprint 2/3 → 4 end-to-end widget flows: the context chips + Gemini
 /// input capsule now live EXCLUSIVELY on the Oracle AI Chat pane, the
 /// ✦ SYNTHESIZE IN CHAT CTA is permanently anchored on the Digital Table
@@ -15,7 +17,9 @@ import 'package:provider/provider.dart';
 /// table sync.
 void main() {
   /// SPREAD VIEW is the default; deal-driven flows opt back into FOCUS VIEW.
+  /// Also enters the Active Table (Step 2) from the Step 1 spread picker.
   Future<void> focusMode(WidgetTester tester) async {
+    await activateSpread(tester, 'Triad Flow');
     await tester.tap(find.text('FOCUS VIEW'));
     await tester.pump();
   }
@@ -51,30 +55,6 @@ void main() {
     await tester.pump();
   }
 
-  /// Swipes horizontally across the workspace until [pane] is the active
-  /// page (Sprint 4: the top 3-pill indicator bar is gone — horizontal
-  /// swiping is the only pane switch).
-  Future<void> goToPane(WidgetTester tester, int pane) async {
-    final controller =
-        tester.widget<PageView>(find.byType(PageView)).controller!;
-    var current = controller.page!.round();
-    while (current != pane) {
-      await tester.dragFrom(
-        const Offset(200, 300),
-        Offset(current < pane ? -600 : 600, 0),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 700)); // pane slide
-      // Settle the post-drag fling ballistic — while it runs, the
-      // PageView's scrollable ignores pointer events.
-      while (controller.position.isScrollingNotifier.value) {
-        await tester.pump(const Duration(milliseconds: 250));
-      }
-      await tester.pump();
-      current = controller.page!.round();
-    }
-  }
-
   /// Deals and flips the whole Triad spread, then taps the ignited CTA —
   /// synthesis runs and the workspace slides into the Oracle AI Chat pane.
   Future<void> dealFlipAndSynthesize(WidgetTester tester) async {
@@ -97,6 +77,7 @@ void main() {
       'and weaves context into the reading', (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
+    await activateSpread(tester, 'Triad Flow');
 
     // Pane 0 is a pure table: no capsule, no context chips.
     expect(find.text('SLOT 1 · BEFORE YOU DRAW'), findsNothing);
@@ -168,7 +149,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump();
-    expect(find.text('TAROT'), findsOneWidget); // still on the table
+    expect(find.byType(InteractiveDeckWidget), findsOneWidget); // still on the table
     expect(find.text('1 · CORE NARRATIVE SYNTHESIS'), findsNothing);
 
     await flipCard(tester, 0);
@@ -227,7 +208,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700)); // pane slide
     await tester.pump();
-    expect(find.text('TAROT'), findsOneWidget);
+    expect(find.byType(InteractiveDeckWidget), findsOneWidget);
     expect(find.byKey(const ValueKey('clarifier-banner')), findsOneWidget);
 
     final ctrl = tester
@@ -351,6 +332,16 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500)); // lock-on
     await tester.pump(const Duration(milliseconds: 700)); // settle
     await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+
+    // The Recognition Review sheet appears; confirm the proposed spread.
+    await tester.pump(const Duration(milliseconds: 400)); // lock-on completes
+    await tester.pump(const Duration(milliseconds: 400)); // review modal in
+    await tester.pump();
+    expect(find.text('3 RECOGNIZED'), findsOneWidget);
+    await tester.tap(find.text('CONFIRM & PLACE ON TABLE'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400)); // modal out + handoff
     await tester.pump();
 
     // Back on the table: physical-sync badge + all 3 cards face-up and
