@@ -47,12 +47,17 @@ class TableWorkspace extends StatefulWidget {
   const TableWorkspace({
     super.key,
     this.onOpenCameraClarifier,
+    this.onResumeCamera,
     this.astralHandoff,
   });
 
   /// Shell callback: switches to the Camera tab armed for a single-card
   /// physical clarifier scan (phygital camera-to-table sync).
   final VoidCallback? onOpenCameraClarifier;
+
+  /// Shell callback: switches to the Camera tab to resume a physical flow
+  /// (quick scan / live oracle / guided session) — no clarifier armed.
+  final VoidCallback? onResumeCamera;
 
   /// Cross-tab handoff published by the ASTRAL tab; the workspace consumes
   /// it and streams a natal or synastry reading from the Oracle.
@@ -669,6 +674,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
                   onClarifierQuestion: _requestClarifierForQuestion,
                   onFocusInput: () => _capsuleFocus.requestFocus(),
                   onScanClarifier: _scanClarifier,
+                  onResumeCamera: () => widget.onResumeCamera?.call(),
                 ),
                 SpreadHistoryPane(
                   history: _history,

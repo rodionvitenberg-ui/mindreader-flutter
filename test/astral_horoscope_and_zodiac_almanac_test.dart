@@ -8,6 +8,7 @@ import 'package:mindreader/core/models/tarot_card_model.dart';
 import 'package:mindreader/core/services/local_storage_service.dart';
 import 'package:mindreader/core/services/natal_calculator_service.dart';
 import 'package:mindreader/core/services/oracle_synthesis_service.dart';
+import 'package:mindreader/core/services/oracle_voice_service.dart';
 import 'package:mindreader/core/theme/app_theme.dart';
 import 'package:mindreader/features/astral/widgets/horoscope_window.dart';
 import 'package:mindreader/features/digital_table/spread_history_pane.dart';
@@ -266,6 +267,7 @@ void main() {
           providers: [
             ChangeNotifierProvider(create: (_) => SpreadController()),
             ChangeNotifierProvider(create: (_) => OracleSessionController()),
+            ChangeNotifierProvider(create: (_) => OracleVoiceService()),
             ChangeNotifierProvider(create: (_) => DeckPackController()),
             ChangeNotifierProvider(create: (_) => AstralController()),
             ChangeNotifierProvider(create: (_) => AppSettingsController()),

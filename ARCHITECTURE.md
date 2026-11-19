@@ -103,6 +103,14 @@ SpreadController
 - `VoiceLanguage` (`lib/core/models/voice_language.dart`) — the six spoken
   locales EN/RU/ES/PT/DE/FR mapped to `en-US/ru-RU/es-ES/pt-BR/de-DE/fr-FR` in
   ONE place.
+- **Full Chat integration (4.3):** `OracleVoiceService` is registered once in
+  `main.dart` and lazily initialized by the chat pane. `OracleSessionMetaBar`
+  (`widgets/oracle_session_meta_bar.dart`) shows the DIGITAL/PHYSICAL source
+  badge + mode badge (QUICK SCAN / GUIDED SPREAD / LIVE ORACLE), a mute/unmute
+  voice toggle, and a mode-gated physical CTA (`RESUME CAMERA` /
+  `CONTINUE GUIDED SESSION` / `RETURN TO PHYSICAL SPREAD`). New free-dialog
+  Oracle answers are auto-spoken when TTS is available and unmuted; the mic-duck
+  hook (`onSpeakingStarted`/`onSpeakingStopped`) is wired in 4.4.
 
 ## Digital Table physics (game-feel contract)
 

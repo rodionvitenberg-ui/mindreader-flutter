@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'core/services/oracle_voice_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/shell/main_navigation_shell.dart';
 import 'state/app_settings_controller.dart';
@@ -29,6 +30,9 @@ class MindreaderApp extends StatelessWidget {
         // Table and the Oracle Chat share this single session source of
         // truth (stable sessionId + source/mode/status + messages).
         ChangeNotifierProvider(create: (_) => OracleSessionController()),
+        // The Oracle voice (TTS) — one shared instance; lazily initialized on
+        // first use. Swappable engine behind the TtsEngine seam.
+        ChangeNotifierProvider(create: (_) => OracleVoiceService()),
         // The Guided Physical Spread process (FSM). Holds NO cards — those
         // stay in SpreadController; this only orchestrates the interaction.
         ChangeNotifierProvider(create: (_) => LiveReadingController()),

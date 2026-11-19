@@ -73,6 +73,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           ),
           TableWorkspace(
             onOpenCameraClarifier: () => _switchTo(0),
+            onResumeCamera: () => _switchTo(0),
             astralHandoff: _handoff,
           ),
           AlmanacScreen(onOpenZodiacHoroscope: _openZodiacHoroscope),

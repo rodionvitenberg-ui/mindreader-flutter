@@ -20,7 +20,8 @@
   VERIFIED: single OracleSessionController across all tabs; new
   test/oracle_shared_session_test.dart incl. Camera↔Table↔Oracle continuity).
   4.2 DONE (OracleVoiceService + flutter_tts ^4.2.5 research; TtsEngine seam;
-  392/392 green).
+  392/392 green). 4.3 DONE (Full Chat: source/mode badges, voice toggle +
+  auto-speak, physical resume/return CTA; 401/401 green).
 - Phase 5 (Unification & QA): PENDING.
 
 ## РЕЗУЛЬТАТЫ АУДИТА РЕПОЗИТОРИЯ (фиксируются как исходная точка)
@@ -329,7 +330,7 @@ STOP.
 Тесты: oracle_voice_service_test.dart.
 STOP.
 
-## 4.3 Full Chat дополнения (1 сессия)
+## 4.3 Full Chat дополнения (1 сессия) — DONE
 oracle_chat_pane.dart: source indicator (DIGITAL/PHYSICAL), mode indicator (QUICK/
 GUIDED/LIVE), voice playback control, Resume Camera / Return to Physical Spread /
 Continue Guided Session. Не перегружать метками.

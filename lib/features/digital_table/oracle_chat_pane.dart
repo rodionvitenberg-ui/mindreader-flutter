@@ -8,9 +8,12 @@ import '../../core/models/divination_card.dart';
 import '../../core/models/divination_system.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/services/oracle_synthesis_service.dart';
+import '../../core/services/oracle_voice_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../state/oracle_session_controller.dart';
 import '../../state/spread_controller.dart';
 import '../../state/synthesis_session.dart';
+import 'widgets/oracle_session_meta_bar.dart';
 import 'widgets/reading_subject_toggle.dart';
 
 /// Pane 1 — ORACLE AI CHAT: a full-width Gemini-style conversation. The
@@ -28,9 +31,10 @@ class OracleChatPane extends StatefulWidget {
     required this.onClarifierQuestion,
     required this.onFocusInput,
     required this.onScanClarifier,
+    required this.onResumeCamera,
   });
 
-  final SynthesisSession session;
+  final OracleSessionController session;
 
   /// The shared input capsule's text — the `+1 CARD FOR MY QUESTION` chip
   /// reads the reader's own typed follow-up from it.
@@ -48,34 +52,65 @@ class OracleChatPane extends StatefulWidget {
   final VoidCallback onFocusInput;
   final VoidCallback onScanClarifier;
 
+  /// Switches back to the Camera tab for the physical flows (Resume Camera /
+  /// Return to Physical Spread / Continue Guided Session).
+  final VoidCallback onResumeCamera;
+
   @override
   State<OracleChatPane> createState() => _OracleChatPaneState();
 }
 
 class _OracleChatPaneState extends State<OracleChatPane> {
   final ScrollController _scroll = ScrollController();
+  late final OracleVoiceService _voice = context.read<OracleVoiceService>();
+  int _spokenOracleCount = 0;
 
   @override
   void initState() {
     super.initState();
     widget.session.addListener(_onSessionChanged);
+    _voice.addListener(_onVoiceChanged);
+    // Lazy TTS probe — a missing engine just reports unavailable and the
+    // text Oracle continues unaffected.
+    _voice.initialize();
   }
 
   @override
   void dispose() {
     widget.session.removeListener(_onSessionChanged);
+    _voice.removeListener(_onVoiceChanged);
     _scroll.dispose();
     super.dispose();
   }
 
+  void _onVoiceChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
   void _onSessionChanged() {
     if (!mounted) return;
+    _speakNewestAnswer();
     setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
         _scroll.jumpTo(_scroll.position.maxScrollExtent);
       }
     });
+  }
+
+  /// Auto-speaks the newest free-dialog Oracle answer when voice is enabled
+  /// (available + unmuted). Never re-speaks an answer already spoken.
+  void _speakNewestAnswer() {
+    final oracle = widget.session.messages
+        .where((m) => m.role == 'oracle')
+        .toList();
+    if (oracle.length <= _spokenOracleCount) return;
+    _spokenOracleCount = oracle.length;
+    final text = oracle.last.text.trim();
+    if (text.isNotEmpty && _voice.isAvailable && !_voice.isMuted) {
+      _voice.speak(text);
+    }
   }
 
   /// The reader's own follow-up from the shared input capsule: arms the
@@ -118,6 +153,11 @@ class _OracleChatPaneState extends State<OracleChatPane> {
       child: Column(
         children: [
           _SpreadHeaderStrip(ctrl: ctrl, onTap: widget.onBackToTable),
+          OracleSessionMetaBar(
+            session: session,
+            voice: _voice,
+            onResumeCamera: widget.onResumeCamera,
+          ),
           Expanded(
             child: hasContent
                 ? _chatStream(ctrl, session)

@@ -4,6 +4,7 @@ import 'package:mindreader/core/models/natal_chart.dart';
 import 'package:mindreader/core/models/oracle_handoff.dart';
 import 'package:mindreader/core/services/natal_calculator_service.dart';
 import 'package:mindreader/core/services/oracle_synthesis_service.dart';
+import 'package:mindreader/core/services/oracle_voice_service.dart';
 import 'package:mindreader/core/theme/app_theme.dart';
 import 'package:mindreader/features/astral/natal_profile_detail_sheet.dart';
 import 'package:mindreader/features/astral/synastry_summary_sheet.dart';
@@ -306,6 +307,7 @@ void main() {
           providers: [
             ChangeNotifierProvider(create: (_) => SpreadController()),
             ChangeNotifierProvider(create: (_) => OracleSessionController()),
+            ChangeNotifierProvider(create: (_) => OracleVoiceService()),
             ChangeNotifierProvider(create: (_) => DeckPackController()),
             ChangeNotifierProvider(
               create: (_) => SessionHistoryController()..load(),
