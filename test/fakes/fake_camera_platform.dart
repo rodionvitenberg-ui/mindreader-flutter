@@ -13,14 +13,21 @@ class FakeCameraPlatform extends CameraPlatform {
   int initCalls = 0;
   int disposeCalls = 0;
 
+  /// When true, `availableCameras` reports no hardware (simulates a device
+  /// with no camera / denied permission) so the screen exercises its
+  /// honest simulated-viewfinder fallback.
+  bool noCameras = false;
+
   @override
-  Future<List<CameraDescription>> availableCameras() async => [
-        const CameraDescription(
-          name: 'fake-back',
-          lensDirection: CameraLensDirection.back,
-          sensorOrientation: 90,
-        ),
-      ];
+  Future<List<CameraDescription>> availableCameras() async => noCameras
+      ? const []
+      : [
+          const CameraDescription(
+            name: 'fake-back',
+            lensDirection: CameraLensDirection.back,
+            sensorOrientation: 90,
+          ),
+        ];
 
   @override
   Future<int> createCameraWithSettings(

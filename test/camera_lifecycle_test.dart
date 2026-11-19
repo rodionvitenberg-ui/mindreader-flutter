@@ -139,4 +139,23 @@ void main() {
 
     expect(fake.createCalls, createdAfterLeave);
   });
+
+  testWidgets(
+      'no camera (denied/unavailable) degrades to the simulated viewfinder, '
+      'never a live preview', (tester) async {
+    fake.noCameras = true;
+    await tester.pumpWidget(const MindreaderApp());
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('CAMERA'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    // No hardware was ever created — the fallback is honest, not a fake feed.
+    expect(fake.createCalls, 0);
+    // The simulated-viewfinder hint is shown instead of a live preview.
+    expect(find.textContaining('SIMULATED VIEWFINDER'), findsOneWidget);
+  });
 }
