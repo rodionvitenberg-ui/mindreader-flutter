@@ -74,6 +74,36 @@ SpreadController
   pure presentation overlay (spread name / progress / slot role / phase
   instruction / flash / pause / exit / Confirm-Next-Resume / open-chat; no AR).
 
+## Live Oracle voice (Phase 4) — TTS + half-duplex STT
+
+- **TTS research decision (4.2):** `flutter_tts ^4.2.5` (MIT, no paid API) —
+  Android / iOS / macOS / Web / Windows. Android needs `minSdk ≥ 21` (project is
+  24) and an `android.intent.action.TTS_SERVICE` entry in the manifest's
+  `<queries>` block (added). Web works through the browser speech synthesis but
+  reports NO voices/progress and has no pause; the service treats `pause()` as
+  best-effort and `getVoices()`/progress as native-only. No background playback
+  is used — utterances live only while the app is foregrounded.
+- `OracleVoiceService` (`lib/core/services/oracle_voice_service.dart`) — the
+  single voice orchestrator (ChangeNotifier). Owns the TTS half and publishes
+  the half-duplex contract: while `isSpeaking` is true the STT mic must stay
+  ducked (`onSpeakingStarted` / `onSpeakingStopped` hooks) so the Oracle never
+  transcribes its own voice. Guarantees: (1) no two responses overlap — `speak`
+  interrupts the current utterance (plus the engine's FLUSH queue); (2) TTS is
+  OPTIONAL — a missing/unavailable engine leaves `state = unavailable` and
+  `speak` is a silent no-op, so the text Oracle keeps working; (3) the backend
+  is swappable — the service depends only on the `TtsEngine` seam, so a neural
+  voice can replace the system TTS later without touching callers.
+- `TtsEngine` (`lib/core/services/tts/tts_engine.dart`) — abstract seam
+  (initialize / getLanguages / getVoices / isLanguageAvailable / setLanguage /
+  setSpeechRate / speak / stop / pause / completion+error+cancel handlers).
+  `FlutterTtsEngine` (`tts/flutter_tts_engine.dart`) is the system adapter.
+- `VoiceState` (`lib/core/models/voice_state.dart`) — idle / listening /
+  transcribing / thinking / speaking / paused / muted / unavailable / error,
+  with `isSpeaking` / `isListeningHalf` half-splitters.
+- `VoiceLanguage` (`lib/core/models/voice_language.dart`) — the six spoken
+  locales EN/RU/ES/PT/DE/FR mapped to `en-US/ru-RU/es-ES/pt-BR/de-DE/fr-FR` in
+  ONE place.
+
 ## Digital Table physics (game-feel contract)
 
 - Deck gestures are touch-scoped **only** to `InteractiveDeckWidget` (`HitTestBehavior.opaque`); table scrolling never triggers shuffle/deal.

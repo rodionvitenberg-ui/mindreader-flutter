@@ -18,7 +18,9 @@
   Acceptance criteria passed.
 - Phase 4 (Live Oracle & Voice): IN PROGRESS — 4.1 DONE (Shared Oracle session
   VERIFIED: single OracleSessionController across all tabs; new
-  test/oracle_shared_session_test.dart; 377/377 green).
+  test/oracle_shared_session_test.dart incl. Camera↔Table↔Oracle continuity).
+  4.2 DONE (OracleVoiceService + flutter_tts ^4.2.5 research; TtsEngine seam;
+  392/392 green).
 - Phase 5 (Unification & QA): PENDING.
 
 ## РЕЗУЛЬТАТЫ АУДИТА РЕПОЗИТОРИЯ (фиксируются как исходная точка)
@@ -314,7 +316,7 @@ Full Chat / Voice Overlay / Compact Oracle используют один session
 создаёт новую AI-сессию.
 STOP.
 
-## 4.2 OracleVoiceService (1-2 сессии; research обязателен)
+## 4.2 OracleVoiceService (1-2 сессии; research обязателен) — DONE
 1. RESEARCH: TTS-пакет (flutter_tts) — совместимость Android/iOS, лицензия, EN/RU,
    управление воспроизведением, background, версии Flutter/Dart. Зафиксировать в
    PLAN/ARCHITECTURE до добавления зависимости.
