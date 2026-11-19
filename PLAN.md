@@ -10,7 +10,7 @@
 - Phase 2 (Quick Scan & Table): DONE (2.1–2.4).
 - Phase 3 (Guided Physical Spread): DONE (3.5–3.6).
 - Phase 4 (Live Oracle & Voice): DONE (4.1–4.8).
-- Phase 5 (Unification & QA): IN PROGRESS.
+- Phase 5 (Unification & QA): DONE (5.1–5.7).
 
 ## РЕЗУЛЬТАТЫ АУДИТА РЕПОЗИТОРИЯ (фиксируются как исходная точка)
 Git HEAD: 3c78343 (после 0a29878). PLAN.md был удалён в рабочем дереве — пересоздан.

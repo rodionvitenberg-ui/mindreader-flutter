@@ -172,6 +172,42 @@ SpreadController
   `answerChat` / `_buildPrompt` openers (replacing three slightly-different
   hardcoded intro lines).
 
+## Phase 5 — Unification, QA & Vision contract
+
+- **Session continuity (5.1):** `OracleSessionController.restoreSession` now
+  bumps the monotonic `epoch`, so switching to a saved conversation (or any
+  restore) rejects a late async answer from the conversation being left — the
+  same guard `reset`/`beginSession` already used. `test/session_continuity_test.dart`
+  pins scenarios A–H (Quick Scan↔Oracle↔Table, Guided→Pause→Oracle→Resume,
+  Live→Compact→Full→Voice, clarifier round-trip, restore Physical/Guided/Live,
+  Digital→Clarifier) at the controller level.
+- **History integration (5.2):** `SpreadSessionSnapshot` gained `customSpread`
+  (String?) and `pendingGuidedPosition` (int?) with tolerant JSON (legacy loads
+  with null). `readingSessionBadge(source, mode)` (`lib/core/models/
+  reading_session_badge.dart`) is the ONE place mapping provenance to
+  `DIGITAL | PHYSICAL | GUIDED | LIVE`; `SpreadHistoryPane` renders it as a flow
+  badge on physical readings. A restore lands on `completed` (never `active`),
+  so camera/mic are never auto-started.
+- **Privacy (5.3):** `PRIVACY.md` — local-first store, the two network surfaces
+  (Oracle text prompts; Vision downscaled JPEG), and what never leaves the device
+  (raw video/audio, camera frames to the Oracle, PII/keys in logs).
+- **Performance (5.4):** `VisionScannerService.compressJpeg` moved its CPU-bound
+  decode/resize/encode into a `compute` isolate so a budget device never drops a
+  frame compressing a capture.
+- **Responsive UI (5.5):** the Choose-Spread view and the Oracle Chat empty state
+  are now `SingleChildScrollView`-wrapped (they overflowed on short/landscape
+  screens). `test/responsive_ui_test.dart` sweeps 360×640 / 412×915 / 640×360 and
+  1.3× text scaling, relying on Flutter's overflow-as-failure.
+- **Tests (5.6):** permission-denied camera fallback (`FakeCameraPlatform.noCameras`
+  → simulated viewfinder, no live preview).
+- **Vision contract (5.7):** `VISION_ENGINE_CONTRACT.md` documents the
+  `VisionEngine` interface, capabilities, normalized frame/orientation geometry,
+  recognition schema, unknown-card handling, event/lifecycle, cancellation +
+  `VisionFrameGate` backpressure, the adapter guide and the real-engine checklist.
+  The `VisionEngine` contract (`lib/core/services/vision/`) is the Phase 0
+  hookup point: a real engine = adapter + provider registration + validate,
+  without touching Oracle/Table/History.
+
 ## Digital Table physics (game-feel contract)
 
 - Deck gestures are touch-scoped **only** to `InteractiveDeckWidget` (`HitTestBehavior.opaque`); table scrolling never triggers shuffle/deal.
