@@ -640,6 +640,30 @@ class SpreadController extends ChangeNotifier {
     );
   }
 
+  /// Prepares the table for a Guided Physical Spread: resets to EMPTY slots
+  /// for the ACTIVE spread (physical camera-sync source) so the coordinator
+  /// binds cards one at a time as they are confirmed. The digital ledger is
+  /// untouched.
+  void startGuidedSpread() {
+    _resetSlots();
+    _sourceMode = TableSourceMode.physicalCameraSync;
+    _resetDeck();
+    shuffleDeck();
+  }
+
+  /// Binds ONE confirmed physical card into [slotIndex] FACE UP, marking the
+  /// slot as physical. Returns false (no-op) when the index is out of range —
+  /// the Guided FSM guarantees a valid index, so this is a defensive boundary
+  /// check, not a control path.
+  bool bindGuidedCard(int slotIndex, DivinationCard card, bool reversed) {
+    if (slotIndex < 0 || slotIndex >= _slots.length) return false;
+    final slot = _slots[slotIndex];
+    slot.fromPhysicalCard = true;
+    slot.placeCardFaceUp(card, reversed);
+    notifyListeners();
+    return true;
+  }
+
   /// Clears the table AND physically returns every dealt card into the
   /// 78-card stack (fresh `_resetDeck` + full shuffle), so the live counter
   /// jumps back up to [totalCards] — the dealt cards are never lost.
