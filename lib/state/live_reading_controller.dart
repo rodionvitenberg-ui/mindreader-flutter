@@ -67,6 +67,44 @@ extension GuidePhaseX on GuidePhase {
       };
 }
 
+/// How talkative the Oracle is during the physical ritual.
+///
+/// * [active] — walks the reader through each physical beat;
+/// * [quiet] — stays silent except at the meaningful beats (interpreting a
+///   card, completing the spread, answering a reader question), so the Oracle
+///   never comments on every movement.
+enum GuidanceMode { active, quiet }
+
+/// Whether the Oracle should emit a guidance line at [phase] under [mode].
+///
+/// Both modes speak at the meaningful beats — interpreting a card, completing
+/// the spread, a direct reader question — and never speak for the pure
+/// bookkeeping states. [active] additionally voices the transitional beats
+/// (card detected / reveal / recognize); [quiet] stays silent on those so the
+/// ritual feels natural rather than narrated.
+bool guidanceShouldSpeak(GuidanceMode mode, GuidePhase phase) {
+  switch (phase) {
+    case GuidePhase.interpretingCard:
+    case GuidePhase.spreadCompleted:
+    case GuidePhase.awaitingUser:
+      return true;
+    case GuidePhase.cardDetected:
+    case GuidePhase.awaitingReveal:
+    case GuidePhase.recognizingCard:
+    case GuidePhase.awaitingConfirmation:
+      return mode == GuidanceMode.active;
+    case GuidePhase.preparing:
+    case GuidePhase.awaitingIntention:
+    case GuidePhase.awaitingCard:
+    case GuidePhase.awaitingNextCard:
+    case GuidePhase.paused:
+    case GuidePhase.completed:
+    case GuidePhase.cancelled:
+    case GuidePhase.error:
+      return false;
+  }
+}
+
 /// The single source of truth for the GUIDED PHYSICAL SPREAD process.
 ///
 /// This orchestrates the physical interaction ONLY. It deliberately does NOT
@@ -89,6 +127,22 @@ class LiveReadingController extends ChangeNotifier {
   int get currentSlotIndex => _currentSlotIndex;
 
   GuidePhase _phaseBeforePause = GuidePhase.preparing;
+
+  GuidanceMode _guidanceMode = GuidanceMode.active;
+  GuidanceMode get guidanceMode => _guidanceMode;
+
+  /// Sets how talkative the Oracle is during this session. Persists across
+  /// [begin] (it is a reader preference, not per-spread state).
+  void setGuidanceMode(GuidanceMode mode) {
+    if (_guidanceMode == mode) return;
+    _guidanceMode = mode;
+    notifyListeners();
+  }
+
+  /// Whether the Oracle should speak at the current phase — the single gate
+  /// the UI/coordinator checks before emitting a guidance line, so the Oracle
+  /// never comments on every movement in quiet mode.
+  bool get oracleShouldSpeak => guidanceShouldSpeak(_guidanceMode, _phase);
 
   /// Whether another base-spread slot follows the current one.
   bool get hasNextSlot => _currentSlotIndex + 1 < _slotCount;
