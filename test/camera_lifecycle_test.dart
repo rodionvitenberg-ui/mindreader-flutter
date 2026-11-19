@@ -3,85 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/main.dart';
 
-/// Sprint 1/3 — lazy camera lifecycle: the Android green privacy indicator
-/// must NEVER stay on while the TABLE or ALMANAC tab is visible. The
-/// camera opens only when the CAMERA tab is active and is disposed the
-/// instant the user switches away.
-class _FakeCameraPlatform extends CameraPlatform {
-  int createCalls = 0;
-  int initCalls = 0;
-  int disposeCalls = 0;
-
-  @override
-  Future<List<CameraDescription>> availableCameras() async => [
-        const CameraDescription(
-          name: 'fake-back',
-          lensDirection: CameraLensDirection.back,
-          sensorOrientation: 90,
-        ),
-      ];
-
-  @override
-  Future<int> createCameraWithSettings(
-    CameraDescription cameraDescription,
-    MediaSettings mediaSettings,
-  ) async {
-    createCalls++;
-    return 7;
-  }
-
-  @override
-  Future<void> initializeCamera(
-    int cameraId, {
-    ImageFormatGroup imageFormatGroup = ImageFormatGroup.unknown,
-  }) async {
-    initCalls++;
-  }
-
-  @override
-  Future<void> dispose(int cameraId) async {
-    disposeCalls++;
-  }
-
-  @override
-  Widget buildPreview(int cameraId) =>
-      const SizedBox.expand(); // live preview placeholder in tests
-
-  @override
-  Stream<CameraInitializedEvent> onCameraInitialized(int cameraId) =>
-      Stream.value(const CameraInitializedEvent(
-        7,
-        1280,
-        720,
-        ExposureMode.auto,
-        false,
-        FocusMode.auto,
-        false,
-      ));
-
-  @override
-  Stream<CameraResolutionChangedEvent> onCameraResolutionChanged(
-          int cameraId) =>
-      const Stream.empty();
-
-  @override
-  Stream<CameraClosingEvent> onCameraClosing(int cameraId) =>
-      const Stream.empty();
-
-  /// The controller awaits `.first` on this stream — it must stay PENDING
-  /// (a real device emits an error event only on an actual failure).
-  @override
-  Stream<CameraErrorEvent> onCameraError(int cameraId) =>
-      Stream<CameraErrorEvent>.multi((_) {});
-
-  @override
-  Stream<VideoRecordedEvent> onVideoRecordedEvent(int cameraId) =>
-      const Stream.empty();
-
-  @override
-  Stream<DeviceOrientationChangedEvent> onDeviceOrientationChanged() =>
-      const Stream.empty();
-}
+import 'fakes/fake_camera_platform.dart';
 
 /// Drives the binding through the LEGAL AppLifecycleState transition chain.
 /// Jumping straight to `paused`/`resumed` trips `AppLifecycleListener`'s
@@ -100,10 +22,10 @@ void _driveLifecycleTo(WidgetTester tester, AppLifecycleState target) {
 }
 
 void main() {
-  late _FakeCameraPlatform fake;
+  late FakeCameraPlatform fake;
 
   setUp(() {
-    fake = _FakeCameraPlatform();
+    fake = FakeCameraPlatform();
     CameraPlatform.instance = fake;
   });
 
