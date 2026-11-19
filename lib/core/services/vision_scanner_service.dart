@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show compute, debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 
@@ -13,6 +13,27 @@ class DetectedCard {
   final TarotCard card;
   final bool isReversed;
   const DetectedCard(this.card, this.isReversed);
+}
+
+/// The CPU-bound half of [VisionScannerService.compressJpeg], run off the UI
+/// thread (via `compute`) so a budget device does not drop a frame while a
+/// full-resolution capture is decoded, resized and re-encoded. Receives and
+/// returns only sendable types ([Uint8List], [int]).
+Uint8List _compressJpegIsolate((Uint8List, int) args) {
+  final (bytes, maxDim) = args;
+  final decoded = img.decodeImage(bytes);
+  if (decoded == null) {
+    throw const FormatException('Unreadable image bytes');
+  }
+  final target = decoded.width > maxDim || decoded.height > maxDim
+      ? img.copyResize(
+          decoded,
+          width: decoded.width >= decoded.height ? maxDim : null,
+          height: decoded.height > decoded.width ? maxDim : null,
+          interpolation: img.Interpolation.cubic,
+        )
+      : decoded;
+  return Uint8List.fromList(img.encodeJpg(target, quality: 80));
 }
 
 /// Image compression + spread detection with a dual AI pipeline:
@@ -51,21 +72,10 @@ class VisionScannerService {
   bool get isMock => !hasPrimary && !hasCloud;
 
   /// Decodes and re-encodes the capture as a ≤[maxDim] px JPEG (quality 80).
-  Future<Uint8List> compressJpeg(Uint8List bytes, {int maxDim = 1024}) async {
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) {
-      throw const FormatException('Unreadable image bytes');
-    }
-    final target = decoded.width > maxDim || decoded.height > maxDim
-        ? img.copyResize(
-            decoded,
-            width: decoded.width >= decoded.height ? maxDim : null,
-            height: decoded.height > decoded.width ? maxDim : null,
-            interpolation: img.Interpolation.cubic,
-          )
-        : decoded;
-    return Uint8List.fromList(img.encodeJpg(target, quality: 80));
-  }
+  /// The decode/resize/encode runs in a background isolate so the UI thread
+  /// never blocks on a full-resolution frame.
+  Future<Uint8List> compressJpeg(Uint8List bytes, {int maxDim = 1024}) =>
+      compute(_compressJpegIsolate, (bytes, maxDim));
 
   /// Detects the cards (card + orientation) in a compressed JPEG.
   /// Worker → Gemini Flash → offline mock. Only throws on invalid args.
