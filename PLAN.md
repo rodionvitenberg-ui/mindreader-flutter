@@ -14,7 +14,8 @@
   (SpreadInferenceService, Recognition Review sheet, generalized Camera→Table
   handoff, physical clarifier; PRO restrictions centrally disabled for
   pre-launch). Acceptance criteria passed.
-- Phase 3 (Guided Physical Spread): PENDING.
+- Phase 3 (Guided Physical Spread): DONE — 3.1 + 3.2 + 3.3 + 3.4 + 3.5 + 3.6 DONE.
+  Acceptance criteria passed.
 - Phase 4 (Live Oracle & Voice): PENDING.
 - Phase 5 (Unification & QA): PENDING.
 
@@ -240,14 +241,14 @@ STOP.
 
 # PHASE 3 — GUIDED PHYSICAL SPREAD
 
-## 3.1 Переиспользование Choose Spread (1 сессия)
+## 3.1 Переиспользование Choose Spread (1 сессия) — DONE
 НЕ создавать новый каталог. Использовать Step 1 (digital_table_screen.dart
 _SpreadSelectionView + spread_blueprint_carousel.dart). Только контекст запуска:
 Digital → Active Digital Table; Physical guided → Active Camera Guided Session.
 Опциональный заголовок "PHYSICAL SPREAD".
 STOP.
 
-## 3.2 Guided Session Controller / FSM (1-2 сессии)
+## 3.2 Guided Session Controller / FSM (1-2 сессии) — DONE
 lib/state/live_reading_controller.dart (ChangeNotifier): конечный автомат
 preparing→awaitingIntention→awaitingCard→cardDetected→awaitingReveal→recognizingCard→
 awaitingConfirmation→interpretingCard→awaitingUser→awaitingNextCard→spreadCompleted→
@@ -256,20 +257,20 @@ awaitingConfirmation→interpretingCard→awaitingUser→awaitingNextCard→spre
 Тесты: guided_fsm_test.dart (все переходы, невалидные переходы).
 STOP.
 
-## 3.3 Guided lifecycle (1-2 сессии)
+## 3.3 Guided lifecycle (1-2 сессии) — DONE
 Реализовать сценарий Triad Flow: намерение → карта 1 (рубашкой вверх → обнаружение →
 просьба открыть) → подтверждение → привязка к позиции → интерпретация → уточнение →
 следующая. Завершение базового расклада → общий синтез → уместные уточнения →
 clarifiers → продолжить в Oracle Chat. Незавершённый расклад не выдавать за завершённый.
 STOP.
 
-## 3.4 Guided Camera HUD (1 сессия)
+## 3.4 Guided Camera HUD (1 сессия) — DONE
 lib/features/camera_scan/widgets/guided_spread_hud.dart: spread name, progress (2/3),
 current slot role (HIDDEN SHADOW), flash, pause/exit. Снизу — инструкции + Confirm/Next
 + открыть полный чат. Не рисовать world-anchored AR (позиции = визуальные подсказки).
 STOP.
 
-## 3.5 Event-driven architecture (1 сессия)
+## 3.5 Event-driven architecture (1 сессия) — DONE
 lib/core/models/physical_reading_event.dart: CardObserved/CardRecognized/CardConfirmed/
 CardRevealed/CardTemporarilyOccluded/CardMoved/CardRemoved/CardOrientationChanged/
 ClarifierConfirmed/SpreadCompleted. eventId + trackId + sessionId против дублей.
@@ -278,13 +279,28 @@ ClarifierConfirmed/SpreadCompleted. eventId + trackId + sessionId против �
 Тесты: physical_event_test.dart (dedupe, occlusion, stale).
 STOP.
 
-## 3.6 Physical authenticity / Active vs Quiet Guidance (1 сессия)
+## 3.6 Physical authenticity / Active vs Quiet Guidance (1 сессия) — DONE
 Обеспечить естественную последовательность (намерение/перемешивание/вытягивание/
 выкладывание/открытие/созерцание/интерпретация/уточнение/завершение). Два режима
 сопровождения (Active/Quiet). Oracle не комментирует каждое движение.
 STOP.
 
-## Phase 3 acceptance criteria → отчёт → STOP.
+## Phase 3 acceptance criteria — PASSED (2026-11-19)
+- 3.1 Choose Spread reused (no new catalog): SpreadLaunchContext digital →
+  activateSpread, guided → onSpreadSelected(cardCount).
+- 3.2 LiveReadingController FSM: validated transitions + position guard; no
+  card-mutation API (cards stay in SpreadController).
+- 3.3 Triad Flow: SpreadController.startGuidedSpread/bindGuidedCard +
+  GuidedSessionCoordinator (start/confirmCard/nextCard/isComplete); incomplete
+  spread never reported complete.
+- 3.4 GuidedSpreadHud: name/progress/slot-role/instruction + flash/pause/exit +
+  Confirm/Next/Resume + open-chat; no world-anchored AR.
+- 3.5 PhysicalReadingEvent sealed model + physicalEventFromVision (lost =
+  temporary occlusion, NOT removal) + dedupe ledger.
+- 3.6 GuidanceMode active/quiet + guidanceShouldSpeak (quiet never narrates
+  movement beats).
+VERIFY: flutter analyze = No issues found; full flutter test green.
+STOP → Phase 4 (Live Oracle & Voice) awaits command.
 
 ---
 
