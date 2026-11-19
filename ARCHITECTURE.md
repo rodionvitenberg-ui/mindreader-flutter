@@ -47,6 +47,33 @@ SpreadController
 └── threads: computed dignity per adjacent face-up pair (pure fn in oracle service)
 ```
 
+## Guided Physical Spread (Phase 3) — state
+
+- `LiveReadingController` (`lib/state/live_reading_controller.dart`) — the Guided
+  flow FSM (`GuidePhase`: preparing → awaitingIntention → awaitingCard →
+  cardDetected → awaitingReveal → recognizingCard → awaitingConfirmation →
+  interpretingCard → awaitingUser → awaitingNextCard → spreadCompleted, plus
+  paused/completed/cancelled/error). Validated transitions + a position guard
+  (never move past the last slot). Holds NO cards — cards stay in
+  `SpreadController`. Also carries `GuidanceMode` (active/quiet) with
+  `oracleShouldSpeak`, so the Oracle never narrates movement beats in quiet mode.
+- `PhysicalReadingEvent` (`lib/core/models/physical_reading_event.dart`) — sealed
+  domain events (CardObserved/Recognized/Confirmed/Revealed/TemporarilyOccluded/
+  Moved/Removed/OrientationChanged/ClarifierConfirmed/SpreadCompleted) carrying
+  eventId+trackId+sessionId. `physicalEventFromVision` maps a Vision event to the
+  domain — a `lost` frame is a TEMPORARY occlusion, never a removal.
+  `PhysicalReadingEventLedger` dedupes eventIds and tracks confirmed tracks.
+- `GuidedSessionCoordinator` (`lib/state/guided_session_coordinator.dart`) — the
+  glue between the FSM and the cards: `start()` / `confirmCard()` (bind one
+  confirmed physical card into the current slot via
+  `SpreadController.bindGuidedCard`) / `nextCard()` / `isComplete` (an incomplete
+  spread is never reported complete).
+- `SpreadLaunchContext` on `SpreadBlueprintCarousel` reuses the Step-1 Choose
+  Spread picker: digital → `activateSpread()`, guided → `onSpreadSelected(count)`.
+- `GuidedSpreadHud` (`lib/features/camera_scan/widgets/guided_spread_hud.dart`) —
+  pure presentation overlay (spread name / progress / slot role / phase
+  instruction / flash / pause / exit / Confirm-Next-Resume / open-chat; no AR).
+
 ## Digital Table physics (game-feel contract)
 
 - Deck gestures are touch-scoped **only** to `InteractiveDeckWidget` (`HitTestBehavior.opaque`); table scrolling never triggers shuffle/deal.
