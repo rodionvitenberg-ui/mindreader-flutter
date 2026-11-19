@@ -4,8 +4,10 @@ import 'package:mindreader/core/models/spread_type.dart';
 import 'package:mindreader/features/digital_table/widgets/spread_blueprint_carousel.dart';
 import 'package:mindreader/features/profile/profile_screen.dart';
 import 'package:mindreader/main.dart';
+import 'package:mindreader/state/app_settings_controller.dart';
 import 'package:mindreader/state/spread_controller.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Iteration 6 — the horizontal visual spread-blueprint carousel above the
 /// deck and the top-left profile avatar:
@@ -15,6 +17,10 @@ import 'package:provider/provider.dart';
 ///   touching the active spread;
 /// * swiping the carousel reveals the later blueprints.
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('top-left profile avatar pushes the full-page ProfileScreen',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
@@ -82,5 +88,36 @@ void main() {
 
     // The final PRO blueprint is now built and tappable.
     expect(find.text('Celtic Cross'), findsOneWidget);
+  });
+
+  testWidgets(
+      'guided launch context routes selection to the callback, not the table',
+      (tester) async {
+    int? selectedCount;
+    final ctrl = SpreadController();
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: ctrl),
+          ChangeNotifierProvider.value(value: AppSettingsController()),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SpreadBlueprintCarousel(
+              launchContext: SpreadLaunchContext.guidedSpread,
+              onSpreadSelected: (count) => selectedCount = count,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Triad Flow'));
+    await tester.pump();
+
+    expect(selectedCount, 3);
+    // The digital table is NOT activated in the guided context.
+    expect(ctrl.isSpreadActive, isFalse);
   });
 }

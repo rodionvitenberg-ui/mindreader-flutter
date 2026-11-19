@@ -33,6 +33,12 @@ class _SpreadBlueprint {
   final VoidCallback onTap;
 }
 
+/// Where a selected spread should launch the reader next.
+///
+/// * [digitalTable] — the default: enters the Active Digital Table (Step 2);
+/// * [guidedSpread] — starts a Guided Physical Spread session in the Camera.
+enum SpreadLaunchContext { digitalTable, guidedSpread }
+
 /// Step 1 — the pre-table spread selection picker: ONE horizontal swipeable
 /// row of tall, clean spread blueprint cards (Labyrinthos-style, strictly 1
 /// row, NOT 2). Each card shows a miniature spread wireframe, the spread name
@@ -42,7 +48,21 @@ class _SpreadBlueprint {
 /// (Step 2); tapping a LOCKED PRO spread opens [ProSubscriptionSheet] without
 /// touching the active spread.
 class SpreadBlueprintCarousel extends StatelessWidget {
-  const SpreadBlueprintCarousel({super.key});
+  const SpreadBlueprintCarousel({
+    super.key,
+    this.launchContext = SpreadLaunchContext.digitalTable,
+    this.onSpreadSelected,
+  });
+
+  /// Where a selection launches the reader. [SpreadLaunchContext.digitalTable]
+  /// keeps the existing behaviour (activate the table); [guidedSpread] routes
+  /// through [onSpreadSelected] instead.
+  final SpreadLaunchContext launchContext;
+
+  /// Called with the selected spread's card count when [launchContext] is
+  /// [SpreadLaunchContext.guidedSpread] — replaces the default
+  /// `SpreadController.activateSpread()`. Null in guided context means "no-op".
+  final void Function(int cardCount)? onSpreadSelected;
 
   static const double height = 200.0;
 
@@ -51,14 +71,22 @@ class SpreadBlueprintCarousel extends StatelessWidget {
     final ctrl = context.watch<SpreadController>();
     final proUnlocked = context.watch<AppSettingsController>().isProUnlocked;
 
-    void handleTap({required bool isPro, required VoidCallback select}) {
+    void handleTap({
+      required bool isPro,
+      required VoidCallback select,
+      required int cardCount,
+    }) {
       HapticFeedback.selectionClick();
       if (isPro && !proUnlocked) {
         ProSubscriptionSheet.show(context);
         return;
       }
       select();
-      context.read<SpreadController>().activateSpread();
+      if (launchContext == SpreadLaunchContext.guidedSpread) {
+        onSpreadSelected?.call(cardCount);
+      } else {
+        context.read<SpreadController>().activateSpread();
+      }
     }
 
     final blueprints = <_SpreadBlueprint>[
@@ -74,6 +102,7 @@ class SpreadBlueprintCarousel extends StatelessWidget {
                 miniSlots: t.miniSlots,
                 onTap: () => handleTap(
                   isPro: t.isPro,
+                  cardCount: t.cardCount,
                   select: () =>
                       context.read<SpreadController>().setSpreadType(t),
                 ),
@@ -90,6 +119,7 @@ class SpreadBlueprintCarousel extends StatelessWidget {
                 miniSlots: s.miniSlots,
                 onTap: () => handleTap(
                   isPro: s.isPro,
+                  cardCount: s.cardCount,
                   select: () => context
                       .read<SpreadController>()
                       .setLenormandSpread(s),
@@ -107,6 +137,7 @@ class SpreadBlueprintCarousel extends StatelessWidget {
                 miniSlots: c.miniSlots,
                 onTap: () => handleTap(
                   isPro: c.isPro,
+                  cardCount: c.cardCount,
                   select: () => context.read<SpreadController>().setRuneCast(c),
                 ),
               ),
