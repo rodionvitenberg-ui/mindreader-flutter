@@ -204,8 +204,16 @@
       "PHASE 4.7 ORACLE PAYLOAD CONTRACT (2026-11-19): NEW lib/core/models/oracle_payload.dart — canonicalCardId(system,id) ('tarot:13' etc. — the ONLY id form the Oracle receives), OraclePayloadCard (cardId/position/role/orientation/source/confirmed; NO bbox and NO image bytes so a bbox update can never change the payload or trigger an LLM request), OraclePayload (schemaVersion=1/sessionId/source/mode/system/spreadId/currentPosition/cards/expectedAction + toJson) + static build() that describes ONLY face-up (revealed, confirmed) cards — a face-down card's identity is never leaked to the Oracle. TESTS: NEW test/oracle_payload_test.dart (3). VERIFY: flutter analyze clean; full flutter test green.",
       "PHASE 4.8 ORACLE PERSONALITY (2026-11-19, prompt-only): NEW OracleSynthesisService.oraclePersona const (calm, restrained, contextual, symbolic; grounded psychology, no kitsch/mysticism; NEVER categorical medical/financial/legal predictions; spoken answers shorter than written). Wired into the _chat system prompt + the synthesizeClarifier / answerChat / _buildPrompt openers (was three slightly-different hardcoded 'grounded psychological' lines — now ONE persona). TESTS: 2 persona assertions in live_oracle_freeform_test.dart. VERIFY: flutter analyze clean; full flutter test green."
     ],
-    "current_task": null,
-    "pending_tasks": []
+    "current_task": "PHASE 5 baseline → 5.1 Session continuity (scenarios A-H)",
+    "pending_tasks": [
+      "5.1 Session continuity (scenarios A-H)",
+      "5.2 History integration (snapshot metadata + badges + safe restore)",
+      "5.3 Privacy & network (documentation)",
+      "5.4 Performance (budget-device audit)",
+      "5.5 Responsive UI (orientation/SafeArea/text-scale audit)",
+      "5.6 Tests (domain/widget/integration consolidation)",
+      "5.7 VISION_ENGINE_CONTRACT.md"
+    ]
   },
   "discovered_bugs_or_blockers": [
     "FIXED (ASTRAL P1): ASC was +180° on every chart — ascendant() used the raw atan2 form of the swehouse triangle; replaced with the Asc1 quadrant dispatch _asc1(ramc + 90, lat, sin epsilon, cos epsilon) → 186.9377° vs swetest 186.9378° (lat 52.5) and 263.2330° vs 263.2330° (Bishkek); ASC house is 1 again and whole-sign cusps start in the ASC sign",

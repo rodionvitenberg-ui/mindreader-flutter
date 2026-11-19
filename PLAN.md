@@ -7,10 +7,10 @@
 ## СТАТУС
 - Phase 0 (Vision Engine): DEFERRED.
 - Phase 1 (Camera & Session Architecture): READY (аудит выполнен, см. ниже).
-- Phase 2 (Quick Scan & Table): PENDING.
-- Phase 3 (Guided Physical Spread): PENDING.
-- Phase 4 (Live Oracle & Voice): PENDING.
-- Phase 5 (Unification & QA): PENDING.
+- Phase 2 (Quick Scan & Table): DONE (2.1–2.4).
+- Phase 3 (Guided Physical Spread): DONE (3.5–3.6).
+- Phase 4 (Live Oracle & Voice): DONE (4.1–4.8).
+- Phase 5 (Unification & QA): IN PROGRESS.
 
 ## РЕЗУЛЬТАТЫ АУДИТА РЕПОЗИТОРИЯ (фиксируются как исходная точка)
 Git HEAD: 3c78343 (после 0a29878). PLAN.md был удалён в рабочем дереве — пересоздан.
