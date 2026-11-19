@@ -16,7 +16,9 @@
   pre-launch). Acceptance criteria passed.
 - Phase 3 (Guided Physical Spread): DONE — 3.1 + 3.2 + 3.3 + 3.4 + 3.5 + 3.6 DONE.
   Acceptance criteria passed.
-- Phase 4 (Live Oracle & Voice): PENDING.
+- Phase 4 (Live Oracle & Voice): IN PROGRESS — 4.1 DONE (Shared Oracle session
+  VERIFIED: single OracleSessionController across all tabs; new
+  test/oracle_shared_session_test.dart; 377/377 green).
 - Phase 5 (Unification & QA): PENDING.
 
 ## РЕЗУЛЬТАТЫ АУДИТА РЕПОЗИТОРИЯ (фиксируются как исходная точка)
@@ -306,7 +308,7 @@ STOP → Phase 4 (Live Oracle & Voice) awaits command.
 
 # PHASE 4 — LIVE ORACLE & VOICE EXPERIENCE
 
-## 4.1 Shared Oracle session (подготовлено в 1.3; verify 1 сессия)
+## 4.1 Shared Oracle session (подготовлено в 1.3; verify 1 сессия) — VERIFIED
 Full Chat / Voice Overlay / Compact Oracle используют один sessionId, одни messages,
 одни cards, один контекст, одни clarifiers, одну историю. Смена представления не
 создаёт новую AI-сессию.
