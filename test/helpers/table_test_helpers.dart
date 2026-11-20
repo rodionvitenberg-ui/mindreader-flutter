@@ -52,10 +52,13 @@ Future<void> goToPane(
   for (var attempt = 0; attempt < maxAttempts; attempt++) {
     final current = controller.page!.round();
     if (current == pane) return;
-    await tester.dragFrom(
-      const Offset(200, 300),
-      Offset(current < pane ? -600 : 600, 0),
-    );
+    // In Spread View, board swipes pan the cards. Start a horizontal pane
+    // swipe on the fixed header, outside the InteractiveViewer.
+    final header = find.text('SPREAD VIEW');
+    final from = current == 0 && header.evaluate().isNotEmpty
+        ? tester.getCenter(header)
+        : const Offset(200, 300);
+    await tester.dragFrom(from, Offset(current < pane ? -600 : 600, 0));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
     // While the drag's ballistic keeps the PageView in pointer-ignoring

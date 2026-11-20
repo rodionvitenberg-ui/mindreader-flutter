@@ -3,19 +3,30 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../state/app_settings_controller.dart';
+import '../../../state/spread_controller.dart';
+import 'reading_context_field.dart';
 import '../../../state/user_profile_controller.dart';
 
 /// "WHO IS THIS FOR?" — the subject toggle that decides whether the local
 /// profile context is woven into Oracle prompts. For Myself injects
-/// [UserProfileController.oracleContext]; For Someone Else never does and
-/// offers an optional free-form note instead.
+/// the owner's biography. Both subjects share the optional reading draft.
 class ReadingSubjectToggle extends StatelessWidget {
   const ReadingSubjectToggle({super.key});
 
   @override
   Widget build(BuildContext context) {
     final profile = context.watch<UserProfileController>();
+    final spread = context.watch<SpreadController>();
+    final lang = context.watch<AppSettingsController>().language;
+    final forSelf = spread.readingForSelf ?? profile.readingForSelf;
+    void select(bool value) {
+      spread.setReadingForSelf(value);
+      profile.setReadingForSelf(value);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -24,54 +35,30 @@ class ReadingSubjectToggle extends StatelessWidget {
           children: [
             Expanded(
               child: _pill(
-                label: 'FOR MYSELF (PROFILE)',
+                label: AppStrings.t(lang, 'table.myself'),
                 icon: Icons.person_outline,
-                active: profile.readingForSelf,
-                onTap: () => profile.setReadingForSelf(true),
+                active: forSelf,
+                onTap: () => select(true),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: _pill(
-                label: 'FOR SOMEONE ELSE',
+                label: AppStrings.t(lang, 'table.someone'),
                 icon: Icons.people_outline,
-                active: !profile.readingForSelf,
-                onTap: () => profile.setReadingForSelf(false),
+                active: !forSelf,
+                onTap: () => select(false),
               ),
             ),
           ],
         ),
-        if (!profile.readingForSelf)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: TextField(
-              onChanged: profile.setTargetPersonNote,
-              style: const TextStyle(
-                fontSize: 11.5,
-                color: AppColors.textPrimary,
-              ),
-              decoration: InputDecoration(
-                isDense: true,
-                hintText: 'Who or what is this reading about? (optional)',
-                hintStyle: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textMuted.withValues(alpha: 0.75),
-                ),
-                filled: true,
-                fillColor: AppColors.canvas.withValues(alpha: 0.6),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-              ),
-            ),
-          ),
+        const SizedBox(height: 4),
+        ReadingContextField(
+          key: ValueKey(spread.readingRevision),
+          value: spread.readingQuestion,
+          onChanged: spread.setReadingQuestion,
+          language: lang,
+        ),
       ],
     );
   }

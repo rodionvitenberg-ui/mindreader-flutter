@@ -64,6 +64,8 @@ class SpreadSessionSnapshot {
     required this.notebook,
     required this.cards,
     required this.sessionNotes,
+    this.readingQuestion = '',
+    this.readingForSelf,
     required this.synthesis,
     required this.chapters,
     required this.messages,
@@ -125,6 +127,8 @@ class SpreadSessionSnapshot {
 
   final List<RestoredSpreadCard> cards;
   final List<String> sessionNotes;
+  final String readingQuestion;
+  final bool? readingForSelf;
   final StructuredSynthesis? synthesis;
   final List<ClarifierChapter> chapters;
   final List<ChatMessage> messages;
@@ -181,6 +185,7 @@ class SpreadSessionSnapshot {
     required SynthesisSession session,
     required String timestamp,
     required String notebook,
+    bool? readingForSelf,
     String? sessionId,
     ReadingSource? readingSource,
     ReadingMode? readingMode,
@@ -204,6 +209,8 @@ class SpreadSessionSnapshot {
             ),
       ],
       sessionNotes: [...ctrl.sessionContextNotes],
+      readingQuestion: ctrl.readingQuestion,
+      readingForSelf: ctrl.readingForSelf ?? readingForSelf,
       synthesis: session.initial,
       chapters: [
         for (final c in session.chapters)
@@ -243,6 +250,8 @@ class SpreadSessionSnapshot {
     'notebook': notebook,
     'cards': [for (final c in cards) c.toJson()],
     'sessionNotes': sessionNotes,
+    if (readingQuestion.isNotEmpty) 'readingQuestion': readingQuestion,
+    if (readingForSelf != null) 'readingForSelf': readingForSelf,
     if (synthesis != null)
       'synthesis': {
         'narrative': synthesis!.narrative,
@@ -304,6 +313,8 @@ class SpreadSessionSnapshot {
         for (final raw in (json['cards'] as List? ?? const []))
           RestoredSpreadCard.fromJson(raw as Map<String, dynamic>),
       ],
+      readingQuestion: json['readingQuestion'] as String? ?? '',
+      readingForSelf: json['readingForSelf'] as bool?,
       sessionNotes: (json['sessionNotes'] as List? ?? const []).cast<String>(),
       synthesis: synthesisJson == null
           ? null

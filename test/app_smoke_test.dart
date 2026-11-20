@@ -31,20 +31,21 @@ void main() {
     expect(find.text('Choose Spread'), findsOneWidget);
     expect(find.text('Triad Flow'), findsOneWidget);
 
-    // Enter the Active Table — SPREAD VIEW is the default mode.
-    await activateSpread(tester, 'Triad Flow');
-    expect(find.text('FOCUS VIEW'), findsOneWidget);
-    expect(find.text('SPREAD VIEW'), findsOneWidget);
-    // The proportional mini-deck + empty slot placeholders are visible,
-    // NOT the full-size tactile hero deck.
-    expect(find.byKey(const ValueKey('overview-deck')), findsOneWidget);
-    expect(find.byType(InteractiveDeckWidget), findsNothing);
-    expect(find.text('TAP DECK TO DEAL'), findsOneWidget);
-    // Empty slots render crisp numbered position-role labels.
-    expect(find.text('1 · State'), findsOneWidget);
-    expect(find.text('2 · Shadow'), findsOneWidget);
-    expect(find.text('3 · Vector'), findsOneWidget);
-  });
+      // Enter the Active Table — SPREAD VIEW is the default mode.
+      await activateSpread(tester, 'Triad Flow');
+      expect(find.text('FOCUS VIEW'), findsOneWidget);
+      expect(find.text('SPREAD VIEW'), findsOneWidget);
+      // The fixed mini-deck + empty slot placeholders are visible,
+      // NOT the full-size tactile hero deck.
+      expect(find.byKey(const ValueKey('overview-deck')), findsOneWidget);
+      expect(find.byType(InteractiveDeckWidget), findsNothing);
+      expect(find.text('TAP DECK TO DEAL'), findsOneWidget);
+      // Empty slots render crisp numbered position-role labels.
+      expect(find.text('1 · State'), findsOneWidget);
+      expect(find.text('2 · Shadow'), findsOneWidget);
+      expect(find.text('3 · Vector'), findsOneWidget);
+    },
+  );
 
   testWidgets('swipe down on the deck deals + depletes, tap flips the card',
       (tester) async {
@@ -363,7 +364,7 @@ void main() {
     await tester.pump();
     await activateSpread(tester, 'Triad Flow');
 
-    // SPREAD VIEW is the default: proportional mini-deck + empty slot
+    // SPREAD VIEW is the default: fixed mini-deck + empty slot
     // placeholders, NO full-size tactile deck.
     expect(find.byType(InteractiveDeckWidget), findsNothing);
     final miniDeck = find.byKey(const ValueKey('overview-deck'));
@@ -381,7 +382,7 @@ void main() {
     await tester.tap(find.text('SPREAD VIEW'));
     await tester.pump();
 
-    // The proportional mini-deck replaces the tactile deck, CENTERED
+    // The fixed mini-deck replaces the tactile deck, CENTERED
     // above the spread geometry; role placeholders are visible.
     expect(find.byType(InteractiveDeckWidget), findsNothing);
     final deckRect = tester.getRect(miniDeck);
@@ -398,26 +399,27 @@ void main() {
     final dealt = find.byType(TarotCard3DWidget);
     expect(dealt, findsOneWidget);
 
-    // The deck stays proportional to the dealt slot card (~1.12× larger,
-    // never the old 3× tower). The dealt card sits inside a FittedBox
-    // (paint-scaled), so compare the deck height against the CANVAS box
-    // height — exactly one row of slots in a 3-card spread.
-    final deckH = tester.getRect(miniDeck).height;
-    final canvasH = tester
-        .getSize(
-          find.ancestor(of: dealt, matching: find.byType(FittedBox)).first,
-        )
-        .height;
-    expect(deckH, greaterThanOrEqualTo(canvasH));
-    expect(deckH, lessThanOrEqualTo(canvasH * 2.0));
+    // The deck stays on its horizontal dock while the card belongs to the
+    // interactive board at its native design dimensions.
+    final viewer = find.ancestor(
+      of: dealt,
+      matching: find.byType(InteractiveViewer),
+    );
+    expect(viewer, findsOneWidget);
+    expect(
+      tester.getRect(miniDeck).bottom,
+      lessThanOrEqualTo(tester.getRect(viewer).top),
+    );
+    expect(tester.getSize(dealt), const Size(deckWidth, deckHeight));
   });
 
-  testWidgets('spread overview goes wide in landscape: deck left, slots right',
-      (tester) async {
-    tester.view.physicalSize = const Size(1920, 1080);
-    tester.view.devicePixelRatio = 2.0; // logical 960×540 landscape
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  testWidgets(
+    'landscape keeps the deck under the switch and above the interactive board',
+    (tester) async {
+      tester.view.physicalSize = const Size(1920, 1080);
+      tester.view.devicePixelRatio = 2.0; // logical 960×540 landscape
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
@@ -425,14 +427,26 @@ void main() {
 
     // SPREAD VIEW is the default — no toggle tap needed.
 
-    // Deck panel anchored on the LEFT, spread slots across the wide area
-    // to the RIGHT — all on one screen.
-    final deckRect = tester.getRect(find.byKey(const ValueKey('overview-deck')));
-    expect(deckRect.left, lessThan(200));
-    expect(deckRect.top, lessThan(260)); // below header + blueprint carousel
-    final firstSlot = tester.getRect(find.text('1 · State'));
-    final lastSlot = tester.getRect(find.text('3 · Vector'));
-    expect(firstSlot.left, greaterThan(deckRect.right));
-    expect(lastSlot.right, greaterThan(firstSlot.right));
-  });
+      final deckRect = tester.getRect(
+        find.byKey(const ValueKey('overview-deck')),
+      );
+      final viewport = tester.getRect(
+        find.byKey(const ValueKey('spread-viewport')),
+      );
+      expect(
+        deckRect.top,
+        greaterThan(tester.getRect(find.text('SPREAD VIEW')).bottom),
+      );
+      expect(deckRect.center.dx, closeTo(viewport.center.dx, 1));
+      expect(deckRect.bottom, lessThanOrEqualTo(viewport.top));
+      expect(
+        viewport.contains(tester.getCenter(find.text('1 · State'))),
+        isTrue,
+      );
+      expect(
+        viewport.contains(tester.getCenter(find.text('3 · Vector'))),
+        isTrue,
+      );
+    },
+  );
 }

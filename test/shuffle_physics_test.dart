@@ -258,8 +258,8 @@ void main() {
     );
   });
 
-  test('overview mini-deck is the compact 90×148 spec', () {
-    expect(overviewDeckWidth, 90.0);
-    expect(overviewDeckHeight, 148.0);
+  test('the dock deck preserves the horizontal card aspect ratio', () {
+    expect(overviewDeckHeight, 44.0);
+    expect(overviewDeckWidth / overviewDeckHeight, closeTo(deckHeight / deckWidth, 1e-6));
   });
 }

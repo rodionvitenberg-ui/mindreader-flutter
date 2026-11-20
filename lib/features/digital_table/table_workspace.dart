@@ -26,6 +26,7 @@ import 'spread_history_pane.dart';
 import 'widgets/cosmos_send_burst.dart';
 import 'widgets/deal_lock_prompt.dart';
 import 'widgets/gemini_input_capsule.dart';
+import 'widgets/reading_context_field.dart';
 import 'widgets/reading_subject_toggle.dart';
 import 'widgets/synthesize_chat_cta.dart';
 
@@ -71,6 +72,12 @@ class _TableWorkspaceState extends State<TableWorkspace>
     with TickerProviderStateMixin {
   late final PageController _paneController = PageController();
   int _pane = tablePane;
+  late int _readingRevision;
+  // The Oracle is also shared with the camera and Astral. Only a conversation
+  // started or restored by this table belongs to its current spread.
+  int? _tableSessionEpoch;
+  bool _restoringSpread = false;
+  final _dictation = ReadingDictation();
 
   late final SpreadController _ctrl = context.read<SpreadController>();
   late final OracleSessionController _session = context
@@ -109,6 +116,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
   @override
   void initState() {
     super.initState();
+    _readingRevision = _ctrl.readingRevision;
     _ctrl.addListener(_onSpreadChanged);
     _cosmosCtl.addStatusListener(_onCosmosStatus);
     widget.astralHandoff?.addListener(_onAstralHandoff);
@@ -135,6 +143,16 @@ class _TableWorkspaceState extends State<TableWorkspace>
 
   void _onSpreadChanged() {
     if (!mounted) return;
+    if (_readingRevision != _ctrl.readingRevision) {
+      _readingRevision = _ctrl.readingRevision;
+      if (_restoringSpread) return;
+      if (_sessionKind == SessionKind.divinationSpread) {
+        if (_session.epoch == _tableSessionEpoch) _session.reset();
+        _tableSessionEpoch = null;
+        _sessionTimestamp = null;
+        _selectedChip = null;
+      }
+    }
     setState(() {});
     _maybeExpandClarifiers();
   }
@@ -223,6 +241,14 @@ class _TableWorkspaceState extends State<TableWorkspace>
     }
   }
 
+  bool get _forSelf =>
+      _ctrl.readingForSelf ??
+      context.read<UserProfileController>().readingForSelf;
+
+  String? get _tableSubject => _forSelf
+      ? context.read<UserProfileController>().selfOracleContext
+      : 'Reading for someone else';
+
   Future<void> _generateClarifier(ClarifierChapter chapter) async {
     final slot = _ctrl.slots.firstWhere((s) => s.index == chapter.slotIndex);
     final previous = _ctrl.slots
@@ -233,7 +259,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
       question: chapter.question,
       newSlot: slot,
       previous: previous,
-      profileContext: context.read<UserProfileController>().oracleContext,
+      profileContext: _tableSubject,
     );
     if (!mounted || !_session.isCurrentSession(epoch)) return;
     _session.completeChapter(chapter.slotIndex, text);
@@ -244,29 +270,40 @@ class _TableWorkspaceState extends State<TableWorkspace>
   /// Runs the structured AI synthesis and slides the PageView into the
   /// Oracle AI Chat (Pane 1).
   Future<void> _runSynthesis() async {
-    if (_session.generatingInitial) return;
+    final requestedEpoch = _session.epoch;
+    await _dictation.finish();
+    if (!mounted ||
+        !_session.isCurrentSession(requestedEpoch) ||
+        _session.generatingInitial) {
+      return;
+    }
     if (_session.hasSynthesis) {
       _goToPane(chatPane);
       return;
     }
+    FocusManager.instance.primaryFocus?.unfocus();
+    _ctrl.setReadingForSelf(_forSelf);
     _session.startGenerating();
     setState(() {});
     final contexts = {
       for (final s in _ctrl.slots)
         if (s.userContext != null) s.index: s.userContext!,
     };
+    final lens = [
+      if (_ctrl.readingQuestion.trim().isNotEmpty) _ctrl.readingQuestion.trim(),
+      ..._ctrl.sessionContextNotes,
+    ];
     final epoch = _session.epoch;
+    _tableSessionEpoch = epoch;
     final result = await OracleSynthesisService().synthesizeStructured(
       slots: _ctrl.slots,
       type: _ctrl.spreadType,
       spreadLabel: _ctrl.spreadLabel,
       focusLine: _ctrl.spreadFocusLine,
       system: _ctrl.system,
-      contextChip: _ctrl.sessionContextNotes.isEmpty
-          ? null
-          : _ctrl.sessionContextNotes.join(' · '),
+      contextChip: lens.isEmpty ? null : lens.join(' · '),
       slotContexts: contexts,
-      profileContext: context.read<UserProfileController>().oracleContext,
+      profileContext: _tableSubject,
     );
     if (!mounted || !_session.isCurrentSession(epoch)) return;
     _session.markInitial(result);
@@ -283,8 +320,10 @@ class _TableWorkspaceState extends State<TableWorkspace>
       source: ReadingSourceX.fromTableSourceMode(_ctrl.sourceMode),
       mode: ReadingMode.standard,
     );
+    final completedEpoch = _session.epoch;
+    _tableSessionEpoch = completedEpoch;
     await _captureSession();
-    if (!mounted) return;
+    if (!mounted || !_session.isCurrentSession(completedEpoch)) return;
     HapticFeedback.mediumImpact();
     _goToPane(chatPane);
   }
@@ -316,6 +355,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
         session: _session,
         timestamp: timestamp,
         notebook: SessionHistoryController.notebookFor(_ctrl),
+        readingForSelf: _forSelf,
         sessionId: _session.sessionId,
         readingSource: _session.readingSource,
         readingMode: _session.readingMode,
@@ -337,7 +377,9 @@ class _TableWorkspaceState extends State<TableWorkspace>
     }
     _session.addUserMessage(question);
     _session.beginAnswer();
-    final profileContext = context.read<UserProfileController>().oracleContext;
+    final profileContext = _sessionKind == SessionKind.divinationSpread
+        ? _tableSubject
+        : context.read<UserProfileController>().oracleContext;
     final epoch = _session.epoch;
     await _captureSession(); // persist the turn immediately
     final oracle = OracleSynthesisService();
@@ -467,14 +509,21 @@ class _TableWorkspaceState extends State<TableWorkspace>
 
     if (snapshot.kind == SessionKind.divinationSpread) {
       _clearAstralContext();
-      _ctrl.restoreSpread(
-        system: snapshot.system,
-        type: snapshot.spreadType,
-        lenormandSpread: snapshot.lenormandSpread,
-        runeCast: snapshot.runeCast,
-        cards: snapshot.toRestoreCards(),
-        sessionNotes: snapshot.sessionNotes,
-      );
+      _restoringSpread = true;
+      try {
+        _ctrl.restoreSpread(
+          system: snapshot.system,
+          type: snapshot.spreadType,
+          lenormandSpread: snapshot.lenormandSpread,
+          runeCast: snapshot.runeCast,
+          cards: snapshot.toRestoreCards(),
+          sessionNotes: snapshot.sessionNotes,
+          readingQuestion: snapshot.readingQuestion,
+          readingForSelf: snapshot.readingForSelf,
+        );
+      } finally {
+        _restoringSpread = false;
+      }
       _session.restoreSession(
         initial: snapshot.synthesis,
         chapters: snapshot.chapters,
@@ -484,6 +533,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
         readingMode: snapshot.readingMode,
         readingStatus: snapshot.readingStatus,
       );
+      _tableSessionEpoch = _session.epoch;
     } else {
       // Astral sessions carry no dealt cards: restore the conversation only
       // and re-resolve the natal context so follow-ups keep the chart.
@@ -619,73 +669,79 @@ class _TableWorkspaceState extends State<TableWorkspace>
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
-    return SafeArea(
-      bottom: false,
-      child: Column(
-        children: [
-          // Slim physical-sync ribbon: the table hosts cards photographed
-          // from the reader's real deck (the header pill row was decluttered).
-          if (_pane == tablePane &&
-              ctrl.sourceMode == TableSourceMode.physicalCameraSync)
-            Container(
-              key: const ValueKey('physical-sync-ribbon'),
-              margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.harmonyCyan.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.harmonyCyan),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.photo_camera_front_outlined,
-                    size: 12,
-                    color: AppColors.harmonyCyan,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'PHYSICAL SYNC',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 8.5,
-                      letterSpacing: 1.4,
-                      fontWeight: FontWeight.w700,
+    return Provider.value(
+      value: _dictation,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // Slim physical-sync ribbon: the table hosts cards photographed
+            // from the reader's real deck (the header pill row was decluttered).
+            if (_pane == tablePane &&
+                ctrl.sourceMode == TableSourceMode.physicalCameraSync)
+              Container(
+                key: const ValueKey('physical-sync-ribbon'),
+                margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.harmonyCyan.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.harmonyCyan),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.photo_camera_front_outlined,
+                      size: 12,
                       color: AppColors.harmonyCyan,
                     ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'PHYSICAL SYNC',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 8.5,
+                        letterSpacing: 1.4,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.harmonyCyan,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: PageView(
+                controller: _paneController,
+                onPageChanged: (index) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _pane = index);
+                },
+                children: [
+                  const DigitalTableScreen(),
+                  OracleChatPane(
+                    session: _session,
+                    capsuleText: _capsuleText,
+                    onBackToTable: () => _goToPane(tablePane),
+                    onSynthesize: _runSynthesis,
+                    onClarifierQuestion: _requestClarifierForQuestion,
+                    onFocusInput: () => _capsuleFocus.requestFocus(),
+                    onScanClarifier: _scanClarifier,
+                    onResumeCamera: () => widget.onResumeCamera?.call(),
+                  ),
+                  SpreadHistoryPane(
+                    history: _history,
+                    onNewSpread: _newSpread,
+                    onRestore: _restoreSession,
                   ),
                 ],
               ),
             ),
-          Expanded(
-            child: PageView(
-              controller: _paneController,
-              onPageChanged: (index) {
-                HapticFeedback.selectionClick();
-                setState(() => _pane = index);
-              },
-              children: [
-                const DigitalTableScreen(),
-                OracleChatPane(
-                  session: _session,
-                  capsuleText: _capsuleText,
-                  onBackToTable: () => _goToPane(tablePane),
-                  onSynthesize: _runSynthesis,
-                  onClarifierQuestion: _requestClarifierForQuestion,
-                  onFocusInput: () => _capsuleFocus.requestFocus(),
-                  onScanClarifier: _scanClarifier,
-                  onResumeCamera: () => widget.onResumeCamera?.call(),
-                ),
-                SpreadHistoryPane(
-                  history: _history,
-                  onNewSpread: _newSpread,
-                  onRestore: _restoreSession,
-                ),
-              ],
-            ),
-          ),
-          if (_pane != historyPane) _buildBottomArea(ctrl),
-        ],
+            if (_pane != historyPane) _buildBottomArea(ctrl),
+          ],
+        ),
       ),
     );
   }
@@ -714,10 +770,11 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 _ClarifierBanner(question: clarifier),
                 const SizedBox(height: 2),
               ],
-              const Padding(
-                padding: EdgeInsets.only(bottom: 6),
-                child: ReadingSubjectToggle(),
-              ),
+              if (!_session.hasSynthesis && !_session.generatingInitial)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 6),
+                  child: ReadingSubjectToggle(),
+                ),
               SynthesizeChatCta(
                 key: const ValueKey('synthesize-cta'),
                 ignited: ctrl.initialSpreadAllFaceUp,

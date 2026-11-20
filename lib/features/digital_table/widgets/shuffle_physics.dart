@@ -295,16 +295,15 @@ class ShuffleMicroDamp extends Simulation {
 
 // ---- Full Spread Overview mode (real table layout) -----------------------
 
-/// Compact deck scale in overview mode (spec: 90 × 148).
-const overviewDeckWidth = 90.0;
-const overviewDeckHeight = 148.0;
+/// Maximum painted footprint of the horizontal deck in the Spread View dock.
+const overviewDeckHeight = 44.0;
+const overviewDeckWidth = overviewDeckHeight * deckHeight / deckWidth;
 
 /// Design-space size of the spread canvas for a spread of [count] cards —
-/// full 220×360 cards with [slotGapPx] gaps in their true table geometry.
+/// [deckWidth] × [deckHeight] cards with [slotGapPx] gaps.
 /// Layout is derived from the canonical count alone: 1 → single, 3 → row,
 /// 4 → 2×2, 5 → cross (3×3 with 5 stones/cards), 7 → 3-1-3, 9 → 3×3.
-/// The overview screen FittedBox-scales this canvas down so the whole
-/// spread fits the viewport.
+/// The camera initially fits the complete canvas in the viewport.
 ///
 /// When [totalSlots] exceeds the template's card count (endless clarifiers),
 /// the extra cards append as additional rows below the base geometry.

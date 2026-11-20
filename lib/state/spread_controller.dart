@@ -291,7 +291,35 @@ class SpreadController extends ChangeNotifier {
     _topIndex = 0;
   }
 
+  // A revision identifies one reading across both views and distinguishes
+  // a fresh deal from a change to the cards within the current reading.
+  int _readingRevision = 0;
+  int get readingRevision => _readingRevision;
+  String _readingQuestion = '';
+  String get readingQuestion => _readingQuestion;
+  bool? _readingForSelf;
+  bool? get readingForSelf => _readingForSelf;
+
+  void setReadingQuestion(String question) {
+    if (_readingQuestion == question) return;
+    _readingQuestion = question;
+    notifyListeners();
+  }
+
+  void setReadingForSelf(bool value) {
+    if (_readingForSelf == value) return;
+    _readingForSelf = value;
+    notifyListeners();
+  }
+
+  void _startReading({String question = '', bool? forSelf}) {
+    _readingRevision++;
+    _readingQuestion = question;
+    _readingForSelf = forSelf;
+  }
+
   void _resetSlots() {
+    _startReading();
     _slots = List.generate(
       spreadCardCount,
       (i) => DealtCardSlot(index: i, role: spreadSlotRoles[i]),
@@ -572,6 +600,7 @@ class SpreadController extends ChangeNotifier {
     RuneCast? runeCast,
   }) {
     if (cards.isEmpty) return;
+    _startReading();
     _system = system;
     _deckSize = switch (system) {
       DivinationSystem.tarot => tarotDeck.length,
@@ -735,7 +764,10 @@ class SpreadController extends ChangeNotifier {
     RuneCast? runeCast,
     required List<({int cardId, bool reversed, String role, String? userContext})> cards,
     required List<String> sessionNotes,
+    String readingQuestion = '',
+    bool? readingForSelf,
   }) {
+    _startReading(question: readingQuestion, forSelf: readingForSelf);
     _system = system;
     _isSpreadActive = true; // restored sessions land on the Active Digital Table
     _spreadType = type ?? SpreadType.three;

@@ -67,6 +67,11 @@ class UserProfileController extends ChangeNotifier {
       final note = _targetPersonNote.trim();
       return note.isEmpty ? null : 'Reading for someone else: $note';
     }
+    return selfOracleContext;
+  }
+
+  /// Owner biography for a reading explicitly addressed to the owner.
+  String? get selfOracleContext {
     final bio = _personalBioContext.trim();
     if (bio.isEmpty) return null;
     final name = _displayName.trim();

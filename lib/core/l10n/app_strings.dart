@@ -26,6 +26,43 @@ class AppStrings {
     'nav.settings': {AppLanguage.en: 'SETTINGS', AppLanguage.ru: 'НАСТРОЙКИ'},
     'nav.profile': {AppLanguage.en: 'PROFILE', AppLanguage.ru: 'ПРОФИЛЬ'},
 
+    'table.fit': {
+      AppLanguage.en: 'Fit whole spread',
+      AppLanguage.ru: 'Показать весь расклад',
+    },
+    'table.deal': {
+      AppLanguage.en: 'Deal next card',
+      AppLanguage.ru: 'Выложить следующую карту',
+    },
+    'table.cardNotes': {
+      AppLanguage.en: 'Card notes',
+      AppLanguage.ru: 'Заметки к карте',
+    },
+    'table.myself': {
+      AppLanguage.en: 'FOR MYSELF (PROFILE)',
+      AppLanguage.ru: 'НА СЕБЯ',
+    },
+    'table.someone': {
+      AppLanguage.en: 'FOR SOMEONE ELSE',
+      AppLanguage.ru: 'НА ДРУГОГО',
+    },
+    'table.question': {
+      AppLanguage.en: 'Question or details (optional)',
+      AppLanguage.ru: 'Вопрос или детали (необязательно)',
+    },
+    'table.dictate': {
+      AppLanguage.en: 'Dictate question',
+      AppLanguage.ru: 'Продиктовать вопрос',
+    },
+    'table.stopDictation': {
+      AppLanguage.en: 'Stop dictation',
+      AppLanguage.ru: 'Завершить диктовку',
+    },
+    'table.noDictation': {
+      AppLanguage.en: 'Voice input is unavailable. You can type your question.',
+      AppLanguage.ru: 'Диктовка недоступна. Вопрос можно ввести с клавиатуры.',
+    },
+
     // ---- profile page ----
     'profile.title': {AppLanguage.en: 'PROFILE', AppLanguage.ru: 'ПРОФИЛЬ'},
     'profile.card.identity': {

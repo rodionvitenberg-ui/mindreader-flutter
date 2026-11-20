@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/data/runes_data.dart';
 import '../../core/models/dealt_card_slot.dart';
 import '../../core/models/divination_system.dart';
 import '../../core/models/rune_stone.dart';
@@ -20,16 +19,14 @@ import '../../state/user_profile_controller.dart';
 import '../profile/profile_screen.dart';
 import 'widgets/board_pillar_view.dart';
 import 'widgets/deal_lock_prompt.dart';
-import 'widgets/elemental_threads_painter.dart';
 import 'widgets/foil_glint.dart';
 import 'widgets/interactive_deck_widget.dart';
 import 'widgets/interactive_rune_stones_widget.dart';
 import 'widgets/reading_bottom_sheet.dart';
 import 'widgets/rune_stone_3d_widget.dart';
 import 'widgets/shuffle_physics.dart';
-import 'widgets/slotted_divination_card.dart';
 import 'widgets/spread_blueprint_carousel.dart';
-import 'widgets/spread_threads_layer.dart';
+import 'widgets/spread_board.dart';
 import 'widgets/tarot_card_3d_widget.dart';
 
 /// Fixed header of the ACTIVE table (Step 2): the `←` back button + the
@@ -43,12 +40,7 @@ enum TableViewMode {
   /// auto-scroll on deal — the camera stays on the deck.
   focus,
 
-  /// Mode B — full spread overview: the entire spread on a single screen
-  /// like a real tarot table. Centered proportional deck (scaled to the
-  /// slot cards) above the spread, dealt cards in their true spread
-  /// geometry (Triad row / Target & Shadow 2×2 / Deep Synthesis 3-1-3),
-  /// scaled to maximize the viewport height. No flying deal card — cards
-  /// materialize directly in their slots.
+  /// An interactive overhead view of the complete spread.
   spread,
 }
 
@@ -244,8 +236,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
   /// Overview mode: tapping the deck deals the next card DIRECTLY into its
   /// target spread slot — NO 220×360 flight overlay (the old flying card
   /// clipped off the bottom-right corner). The deck plays a gentle pulse
-  /// (see [_OverviewDeck]) while the dealt card materializes inside the
-  /// slot (see [_OverviewSlot]). Once the initial spread is full, the tap
+  /// while the dealt card materializes inside the slot. Once the initial spread is full, the tap
   /// appends a Clarifier (+1) — but only while a clarifier question is
   /// armed (the deck stays locked otherwise).
   void _onOverviewDeckTap() {
@@ -261,151 +252,6 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
   void _resetTable() {
     HapticFeedback.mediumImpact();
     context.read<SpreadController>().resetTable();
-  }
-
-  /// Mode B — Full Spread Overview: the entire spread on one screen like a
-  /// real tarot table. Portrait: the deck + status pill are CENTERED above
-  /// the spread geometry (Alignment.topCenter), the deck scales
-  /// proportionally to the slot cards (~1.12× a slot, never the old 3×
-  /// tower) and the slots take the maximum remaining viewport height.
-  /// Landscape: the deck panel sits on the LEFT, the wide spread canvas
-  /// expands to the right.
-  ///
-  /// Dealing here NEVER launches the 220×360 flight overlay — the dealt
-  /// card materializes directly inside its target slot (see [_OverviewSlot]).
-  Widget _buildSpreadOverview(
-    SpreadController ctrl,
-    TarotDeckPack pack,
-    BoxConstraints constraints,
-  ) {
-    final design = spreadCanvasDesignSizeForCount(
-      ctrl.spreadCardCount,
-      totalSlots: ctrl.slots.length,
-    );
-    final isLandscape =
-        MediaQuery.orientationOf(context) == Orientation.landscape;
-
-    final dealt = [
-      for (final s in ctrl.slots)
-        if (s.card != null) s,
-    ];
-    Offset slotTopLeft(int i) => spreadSlotDesignTopLeftForCount(
-      ctrl.spreadCardCount,
-      i,
-      totalSlots: ctrl.slots.length,
-    );
-    final rects = [
-      for (var i = 0; i < ctrl.slots.length; i++)
-        Rect.fromLTWH(
-          slotTopLeft(i).dx,
-          slotTopLeft(i).dy,
-          deckWidth,
-          deckHeight,
-        ),
-    ];
-
-    // The design-space spread geometry, FittedBox-scaled to fit the screen.
-    final designCanvas = SizedBox(
-      width: design.width,
-      height: design.height,
-      child: Stack(
-        children: [
-          // The living Elemental Fate Threads across the spread geometry —
-          // TAROT ONLY. Runes keep their rim glow, Lenormand its pair pills.
-          if (elementalThreadsVisibleFor(ctrl.system))
-            SpreadThreadsLayer(dealt: dealt, rects: rects),
-          for (var i = 0; i < ctrl.slots.length; i++)
-            Positioned(
-              left: slotTopLeft(i).dx,
-              top: slotTopLeft(i).dy,
-              width: deckWidth,
-              height: deckHeight,
-              child: _OverviewSlot(slot: ctrl.slots[i], slotIndex: i),
-            ),
-        ],
-      ),
-    );
-
-    final counterBadge = _DeckCounterBadge(
-      ctrl: ctrl,
-      onReset: _resetTable,
-      dealHint: 'TAP DECK TO DEAL',
-    );
-
-    if (isLandscape) {
-      final miniDeck = _OverviewDeck(
-        system: ctrl.system,
-        pack: pack,
-        width: overviewDeckWidth,
-        height: overviewDeckHeight,
-        onTap: _onOverviewDeckTap,
-      );
-      final deckPanel = Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [miniDeck, const SizedBox(width: 12), counterBadge],
-      );
-      return Row(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 0, 4),
-            child: Align(alignment: Alignment.centerLeft, child: deckPanel),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: FittedBox(fit: BoxFit.contain, child: designCanvas),
-            ),
-          ),
-        ],
-      );
-    }
-
-    // Portrait: solve the canvas scale so the deck (1.12× a slot card) +
-    // the status pill + the spread canvas ALL fit the viewport height —
-    // the slots get the maximum possible size.
-    const wPad = 24.0; // canvas horizontal padding (12+12)
-    const hPad = 46.0; // top pad + gaps + canvas bottom pad
-    const badgeRow = 32.0; // status pill + its gap below the deck
-    final scale = math.min(
-      (constraints.maxWidth - wPad) / design.width,
-      (constraints.maxHeight - hPad - badgeRow) /
-          (design.height + 1.12 * deckHeight),
-    );
-    final slotW = deckWidth * scale;
-    final deckW = math.min(slotW * 1.12, 200.0);
-    final deckH = deckW * deckHeight / deckWidth;
-    final miniDeck = _OverviewDeck(
-      system: ctrl.system,
-      pack: pack,
-      width: deckW,
-      height: deckH,
-      onTap: _onOverviewDeckTap,
-    );
-    return Column(
-      children: [
-        const SizedBox(height: 10),
-        Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [miniDeck, const SizedBox(height: 8), counterBadge],
-          ),
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-            child: Center(
-              child: SizedBox(
-                width: design.width * scale,
-                height: design.height * scale,
-                child: FittedBox(fit: BoxFit.fill, child: designCanvas),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   /// The flight card (FOCUS mode only — the overview materializes in-slot),
@@ -487,31 +333,40 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     final viewMode = ctrl.isSpreadOverview
         ? TableViewMode.spread
         : TableViewMode.focus;
+    final header = _ActiveTableHeader(
+      mode: viewMode,
+      toggleKey: _viewModeToggleKey,
+      onModeChanged: (mode) {
+        HapticFeedback.selectionClick();
+        ctrl.setSpreadOverview(mode == TableViewMode.spread);
+      },
+      onBack: () {
+        HapticFeedback.selectionClick();
+        ctrl.exitSpread();
+      },
+    );
+    if (ctrl.isSpreadOverview) {
+      return SafeArea(
+        bottom: false,
+        child: SpreadBoard(
+          header: header,
+          onDeal: _onOverviewDeckTap,
+          badge: _DeckCounterBadge(
+            ctrl: ctrl,
+            onReset: _resetTable,
+            dealHint: 'TAP DECK TO DEAL',
+          ),
+        ),
+      );
+    }
     return SafeArea(
       bottom: false,
       child: Column(
         children: [
-          SizedBox(
-            height: _activeHeaderHeight,
-            child: _ActiveTableHeader(
-              mode: viewMode,
-              toggleKey: _viewModeToggleKey,
-              onModeChanged: (mode) {
-                HapticFeedback.selectionClick();
-                ctrl.setSpreadOverview(mode == TableViewMode.spread);
-              },
-              onBack: () {
-                HapticFeedback.selectionClick();
-                context.read<SpreadController>().exitSpread();
-              },
-            ),
-          ),
+          SizedBox(height: _activeHeaderHeight, child: header),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                if (viewMode == TableViewMode.spread) {
-                  return _buildSpreadOverview(ctrl, pack, constraints);
-                }
                 return SingleChildScrollView(
                   controller: _scroll,
                   physics: const BouncingScrollPhysics(),
@@ -991,220 +846,6 @@ class _DeckCounterBadge extends StatelessWidget {
   }
 }
 
-/// Centered proportional mini-deck for the Spread Overview mode: tap to
-/// deal the next card DIRECTLY into the spread. The deck plays a gentle
-/// breathing pulse on every tap while the dealt card materializes in its
-/// slot. Size is passed in by [_DigitalTableScreenState] so it stays
-/// proportional to the spread's slot cards.
-class _OverviewDeck extends StatefulWidget {
-  const _OverviewDeck({
-    required this.system,
-    required this.pack,
-    required this.width,
-    required this.height,
-    required this.onTap,
-  });
-
-  final DivinationSystem system;
-  final TarotDeckPack pack;
-  final double width;
-  final double height;
-  final VoidCallback onTap;
-
-  @override
-  State<_OverviewDeck> createState() => _OverviewDeckState();
-}
-
-class _OverviewDeckState extends State<_OverviewDeck>
-    with SingleTickerProviderStateMixin {
-  /// 420ms soft breathing pulse (1.0 → 1.12 → 1.0) on each tap.
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 420),
-  );
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  void _onTap() {
-    _pulse.forward(from: 0);
-    widget.onTap();
-  }
-
-  /// Horizontal swipe directly on the overview deck/rune cluster shuffles
-  /// the remaining stack (same touch-scoped weave as the hero deck).
-  void _onShuffle(DragEndDetails details) {
-    HapticFeedback.selectionClick();
-    context.read<SpreadController>().weaveShuffleRemaining(swaps: 3);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final w = widget.width;
-    final h = widget.height;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _onTap,
-      onHorizontalDragEnd: _onShuffle,
-      child: AnimatedBuilder(
-        animation: _pulse,
-        builder: (context, _) {
-          final p = 1.0 + 0.12 * math.sin(math.pi * _pulse.value);
-          return Transform.scale(
-            scale: p,
-            child: SizedBox(
-              key: const ValueKey('overview-deck'),
-              width: w,
-              height: h,
-              // Only the rounded card / stone pile itself is rendered — no
-              // static backing strip above it (same artifact class as the
-              // hero deck).
-              child: switch (widget.system) {
-                DivinationSystem.tarot => CardBack(
-                  width: w,
-                  height: h,
-                  pack: widget.pack,
-                ),
-                DivinationSystem.lenormand => CardBack(
-                  width: w,
-                  height: h,
-                  styleOverride: context
-                      .watch<DeckPackController>()
-                      .activeLenormandPack
-                      .backStyle,
-                  accentOverride: context
-                      .watch<DeckPackController>()
-                      .activeLenormandPack
-                      .backAccentArgb,
-                  secondaryOverride: context
-                      .watch<DeckPackController>()
-                      .activeLenormandPack
-                      .backSecondaryArgb,
-                ),
-                DivinationSystem.runes => const _OverviewStonePile(),
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// One spread slot on the overview canvas: a subtle hairline placeholder
-/// (with its role) while empty; once dealt, the card MATERIALIZES directly
-/// inside the slot — a 550ms fade-in 0→1 + scale 0.88→1.0 with an
-/// elemental rim shimmer (no flying overlay card). Tapping a face-down
-/// card reveals it; a face-up card opens the reading sheet.
-class _OverviewSlot extends StatefulWidget {
-  const _OverviewSlot({required this.slot, required this.slotIndex});
-
-  final DealtCardSlot slot;
-  final int slotIndex;
-
-  @override
-  State<_OverviewSlot> createState() => _OverviewSlotState();
-}
-
-class _OverviewSlotState extends State<_OverviewSlot>
-    with SingleTickerProviderStateMixin {
-  /// Materialization entrance; starts completed when the view opens with
-  /// already-dealt cards (no replay).
-  late final AnimationController _entrance = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 750),
-    value: widget.slot.card == null ? 0.0 : 1.0,
-  );
-
-  @override
-  void didUpdateWidget(covariant _OverviewSlot oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.slot.card == null && widget.slot.card != null) {
-      HapticFeedback.selectionClick();
-      _entrance.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _entrance.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final slot = widget.slot;
-    final card = slot.card;
-    if (card == null) {
-      final shorts = context.read<SpreadController>().spreadSlotRoleShorts;
-      final shortRole = widget.slotIndex < shorts.length
-          ? shorts[widget.slotIndex]
-          : 'Clarifier';
-      return Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(deckWidth * 0.06),
-          border: Border.all(color: AppColors.border),
-        ),
-        alignment: Alignment.topCenter,
-        padding: const EdgeInsets.only(top: 14),
-        child: Text(
-          '${widget.slotIndex + 1} · $shortRole',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 9,
-            letterSpacing: 1.6,
-            color: AppColors.textMuted.withValues(alpha: 0.65),
-          ),
-        ),
-      );
-    }
-    return AnimatedBuilder(
-      animation: _entrance,
-      builder: (context, _) {
-        final v = Curves.easeOutCubic.transform(_entrance.value);
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            Opacity(
-              opacity: v,
-              child: Transform.scale(
-                scale: 0.88 + 0.12 * v,
-                child: SlottedDivinationCard(
-                  slot: slot,
-                  width: deckWidth,
-                  height: deckHeight,
-                  onFlip: () =>
-                      context.read<SpreadController>().flipSlot(slot.index),
-                  onTapFaceUp: () =>
-                      ReadingBottomSheet.show(context, cardIndex: slot.index),
-                ),
-              ),
-            ),
-            // Elemental rim shimmer fading out as the card settles.
-            if (v < 1)
-              IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(deckWidth * 0.06),
-                    border: Border.all(
-                      color: card.element.accent.withValues(
-                        alpha: (1 - v) * 0.85,
-                      ),
-                      width: 1.6,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-}
-
 /// The face-down carved stone used by the rune cast flight overlay.
 class _FlightStone extends StatelessWidget {
   const _FlightStone();
@@ -1228,36 +869,6 @@ class _FlightStone extends StatelessWidget {
       width: 150,
       height: 178,
       interactive: false,
-    );
-  }
-}
-
-/// The mini stone pile shown in the overview deck corner for RUNES — a
-/// small heap of face-down stones instead of a paper card deck.
-class _OverviewStonePile extends StatelessWidget {
-  const _OverviewStonePile();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        for (var i = 0; i < 5; i++)
-          Positioned(
-            left: 4.0 + i * 5,
-            top: 10.0 - i * 4,
-            child: CustomPaint(
-              size: const Size(48, 57),
-              painter: RuneStonePainter(
-                stone: elderFuthark[0],
-                pack: context.watch<DeckPackController>().activeRunePack,
-                faceUp: false,
-                ignite: 0,
-                seed: 21 + i,
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
