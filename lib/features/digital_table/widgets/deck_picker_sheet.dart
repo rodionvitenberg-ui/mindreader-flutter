@@ -5,16 +5,19 @@ import 'package:provider/provider.dart';
 
 import '../../../core/data/deck_packs_registry.dart';
 import '../../../core/data/lenormand_data.dart';
-import '../../../core/data/lenormand_packs_registry.dart';
-import '../../../core/data/rune_packs_registry.dart';
 import '../../../core/data/runes_data.dart';
 import '../../../core/models/dealt_card_slot.dart';
+import '../../../core/models/deck_pack.dart';
+import '../../../core/l10n/app_strings.dart';
+import '../../../state/app_settings_controller.dart';
 import '../../../core/models/divination_system.dart';
 import '../../../core/models/lenormand_pack.dart';
 import '../../../core/models/rune_pack.dart';
 import '../../../core/models/tarot_deck_pack.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../state/deck_pack_controller.dart';
+import '../../../state/spread_controller.dart';
+import '../../almanac/deck_cover_picker.dart';
 import 'lenormand_card_3d_widget.dart';
 import 'rune_stone_3d_widget.dart';
 import 'tarot_card_3d_widget.dart';
@@ -47,7 +50,17 @@ class DeckPickerSheet extends StatefulWidget {
 }
 
 class _DeckPickerSheetState extends State<DeckPickerSheet> {
-  late final PageController _page = PageController(viewportFraction: 0.62);
+  late final PageController _page;
+
+  @override
+  void initState() {
+    super.initState();
+    final pack = context.read<DeckPackController>().activeFor(widget.system);
+    _page = PageController(
+      initialPage: packsFor(widget.system).indexOf(pack),
+      viewportFraction: 0.62,
+    );
+  }
 
   @override
   void dispose() {
@@ -58,42 +71,20 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<DeckPackController>();
-    final (title, subtitle, tiles) = switch (widget.system) {
-      DivinationSystem.tarot => (
-          'DECK SELECTOR',
-          '${deckPacksRegistry.length} PACKS · ACTIVE: '
-              '${ctrl.activePack.name.toUpperCase()}',
-          [
-            for (final p in deckPacksRegistry)
-              _PackTile.tarot(p, ctrl.activePack.id == p.id),
-          ],
-        ),
-      DivinationSystem.lenormand => (
-          'LENORMAND PACKS',
-          '${lenormandPacksRegistry.length} PACKS · ACTIVE: '
-              '${ctrl.activeLenormandPack.name.toUpperCase()}',
-          [
-            for (final p in lenormandPacksRegistry)
-              _PackTile.lenormand(p, ctrl.activeLenormandPack.id == p.id),
-          ],
-        ),
-      DivinationSystem.runes => (
-          'RUNE STONE SETS',
-          '${runePacksRegistry.length} SETS · ACTIVE: '
-              '${ctrl.activeRunePack.name.toUpperCase()}',
-          [
-            for (final p in runePacksRegistry)
-              _PackTile.rune(p, ctrl.activeRunePack.id == p.id),
-          ],
-        ),
-    };
+    final active = ctrl.activeFor(widget.system);
+    final packs = packsFor(widget.system);
+    final language = context.watch<AppSettingsController>().language;
+    final title = AppStrings.t(
+      language,
+      'almanac.picker.${widget.system.name}',
+    );
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       child: Container(
         color: const Color(0xEB13131A),
         child: SafeArea(
           top: false,
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -108,23 +99,38 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
                 ),
                 const SizedBox(height: 14),
                 Text(title, style: Theme.of(context).textTheme.displayMedium),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 9,
-                    letterSpacing: 2,
-                    color: AppColors.textMuted,
-                  ),
-                ),
                 const SizedBox(height: 16),
                 SizedBox(
                   height: 230,
                   child: PageView.builder(
                     controller: _page,
-                    itemCount: tiles.length,
-                    itemBuilder: (context, i) => tiles[i],
+                    itemCount: packs.length,
+                    itemBuilder: (context, i) => _PackTile(
+                      pack: packs[i],
+                      selected: active == packs[i],
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        context.read<SpreadController>().setSystem(
+                          widget.system,
+                        );
+                        if (active == packs[i]) {
+                          Navigator.pop(context);
+                          return;
+                        }
+                        switch (widget.system) {
+                          case DivinationSystem.tarot:
+                            ctrl.setActivePack(packs[i].id);
+                          case DivinationSystem.lenormand:
+                            ctrl.setActiveLenormandPack(packs[i].id);
+                          case DivinationSystem.runes:
+                            ctrl.setActiveRunePack(packs[i].id);
+                        }
+                      },
+                    ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                DeckCoverPicker(system: widget.system),
               ],
             ),
           ),
@@ -137,26 +143,20 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
 /// One carousel tile — tarot card back, Lenormand engraved face or a
 /// carved rune stone, selected by the pack of the active system.
 class _PackTile extends StatelessWidget {
-  const _PackTile.tarot(this.pack, this.selected) : lenormand = null, rune = null;
-  const _PackTile.lenormand(this.lenormand, this.selected)
-      : pack = null,
-        rune = null;
-  const _PackTile.rune(this.rune, this.selected)
-      : pack = null,
-        lenormand = null;
-
-  final TarotDeckPack? pack;
-  final LenormandPack? lenormand;
-  final RunePack? rune;
+  const _PackTile({
+    required this.pack,
+    required this.selected,
+    required this.onTap,
+  });
+  final DeckPack pack;
   final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final name = pack?.name ?? lenormand?.name ?? rune!.name;
-    final subtitle = pack?.subtitle ?? lenormand?.subtitle ?? rune!.subtitle;
-    final license = pack?.license ?? lenormand?.license ?? rune!.license;
+    final pack = this.pack;
     final Widget preview;
-    if (pack != null) {
+    if (pack is TarotDeckPack) {
       preview = CardBack(
         width: 150,
         height: 245,
@@ -165,9 +165,10 @@ class _PackTile extends StatelessWidget {
         angleX: 0.10,
         glint: true,
       );
-    } else if (lenormand != null) {
+    } else if (pack is LenormandPack) {
       preview = LenormandCard3DWidget(
         card: lenormandDeck[0],
+        previewPack: pack,
         isReversed: false,
         state: SlotState.faceUp,
         width: 150,
@@ -180,7 +181,7 @@ class _PackTile extends StatelessWidget {
         size: const Size(150, 178),
         painter: RuneStonePainter(
           stone: elderFuthark[0],
-          pack: rune!,
+          pack: pack as RunePack,
           faceUp: true,
           ignite: 1,
           seed: 3,
@@ -188,21 +189,7 @@ class _PackTile extends StatelessWidget {
       );
     }
     return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        // Already active: a second tap closes the sheet cleanly.
-        if (selected) {
-          Navigator.of(context).pop();
-          return;
-        }
-        if (pack != null) {
-          context.read<DeckPackController>().setActivePack(pack!.id);
-        } else if (lenormand != null) {
-          context.read<DeckPackController>().setActiveLenormandPack(lenormand!.id);
-        } else {
-          context.read<DeckPackController>().setActiveRunePack(rune!.id);
-        }
-      },
+      onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8),
         padding: const EdgeInsets.all(10),
@@ -220,10 +207,7 @@ class _PackTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Expanded(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: preview,
-              ),
+              child: FittedBox(fit: BoxFit.scaleDown, child: preview),
             ),
             const SizedBox(height: 4),
             Row(
@@ -231,7 +215,7 @@ class _PackTile extends StatelessWidget {
               children: [
                 Flexible(
                   child: Text(
-                    name.toUpperCase(),
+                    pack.name.toUpperCase(),
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.jetBrainsMono(
                       fontSize: 10,
@@ -247,7 +231,7 @@ class _PackTile extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              subtitle,
+              pack.subtitle,
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -259,7 +243,7 @@ class _PackTile extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              license.toUpperCase(),
+              pack.license.toUpperCase(),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -275,4 +259,3 @@ class _PackTile extends StatelessWidget {
     );
   }
 }
-

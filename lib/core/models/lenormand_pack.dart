@@ -1,11 +1,13 @@
+import 'deck_pack.dart';
 import 'tarot_deck_pack.dart';
 
 /// One selectable Petit Lenormand pack: asset location + procedural
 /// identity (palettes as ARGB ints so the model stays Flutter-free).
 /// Cards may be dropped into `assets/lenormand/<id>/01.jpg..36.jpg` —
 /// the renderer falls back to the procedural face when assets are absent.
-class LenormandPack {
+class LenormandPack extends DeckPack {
   const LenormandPack({
+    super.coverAssets,
     required this.id,
     required this.name,
     required this.subtitle,
@@ -19,13 +21,17 @@ class LenormandPack {
     required this.faceBackgroundArgb,
   });
 
+  @override
   final String id;
+  @override
   final String name;
+  @override
   final String subtitle;
 
   /// e.g. `assets/lenormand/antique_petit/` — 01.jpg..36.jpg (Rider..Cross).
   final String assetFolder;
 
+  @override
   final String license;
   final CardBackStyle backStyle;
   final int backAccentArgb;

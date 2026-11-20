@@ -1,4 +1,14 @@
+import '../models/deck_pack.dart';
+import '../models/divination_system.dart';
 import '../models/tarot_deck_pack.dart';
+import 'lenormand_packs_registry.dart';
+import 'rune_packs_registry.dart';
+
+List<DeckPack> packsFor(DivinationSystem system) => switch (system) {
+  DivinationSystem.tarot => deckPacksRegistry,
+  DivinationSystem.lenormand => lenormandPacksRegistry,
+  DivinationSystem.runes => runePacksRegistry,
+};
 
 /// Central registry of the 8 selectable deck packs. The first 7 are REAL
 /// public-domain / open-source decks, mapped by `tool/map_decks.py` from

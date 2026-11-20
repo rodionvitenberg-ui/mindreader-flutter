@@ -51,7 +51,7 @@ void main() {
         await tester.pump();
         expectAvatar(tester);
         if (tab == 'ALMANAC') {
-          final grid = find.byType(GridView);
+          final grid = find.byKey(const ValueKey('almanac-scroll'));
           final beforeScroll = tester.getRect(avatar);
           await tester.drag(grid, const Offset(0, -200));
           await tester.pump();

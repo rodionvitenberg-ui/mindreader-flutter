@@ -21,6 +21,7 @@ dependencies:
   flutter_timezone: ^4.1.1
   speech_to_text: ^7.5.0
   flutter_tts: ^4.2.5
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:

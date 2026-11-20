@@ -24,6 +24,7 @@ class LenormandCard3DWidget extends StatefulWidget {
   const LenormandCard3DWidget({
     super.key,
     required this.card,
+    this.previewPack,
     required this.isReversed,
     required this.state,
     required this.width,
@@ -35,6 +36,7 @@ class LenormandCard3DWidget extends StatefulWidget {
   });
 
   final LenormandCard card;
+  final LenormandPack? previewPack;
   final bool isReversed; // ignored — Lenormand is always upright
   final SlotState state;
   final double width;
@@ -94,7 +96,7 @@ class _LenormandCard3DWidgetState extends State<LenormandCard3DWidget>
 
   @override
   Widget build(BuildContext context) {
-    final pack = context.watch<DeckPackController>().activeLenormandPack;
+    final pack = widget.previewPack ?? context.watch<DeckPackController>().activeLenormandPack;
     final faceUp = widget.state == SlotState.faceUp;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,

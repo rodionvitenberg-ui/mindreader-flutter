@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import '../core/data/deck_packs_registry.dart';
 import '../core/data/lenormand_packs_registry.dart';
 import '../core/data/rune_packs_registry.dart';
+import '../core/models/deck_pack.dart';
+import '../core/models/divination_system.dart';
 import '../core/models/lenormand_pack.dart';
 import '../core/models/rune_pack.dart';
 import '../core/models/tarot_deck_pack.dart';
@@ -29,6 +31,26 @@ class DeckPackController extends ChangeNotifier {
   RunePack _runePack = runePacksRegistry.first;
   RunePack get activeRunePack => _runePack;
 
+  DeckPack activeFor(DivinationSystem system) => switch (system) {
+    DivinationSystem.tarot => activePack,
+    DivinationSystem.lenormand => activeLenormandPack,
+    DivinationSystem.runes => activeRunePack,
+  };
+
+  final _covers = <String, String>{};
+  String? coverFor(DeckPack pack) => _covers[pack.id];
+
+  Future<void> setCover(DeckPack pack, String cover) async {
+    if (_covers[pack.id] == cover) return;
+    _covers[pack.id] = cover;
+    notifyListeners();
+    try {
+      await _storage.saveDeckCover(pack.id, cover);
+    } catch (_) {
+      // Keep the selected artwork for this session if storage is unavailable.
+    }
+  }
+
   Future<void> _restore() async {
     try {
       final id = await _storage.loadDeckId();
@@ -50,6 +72,14 @@ class DeckPackController extends ChangeNotifier {
       if (restored != null) _runePack = restored;
     } catch (_) {
       // Same: best-effort restore.
+    }
+    try {
+      final saved = await _storage.loadDeckCovers();
+      for (final entry in saved.entries) {
+        _covers.putIfAbsent(entry.key, () => entry.value);
+      }
+    } catch (_) {
+      // Use each deck's default cover.
     }
     notifyListeners();
   }

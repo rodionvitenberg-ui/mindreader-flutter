@@ -1,10 +1,13 @@
+import 'deck_pack.dart';
+
 /// One selectable 3D rune stone set: procedural rock identity (palettes as
 /// ARGB ints so the model stays Flutter-free) + optional stone textures.
 /// Custom textures may be dropped into `assets/runes/<id>/<rune_id>.png`
 /// (or `<rune_id>_back.png`) — the procedural obsidian shader renders when
 /// assets are absent.
-class RunePack {
+class RunePack extends DeckPack {
   const RunePack({
+    super.coverAssets,
     required this.id,
     required this.name,
     required this.subtitle,
@@ -18,10 +21,14 @@ class RunePack {
     required this.specularArgb,
   });
 
+  @override
   final String id;
+  @override
   final String name;
+  @override
   final String subtitle;
   final String assetFolder; // assets/runes/<id>/
+  @override
   final String license;
 
   /// Radial rock-shader center → edge colors.

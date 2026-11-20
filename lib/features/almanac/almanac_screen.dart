@@ -7,6 +7,7 @@ import '../../core/data/lenormand_data.dart';
 import '../../core/data/runes_data.dart';
 import '../../core/data/tarot_deck_data.dart';
 import '../../core/data/zodiac_almanac_data.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/models/dealt_card_slot.dart';
 import '../../core/models/divination_card.dart';
 import '../../core/models/divination_system.dart';
@@ -15,6 +16,7 @@ import '../../core/models/natal_chart.dart';
 import '../../core/models/rune_stone.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/theme/app_colors.dart';
+import '../../state/app_settings_controller.dart';
 import '../../state/deck_pack_controller.dart';
 import '../../state/spread_controller.dart';
 import '../digital_table/widgets/deck_picker_sheet.dart';
@@ -23,24 +25,15 @@ import '../digital_table/widgets/rune_stone_3d_widget.dart';
 import '../digital_table/widgets/tarot_card_3d_widget.dart';
 import '../profile/widgets/profile_header.dart';
 import 'card_detail_sheet.dart';
+import 'deck_cover.dart';
+import 'deck_shop_screen.dart';
 import 'zodiac_detail_sheet.dart';
 
 /// The four Almanac tabs: three divination systems + the zodiac signs.
 enum AlmanacTab { tarot, lenormand, runes, zodiac }
 
-extension AlmanacTabX on AlmanacTab {
-  String get label => switch (this) {
-    AlmanacTab.tarot => 'TAROT',
-    AlmanacTab.lenormand => 'LENORMAND',
-    AlmanacTab.runes => 'RUNES',
-    AlmanacTab.zodiac => 'ZODIAC',
-  };
-}
-
 /// Pillar 4: the offline encyclopedia of FOUR systems — 78 tarot cards,
 /// 36 Petit Lenormand cards, 24 Elder Futhark runes and the 12 zodiac signs.
-/// Row 1 hosts the 4-tab switcher, Row 2 the search bar + pack pill,
-/// Rows 3/4 the context-aware per-system filters.
 class AlmanacScreen extends StatefulWidget {
   const AlmanacScreen({super.key, this.onOpenZodiacHoroscope});
 
@@ -52,39 +45,47 @@ class AlmanacScreen extends StatefulWidget {
 }
 
 class _AlmanacScreenState extends State<AlmanacScreen> {
-  String _query = '';
+  final _scroll = ScrollController();
+  final _search = TextEditingController();
+  String get _query => _search.text;
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    _search.dispose();
+    super.dispose();
+  }
+
   AlmanacTab _tab = AlmanacTab.tarot;
 
   // Tarot filters: arcana/suit + element.
   String? _filter; // null = all, 'major', or a suit name
-  Element? _elementFilter;
+  final _elements = <AlmanacTab, Element?>{};
 
   // Lenormand filter: playing-card suit (null = all).
   PlayingCardSuit? _lenormandSuitFilter;
 
   // Rune filters: element + aett.
-  Element? _runeElementFilter;
   RuneAett? _runeAettFilter;
 
   // Zodiac filters: element + modality.
-  Element? _zodiacElementFilter;
   ZodiacModality? _zodiacModalityFilter;
 
   /// The divination system of the current tab (null on the ZODIAC tab).
   DivinationSystem? get _system => switch (_tab) {
-        AlmanacTab.tarot => DivinationSystem.tarot,
-        AlmanacTab.lenormand => DivinationSystem.lenormand,
-        AlmanacTab.runes => DivinationSystem.runes,
-        AlmanacTab.zodiac => null,
-      };
+    AlmanacTab.tarot => DivinationSystem.tarot,
+    AlmanacTab.lenormand => DivinationSystem.lenormand,
+    AlmanacTab.runes => DivinationSystem.runes,
+    AlmanacTab.zodiac => null,
+  };
 
   List<ZodiacSignEntry> get _visibleZodiac {
     final query = _query.toLowerCase().trim();
     var entries = zodiacAlmanac;
-    if (_zodiacElementFilter != null) {
+    if (_elements[AlmanacTab.zodiac] != null) {
       entries = [
         for (final e in entries)
-          if (e.element == _zodiacElementFilter) e,
+          if (e.element == _elements[AlmanacTab.zodiac]) e,
       ];
     }
     if (_zodiacModalityFilter != null) {
@@ -124,8 +125,11 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
               if (c.card.suit == suit) c,
           ];
         }
-        if (_elementFilter != null) {
-          cards = [for (final c in cards) if (c.element == _elementFilter) c];
+        if (_elements[AlmanacTab.tarot] != null) {
+          cards = [
+            for (final c in cards)
+              if (c.element == _elements[AlmanacTab.tarot]) c,
+          ];
         }
         if (query.isNotEmpty) {
           cards = [
@@ -137,15 +141,11 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
         }
         return cards;
       case AlmanacTab.lenormand:
-        var cards = [
-          for (final c in lenormandDeck) LenormandDivinationCard(c),
-        ];
+        var cards = [for (final c in lenormandDeck) LenormandDivinationCard(c)];
         if (_lenormandSuitFilter != null) {
           cards = [
             for (final c in cards)
-              if (c.card.playingCard ==
-                  _lenormandSuitFilter)
-                c,
+              if (c.card.playingCard == _lenormandSuitFilter) c,
           ];
         }
         if (query.isNotEmpty) {
@@ -160,8 +160,11 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
         return cards;
       case AlmanacTab.runes:
         var cards = [for (final r in elderFuthark) RuneDivinationCard(r)];
-        if (_runeElementFilter != null) {
-          cards = [for (final c in cards) if (c.element == _runeElementFilter) c];
+        if (_elements[AlmanacTab.runes] != null) {
+          cards = [
+            for (final c in cards)
+              if (c.element == _elements[AlmanacTab.runes]) c,
+          ];
         }
         if (_runeAettFilter != null) {
           cards = [
@@ -181,341 +184,306 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
     }
   }
 
+  void _selectTab(AlmanacTab tab) {
+    if (tab == _tab) return;
+    HapticFeedback.selectionClick();
+    _scroll.jumpTo(0);
+    _search.clear();
+    setState(() => _tab = tab);
+    final system = _system;
+    if (system != null) context.read<SpreadController>().setSystem(system);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cards = _visible;
-    final zodiacEntries = _visibleZodiac;
+    final language = context.watch<AppSettingsController>().language;
+    final system = _system;
     return SafeArea(
       bottom: false,
       child: LayoutBuilder(
-        builder: (context, constraints) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const ProfileHeader(child: ProfileHeaderTitle('header.almanac')),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: constraints.maxHeight * 0.60,
-              ),
-              child: SingleChildScrollView(
-                primary: false,
-                child: Column(
-                  children: [
-                    // System switcher above the search and filters.
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
-                      child: Center(
-                        child: _AlmanacSystemSwitcher(
-                          tab: _tab,
-                          onChanged: (t) {
-                            HapticFeedback.selectionClick();
-                            setState(() {
-                              _tab = t;
-                              _filter = null;
-                              _elementFilter = null;
-                              _lenormandSuitFilter = null;
-                              _runeElementFilter = null;
-                              _runeAettFilter = null;
-                              _zodiacElementFilter = null;
-                              _zodiacModalityFilter = null;
-                            });
-                            // Keep the Digital Table in sync with the browsing system;
-                            // ZODIAC is not a divination system, so it is untouched.
-                            final s = _system;
-                            if (s != null) {
-                              context.read<SpreadController>().setSystem(s);
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                    // Row 2 — search bar (~62%) + the pack pill directly to its right.
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: TextField(
-                              key: const ValueKey('almanac-search'),
-                              onChanged: (v) => setState(() => _query = v),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textPrimary,
+        builder: (context, bounds) {
+          final bannerHeight = (bounds.maxHeight * 0.22).clamp(88.0, 166.0);
+          final tabs = _AlmanacSystemSwitcher(
+            tab: _tab,
+            onChanged: _selectTab,
+            language: language,
+          );
+          final navigation = ColoredBox(
+            color: AppColors.canvas,
+            child: Column(
+              children: [
+                if (bounds.maxHeight < 450)
+                  ProfileHeader(child: tabs)
+                else ...[
+                  const ProfileHeader(
+                    child: ProfileHeaderTitle('header.almanac'),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                    child: tabs,
+                  ),
+                ],
+                if (system != null)
+                  _DeckSelector(system: system, language: language),
+              ],
+            ),
+          );
+          return CustomScrollView(
+            key: const ValueKey('almanac-scroll'),
+            controller: _scroll,
+            slivers: [
+              PinnedHeaderSliver(child: navigation),
+              if (system != null)
+                SliverToBoxAdapter(
+                  child: _DeckBanner(
+                    system: system,
+                    height: bannerHeight,
+                    language: language,
+                  ),
+                ),
+              PinnedHeaderSliver(
+                child: ColoredBox(
+                  key: const ValueKey('almanac-filters'),
+                  color: AppColors.canvas,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                        child: TextField(
+                          key: const ValueKey('almanac-search'),
+                          controller: _search,
+                          onChanged: (_) => setState(() {}),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textPrimary,
+                          ),
+                          cursorColor: AppColors.lavender,
+                          decoration: InputDecoration(
+                            hintText: AppStrings.t(
+                              language,
+                              system == null
+                                  ? 'almanac.searchSigns'
+                                  : 'almanac.searchCards',
+                            ),
+                            hintStyle: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textMuted,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search_outlined,
+                              size: 18,
+                            ),
+                            isDense: true,
+                            filled: true,
+                            fillColor: AppColors.surface,
+                            prefixIconConstraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 9,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: AppColors.border,
                               ),
-                              cursorColor: AppColors.lavender,
-                              decoration: InputDecoration(
-                                hintText: _tab == AlmanacTab.zodiac
-                                    ? 'Search sign, keyword or archetype'
-                                    : 'Search card, keyword or glyph',
-                                hintStyle: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textMuted,
-                                ),
-                                prefixIcon: const Icon(
-                                  Icons.search_outlined,
-                                  size: 18,
-                                  color: AppColors.textMuted,
-                                ),
-                                filled: true,
-                                fillColor: AppColors.surface.withValues(
-                                  alpha: 0.6,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.border,
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: const BorderSide(
-                                    color: AppColors.lavender,
-                                  ),
-                                ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: AppColors.lavender,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          if (_system != null)
-                            _AlmanacPackPill(system: _system!),
-                        ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Rows 3/4 — context-aware per-system filter bars.
-                    ..._filterBars(),
-                  ],
+                      ..._filterBars(language, compact: bounds.maxHeight < 500),
+                      const SizedBox(height: 4),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Expanded(
-              child: _tab == AlmanacTab.zodiac
-                  ? _zodiacGrid(zodiacEntries)
-                  : cards.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No cards match',
-                        style: TextStyle(color: AppColors.textMuted),
-                      ),
-                    )
-                  : GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 14,
-                            crossAxisSpacing: 14,
-                            childAspectRatio: 0.52,
-                          ),
-                      itemCount: cards.length,
-                      itemBuilder: (context, i) => _AlmanacTile(card: cards[i]),
-                    ),
-            ),
-          ],
-        ),
+              _catalog(language, bounds.maxWidth),
+              if (system != null)
+                // Even a one-card search can scroll the banner fully offscreen.
+                SliverLayoutBuilder(
+                  builder: (_, constraints) {
+                    final fill =
+                        constraints.viewportMainAxisExtent +
+                        bannerHeight -
+                        constraints.precedingScrollExtent;
+                    return SliverToBoxAdapter(
+                      child: SizedBox(height: fill > 0 ? fill : 0),
+                    );
+                  },
+                ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  List<Widget> _filterBars() {
-    switch (_tab) {
-      case AlmanacTab.zodiac:
-        return [
-          _ElementFilterBar(
-            active: _zodiacElementFilter,
-            onToggle: (e) {
-              HapticFeedback.selectionClick();
-              setState(() =>
-                  _zodiacElementFilter = _zodiacElementFilter == e ? null : e);
-            },
-          ),
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _FilterChip(
-                  label: 'All (12)',
-                  active: _zodiacModalityFilter == null,
-                  onTap: () => setState(() => _zodiacModalityFilter = null),
-                ),
-                for (final m in ZodiacModality.values)
-                  _FilterChip(
-                    key: ValueKey('zodiac-modality-${m.name}'),
-                    label: '${_modalityLabel(m)} '
-                        '(${zodiacEntriesForModality(m).length})',
-                    active: _zodiacModalityFilter == m,
-                    onTap: () => setState(() => _zodiacModalityFilter = m),
-                  ),
-              ],
-            ),
-          ),
-        ];
-      case AlmanacTab.tarot:
-        return [
-          _ElementFilterBar(
-            active: _elementFilter,
-            onToggle: (e) {
-              HapticFeedback.selectionClick();
-              setState(() => _elementFilter = _elementFilter == e ? null : e);
-            },
-          ),
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _FilterChip(
-                  label: 'All (78)',
-                  active: _filter == null,
-                  onTap: () => setState(() => _filter = null),
-                ),
-                _FilterChip(
-                  label: 'Major (22)',
-                  active: _filter == 'major',
-                  onTap: () => setState(() => _filter = 'major'),
-                ),
-                for (final suit in Suit.values)
-                  _FilterChip(
-                    label:
-                        '${suit.label} (${tarotDeck.where((c) => c.suit == suit).length})',
-                    active: _filter == suit.name,
-                    onTap: () => setState(() => _filter = suit.name),
-                  ),
-              ],
-            ),
-          ),
-        ];
-      case AlmanacTab.lenormand:
-        return [
-          const SizedBox(height: 2),
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _FilterChip(
-                  label: 'All (36)',
-                  active: _lenormandSuitFilter == null,
-                  onTap: () =>
-                      setState(() => _lenormandSuitFilter = null),
-                ),
-                for (final suit in PlayingCardSuit.values)
-                  _FilterChip(
-                    label:
-                        '${suit.glyph} ${suit.label} (${lenormandDeck.where((c) => c.playingCard == suit).length})',
-                    active: _lenormandSuitFilter == suit,
-                    onTap: () =>
-                        setState(() => _lenormandSuitFilter = suit),
-                  ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+  Widget _catalog(AppLanguage language, double width) {
+    final zodiac = _tab == AlmanacTab.zodiac;
+    final signs = zodiac ? _visibleZodiac : const <ZodiacSignEntry>[];
+    final cards = zodiac ? const <DivinationCard>[] : _visible;
+    final count = zodiac ? signs.length : cards.length;
+    if (count == 0) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Center(
             child: Text(
-              'LENORMAND IS READ IN PAIRS · ALWAYS UPRIGHT · '
-              'TIMING: ${_timingLine()}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8,
-                letterSpacing: 1.4,
-                color: AppColors.textMuted,
+              AppStrings.t(
+                language,
+                zodiac ? 'almanac.noSigns' : 'almanac.noCards',
               ),
+              style: const TextStyle(color: AppColors.textMuted),
             ),
           ),
-        ];
-      case AlmanacTab.runes:
-        return [
-          _ElementFilterBar(
-            active: _runeElementFilter,
-            onToggle: (e) {
-              HapticFeedback.selectionClick();
-              setState(() =>
-                  _runeElementFilter = _runeElementFilter == e ? null : e);
-            },
-          ),
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _FilterChip(
-                  label: 'All (24)',
-                  active: _runeAettFilter == null,
-                  onTap: () => setState(() => _runeAettFilter = null),
-                ),
-                for (final aett in RuneAett.values)
-                  _FilterChip(
-                    label:
-                        '${aett.title} (${elderFuthark.where((r) => r.aett == aett).length})',
-                    active: _runeAettFilter == aett,
-                    onTap: () => setState(() => _runeAettFilter = aett),
-                  ),
-              ],
-            ),
-          ),
-        ];
-    }
-  }
-
-  Widget _zodiacGrid(List<ZodiacSignEntry> entries) {
-    if (entries.isEmpty) {
-      return const Center(
-        child: Text(
-          'No signs match',
-          style: TextStyle(color: AppColors.textMuted),
         ),
       );
     }
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 14,
-        crossAxisSpacing: 14,
-        childAspectRatio: 0.8,
-      ),
-      itemCount: entries.length,
-      itemBuilder: (context, i) => _ZodiacTile(
-        key: ValueKey('zodiac-tile-${entries[i].sign.name}'),
-        entry: entries[i],
-        onOpen: () => ZodiacDetailSheet.show(
-          context,
-          entries[i],
-          onOpenHoroscope: widget.onOpenZodiacHoroscope,
+    final columns = zodiac
+        ? (width ~/ 170).clamp(2, 6)
+        : ((width - 24) ~/ 112).clamp(2, 8);
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      sliver: SliverGrid.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: columns,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 10,
+          childAspectRatio: zodiac ? 0.8 : 0.54,
         ),
+        itemCount: count,
+        itemBuilder: (context, i) {
+          if (!zodiac) return _AlmanacTile(card: cards[i]);
+          final entry = signs[i];
+          return _ZodiacTile(
+            key: ValueKey('zodiac-tile-${entry.sign.name}'),
+            entry: entry,
+            onOpen: () => ZodiacDetailSheet.show(
+              context,
+              entry,
+              onOpenHoroscope: widget.onOpenZodiacHoroscope,
+            ),
+          );
+        },
       ),
     );
   }
 
-  String _modalityLabel(ZodiacModality m) => switch (m) {
-        ZodiacModality.cardinal => 'Cardinal',
-        ZodiacModality.fixed => 'Fixed',
-        ZodiacModality.mutable => 'Mutable',
-      };
-
-  String _timingLine() {
-    final cards = _visible;
-    if (cards.isEmpty) return '—';
-    final first = (cards.first as LenormandDivinationCard).card;
-    return first.timing.toUpperCase();
+  List<Widget> _filterBars(AppLanguage language, {required bool compact}) {
+    String label(String key) => AppStrings.t(language, 'almanac.$key');
+    final groups = switch (_tab) {
+      AlmanacTab.zodiac => [
+        _FilterChip(
+          label: '${label('all')} (12)',
+          active: _zodiacModalityFilter == null,
+          onTap: () => setState(() => _zodiacModalityFilter = null),
+        ),
+        for (final m in ZodiacModality.values)
+          _FilterChip(
+            key: ValueKey('zodiac-modality-${m.name}'),
+            label:
+                '${label(m.name)} '
+                '(${zodiacEntriesForModality(m).length})',
+            active: _zodiacModalityFilter == m,
+            onTap: () => setState(() => _zodiacModalityFilter = m),
+          ),
+      ],
+      AlmanacTab.tarot => [
+        _FilterChip(
+          label: '${label('all')} (78)',
+          active: _filter == null,
+          onTap: () => setState(() => _filter = null),
+        ),
+        _FilterChip(
+          label: '${label('major')} (22)',
+          active: _filter == 'major',
+          onTap: () => setState(() => _filter = 'major'),
+        ),
+        for (final suit in Suit.values)
+          _FilterChip(
+            label:
+                '${label(suit.name)} (${tarotDeck.where((c) => c.suit == suit).length})',
+            active: _filter == suit.name,
+            onTap: () => setState(() => _filter = suit.name),
+          ),
+      ],
+      AlmanacTab.lenormand => [
+        _FilterChip(
+          label: '${label('all')} (36)',
+          active: _lenormandSuitFilter == null,
+          onTap: () => setState(() => _lenormandSuitFilter = null),
+        ),
+        for (final suit in PlayingCardSuit.values)
+          _FilterChip(
+            label:
+                '${suit.glyph} ${label(suit.name)} (${lenormandDeck.where((c) => c.playingCard == suit).length})',
+            active: _lenormandSuitFilter == suit,
+            onTap: () => setState(() => _lenormandSuitFilter = suit),
+          ),
+      ],
+      AlmanacTab.runes => [
+        _FilterChip(
+          label: '${label('all')} (24)',
+          active: _runeAettFilter == null,
+          onTap: () => setState(() => _runeAettFilter = null),
+        ),
+        for (final aett in RuneAett.values)
+          _FilterChip(
+            label:
+                '${label(aett.name)} (${elderFuthark.where((r) => r.aett == aett).length})',
+            active: _runeAettFilter == aett,
+            onTap: () => setState(() => _runeAettFilter = aett),
+          ),
+      ],
+    };
+    final elements = _tab == AlmanacTab.lenormand
+        ? null
+        : _ElementFilterBar(
+            language: language,
+            active: _elements[_tab],
+            onToggle: (e) {
+              HapticFeedback.selectionClick();
+              setState(() => _elements[_tab] = _elements[_tab] == e ? null : e);
+            },
+          );
+    return [
+      if (!compact && elements != null) elements,
+      SizedBox(
+        height: compact ? 40 : 36,
+        child: ListView(
+          key: ValueKey('almanac-chip-row-${_tab.name}'),
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(
+            horizontal: compact && elements != null ? 0 : 16,
+          ),
+          children: [
+            if (compact && elements != null)
+              SizedBox(width: 286, child: elements),
+            ...groups,
+          ],
+        ),
+      ),
+    ];
   }
 }
 
 /// Row 1 — the 4-tab switcher, synced with the Digital Table for the three
 /// divination systems (ZODIAC is an encyclopedia, not a spread system).
 class _AlmanacSystemSwitcher extends StatelessWidget {
-  const _AlmanacSystemSwitcher({required this.tab, required this.onChanged});
+  const _AlmanacSystemSwitcher({
+    required this.tab,
+    required this.onChanged,
+    required this.language,
+  });
 
+  final AppLanguage language;
   final AlmanacTab tab;
   final ValueChanged<AlmanacTab> onChanged;
 
@@ -548,7 +516,7 @@ class _AlmanacSystemSwitcher extends StatelessWidget {
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      t.label,
+                      AppStrings.t(language, 'almanac.${t.name}'),
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 9,
                         letterSpacing: 1.2,
@@ -568,58 +536,103 @@ class _AlmanacSystemSwitcher extends StatelessWidget {
   }
 }
 
-/// Row 2 right — the pack/style selector pill for the active system.
-class _AlmanacPackPill extends StatelessWidget {
-  const _AlmanacPackPill({required this.system});
+class _DeckSelector extends StatelessWidget {
+  const _DeckSelector({required this.system, required this.language});
 
   final DivinationSystem system;
+  final AppLanguage language;
+
+  @override
+  Widget build(BuildContext context) {
+    final pack = context.watch<DeckPackController>().activeFor(system);
+    return InkWell(
+      key: const ValueKey('almanac-pack-pill'),
+      onTap: () => DeckPickerSheet.show(context, system: system),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 44),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: Row(
+            children: [
+              Text(
+                AppStrings.t(language, 'almanac.deck'),
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  pack.name.toUpperCase(),
+                  textAlign: TextAlign.end,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.expand_more,
+                size: 18,
+                color: AppColors.lavender,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeckBanner extends StatelessWidget {
+  const _DeckBanner({
+    required this.system,
+    required this.height,
+    required this.language,
+  });
+  final DivinationSystem system;
+  final double height;
+  final AppLanguage language;
 
   @override
   Widget build(BuildContext context) {
     final packs = context.watch<DeckPackController>();
-    final label = switch (system) {
-      DivinationSystem.tarot => packs.activePack.name.toUpperCase(),
-      DivinationSystem.lenormand =>
-        packs.activeLenormandPack.name.toUpperCase(),
-      DivinationSystem.runes => packs.activeRunePack.name.toUpperCase(),
-    };
-    return GestureDetector(
-      key: const ValueKey('almanac-pack-pill'),
-      onTap: () => DeckPickerSheet.show(context, system: system),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(system.packGlyph, style: const TextStyle(fontSize: 11)),
-            const SizedBox(width: 5),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 92),
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 8.5,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.lavender,
-                ),
+    final pack = packs.activeFor(system);
+    return SizedBox(
+      key: const ValueKey('deck-banner'),
+      height: height,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ExcludeSemantics(
+            child: DeckCover(pack: pack, choice: packs.coverFor(pack)),
+          ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomLeft,
+                end: Alignment.topRight,
+                colors: [Color(0xE009090D), Color(0x1809090D)],
               ),
             ),
-            const SizedBox(width: 4),
-            const Icon(
-              Icons.keyboard_arrow_down,
-              size: 13,
-              color: AppColors.lavender,
+          ),
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+              child: TextButton(
+                style: TextButton.styleFrom(foregroundColor: Colors.white),
+                onPressed: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => DeckShopScreen(system: system),
+                  ),
+                ),
+                child: Text(AppStrings.t(language, 'almanac.shopLink')),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -646,41 +659,40 @@ class _AlmanacTile extends StatelessWidget {
                 final w = constraints.maxWidth;
                 return switch (card.system) {
                   DivinationSystem.tarot => TarotCard3DWidget(
-                      card: (card as TarotDivinationCard).card,
-                      isReversed: false,
-                      state: SlotState.faceUp,
-                      width: w,
-                      height: w * 360 / 220,
-                      tilt: false,
-                      interactive: false,
-                    ),
+                    card: (card as TarotDivinationCard).card,
+                    isReversed: false,
+                    state: SlotState.faceUp,
+                    width: w,
+                    height: w * 360 / 220,
+                    tilt: false,
+                    interactive: false,
+                  ),
                   DivinationSystem.lenormand => LenormandCard3DWidget(
-                      card: (card as LenormandDivinationCard).card,
-                      isReversed: false,
-                      state: SlotState.faceUp,
-                      width: w,
-                      height: w * 360 / 220,
-                      tilt: false,
-                      interactive: false,
-                    ),
+                    card: (card as LenormandDivinationCard).card,
+                    isReversed: false,
+                    state: SlotState.faceUp,
+                    width: w,
+                    height: w * 360 / 220,
+                    tilt: false,
+                    interactive: false,
+                  ),
                   DivinationSystem.runes => Center(
-                      child: SizedBox(
-                        width: w * 0.8,
-                        height: w * 0.94,
-                        child: CustomPaint(
-                          painter: RuneStonePainter(
-                            stone:
-                                (card as RuneDivinationCard).stone,
-                            pack: context
-                                .watch<DeckPackController>()
-                                .activeRunePack,
-                            faceUp: true,
-                            ignite: 1,
-                            seed: card.id + 5,
-                          ),
+                    child: SizedBox(
+                      width: w * 0.8,
+                      height: w * 0.94,
+                      child: CustomPaint(
+                        painter: RuneStonePainter(
+                          stone: (card as RuneDivinationCard).stone,
+                          pack: context
+                              .watch<DeckPackController>()
+                              .activeRunePack,
+                          faceUp: true,
+                          ignite: 1,
+                          seed: card.id + 5,
                         ),
                       ),
                     ),
+                  ),
                 };
               },
             ),
@@ -706,7 +718,13 @@ class _AlmanacTile extends StatelessWidget {
 
 /// Row 3 — the 4-element affinity filter bar (Tarot & Runes).
 class _ElementFilterBar extends StatelessWidget {
-  const _ElementFilterBar({required this.active, required this.onToggle});
+  const _ElementFilterBar({
+    required this.active,
+    required this.onToggle,
+    required this.language,
+  });
+
+  final AppLanguage language;
 
   final Element? active;
   final ValueChanged<Element> onToggle;
@@ -714,7 +732,7 @@ class _ElementFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
       child: Row(
         children: [
           for (var i = 0; i < Element.values.length; i++) ...[
@@ -753,7 +771,10 @@ class _ElementFilterBar extends StatelessWidget {
                         ),
                         const SizedBox(width: 5),
                         Text(
-                          Element.values[i].label,
+                          AppStrings.t(
+                            language,
+                            'almanac.${Element.values[i].name}',
+                          ),
                           style: TextStyle(
                             fontSize: 11,
                             color: active == Element.values[i]
@@ -794,7 +815,7 @@ class _FilterChip extends StatelessWidget {
         onTap: onTap,
         child: Container(
           alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: active
                 ? AppColors.lavender.withValues(alpha: 0.16)
@@ -911,4 +932,3 @@ class _ZodiacTile extends StatelessWidget {
     );
   }
 }
-

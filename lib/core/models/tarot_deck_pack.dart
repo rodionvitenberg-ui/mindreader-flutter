@@ -1,3 +1,4 @@
+import 'deck_pack.dart';
 import 'tarot_card_model.dart';
 
 /// Procedural card-back pattern family for a deck pack.
@@ -18,8 +19,9 @@ enum CardNaming {
 /// One selectable tarot deck pack: asset location, procedural identity
 /// (back style + palettes as ARGB ints so the model stays Flutter-free),
 /// licensing metadata and unlock flags.
-class TarotDeckPack {
+class TarotDeckPack extends DeckPack {
   const TarotDeckPack({
+    super.coverAssets,
     required this.id,
     required this.name,
     required this.subtitle,
@@ -37,8 +39,11 @@ class TarotDeckPack {
     this.isPro = false,
   });
 
+  @override
   final String id;
+  @override
   final String name;
+  @override
   final String subtitle;
 
   /// e.g. `assets/decks/rider_waite/` — images may not exist yet; the UI
@@ -46,6 +51,7 @@ class TarotDeckPack {
   final String assetFolder;
 
   /// Short license / attribution line shown in the picker.
+  @override
   final String license;
 
   final CardBackStyle backStyle;

@@ -29,6 +29,99 @@ class AppStrings {
     'header.almanac': {AppLanguage.en: 'Almanac', AppLanguage.ru: 'Альманах'},
     'header.profile': {AppLanguage.en: 'Profile', AppLanguage.ru: 'Профиль'},
 
+    'almanac.all': {AppLanguage.en: 'All', AppLanguage.ru: 'Все'},
+    'almanac.major': {AppLanguage.en: 'Major', AppLanguage.ru: 'Старшие'},
+    'almanac.water': {AppLanguage.en: 'Water', AppLanguage.ru: 'Вода'},
+    'almanac.air': {AppLanguage.en: 'Air', AppLanguage.ru: 'Воздух'},
+    'almanac.fire': {AppLanguage.en: 'Fire', AppLanguage.ru: 'Огонь'},
+    'almanac.earth': {AppLanguage.en: 'Earth', AppLanguage.ru: 'Земля'},
+    'almanac.wands': {AppLanguage.en: 'Wands', AppLanguage.ru: 'Жезлы'},
+    'almanac.cups': {AppLanguage.en: 'Cups', AppLanguage.ru: 'Кубки'},
+    'almanac.swords': {AppLanguage.en: 'Swords', AppLanguage.ru: 'Мечи'},
+    'almanac.pentacles': {
+      AppLanguage.en: 'Pentacles',
+      AppLanguage.ru: 'Пентакли',
+    },
+    'almanac.hearts': {AppLanguage.en: 'Hearts', AppLanguage.ru: 'Червы'},
+    'almanac.diamonds': {AppLanguage.en: 'Diamonds', AppLanguage.ru: 'Бубны'},
+    'almanac.clubs': {AppLanguage.en: 'Clubs', AppLanguage.ru: 'Трефы'},
+    'almanac.spades': {AppLanguage.en: 'Spades', AppLanguage.ru: 'Пики'},
+    'almanac.cardinal': {
+      AppLanguage.en: 'Cardinal',
+      AppLanguage.ru: 'Кардинальные',
+    },
+    'almanac.fixed': {AppLanguage.en: 'Fixed', AppLanguage.ru: 'Фиксированные'},
+    'almanac.mutable': {
+      AppLanguage.en: 'Mutable',
+      AppLanguage.ru: 'Мутабельные',
+    },
+    'almanac.freyr': {
+      AppLanguage.en: 'Freyr’s Aett',
+      AppLanguage.ru: 'Атт Фрейра',
+    },
+    'almanac.hagal': {
+      AppLanguage.en: 'Hagal’s Aett',
+      AppLanguage.ru: 'Атт Хагаля',
+    },
+    'almanac.tyr': {AppLanguage.en: 'Tyr’s Aett', AppLanguage.ru: 'Атт Тюра'},
+    'almanac.picker.tarot': {
+      AppLanguage.en: 'DECK SELECTOR',
+      AppLanguage.ru: 'Выбор колоды',
+    },
+    'almanac.picker.lenormand': {
+      AppLanguage.en: 'LENORMAND PACKS',
+      AppLanguage.ru: 'Колоды Ленорман',
+    },
+    'almanac.picker.runes': {
+      AppLanguage.en: 'RUNE STONE SETS',
+      AppLanguage.ru: 'Наборы рун',
+    },
+    'almanac.deck': {AppLanguage.en: 'DECK', AppLanguage.ru: 'КОЛОДА'},
+    'almanac.cover': {AppLanguage.en: 'Cover', AppLanguage.ru: 'Заставка'},
+    'almanac.shop': {
+      AppLanguage.en: 'Deck shop',
+      AppLanguage.ru: 'Магазин колод',
+    },
+    'almanac.shopLink': {
+      AppLanguage.en: 'Deck shop →',
+      AppLanguage.ru: 'Магазин колод →',
+    },
+    'almanac.website': {
+      AppLanguage.en: 'View on website',
+      AppLanguage.ru: 'На сайте магазина',
+    },
+    'almanac.buy': {
+      AppLanguage.en: 'Buy on website',
+      AppLanguage.ru: 'Купить на сайте',
+    },
+    'almanac.launchError': {
+      AppLanguage.en: 'Could not open the shop website',
+      AppLanguage.ru: 'Не удалось открыть сайт магазина',
+    },
+    'almanac.tarot': {AppLanguage.en: 'TAROT', AppLanguage.ru: 'ТАРО'},
+    'almanac.lenormand': {
+      AppLanguage.en: 'LENORMAND',
+      AppLanguage.ru: 'ЛЕНОРМАН',
+    },
+    'almanac.runes': {AppLanguage.en: 'RUNES', AppLanguage.ru: 'РУНЫ'},
+    'almanac.zodiac': {AppLanguage.en: 'ZODIAC', AppLanguage.ru: 'ЗОДИАК'},
+    'almanac.searchCards': {
+      AppLanguage.en: 'Search card, keyword or glyph',
+      AppLanguage.ru: 'Найти карту, руну или слово',
+    },
+    'almanac.searchSigns': {
+      AppLanguage.en: 'Search sign, keyword or archetype',
+      AppLanguage.ru: 'Найти знак, слово или архетип',
+    },
+    'almanac.noCards': {
+      AppLanguage.en: 'No cards match',
+      AppLanguage.ru: 'Ничего не найдено',
+    },
+    'almanac.noSigns': {
+      AppLanguage.en: 'No signs match',
+      AppLanguage.ru: 'Знаки не найдены',
+    },
+
     'table.fit': {
       AppLanguage.en: 'Fit whole spread',
       AppLanguage.ru: 'Показать весь расклад',

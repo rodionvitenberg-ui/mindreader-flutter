@@ -343,7 +343,10 @@ class CardBackPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CardBackPainter oldDelegate) =>
-      oldDelegate.pack?.id != pack?.id;
+      oldDelegate.pack?.id != pack?.id ||
+      oldDelegate.styleOverride != styleOverride ||
+      oldDelegate.accentOverride != accentOverride ||
+      oldDelegate.secondaryOverride != secondaryOverride;
 }
 
 /// RepaintBoundary-wrapped procedural card back with an optional specular
