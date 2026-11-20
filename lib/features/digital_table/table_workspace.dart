@@ -281,6 +281,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
       _goToPane(chatPane);
       return;
     }
+    if (!_ctrl.canSynthesize) return;
     FocusManager.instance.primaryFocus?.unfocus();
     _ctrl.setReadingForSelf(_forSelf);
     _session.startGenerating();
@@ -767,7 +768,10 @@ class _TableWorkspaceState extends State<TableWorkspace>
           children: [
             if (onTable) ...[
               if (clarifier != null) ...[
-                _ClarifierBanner(question: clarifier),
+                _ClarifierBanner(
+                  question: clarifier,
+                  onCancel: ctrl.cancelClarifierScan,
+                ),
                 const SizedBox(height: 2),
               ],
               if (!_session.hasSynthesis && !_session.generatingInitial)
@@ -777,11 +781,11 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 ),
               SynthesizeChatCta(
                 key: const ValueKey('synthesize-cta'),
-                ignited: ctrl.initialSpreadAllFaceUp,
+                ignited: ctrl.canSynthesize,
                 synthesized: _session.hasSynthesis,
                 generating: _session.generatingInitial,
-                faceUp: _baseFaceUp(ctrl),
-                total: ctrl.spreadCardCount,
+                faceUp: ctrl.faceUpCount,
+                total: ctrl.slots.length,
                 onTap: _runSynthesis,
               ),
             ] else ...[
@@ -811,19 +815,6 @@ class _TableWorkspaceState extends State<TableWorkspace>
           ),
       ],
     );
-  }
-
-  /// Face-up cards among the base spread — the dormant CTA's progress
-  /// hint.
-  int _baseFaceUp(SpreadController ctrl) {
-    var n = 0;
-    final limit = ctrl.slots.length < ctrl.spreadCardCount
-        ? ctrl.slots.length
-        : ctrl.spreadCardCount;
-    for (var i = 0; i < limit; i++) {
-      if (ctrl.slots[i].state == SlotState.faceUp) n++;
-    }
-    return n;
   }
 }
 
@@ -900,11 +891,12 @@ class _ChatContextChips extends StatelessWidget {
 
 /// The subtle banner shown on the Digital Table while a clarifier question
 /// is armed: names the active question and reminds the reader that exactly
-/// ONE card is unlocked (tap the badge to dismiss).
+/// ONE card is unlocked and offers a way to cancel.
 class _ClarifierBanner extends StatelessWidget {
-  const _ClarifierBanner({required this.question});
+  const _ClarifierBanner({required this.question, required this.onCancel});
 
   final String question;
+  final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -934,6 +926,12 @@ class _ClarifierBanner extends StatelessWidget {
                 color: AppColors.lavender,
               ),
             ),
+          ),
+          IconButton(
+            tooltip: 'Cancel clarifier',
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.close, size: 16, color: AppColors.lavender),
+            onPressed: onCancel,
           ),
         ],
       ),

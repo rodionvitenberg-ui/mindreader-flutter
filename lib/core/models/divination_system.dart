@@ -32,13 +32,6 @@ extension DivinationSystemX on DivinationSystem {
         DivinationSystem.runes => '🪨',
       };
 
-  /// Deal hint shown on the live counter badge under the deck/cluster.
-  String get dealHint => switch (this) {
-        DivinationSystem.tarot => 'SWIPE ↓ TO DEAL',
-        DivinationSystem.lenormand => 'SWIPE ↓ TO DEAL',
-        DivinationSystem.runes => 'SWIPE ↓ TO CAST',
-      };
-
   /// True when drawn pieces of this system may land reversed.
   /// Lenormand is always upright; tarot and (non-symmetrical) runes flip.
   bool get systemSupportsReversals => switch (this) {

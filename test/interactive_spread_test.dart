@@ -5,6 +5,7 @@ import 'package:mindreader/core/models/dealt_card_slot.dart';
 import 'package:mindreader/core/models/divination_system.dart';
 import 'package:mindreader/core/models/spread_type.dart';
 import 'package:mindreader/features/digital_table/digital_table_screen.dart';
+import 'package:mindreader/features/digital_table/widgets/reading_bottom_sheet.dart';
 import 'package:mindreader/features/digital_table/widgets/slotted_divination_card.dart';
 import 'package:mindreader/main.dart';
 import 'package:mindreader/state/oracle_session_controller.dart';
@@ -19,7 +20,7 @@ import 'helpers/table_test_helpers.dart';
 void main() {
   final viewport = find.byKey(const ValueKey('spread-viewport'));
   final deck = find.byKey(const ValueKey('overview-deck'));
-  final lightbox = find.byKey(const ValueKey('spread-card-lightbox'));
+  final inspector = find.byType(ReadingBottomSheet);
   final field = find.byKey(const ValueKey('reading-context')).hitTestable();
 
   Future<void> openTable(
@@ -141,30 +142,13 @@ void main() {
       await tester.tap(slot);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(lightbox, findsOneWidget);
-      expect(
-        find.descendant(
-          of: lightbox,
-          matching: find.text(ctrl.slots.first.card!.name),
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('1 · ${ctrl.slots.first.role}'), findsOneWidget);
-      await tester.binding.handlePopRoute();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(lightbox, findsNothing);
-      expect(camera.value, matrix);
-      await tester.tap(slot);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Card notes'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.widget<ReadingBottomSheet>(inspector).cardIndex, 0);
       expect(find.byKey(const ValueKey('card-note-field')), findsOneWidget);
       await tester.binding.handlePopRoute();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
+      expect(inspector, findsNothing);
+      expect(camera.value, matrix);
       await tester.tap(find.text('FOCUS VIEW'));
       await tester.pump();
       expect(ctrl.slots.first.state, SlotState.faceUp);
@@ -197,26 +181,80 @@ void main() {
         await tester.tap(card);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        expect(
-          find.descendant(
-            of: lightbox,
-            matching: find.text(ctrl.slots.first.card!.name),
-          ),
-          findsOneWidget,
-        );
-        if (system == DivinationSystem.runes) {
-          final art = find.descendant(
-            of: lightbox,
-            matching: find.byType(SlottedDivinationCard),
-          );
-          await tester.drag(art, const Offset(0, 115));
-        } else {
-          await tester.tapAt(const Offset(3, 90));
-        }
+        expect(tester.widget<ReadingBottomSheet>(inspector).cardIndex, 0);
+        expect(find.byKey(const ValueKey('card-note-field')), findsOneWidget);
+        await tester.binding.handlePopRoute();
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
-        expect(lightbox, findsNothing);
+        expect(inspector, findsNothing);
         expect(ctrl.slots.first.state, SlotState.faceUp);
+      },
+    );
+  }
+
+  for (final system in [DivinationSystem.tarot, DivinationSystem.runes]) {
+    testWidgets(
+      '${system.name}: deal enables reset, reveal enables synthesis',
+      (tester) async {
+        await openTable(tester);
+        final context = table(tester);
+        final ctrl = context.read<SpreadController>()..setSystem(system);
+        if (system == DivinationSystem.tarot) {
+          ctrl.setSpreadType(SpreadType.three);
+        }
+        await tester.pump();
+        final oracle = context.read<OracleSessionController>();
+        final reset = find.text('TAP TO RESET');
+        final synthesize = find.byKey(const ValueKey('synthesize-cta'));
+        final synthesizeLabel = find.descendant(
+          of: synthesize,
+          matching: find.textContaining('SYNTHESIZE IN CHAT'),
+        );
+        final effects = find.descendant(
+          of: synthesize,
+          matching: find.byType(CustomPaint),
+        );
+        final disabledColor = Colors.grey.shade500;
+
+        await tester.tap(deck);
+        await tester.pump();
+        expect(tester.widget<Text>(reset).style!.color, disabledColor);
+        await tester.tap(reset);
+        await tester.pump();
+        expect(ctrl.dealtCount, 1);
+
+        for (var index = 1; index < ctrl.spreadCardCount; index++) {
+          await tester.tap(deck);
+          await tester.pump();
+        }
+        expect(ctrl.allDealt, isTrue);
+      expect(tester.widget<Text>(reset).style!.color, isNot(disabledColor));
+        for (var index = 0; index < ctrl.spreadCardCount - 1; index++) {
+          ctrl.flipSlot(index);
+        }
+        await tester.pump();
+        expect(
+          tester.widget<Text>(synthesizeLabel).style!.color,
+          disabledColor,
+        );
+        expect(effects, findsNothing);
+        await tester.tap(synthesize);
+        await tester.pump();
+        expect(oracle.generatingInitial, isFalse);
+        expect(oracle.hasSynthesis, isFalse);
+
+        ctrl.flipSlot(ctrl.spreadCardCount - 1);
+        await tester.pump();
+        expect(
+          tester.widget<Text>(synthesizeLabel).style!.color,
+          isNot(disabledColor),
+        );
+        expect(effects, findsOneWidget);
+        await tester.tap(reset);
+        await tester.pump();
+        expect(ctrl.dealtCount, 0);
+        expect(tester.widget<Text>(reset).style!.color, disabledColor);
+        expect(effects, findsNothing);
       },
     );
   }

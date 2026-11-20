@@ -39,7 +39,7 @@ void main() {
       // NOT the full-size tactile hero deck.
       expect(find.byKey(const ValueKey('overview-deck')), findsOneWidget);
       expect(find.byType(InteractiveDeckWidget), findsNothing);
-      expect(find.text('TAP DECK TO DEAL'), findsOneWidget);
+      expect(find.text('TAP TO RESET'), findsOneWidget);
       // Empty slots render crisp numbered position-role labels.
       expect(find.text('1 · State'), findsOneWidget);
       expect(find.text('2 · Shadow'), findsOneWidget);
@@ -61,11 +61,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700)); // spring flight
     await tester.pump();
 
-    // First slot is now a face-down board card; badge dropped to 77.
+    // The first slot contains a face-down card.
     final boardCards = find.byType(TarotCard3DWidget);
     expect(boardCards, findsOneWidget);
-    // No deck-size counter prefixes remain on the deal pill.
-    expect(find.text('SWIPE ↓ TO DEAL'), findsOneWidget);
+    expect(find.text('TAP TO RESET'), findsOneWidget);
 
     // The pillar card may sit below the viewport fold — scroll it into view
     // and tap a guaranteed-visible point near its top edge.
@@ -221,11 +220,8 @@ void main() {
     await tester.pump();
 
     expect(find.byType(TarotCard3DWidget), findsNothing);
-    expect(find.textContaining('SWIPE'), findsOneWidget);
     expect(tester.getSize(deck).width, deckWidth);
-    // The dealt cards were physically re-inserted into the deck: the
-    // The pill shows the fresh deal hint (counters were removed by design).
-    expect(find.text('SWIPE ↓ TO DEAL'), findsOneWidget);
+    expect(find.text('TAP TO RESET'), findsOneWidget);
   });
 
   testWidgets(
@@ -290,7 +286,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump();
     expect(find.byType(TarotCard3DWidget), findsOneWidget);
-    expect(find.text('SWIPE ↓ TO DEAL'), findsOneWidget);
+    expect(find.text('TAP TO RESET'), findsOneWidget);
   });
 
   testWidgets('almanac deck picker changes the active pack on the fly',
@@ -395,7 +391,7 @@ void main() {
     await tester.pump(); // slot materializes
     await tester.pump(const Duration(milliseconds: 800)); // 750ms mist entrance
     await tester.pump();
-    expect(find.text('TAP DECK TO DEAL'), findsOneWidget);
+    expect(find.text('TAP TO RESET'), findsOneWidget);
     final dealt = find.byType(TarotCard3DWidget);
     expect(dealt, findsOneWidget);
 

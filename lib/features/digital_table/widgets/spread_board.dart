@@ -12,7 +12,7 @@ import '../../../state/spread_controller.dart';
 import 'elemental_threads_painter.dart';
 import 'shuffle_physics.dart';
 import 'slotted_divination_card.dart';
-import 'spread_card_lightbox.dart';
+import 'reading_bottom_sheet.dart';
 import 'spread_deck_dock.dart';
 import 'spread_threads_layer.dart';
 import 'spread_viewport.dart';
@@ -197,7 +197,8 @@ class _OverviewSlotState extends State<_OverviewSlot>
         width: deckWidth,
         height: deckHeight,
         onFlip: () => context.read<SpreadController>().flipSlot(slot.index),
-        onTapFaceUp: () => showSpreadCardLightbox(context, slot),
+        onTapFaceUp: () =>
+            ReadingBottomSheet.show(context, cardIndex: slot.index),
       ),
       builder: (context, child) {
         final v = Curves.easeOutCubic.transform(_entrance.value);

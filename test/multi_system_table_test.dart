@@ -95,8 +95,7 @@ void main() {
 
     expect(find.byType(InteractiveDeckWidget), findsNothing);
     expect(find.byType(InteractiveRuneStonesWidget), findsOneWidget);
-    // The cast hint replaces the deal hint.
-    expect(find.text('SWIPE ↓ TO CAST'), findsOneWidget);
+    expect(find.text('TAP TO RESET'), findsOneWidget);
   });
 
   testWidgets('almanac system switcher drives per-system grids and filters', (

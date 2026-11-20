@@ -34,10 +34,6 @@ class AppStrings {
       AppLanguage.en: 'Deal next card',
       AppLanguage.ru: 'Выложить следующую карту',
     },
-    'table.cardNotes': {
-      AppLanguage.en: 'Card notes',
-      AppLanguage.ru: 'Заметки к карте',
-    },
     'table.myself': {
       AppLanguage.en: 'FOR MYSELF (PROFILE)',
       AppLanguage.ru: 'НА СЕБЯ',

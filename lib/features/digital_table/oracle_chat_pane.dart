@@ -251,7 +251,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
   }
 
   Widget _emptyState(SpreadController ctrl) {
-    final ready = ctrl.initialSpreadAllFaceUp;
+    final ready = ctrl.canSynthesize;
     // Scrollable + centered: on a tall screen the empty state is vertically
     // centered, and on a short/landscape screen it scrolls instead of
     // overflowing the Column.

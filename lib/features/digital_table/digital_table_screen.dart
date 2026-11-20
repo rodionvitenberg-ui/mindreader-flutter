@@ -330,6 +330,8 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     }
     final pack = context.watch<DeckPackController>().activePack;
     final flight = _flight;
+    final canReset =
+        ctrl.allDealt && ctrl.dealtCount >= ctrl.initialSpreadCardCount;
     final viewMode = ctrl.isSpreadOverview
         ? TableViewMode.spread
         : TableViewMode.focus;
@@ -351,11 +353,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
         child: SpreadBoard(
           header: header,
           onDeal: _onOverviewDeckTap,
-          badge: _DeckCounterBadge(
-            ctrl: ctrl,
-            onReset: _resetTable,
-            dealHint: 'TAP DECK TO DEAL',
-          ),
+          badge: _ResetTableButton(enabled: canReset, onReset: _resetTable),
         ),
       );
     }
@@ -411,7 +409,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
                             ],
                           ),
                         ),
-                        // Live counter badge hugging the deck's bottom
+                        // Reset button hugging the deck's bottom
                         // edge — lives at the content-Stack level so its
                         // overlap area stays fully hit-testable.
                         Positioned(
@@ -419,10 +417,9 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
                           left: 0,
                           right: 0,
                           child: Center(
-                            child: _DeckCounterBadge(
-                              ctrl: ctrl,
+                            child: _ResetTableButton(
+                              enabled: canReset,
                               onReset: _resetTable,
-                              dealHint: ctrl.system.dealHint,
                             ),
                           ),
                         ),
@@ -777,68 +774,41 @@ class _SystemSegment extends StatelessWidget {
   }
 }
 
-/// Live counter badge hugging the deck's bottom edge: decrements in real
-/// time as the 78-card stack depletes; invites a tap-to-reset once the
-/// spread is complete (the deck itself never shrinks).
-class _DeckCounterBadge extends StatelessWidget {
-  const _DeckCounterBadge({
-    required this.ctrl,
-    this.onReset,
-    this.dealHint = 'SWIPE ↓ TO DEAL',
-  });
+/// Resets the current table after the last card or rune is dealt.
+class _ResetTableButton extends StatelessWidget {
+  const _ResetTableButton({required this.enabled, required this.onReset});
 
-  final SpreadController ctrl;
-  final VoidCallback? onReset;
-
-  /// Mode-specific deal instruction ('SWIPE ↓' in focus, 'TAP DECK' in
-  /// spread overview).
-  final String dealHint;
+  final bool enabled;
+  final VoidCallback onReset;
 
   @override
   Widget build(BuildContext context) {
-    final armed = ctrl.pendingClarifierQuestion != null;
-    final atMax = ctrl.dealtCount >= SpreadController.maxTableCards;
-    final canReset = ctrl.nextEmptySlotIndex == null && onReset != null;
-    // NO deck-size prefixes — the pill shows only the action (the old
-    // "78 ·" counter and "IN DECK" text are gone by design).
-    final String label;
-    if (atMax) {
-      label = '10/10 TABLE FULL';
-    } else if (armed) {
-      label = 'PULL CLARIFIER ↓';
-    } else if (canReset) {
-      label = 'TAP TO RESET · NEW SPREAD';
-    } else if (ctrl.nextEmptySlotIndex != null) {
-      label = dealHint;
-    } else {
-      label = 'IN DECK';
-    }
-    return GestureDetector(
-      onTap: armed && !atMax
-          ? () {
-              // The badge toggles: dismiss the armed clarifier question.
-              HapticFeedback.selectionClick();
-              ctrl.cancelClarifierScan();
-            }
-          : canReset
-          ? () {
-              HapticFeedback.selectionClick();
-              onReset!();
-            }
-          : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(11),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 8.5,
-            letterSpacing: 1.6,
-            color: AppColors.lavender,
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: enabled ? onReset : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: enabled
+                ? AppColors.lavender.withValues(alpha: 0.12)
+                : Colors.grey.shade900,
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(
+              color: enabled
+                  ? AppColors.lavender.withValues(alpha: 0.45)
+                  : Colors.grey.shade800,
+            ),
+          ),
+          child: Text(
+            'TAP TO RESET',
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 8.5,
+              letterSpacing: 1.6,
+              color: enabled ? AppColors.lavender : Colors.grey.shade500,
+            ),
           ),
         ),
       ),

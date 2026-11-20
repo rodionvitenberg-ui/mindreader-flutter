@@ -238,6 +238,8 @@ class SpreadController extends ChangeNotifier {
   bool get allDealt => _slots.every((s) => s.state != SlotState.empty);
   bool get allFaceUp =>
       _slots.isNotEmpty && _slots.every((s) => s.state == SlotState.faceUp);
+  bool get canSynthesize => _slots.length >= initialSpreadCardCount && allFaceUp;
+
   int get faceUpCount => _slots.where((s) => s.state == SlotState.faceUp).length;
 
   /// Cards currently lying on the table (any slot that holds a card).

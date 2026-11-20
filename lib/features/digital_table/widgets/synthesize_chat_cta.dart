@@ -11,11 +11,9 @@ import '../../../core/theme/app_colors.dart';
 /// navigation dock.
 ///
 /// Two states:
-/// * **Dormant** (base spread not fully dealt & flipped face-up): dim
-///   (`opacity 0.42`), muted slate border, no glow; the label shows the
-///   flip progress (`FLIP ALL CARDS` / `N OF M FACE-UP`); tapping fires
-///   only a gentle haptic hint.
-/// * **Ignited** (all base cards face-up): an ignition burst plays once
+/// * **Dormant**: disabled, gray, and static while any cards remain
+///   to be drawn or revealed. The label shows reveal progress.
+/// * **Ignited** (all cards face-up): an ignition burst plays once
 ///   (`scale 0.95 → 1.04 → 1.0` + bright flash) and a continuous
 ///   starlight/sparkle border + pulsing lavender/cyan aura orbits the
 ///   button. Tapping runs the synthesis and slides to the Oracle Chat.
@@ -30,7 +28,7 @@ class SynthesizeChatCta extends StatefulWidget {
     required this.onTap,
   });
 
-  /// True the moment every base spread card is dealt AND flipped face-up.
+  /// True once the entire spread is dealt and revealed.
   final bool ignited;
 
   /// True once a synthesis already exists — the label becomes
@@ -58,7 +56,7 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
   late final AnimationController _loop = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2600),
-  )..repeat();
+  );
 
   /// One-shot ignition burst (scale 0.95 → 1.04 → 1.0 + bright flash).
   late final AnimationController _burst = AnimationController(
@@ -68,30 +66,49 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
 
   late final TweenSequence<double> _burstScale = TweenSequence<double>([
     TweenSequenceItem(
-      tween: Tween(begin: 0.95, end: 1.04)
-          .chain(CurveTween(curve: Curves.easeOutCubic)),
+      tween: Tween(
+        begin: 0.95,
+        end: 1.04,
+      ).chain(CurveTween(curve: Curves.easeOutCubic)),
       weight: 50,
     ),
     TweenSequenceItem(
-      tween: Tween(begin: 1.04, end: 1.0)
-          .chain(CurveTween(curve: Curves.easeInOutCubic)),
+      tween: Tween(
+        begin: 1.04,
+        end: 1.0,
+      ).chain(CurveTween(curve: Curves.easeInOutCubic)),
       weight: 50,
     ),
   ]);
+
+  bool get _enabled => widget.ignited && !widget.generating;
 
   @override
   void initState() {
     super.initState();
     // A restored/readied session mounts already ignited — no burst replay.
-    if (widget.ignited) _burst.value = 1.0;
+    if (_enabled) {
+      _burst.value = 1.0;
+      _loop.repeat();
+    }
   }
 
   @override
   void didUpdateWidget(covariant SynthesizeChatCta oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.ignited && !oldWidget.ignited) {
-      HapticFeedback.mediumImpact();
-      _burst.forward(from: 0);
+    final wasEnabled = oldWidget.ignited && !oldWidget.generating;
+    if (_enabled == wasEnabled) return;
+    if (_enabled) {
+      _loop.repeat();
+      if (!oldWidget.ignited) {
+        HapticFeedback.mediumImpact();
+        _burst.forward(from: 0);
+      } else {
+        _burst.value = 1.0;
+      }
+    } else {
+      _loop.stop();
+      _burst.stop();
     }
   }
 
@@ -103,39 +120,32 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
   }
 
   void _handleTap() {
-    if (widget.generating) return;
-    if (!widget.ignited) {
-      // Dormant: gentle haptic progress hint — flips are still pending.
-      HapticFeedback.selectionClick();
-      return;
-    }
     HapticFeedback.mediumImpact();
     widget.onTap();
   }
 
   String get _label {
     if (widget.generating) return 'WEAVING THE READING · · ·';
+    if (widget.synthesized) return '✦ OPEN ORACLE CHAT →';
     if (!widget.ignited) {
       if (widget.faceUp <= 0) return '✦ SYNTHESIZE IN CHAT (FLIP ALL CARDS)';
       return '✦ SYNTHESIZE IN CHAT '
           '(${widget.faceUp} OF ${widget.total} FACE-UP)';
     }
-    return widget.synthesized
-        ? '✦ OPEN ORACLE CHAT →'
-        : '✦ SYNTHESIZE IN CHAT →';
+    return '✦ SYNTHESIZE IN CHAT →';
   }
-
 
   @override
   Widget build(BuildContext context) {
-    final ignited = widget.ignited && !widget.generating;
-    return Opacity(
-      opacity: ignited ? 1.0 : 0.42,
+    final ignited = _enabled;
+    return Semantics(
+      button: true,
+      enabled: ignited,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: _handleTap,
+        onTap: ignited ? _handleTap : null,
         child: AnimatedBuilder(
-          animation: Listenable.merge([_loop, _burst]),
+          animation: _burst,
           builder: (context, _) {
             return Transform.scale(
               scale: ignited ? _burstScale.evaluate(_burst) : 1.0,
@@ -163,19 +173,20 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
                               ],
                             )
                           : null,
-                      color: ignited
-                          ? null
-                          : AppColors.surface.withValues(alpha: 0.55),
+                      color: ignited ? null : Colors.grey.shade900,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: ignited ? AppColors.lavender : AppColors.border,
+                        color: ignited
+                            ? AppColors.lavender
+                            : Colors.grey.shade800,
                         width: ignited ? 1.2 : 1.0,
                       ),
                       boxShadow: ignited
                           ? [
                               BoxShadow(
-                                color:
-                                    AppColors.lavender.withValues(alpha: 0.3),
+                                color: AppColors.lavender.withValues(
+                                  alpha: 0.3,
+                                ),
                                 blurRadius: 14,
                               ),
                             ]
@@ -190,7 +201,7 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
                         fontWeight: FontWeight.w700,
                         color: ignited
                             ? AppColors.lavender
-                            : AppColors.textMuted,
+                            : Colors.grey.shade500,
                       ),
                     ),
                   ),
@@ -201,8 +212,9 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
-                            color: Colors.white
-                                .withValues(alpha: 0.35 * (1.0 - _burst.value)),
+                            color: Colors.white.withValues(
+                              alpha: 0.35 * (1.0 - _burst.value),
+                            ),
                           ),
                         ),
                       ),
@@ -217,14 +229,13 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
   }
 }
 
-
 /// Continuous shimmering starlight border: a pulsing lavender/cyan aura
 /// plus 6 orbiting sparkles walking the rounded-rect perimeter. Driven by
 /// the host's repeating [animation] via `super(repaint:)` — repaints on
 /// every tick at frame rate.
 class _StarlightBorderPainter extends CustomPainter {
   _StarlightBorderPainter({required this.animation})
-      : super(repaint: animation);
+    : super(repaint: animation);
 
   final Animation<double> animation;
 
