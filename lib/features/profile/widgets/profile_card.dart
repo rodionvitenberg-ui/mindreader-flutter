@@ -138,13 +138,15 @@ class ProfilePill extends StatelessWidget {
               Icon(icon, size: 13, color: color),
               const SizedBox(width: 6),
             ],
-            Text(
-              label,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 9,
-                letterSpacing: 1.2,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                color: color,
+            Flexible(
+              child: Text(
+                label,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 9,
+                  letterSpacing: 1.2,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  color: color,
+                ),
               ),
             ),
           ],

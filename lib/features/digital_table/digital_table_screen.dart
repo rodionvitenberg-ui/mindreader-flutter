@@ -12,11 +12,9 @@ import '../../core/models/rune_stone.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/models/tarot_deck_pack.dart';
 import '../../core/theme/app_colors.dart';
-import '../../state/app_settings_controller.dart';
 import '../../state/deck_pack_controller.dart';
 import '../../state/spread_controller.dart';
-import '../../state/user_profile_controller.dart';
-import '../profile/profile_screen.dart';
+import '../profile/widgets/profile_header.dart';
 import 'widgets/board_pillar_view.dart';
 import 'widgets/deal_lock_prompt.dart';
 import 'widgets/foil_glint.dart';
@@ -28,10 +26,6 @@ import 'widgets/shuffle_physics.dart';
 import 'widgets/spread_blueprint_carousel.dart';
 import 'widgets/spread_board.dart';
 import 'widgets/tarot_card_3d_widget.dart';
-
-/// Fixed header of the ACTIVE table (Step 2): the `←` back button + the
-/// reordered `[SPREAD VIEW | FOCUS VIEW]` toggle in one clean row.
-const _activeHeaderHeight = 56.0;
 
 /// The two switchable view modes of the Digital Table.
 enum TableViewMode {
@@ -361,7 +355,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
       bottom: false,
       child: Column(
         children: [
-          SizedBox(height: _activeHeaderHeight, child: header),
+          SizedBox(height: ProfileHeader.actionSize, child: header),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -464,65 +458,26 @@ class _ActiveTableHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: _ViewModeToggle(
-              key: toggleKey,
-              mode: mode,
-              onChanged: onModeChanged,
-            ),
+    return ProfileHeader(
+      leading: BackButton(
+        key: const ValueKey('table-back-button'),
+        color: AppColors.lavender,
+        onPressed: onBack,
+      ),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: _ViewModeToggle(
+            key: toggleKey,
+            mode: mode,
+            onChanged: onModeChanged,
           ),
-        ),
-        Positioned(
-          left: 8,
-          top: 0,
-          bottom: 0,
-          child: Center(child: _BackButton(onTap: onBack)),
-        ),
-      ],
-    );
-  }
-}
-
-/// The `←` back button (top-left) on the active table — replaces the profile
-/// avatar while a spread is running.
-class _BackButton extends StatelessWidget {
-  const _BackButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      key: const ValueKey('table-back-button'),
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.surface.withValues(alpha: 0.9),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: const Icon(
-          Icons.arrow_back,
-          size: 20,
-          color: AppColors.lavender,
         ),
       ),
     );
   }
 }
 
-/// Step 1 — the pre-table spread selection view (the DEFAULT entry state of
-/// the Table tab before a spread is started): the top-left profile avatar,
-/// the [TAROT | LENORMAND | RUNES] system switcher, a clean "Choose Spread"
-/// title, and ONE horizontal swipeable row of tall spread blueprint cards.
 class _SpreadSelectionView extends StatelessWidget {
   const _SpreadSelectionView();
 
@@ -530,97 +485,45 @@ class _SpreadSelectionView extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       bottom: false,
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 48,
-              child: Stack(
+      child: Column(
+        children: [
+          ProfileHeader(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: _SystemSelector(ctrl: context.watch<SpreadController>()),
+              ),
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: _SystemSelector(
-                        ctrl: context.watch<SpreadController>(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+                    child: Text(
+                      'Choose Spread',
+                      style: GoogleFonts.cormorantGaramond(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
-                  const Positioned(
-                    left: 12,
-                    top: 6,
-                    child: _ProfileAvatarButton(),
-                  ),
+                  const SpreadBlueprintCarousel(),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-              child: Text(
-                'Choose Spread',
-                style: GoogleFonts.cormorantGaramond(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            const SpreadBlueprintCarousel(),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Circular obsidian-lavender profile avatar (36×36) in the header's top-left
-/// corner: the reader's initial (or an arcane glyph when the profile is
-/// unnamed) + a thin lavender PRO ring when unlocked. Tapping pushes the
-/// full-page [ProfileScreen], keeping the bottom dock clean.
-class _ProfileAvatarButton extends StatelessWidget {
-  const _ProfileAvatarButton();
-
-  @override
-  Widget build(BuildContext context) {
-    final name = context.watch<UserProfileController>().displayName.trim();
-    final isPro = context.watch<AppSettingsController>().isProUnlocked;
-    final initial = name.isEmpty
-        ? '✦'
-        : String.fromCharCode(name.runes.first).toUpperCase();
-    return GestureDetector(
-      key: const ValueKey('profile-avatar-button'),
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.selectionClick();
-        Navigator.of(context)
-            .push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
-      },
-      child: Container(
-        width: 36,
-        height: 36,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.surface.withValues(alpha: 0.9),
-          border: Border.all(
-            color: isPro ? AppColors.lavender : AppColors.border,
-            width: isPro ? 1.6 : 1.0,
-          ),
-        ),
-        child: Text(
-          initial,
-          style: GoogleFonts.cormorantGaramond(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            color: AppColors.lavender,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The TAROT | LENORMAND | RUNES segmented system selector (header Row 2).
+/// The TAROT | LENORMAND | RUNES segmented system selector.
 class _SystemSelector extends StatelessWidget {
   const _SystemSelector({required this.ctrl});
 

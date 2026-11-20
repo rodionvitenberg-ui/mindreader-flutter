@@ -9,6 +9,7 @@ import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/spread_controller.dart';
+import '../../profile/widgets/profile_header.dart';
 import 'elemental_threads_painter.dart';
 import 'shuffle_physics.dart';
 import 'slotted_divination_card.dart';
@@ -35,13 +36,13 @@ class SpreadBoard extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, area) {
         final dockHeight = math.min(
-          area.maxHeight * 0.40,
+          math.max(ProfileHeader.actionSize + 26, area.maxHeight * 0.40),
           area.maxHeight < 300 ? 82.0 : 110.0,
         );
         return Column(
           children: [
             SizedBox(
-              height: dockHeight,
+              height: math.min(area.maxHeight, dockHeight),
               width: double.infinity,
               child: SpreadDeckDock(
                 header: header,

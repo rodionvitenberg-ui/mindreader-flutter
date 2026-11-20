@@ -26,6 +26,9 @@ class AppStrings {
     'nav.settings': {AppLanguage.en: 'SETTINGS', AppLanguage.ru: 'НАСТРОЙКИ'},
     'nav.profile': {AppLanguage.en: 'PROFILE', AppLanguage.ru: 'ПРОФИЛЬ'},
 
+    'header.almanac': {AppLanguage.en: 'Almanac', AppLanguage.ru: 'Альманах'},
+    'header.profile': {AppLanguage.en: 'Profile', AppLanguage.ru: 'Профиль'},
+
     'table.fit': {
       AppLanguage.en: 'Fit whole spread',
       AppLanguage.ru: 'Показать весь расклад',

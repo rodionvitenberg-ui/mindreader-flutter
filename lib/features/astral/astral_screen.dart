@@ -13,6 +13,7 @@ import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/astral_controller.dart';
+import '../profile/widgets/profile_header.dart';
 import 'natal_profile_detail_sheet.dart';
 import 'widgets/synastry_window.dart';
 import 'widgets/astral_cosmic_bar.dart';
@@ -222,13 +223,14 @@ class _AstralScreenState extends State<AstralScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            ProfileHeader(
+              child: AstralCosmicBar(phase: _phase, streak: _streak),
+            ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  AstralCosmicBar(phase: _phase, streak: _streak),
-                  const SizedBox(height: 16),
                   AstralProfileBar(
                     profiles: astral.profiles,
                     activeIndex: astral.activeProfileIndex,

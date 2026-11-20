@@ -676,8 +676,35 @@ class _TableWorkspaceState extends State<TableWorkspace>
         bottom: false,
         child: Column(
           children: [
-            // Slim physical-sync ribbon: the table hosts cards photographed
-            // from the reader's real deck (the header pill row was decluttered).
+            Expanded(
+              child: PageView(
+                controller: _paneController,
+                onPageChanged: (index) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _pane = index);
+                },
+                children: [
+                  const DigitalTableScreen(),
+                  OracleChatPane(
+                    session: _session,
+                    capsuleText: _capsuleText,
+                    onBackToTable: () => _goToPane(tablePane),
+                    onSynthesize: _runSynthesis,
+                    onClarifierQuestion: _requestClarifierForQuestion,
+                    onFocusInput: () => _capsuleFocus.requestFocus(),
+                    onScanClarifier: _scanClarifier,
+                    onResumeCamera: () => widget.onResumeCamera?.call(),
+                  ),
+                  SpreadHistoryPane(
+                    history: _history,
+                    onNewSpread: _newSpread,
+                    onRestore: _restoreSession,
+                    onBackToTable: () => _goToPane(tablePane),
+                  ),
+                ],
+              ),
+            ),
+            // Keep the photographed-spread indicator with the table actions.
             if (_pane == tablePane &&
                 ctrl.sourceMode == TableSourceMode.physicalCameraSync)
               Container(
@@ -713,33 +740,6 @@ class _TableWorkspaceState extends State<TableWorkspace>
                   ],
                 ),
               ),
-            Expanded(
-              child: PageView(
-                controller: _paneController,
-                onPageChanged: (index) {
-                  HapticFeedback.selectionClick();
-                  setState(() => _pane = index);
-                },
-                children: [
-                  const DigitalTableScreen(),
-                  OracleChatPane(
-                    session: _session,
-                    capsuleText: _capsuleText,
-                    onBackToTable: () => _goToPane(tablePane),
-                    onSynthesize: _runSynthesis,
-                    onClarifierQuestion: _requestClarifierForQuestion,
-                    onFocusInput: () => _capsuleFocus.requestFocus(),
-                    onScanClarifier: _scanClarifier,
-                    onResumeCamera: () => widget.onResumeCamera?.call(),
-                  ),
-                  SpreadHistoryPane(
-                    history: _history,
-                    onNewSpread: _newSpread,
-                    onRestore: _restoreSession,
-                  ),
-                ],
-              ),
-            ),
             if (_pane != historyPane) _buildBottomArea(ctrl),
           ],
         ),

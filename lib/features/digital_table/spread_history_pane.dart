@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/session_history_controller.dart';
 import '../../state/spread_session_snapshot.dart';
+import '../profile/widgets/profile_header.dart';
 
 /// Pane 2 — SPREAD HISTORY & NOTEBOOKS: the local-first archive of saved
 /// readings (Gemini sidebar/history inspired). One tap restores the exact
@@ -20,10 +21,12 @@ class SpreadHistoryPane extends StatefulWidget {
     required this.history,
     required this.onNewSpread,
     required this.onRestore,
+    required this.onBackToTable,
   });
 
   final SessionHistoryController history;
   final VoidCallback onNewSpread;
+  final VoidCallback onBackToTable;
   final ValueChanged<SpreadSessionSnapshot> onRestore;
 
   @override
@@ -49,37 +52,30 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              ProfileHeader(
+                leading: BackButton(
+                  color: AppColors.lavender,
+                  onPressed: widget.onBackToTable,
+                ),
                 child: Row(
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'SPREAD HISTORY',
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 13,
-                              letterSpacing: 2.4,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'LOCAL-FIRST · NOTHING LEAVES THIS DEVICE',
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 7.5,
-                              letterSpacing: 1.4,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        'SPREAD HISTORY',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 13,
+                          letterSpacing: 2.4,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 4),
                     _ProBadge(
-                      unlocked: context.watch<AppSettingsController>()
+                      unlocked: context
+                          .watch<AppSettingsController>()
                           .isProUnlocked,
                     ),
                   ],
@@ -122,15 +118,15 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
                         ),
                       )
                     : sessions.isEmpty
-                        ? _EmptyArchive(filtered: _notebook != 'All Readings')
-                        : ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                            itemCount: sessions.length,
-                            itemBuilder: (context, i) => _SessionTile(
-                              session: sessions[i],
-                              onTap: () => widget.onRestore(sessions[i]),
-                            ),
-                          ),
+                    ? _EmptyArchive(filtered: _notebook != 'All Readings')
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+                        itemCount: sessions.length,
+                        itemBuilder: (context, i) => _SessionTile(
+                          session: sessions[i],
+                          onTap: () => widget.onRestore(sessions[i]),
+                        ),
+                      ),
               ),
             ],
           );

@@ -13,6 +13,7 @@ import '../../core/theme/app_colors.dart';
 import '../../state/oracle_session_controller.dart';
 import '../../state/spread_controller.dart';
 import '../../state/synthesis_session.dart';
+import '../profile/widgets/profile_header.dart';
 import 'widgets/oracle_session_meta_bar.dart';
 import 'widgets/reading_subject_toggle.dart';
 
@@ -155,7 +156,13 @@ class _OracleChatPaneState extends State<OracleChatPane> {
       bottom: false,
       child: Column(
         children: [
-          _SpreadHeaderStrip(ctrl: ctrl, onTap: widget.onBackToTable),
+          ProfileHeader(
+            leading: BackButton(
+              color: AppColors.lavender,
+              onPressed: widget.onBackToTable,
+            ),
+            child: _SpreadHeaderStrip(ctrl: ctrl, onTap: widget.onBackToTable),
+          ),
           OracleSessionMetaBar(
             session: session,
             voice: _voice,
@@ -363,8 +370,7 @@ class _SpreadHeaderStrip extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
-        height: 62,
-        margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+        height: ProfileHeader.actionSize,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           color: AppColors.surface.withValues(alpha: 0.82),
@@ -373,17 +379,19 @@ class _SpreadHeaderStrip extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.chevron_left, size: 18, color: AppColors.lavender),
-            const SizedBox(width: 2),
-            Text(
-              'CURRENT SPREAD',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8.5,
-                letterSpacing: 1.6,
-                color: AppColors.textMuted,
+            Flexible(
+              child: Text(
+                'CURRENT SPREAD',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 8.5,
+                  letterSpacing: 1.6,
+                  color: AppColors.textMuted,
+                ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 6),
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -400,16 +408,16 @@ class _SpreadHeaderStrip extends StatelessWidget {
                           color: AppColors.textMuted.withValues(alpha: 0.7),
                         ),
                       ),
+                    const SizedBox(width: 6),
+                    for (final e in Element.values)
+                      if ((balance[e] ?? 0) > 0) ...[
+                        const SizedBox(width: 4),
+                        _ElementMiniBadge(element: e, count: balance[e]!),
+                      ],
                   ],
                 ),
               ),
             ),
-            const SizedBox(width: 6),
-            for (final e in Element.values)
-              if ((balance[e] ?? 0) > 0) ...[
-                const SizedBox(width: 4),
-                _ElementMiniBadge(element: e, count: balance[e]!),
-              ],
           ],
         ),
       ),

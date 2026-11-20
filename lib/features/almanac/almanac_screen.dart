@@ -21,6 +21,7 @@ import '../digital_table/widgets/deck_picker_sheet.dart';
 import '../digital_table/widgets/lenormand_card_3d_widget.dart';
 import '../digital_table/widgets/rune_stone_3d_widget.dart';
 import '../digital_table/widgets/tarot_card_3d_widget.dart';
+import '../profile/widgets/profile_header.dart';
 import 'card_detail_sheet.dart';
 import 'zodiac_detail_sheet.dart';
 
@@ -186,111 +187,135 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
     final zodiacEntries = _visibleZodiac;
     return SafeArea(
       bottom: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Row 1 — the [ TAROT | LENORMAND | RUNES ] segmented switcher
-          // (replaces the old "ALMANAC 78 OF 78" header).
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-            child: Center(
-              child: _AlmanacSystemSwitcher(
-                tab: _tab,
-                onChanged: (t) {
-                  HapticFeedback.selectionClick();
-                  setState(() {
-                    _tab = t;
-                    _filter = null;
-                    _elementFilter = null;
-                    _lenormandSuitFilter = null;
-                    _runeElementFilter = null;
-                    _runeAettFilter = null;
-                    _zodiacElementFilter = null;
-                    _zodiacModalityFilter = null;
-                  });
-                  // Keep the Digital Table in sync with the browsing system;
-                  // ZODIAC is not a divination system, so it is untouched.
-                  final s = _system;
-                  if (s != null) context.read<SpreadController>().setSystem(s);
-                },
+      child: LayoutBuilder(
+        builder: (context, constraints) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const ProfileHeader(child: ProfileHeaderTitle('header.almanac')),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: constraints.maxHeight * 0.60,
               ),
-            ),
-          ),
-          // Row 2 — search bar (~62%) + the pack pill directly to its right.
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: TextField(
-                    key: const ValueKey('almanac-search'),
-                    onChanged: (v) => setState(() => _query = v),
-                    style: const TextStyle(
-                        fontSize: 13, color: AppColors.textPrimary),
-                    cursorColor: AppColors.lavender,
-                    decoration: InputDecoration(
-                      hintText: _tab == AlmanacTab.zodiac
-                          ? 'Search sign, keyword or archetype'
-                          : 'Search card, keyword or glyph',
-                      hintStyle: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textMuted,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.search_outlined,
-                        size: 18,
-                        color: AppColors.textMuted,
-                      ),
-                      filled: true,
-                      fillColor: AppColors.surface.withValues(alpha: 0.6),
-                      contentPadding:
-                          const EdgeInsets.symmetric(vertical: 10),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide:
-                            const BorderSide(color: AppColors.lavender),
+              child: SingleChildScrollView(
+                primary: false,
+                child: Column(
+                  children: [
+                    // System switcher above the search and filters.
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+                      child: Center(
+                        child: _AlmanacSystemSwitcher(
+                          tab: _tab,
+                          onChanged: (t) {
+                            HapticFeedback.selectionClick();
+                            setState(() {
+                              _tab = t;
+                              _filter = null;
+                              _elementFilter = null;
+                              _lenormandSuitFilter = null;
+                              _runeElementFilter = null;
+                              _runeAettFilter = null;
+                              _zodiacElementFilter = null;
+                              _zodiacModalityFilter = null;
+                            });
+                            // Keep the Digital Table in sync with the browsing system;
+                            // ZODIAC is not a divination system, so it is untouched.
+                            final s = _system;
+                            if (s != null) {
+                              context.read<SpreadController>().setSystem(s);
+                            }
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (_system != null) _AlmanacPackPill(system: _system!),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Rows 3/4 — context-aware per-system filter bars.
-          ..._filterBars(),
-          Expanded(
-            child: _tab == AlmanacTab.zodiac
-                ? _zodiacGrid(zodiacEntries)
-                : cards.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No cards match',
-                          style: TextStyle(color: AppColors.textMuted),
-                        ),
-                      )
-                    : GridView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 14,
-                          crossAxisSpacing: 14,
-                          childAspectRatio: 0.52,
-                        ),
-                        itemCount: cards.length,
-                        itemBuilder: (context, i) =>
-                            _AlmanacTile(card: cards[i]),
+                    // Row 2 — search bar (~62%) + the pack pill directly to its right.
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: TextField(
+                              key: const ValueKey('almanac-search'),
+                              onChanged: (v) => setState(() => _query = v),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textPrimary,
+                              ),
+                              cursorColor: AppColors.lavender,
+                              decoration: InputDecoration(
+                                hintText: _tab == AlmanacTab.zodiac
+                                    ? 'Search sign, keyword or archetype'
+                                    : 'Search card, keyword or glyph',
+                                hintStyle: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textMuted,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.search_outlined,
+                                  size: 18,
+                                  color: AppColors.textMuted,
+                                ),
+                                filled: true,
+                                fillColor: AppColors.surface.withValues(
+                                  alpha: 0.6,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.border,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: AppColors.lavender,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (_system != null)
+                            _AlmanacPackPill(system: _system!),
+                        ],
                       ),
-          ),
-        ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Rows 3/4 — context-aware per-system filter bars.
+                    ..._filterBars(),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: _tab == AlmanacTab.zodiac
+                  ? _zodiacGrid(zodiacEntries)
+                  : cards.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No cards match',
+                        style: TextStyle(color: AppColors.textMuted),
+                      ),
+                    )
+                  : GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 14,
+                            crossAxisSpacing: 14,
+                            childAspectRatio: 0.52,
+                          ),
+                      itemCount: cards.length,
+                      itemBuilder: (context, i) => _AlmanacTile(card: cards[i]),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

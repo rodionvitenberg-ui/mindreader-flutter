@@ -230,6 +230,7 @@ void main() {
               body: SpreadHistoryPane(
                 history: history,
                 onNewSpread: () {},
+                onBackToTable: () {},
                 onRestore: (s) => restored = s,
               ),
             ),

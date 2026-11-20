@@ -11,6 +11,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/deck_pack_controller.dart';
 import '../../../state/spread_controller.dart';
+import '../../profile/widgets/profile_header.dart';
 import 'rune_stone_3d_widget.dart';
 import 'shuffle_physics.dart';
 import 'tarot_card_3d_widget.dart';
@@ -35,50 +36,57 @@ class SpreadDeckDock extends StatelessWidget {
         color: AppColors.surface.withValues(alpha: 0.72),
         border: const Border(bottom: BorderSide(color: AppColors.border)),
       ),
-      child: Column(
-        children: [
-          Expanded(flex: 46, child: header),
-          Expanded(
-            flex: 54,
-            child: LayoutBuilder(
-              builder: (context, dock) {
-                final scale = math.min(
-                  1.0,
-                  dock.maxHeight * 0.84 / overviewDeckHeight,
-                );
-                final height = overviewDeckHeight * scale;
-                final width = overviewDeckWidth * scale;
-                final badgeWidth = math.max(
-                  0.0,
-                  (dock.maxWidth - width) / 2 - 8,
-                );
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Center(
-                      child: _OverviewDeck(
-                        system: context.watch<SpreadController>().system,
-                        pack: context.watch<DeckPackController>().activePack,
-                        width: width,
-                        height: height,
-                        onTap: onDeal,
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: SizedBox(
-                        width: badgeWidth,
-                        child: Center(
-                          child: FittedBox(fit: BoxFit.scaleDown, child: badge),
+      child: LayoutBuilder(
+        builder: (context, constraints) => Column(
+          children: [
+            SizedBox(
+              height: math.min(constraints.maxHeight, ProfileHeader.actionSize),
+              child: header,
+            ),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, dock) {
+                  final scale = math.min(
+                    1.0,
+                    dock.maxHeight * 0.84 / overviewDeckHeight,
+                  );
+                  final height = overviewDeckHeight * scale;
+                  final width = overviewDeckWidth * scale;
+                  final badgeWidth = math.max(
+                    0.0,
+                    (dock.maxWidth - width) / 2 - 8,
+                  );
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Center(
+                        child: _OverviewDeck(
+                          system: context.watch<SpreadController>().system,
+                          pack: context.watch<DeckPackController>().activePack,
+                          width: width,
+                          height: height,
+                          onTap: onDeal,
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: SizedBox(
+                          width: badgeWidth,
+                          child: Center(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: badge,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

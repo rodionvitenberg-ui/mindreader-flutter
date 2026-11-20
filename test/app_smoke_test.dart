@@ -232,7 +232,11 @@ void main() {
     await focusMode(tester);
 
     final deck = find.byType(InteractiveDeckWidget);
-    const resting = 56.0 + tableTopPad;
+    final scrollView = find.ancestor(
+      of: deck,
+      matching: find.byType(SingleChildScrollView),
+    ).first;
+    final resting = tester.getRect(scrollView).top + tableTopPad;
     expect(tester.getTopLeft(deck).dy, closeTo(resting, 0.1));
 
     await tester.dragFrom(tester.getCenter(deck), const Offset(0, 100));
@@ -249,7 +253,7 @@ void main() {
     // The camera did NOT auto-follow: the deck stayed put at the top of
     // the unified canvas while the card flew below the fold.
     expect(tester.getTopLeft(deck).dy, closeTo(resting, 0.1));
-    final scrollArea = tester.getRect(find.byType(SingleChildScrollView).first);
+    final scrollArea = tester.getRect(scrollView);
     expect(tester.getBottomLeft(dealt.first).dy, greaterThan(scrollArea.bottom));
 
     // The user scrolls down manually whenever ready to inspect the card.

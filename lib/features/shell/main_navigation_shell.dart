@@ -14,7 +14,7 @@ import '../digital_table/table_workspace.dart';
 
 /// Bottom dock: Camera (0) | Table (1, default) | Almanac (2) | Astral (3).
 /// Profile moved OUT of the dock — it is now pushed full-page from the
-/// top-left profile avatar on the Digital Table header. Index 4 is RESERVED
+/// profile action in the top-right corner of each non-camera page. Index 4 is RESERVED
 /// for the upcoming ACADEMY learning tab (append a child + a tab entry when
 /// that sprint lands). Rituals and Settings live on the full-page
 /// ProfileScreen.
@@ -35,8 +35,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   );
 
   /// Almanac → ASTRAL: open the Horoscope window for a specific sign.
-  final ValueNotifier<ZodiacSign?> _browseSign =
-      ValueNotifier<ZodiacSign?>(null);
+  final ValueNotifier<ZodiacSign?> _browseSign = ValueNotifier<ZodiacSign?>(
+    null,
+  );
 
   @override
   void dispose() {
@@ -107,27 +108,31 @@ class _GlassNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lang = context.watch<AppSettingsController>().language;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      height: 62,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          for (var i = 0; i < _tabs.length; i++)
-            Expanded(
-              child: _NavItem(
-                icon: _tabs[i].$1,
-                label: AppStrings.t(lang, _tabs[i].$2),
-                active: i == index,
-                onTap: () => onTap(i),
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.only(bottom: 4),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        height: 54,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: AppColors.surface.withValues(alpha: 0.82),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            for (var i = 0; i < _tabs.length; i++)
+              Expanded(
+                child: _NavItem(
+                  icon: _tabs[i].$1,
+                  label: AppStrings.t(lang, _tabs[i].$2),
+                  active: i == index,
+                  onTap: () => onTap(i),
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
