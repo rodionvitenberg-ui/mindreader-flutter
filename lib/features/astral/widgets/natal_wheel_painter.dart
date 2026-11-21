@@ -3,8 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../core/models/natal_chart.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_colors.dart' show ElementColorX;
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 import 'natal_wheel_geometry.dart';
 
 /// Harmonious chord gradient (trine 120° / sextile 60°).
@@ -19,7 +20,7 @@ const wheelTenseEnd = Color(0xFFF59E0B);
 Color aspectAccentColor(AspectType type) => switch (type.harmony) {
   AspectHarmony.harmonious => wheelHarmonyStart,
   AspectHarmony.tense => wheelTenseStart,
-  AspectHarmony.intense => AppColors.lavender,
+  AspectHarmony.intense => TaroColors.lavender,
 };
 
 /// Stagger of the Stage-4 aspect flashes (0.72 -> 1.00): every chord shoots
@@ -105,7 +106,7 @@ class NatalWheelPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            AppColors.lavender.withValues(alpha: 0.10),
+            TaroColors.lavender.withValues(alpha: 0.10),
             const Color(0x0009090D),
           ],
         ).createShader(Rect.fromCircle(center: center, radius: radius)),
@@ -127,7 +128,7 @@ class NatalWheelPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.7
-        ..color = AppColors.lavender.withValues(alpha: alpha),
+        ..color = TaroColors.lavender.withValues(alpha: alpha),
     );
   }
   // ---- Stage 1: zodiac ring calibration ------------------------------
@@ -201,7 +202,7 @@ class NatalWheelPainter extends CustomPainter {
       final tp = _text(
         sign.glyph,
         size: 13,
-        color: AppColors.textPrimary.withValues(alpha: 0.45 + 0.55 * s1),
+        color: TaroColors.textPrimary.withValues(alpha: 0.45 + 0.55 * s1),
       );
       final pos = pointOnCircle(center, (outer + inner) / 2, angle);
       tp.paint(canvas, pos - Offset(tp.width / 2, tp.height / 2));
@@ -211,7 +212,7 @@ class NatalWheelPainter extends CustomPainter {
   Paint _tickPaint(double alpha) => Paint()
     ..strokeWidth = 0.8
     ..strokeCap = StrokeCap.round
-    ..color = AppColors.lavender.withValues(alpha: alpha);
+    ..color = TaroColors.lavender.withValues(alpha: alpha);
   // ---- Stage 2: house grid sweep + live morph -------------------------
 
   void _paintHouseGrid(Canvas canvas, Offset center, double radius, double t) {
@@ -245,9 +246,9 @@ class NatalWheelPainter extends CustomPainter {
       final angle = math.pi + shortestAngleDelta(math.pi, target) * progress;
       final isAxis = i == 0 || i == 3 || i == 6 || i == 9;
       final color = switch (i) {
-        0 || 6 => AppColors.lavender,
-        3 || 9 => AppColors.indigo,
-        _ => AppColors.lavender,
+        0 || 6 => TaroColors.lavender,
+        3 || 9 => TaroColors.indigo,
+        _ => TaroColors.lavender,
       };
       canvas.drawLine(
         pointOnCircle(center, rInner, angle),
@@ -283,7 +284,7 @@ class NatalWheelPainter extends CustomPainter {
       final tp = _text(
         'H${i + 1}',
         size: 7,
-        color: AppColors.textMuted.withValues(alpha: 0.4 * captions),
+        color: TaroColors.textSecondary.withValues(alpha: 0.4 * captions),
         letterSpacing: 1.0,
       );
       final pos = pointOnCircle(center, radius * wheelHouseNumberFactor, angle);
@@ -338,7 +339,7 @@ class NatalWheelPainter extends CustomPainter {
         pos,
         halo,
         Paint()
-          ..color = AppColors.lavender.withValues(alpha: 0.12 * ignite * dim)
+          ..color = TaroColors.lavender.withValues(alpha: 0.12 * ignite * dim)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
       );
 
@@ -346,7 +347,7 @@ class NatalWheelPainter extends CustomPainter {
       canvas.drawCircle(
         pos,
         9.0,
-        Paint()..color = AppColors.canvas.withValues(alpha: 0.92 * ignite),
+        Paint()..color = TaroColors.background.withValues(alpha: 0.92 * ignite),
       );
       canvas.drawCircle(
         pos,
@@ -354,7 +355,7 @@ class NatalWheelPainter extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = isSelected ? 1.6 : 0.9
-          ..color = (isSelected ? AppColors.lavender : AppColors.border)
+          ..color = (isSelected ? TaroColors.lavender : TaroColors.mist.withValues(alpha: TaroOpacity.borderStrong))
               .withValues(
                 alpha: (isSelected ? 0.95 : 0.5 + 0.3 * dim) * ignite,
               ),
@@ -362,7 +363,7 @@ class NatalWheelPainter extends CustomPainter {
       final glyph = _text(
         body.planet.glyph,
         size: 10.5,
-        color: AppColors.textPrimary.withValues(
+        color: TaroColors.textPrimary.withValues(
           alpha: (0.55 + 0.45 * dim) * ignite,
         ),
       );
@@ -372,7 +373,7 @@ class NatalWheelPainter extends CustomPainter {
         final rx = _text(
           'Rx',
           size: 6,
-          color: AppColors.textMuted.withValues(alpha: 0.9 * ignite),
+          color: TaroColors.textSecondary.withValues(alpha: 0.9 * ignite),
         );
         rx.paint(canvas, pos + const Offset(5, -13));
       }
@@ -383,7 +384,7 @@ class NatalWheelPainter extends CustomPainter {
         pointOnCircle(center, radius * wheelHouseOuterFactor, tickAngle),
         pointOnCircle(center, rPlanet + 10.0, tickAngle),
         Paint()
-          ..color = AppColors.lavender.withValues(alpha: 0.22 * ignite)
+          ..color = TaroColors.lavender.withValues(alpha: 0.22 * ignite)
           ..strokeWidth = 0.7,
       );
     }
@@ -465,7 +466,7 @@ class NatalWheelPainter extends CustomPainter {
   (Color, Color) _chordColors(AspectType type) => switch (type.harmony) {
     AspectHarmony.harmonious => (wheelHarmonyStart, wheelHarmonyEnd),
     AspectHarmony.tense => (wheelTenseStart, wheelTenseEnd),
-    AspectHarmony.intense => (AppColors.lavender, AppColors.indigo),
+    AspectHarmony.intense => (TaroColors.lavender, TaroColors.indigo),
   };
 
   // ---- LIVE TRANSITS OVERLAY ------------------------------------------
@@ -480,7 +481,7 @@ class NatalWheelPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.6
-        ..color = AppColors.indigo.withValues(alpha: 0.35),
+        ..color = TaroColors.indigo.withValues(alpha: 0.35),
     );
     transits.forEach((planet, longitude) {
       final angle = chartScreenAngle(longitude, ascendantLongitude);
@@ -489,7 +490,7 @@ class NatalWheelPainter extends CustomPainter {
         pos,
         5.5,
         Paint()
-          ..color = AppColors.lavender.withValues(alpha: 0.10)
+          ..color = TaroColors.lavender.withValues(alpha: 0.10)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
       );
       canvas.drawCircle(
@@ -498,12 +499,12 @@ class NatalWheelPainter extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 0.8
-          ..color = AppColors.indigo.withValues(alpha: 0.9),
+          ..color = TaroColors.indigo.withValues(alpha: 0.9),
       );
       final tp = _text(
         planet.glyph,
         size: 6,
-        color: AppColors.lavender.withValues(alpha: 0.85),
+        color: TaroColors.lavender.withValues(alpha: 0.85),
       );
       tp.paint(canvas, pos - Offset(tp.width / 2, tp.height / 2));
     });
@@ -515,13 +516,13 @@ class NatalWheelPainter extends CustomPainter {
     canvas.drawCircle(
       center,
       2.2 + 1.2 * breathe,
-      Paint()..color = AppColors.lavender.withValues(alpha: 0.7),
+      Paint()..color = TaroColors.lavender.withValues(alpha: 0.7),
     );
     canvas.drawCircle(
       center,
       7.0 + 3.0 * breathe,
       Paint()
-        ..color = AppColors.lavender.withValues(alpha: 0.12)
+        ..color = TaroColors.lavender.withValues(alpha: 0.12)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
 
@@ -531,14 +532,14 @@ class NatalWheelPainter extends CustomPainter {
       final asc = _text(
         '${sign.glyph} ${_formatDegree(ascendantLongitude)}',
         size: 9,
-        color: AppColors.textPrimary.withValues(alpha: 0.9 * intro),
+        color: TaroColors.textPrimary.withValues(alpha: 0.9 * intro),
         letterSpacing: 1.2,
       );
       asc.paint(canvas, Offset(center.dx - asc.width / 2, center.dy - 26));
       final system = _text(
         chart.houseSystem.label,
         size: 7,
-        color: AppColors.textMuted.withValues(alpha: 0.9 * intro),
+        color: TaroColors.textSecondary.withValues(alpha: 0.9 * intro),
         letterSpacing: 1.8,
       );
       system.paint(
@@ -548,7 +549,7 @@ class NatalWheelPainter extends CustomPainter {
       final tag = _text(
         'ASC',
         size: 6,
-        color: AppColors.lavender.withValues(alpha: 0.8 * intro),
+        color: TaroColors.lavender.withValues(alpha: 0.8 * intro),
         letterSpacing: 1.6,
       );
       tag.paint(canvas, Offset(center.dx - tag.width / 2, center.dy + 24));
@@ -573,7 +574,7 @@ class NatalWheelPainter extends CustomPainter {
       final tp = _text(
         line,
         size: 8,
-        color: AppColors.textPrimary.withValues(alpha: 0.85 * alpha),
+        color: TaroColors.textPrimary.withValues(alpha: 0.85 * alpha),
         letterSpacing: 1.6,
       );
       tp.paint(canvas, Offset(center.dx - tp.width / 2, y));
@@ -583,7 +584,7 @@ class NatalWheelPainter extends CustomPainter {
     final status = _text(
       'CALIBRATING ${percent.round().toString().padLeft(3, '0')}%',
       size: 7,
-      color: AppColors.lavender.withValues(alpha: alpha),
+      color: TaroColors.lavender.withValues(alpha: alpha),
       letterSpacing: 1.4,
     );
     status.paint(canvas, Offset(center.dx - status.width / 2, y + 2));

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 
 /// Phase 3 slot — the animated CustomPainter natal wheel will live here.
 /// For now it renders the ring silhouette and, once a profile exists, the
@@ -20,12 +20,17 @@ class AstralWheelPlaceholder extends StatelessWidget {
         key: const ValueKey('natal-wheel-placeholder'),
         padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 20),
         decoration: BoxDecoration(
-          gradient: const RadialGradient(
-            colors: [Color(0x1FA78BFA), Color(0x0009090D)],
+          gradient: RadialGradient(
+            colors: [
+              TaroColors.lavender.withValues(alpha: 0.14),
+              TaroColors.background.withValues(alpha: 0.0),
+            ],
             radius: 0.9,
           ),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+            color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+          ),
         ),
         child: Column(
           children: [
@@ -34,12 +39,17 @@ class AstralWheelPlaceholder extends StatelessWidget {
               height: 116,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border, width: 1),
+                border: Border.all(
+                  color: TaroColors.mist.withValues(
+                    alpha: TaroOpacity.borderStrong,
+                  ),
+                  width: 1,
+                ),
               ),
               child: const Center(
                 child: Text(
                   '✦',
-                  style: TextStyle(fontSize: 26, color: AppColors.lavender),
+                  style: TextStyle(fontSize: 26, color: TaroColors.lavender),
                 ),
               ),
             ),
@@ -49,7 +59,7 @@ class AstralWheelPlaceholder extends StatelessWidget {
               style: AppTypography.label(
                 fontSize: 10,
                 letterSpacing: 1.0,
-                color: AppColors.textPrimary,
+                color: TaroColors.textPrimary,
               ),
             ),
             if (chart != null) ...[
@@ -68,7 +78,7 @@ class AstralWheelPlaceholder extends StatelessWidget {
                 style: AppTypography.label(
                   fontSize: 9,
                   letterSpacing: 0.8,
-                  color: AppColors.textMuted,
+                  color: TaroColors.textSecondary,
                 ),
               ),
             ],
@@ -98,7 +108,7 @@ class _Body extends StatelessWidget {
           style: AppTypography.label(
             fontSize: 9,
             letterSpacing: 0.7,
-            color: AppColors.textMuted,
+            color: TaroColors.textSecondary,
           ),
         ),
         const SizedBox(height: 4),
@@ -106,7 +116,7 @@ class _Body extends StatelessWidget {
           position == null
               ? '—'
               : '${position.sign.glyph} ${position.formattedDegree}',
-          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+          style: const TextStyle(fontSize: 14, color: TaroColors.textPrimary),
         ),
       ],
     );

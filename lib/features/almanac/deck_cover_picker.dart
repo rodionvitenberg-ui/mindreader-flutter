@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/models/divination_system.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
+import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/deck_pack_controller.dart';
 import 'deck_cover.dart';
@@ -24,7 +25,14 @@ class DeckCoverPicker extends StatelessWidget {
     final label = AppStrings.t(language, 'almanac.cover');
     return Row(
       children: [
-        Text(label),
+        Text(
+          label,
+          style: AppTypography.label(
+            fontSize: 10,
+            letterSpacing: 0.8,
+            color: TaroColors.textSecondary,
+          ),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: SizedBox(
@@ -41,21 +49,24 @@ class DeckCoverPicker extends StatelessWidget {
                   selected: selected,
                   button: true,
                   child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
                     onTap: () => controller.setCover(pack, cover),
                     child: Container(
                       width: 60,
                       padding: const EdgeInsets.all(2),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: selected
-                              ? AppColors.lavender
-                              : Colors.transparent,
-                          width: 2,
+                              ? TaroColors.lavender
+                              : TaroColors.mist.withValues(
+                                  alpha: TaroOpacity.border,
+                                ),
+                          width: selected ? 2 : 1,
                         ),
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(6),
                         child: DeckCover(pack: pack, choice: cover),
                       ),
                     ),

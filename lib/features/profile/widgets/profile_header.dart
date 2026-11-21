@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/user_profile_controller.dart';
 import '../profile_screen.dart';
@@ -61,7 +61,7 @@ class ProfileHeaderTitle extends StatelessWidget {
       style: AppTypography.display(
         fontSize: 28,
         fontWeight: FontWeight.w800,
-        color: AppColors.textPrimary,
+        color: TaroColors.textPrimary,
       ),
     );
   }
@@ -106,13 +106,16 @@ class _ProfileAvatarButton extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppColors.surface.withValues(alpha: 0.9),
+          color: TaroColors.surface.withValues(alpha: 0.86),
           border: Border.all(
             color: settings.isProUnlocked
-                ? AppColors.lavender
-                : AppColors.border,
+                ? TaroColors.lavender
+                : TaroColors.mist.withValues(alpha: TaroOpacity.borderStrong),
             width: settings.isProUnlocked ? 1.6 : 1,
           ),
+          boxShadow: settings.isProUnlocked
+              ? TaroGlow.soft(TaroColors.lavender, alpha: 0.25, blur: 12)
+              : null,
         ),
         child: ExcludeSemantics(
           child: Text(
@@ -122,7 +125,7 @@ class _ProfileAvatarButton extends StatelessWidget {
             style: AppTypography.display(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: AppColors.lavender,
+              color: TaroColors.lavender,
             ),
           ),
         ),

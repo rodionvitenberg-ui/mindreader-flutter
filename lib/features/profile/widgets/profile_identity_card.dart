@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/data/astro_cities_data.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 import '../../../state/user_profile_controller.dart';
 import 'profile_card.dart';
 
@@ -181,31 +181,31 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
     required ValueChanged<String> onChanged,
     int maxLines = 1,
   }) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide(
+        color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+      ),
+    );
     return TextField(
       controller: controller,
       maxLines: maxLines,
       onChanged: onChanged,
-      style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+      cursorColor: TaroColors.lavender,
+      style: const TextStyle(fontSize: 13, color: TaroColors.textPrimary),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(
           fontSize: 12,
-          color: AppColors.textMuted.withValues(alpha: 0.7),
+          color: TaroColors.textSecondary.withValues(alpha: 0.72),
         ),
         filled: true,
-        fillColor: AppColors.canvas.withValues(alpha: 0.6),
+        fillColor: TaroColors.background.withValues(alpha: 0.56),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.lavender),
+        border: border,
+        enabledBorder: border,
+        focusedBorder: border.copyWith(
+          borderSide: const BorderSide(color: TaroColors.lavender),
         ),
       ),
     );
@@ -223,13 +223,15 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.canvas.withValues(alpha: 0.6),
+          color: TaroColors.background.withValues(alpha: 0.56),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+            color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+          ),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 14, color: AppColors.lavender),
+            Icon(icon, size: 14, color: TaroColors.lavender),
             const SizedBox(width: 8),
             Expanded(
               child: Column(
@@ -240,7 +242,7 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
                     style: AppTypography.label(
                       fontSize: 8.5,
                       letterSpacing: 0.8,
-                      color: AppColors.textMuted,
+                      color: TaroColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -248,7 +250,7 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
                     value,
                     style: AppTypography.label(
                       fontSize: 11,
-                      color: AppColors.textPrimary,
+                      color: TaroColors.textPrimary,
                     ),
                   ),
                 ],

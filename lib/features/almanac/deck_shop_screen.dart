@@ -6,7 +6,7 @@ import '../../core/data/deck_packs_registry.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/models/deck_pack.dart';
 import '../../core/models/divination_system.dart';
-import '../../core/theme/app_colors.dart';
+import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
 import '../profile/widgets/profile_header.dart';
 import 'deck_cover.dart';
@@ -50,8 +50,10 @@ class DeckShopScreen extends StatelessWidget {
       // Some platforms throw instead of returning false when no browser opens.
     }
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppStrings.t(language, 'almanac.launchError'))),
+      showTaroGlassSnackbar(
+        context,
+        message: AppStrings.t(language, 'almanac.launchError'),
+        tone: TaroGlassSnackbarTone.warning,
       );
     }
   }
@@ -59,38 +61,46 @@ class DeckShopScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final language = context.watch<AppSettingsController>().language;
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            const ProfileHeader(
-              leading: BackButton(),
-              child: ProfileHeaderTitle('almanac.shop'),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+    return Stack(
+      children: [
+        const Positioned.fill(child: TaroDuskBackground()),
+        TaroGlassLayer(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: SafeArea(
+              child: Column(
                 children: [
-                  for (final group in [
-                    system,
-                    ...DivinationSystem.values.where((s) => s != system),
-                  ]) ...[
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
-                      child: Text(
-                        AppStrings.t(language, 'almanac.${group.name}'),
-                        style: Theme.of(context).textTheme.labelLarge,
-                      ),
+                  const ProfileHeader(
+                    leading: BackButton(color: TaroColors.lavender),
+                    child: ProfileHeaderTitle('almanac.shop'),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                      children: [
+                        for (final group in [
+                          system,
+                          ...DivinationSystem.values.where((s) => s != system),
+                        ]) ...[
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(0, 16, 0, 8),
+                            child: Text(
+                              AppStrings.t(language, 'almanac.${group.name}'),
+                              style: Theme.of(context).textTheme.labelLarge,
+                            ),
+                          ),
+                          for (final pack in packsFor(group))
+                            _listing(context, language, group, pack),
+                        ],
+                      ],
                     ),
-                    for (final pack in packsFor(group))
-                      _listing(context, language, group, pack),
-                  ],
+                  ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -101,30 +111,53 @@ class DeckShopScreen extends StatelessWidget {
     DeckPack pack,
   ) {
     final destination = deckShopDestination(group, pack.id);
-    return ListTile(
-      key: ValueKey('shop-${pack.id}'),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: SizedBox(
-        width: 72,
-        height: 54,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: DeckCover(pack: pack),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: TaroColors.surface.withValues(alpha: 0.72),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          key: ValueKey('shop-${pack.id}'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 4,
+          ),
+          leading: SizedBox(
+            width: 72,
+            height: 54,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: DeckCover(pack: pack),
+            ),
+          ),
+          title: Text(
+            pack.name,
+            style: const TextStyle(color: TaroColors.textPrimary),
+          ),
+          subtitle: Text(
+            AppStrings.t(
+              language,
+              destination == _shopWebsite ? 'almanac.website' : 'almanac.buy',
+            ),
+            style: const TextStyle(color: TaroColors.textSecondary),
+          ),
+          trailing: const Icon(
+            Icons.open_in_new,
+            size: 18,
+            color: TaroColors.lavender,
+          ),
+          onTap: () => _openWebsite(context, destination, language),
         ),
       ),
-      title: Text(pack.name),
-      subtitle: Text(
-        AppStrings.t(
-          language,
-          destination == _shopWebsite ? 'almanac.website' : 'almanac.buy',
-        ),
-      ),
-      trailing: const Icon(
-        Icons.open_in_new,
-        size: 18,
-        color: AppColors.textMuted,
-      ),
-      onTap: () => _openWebsite(context, destination, language),
     );
   }
 }

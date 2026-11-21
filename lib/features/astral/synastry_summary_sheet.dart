@@ -8,6 +8,7 @@ import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../design_system/taro.dart';
 import 'widgets/astral_gradient_button.dart';
 
 /// ASTRAL Phase 4 — 2-profile synastry: Moon compatibility, the combined
@@ -31,12 +32,8 @@ class SynastrySummarySheet extends StatelessWidget {
     required NatalChart b,
     ValueChanged<OracleHandoff>? onSendToOracle,
   }) {
-    HapticFeedback.selectionClick();
-    return showModalBottomSheet<void>(
+    return showTaroGlassSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.6),
       builder: (_) => SynastrySummarySheet(
         a: a,
         b: b,
@@ -67,69 +64,49 @@ class SynastrySummarySheet extends StatelessWidget {
     final total = balance.values.fold<int>(0, (sum, v) => sum + v);
     final moonA = _position(a, PlanetId.moon);
     final moonB = _position(b, PlanetId.moon);
-    return Container(
+    return SizedBox(
       key: const ValueKey('synastry-summary'),
       height: MediaQuery.of(context).size.height * 0.88,
-      decoration: const BoxDecoration(
-        color: AppColors.canvas,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 10),
-          Container(
-            width: 44,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _header(context),
-                  const SizedBox(height: 12),
-                  _moonCard(moonA, moonB),
-                  const SizedBox(height: 18),
-                  _label('ELEMENTAL BALANCE'),
-                  const SizedBox(height: 8),
-                  for (final e in Element.values)
-                    _ElementBar(
-                      element: e,
-                      count: balance[e] ?? 0,
-                      total: total,
-                    ),
-                  const SizedBox(height: 14),
-                  _label('CROSS-CHART ASPECTS'),
-                  const SizedBox(height: 8),
-                  if (cross.isEmpty)
-                    Text(
-                      'No tight cross-chart aspects — this bond rests on '
-                      'temperament, not friction.',
-                      style: AppTypography.body(
-                        fontSize: 12,
-                        height: 1.4,
-                        color: AppColors.textMuted,
-                      ),
-                    )
-                  else
-                    for (final aspect in cross.take(6))
-                      _CrossAspectRow(aspect: aspect),
-                  const SizedBox(height: 18),
-                  AstralGradientButton(
-                    label: '✦ DISCUSS THIS SYNASTRY WITH THE ORACLE',
-                    onTap: () => _send(context),
-                  ),
-                ],
+      child: TaroGlassSheet(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _header(context),
+            const SizedBox(height: 12),
+            _moonCard(moonA, moonB),
+            const SizedBox(height: 18),
+            _label('ELEMENTAL BALANCE'),
+            const SizedBox(height: 8),
+            for (final e in Element.values)
+              _ElementBar(
+                element: e,
+                count: balance[e] ?? 0,
+                total: total,
               ),
+            const SizedBox(height: 14),
+            _label('CROSS-CHART ASPECTS'),
+            const SizedBox(height: 8),
+            if (cross.isEmpty)
+              Text(
+                'No tight cross-chart aspects — this bond rests on '
+                'temperament, not friction.',
+                style: AppTypography.body(
+                  fontSize: 12,
+                  height: 1.4,
+                  color: TaroColors.textSecondary,
+                ),
+              )
+            else
+              for (final aspect in cross.take(6))
+                _CrossAspectRow(aspect: aspect),
+            const SizedBox(height: 18),
+            AstralGradientButton(
+              label: '✦ DISCUSS THIS SYNASTRY WITH THE ORACLE',
+              onTap: () => _send(context),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

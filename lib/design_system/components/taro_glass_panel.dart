@@ -21,16 +21,29 @@ class TaroGlassPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TaroGlassSurface(
-      radius: radius,
-      tint: tint,
-      fillColor: TaroColors.surface,
-      glow: TaroGlow.soft(
-        TaroColors.lavender,
-        blur: 28,
-        offset: const Offset(0, 10),
+    // TaroGlassSurface лежит фоновым sibling-слоем в Stack, чтобы вложенные
+    // TaroGlassButton/TaroGlassToggle/TaroGlassInput внутри панели не
+    // создавали вложенный LiquidGlass поверх LiquidGlass.
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: TaroGlassSurface(
+              radius: radius,
+              tint: tint,
+              fillColor: TaroColors.surface,
+              glow: TaroGlow.soft(
+                TaroColors.lavender,
+                blur: 28,
+                offset: const Offset(0, 10),
+              ),
+              child: const SizedBox.expand(),
+            ),
+          ),
+          Padding(padding: padding, child: child),
+        ],
       ),
-      child: Padding(padding: padding, child: child),
     );
   }
 }

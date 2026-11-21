@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/user_profile_controller.dart';
 import '../../shell/widgets/pro_subscription_sheet.dart';
 import 'profile_card.dart';
 
-/// Card 2 — optional 1-Click sign-in and the PRO subscription. No account is
-/// required to read: sign-in only protects the PRO purchase across
-/// reinstalls and unlocks device migration.
+/// Card 2 — optional 1-Click sign-in and the PRO subscription (Phase G5:
+/// [ProfileCard] + [TaroGlassButton]).
 class ProfileSignInCard extends StatelessWidget {
   const ProfileSignInCard({super.key});
 
@@ -25,7 +23,7 @@ class ProfileSignInCard extends StatelessWidget {
         active: pro,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             'No account is required to use the app. 1-Click Sign-In is used '
@@ -34,51 +32,19 @@ class ProfileSignInCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 11.5,
               height: 1.45,
-              color: AppColors.textMuted.withValues(alpha: 0.95),
+              color: TaroColors.textSecondary.withValues(alpha: 0.95),
             ),
           ),
           const SizedBox(height: 12),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              HapticFeedback.selectionClick();
-              profile.setGoogleLinked(!profile.isGoogleLinked);
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 13),
-              decoration: BoxDecoration(
-                color: AppColors.lavender.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppColors.lavender.withValues(alpha: 0.5),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    profile.isGoogleLinked
-                        ? Icons.verified_outlined
-                        : Icons.login_outlined,
-                    size: 16,
-                    color: AppColors.lavender,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    profile.isGoogleLinked
-                        ? 'LINKED · GOOGLE'
-                        : 'CONTINUE WITH GOOGLE / APPLE (1-CLICK)',
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      letterSpacing: 0.9,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.lavender,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          TaroGlassButton(
+            icon: profile.isGoogleLinked
+                ? Icons.verified_outlined
+                : Icons.login_outlined,
+            label: profile.isGoogleLinked
+                ? 'LINKED · GOOGLE'
+                : 'CONTINUE WITH GOOGLE / APPLE (1-CLICK)',
+            variant: TaroGlassButtonVariant.primary,
+            onPressed: () => profile.setGoogleLinked(!profile.isGoogleLinked),
           ),
           const SizedBox(height: 12),
           Row(
@@ -114,40 +80,49 @@ class _PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.canvas.withValues(alpha: 0.65),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+    return Semantics(
+      button: true,
+      label: badge == null ? title : '$title ($badge)',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 52),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: TaroColors.background.withValues(alpha: 0.56),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
               ),
             ),
-            if (badge != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  badge!,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
                   style: const TextStyle(
-                    fontSize: 9,
-                    letterSpacing: 1.2,
-                    color: AppColors.conflictAmber,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: TaroColors.textPrimary,
                   ),
                 ),
-              ),
-          ],
+                if (badge != null)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 6),
+                    child: Text(
+                      'BEST VALUE',
+                      style: TextStyle(
+                        fontSize: 9,
+                        letterSpacing: 1.2,
+                        color: TaroColors.dawn,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );

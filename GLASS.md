@@ -1,6 +1,6 @@
 # GLASS.md — План перевода интерфейса на дизайн-систему Tarot Tree
 
-Статус: **G4 завершён** (фундамент G1 + тема/фон G2 + Shell G3 + Digital Table: `TaroGlassChip`/`Pill`, `TaroGlassProgress`, input capsule, subject toggle, sheets, CTA, chat & history).
+Статус: **G5 завершён** (фундамент G1 + тема/фон G2 + Shell G3 + Digital Table G4 + Almanac, Astral и Profile: `TaroGlassSnackbar`, `TaroGlassEmptyState`, detail/paywall/birth-data sheets, segmented controls, перекрашенный `NatalWheelPainter`).
 Этот документ — полный план поэтапного перевода всего UI приложения на новый
 «стеклянный» дизайн **без поломки существующей логики**.
 
@@ -86,7 +86,7 @@ lib/core/theme/
 | **G2** | Тема: `buildTaroTheme()`, подключение в `main.dart`, фон-подложка, шрифт | ✅ сделано (513/513 тестов, проверено на Redmi Impeller GLES) |
 | **G3** | Shell + навигация: док `TaroGlassDock`, sheet-обёртки, безопасные области | ✅ сделано (523/523 тестов, `flutter analyze` 0 issues, debug APK собран) |
 | **G4** | Digital Table (главный экран): панели, input, select, сегменты, bottom-sheet | ✅ сделано (530/530 тестов, `flutter analyze` 0 issues, APK установлен на Redmi GLES) |
-| **G5** | Almanac + Astral + Profile | три раздела переведены |
+| **G5** | Almanac + Astral + Profile | ✅ сделано (535/535 тестов, `flutter analyze` 0 issues, debug APK собран) |
 | **G6** | Camera HUD + Oracle overlay | оверлеи/HUD переведены, читаемость сохранена |
 | **G7** | Зачистка legacy (`AppColors`/Dark Obsidian), скриншот-ревью, профиль-perf | `flutter analyze` чист, legacy удалён |
 

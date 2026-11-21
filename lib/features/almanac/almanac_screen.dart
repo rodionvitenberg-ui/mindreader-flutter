@@ -16,6 +16,7 @@ import '../../core/models/rune_stone.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/deck_pack_controller.dart';
 import '../../state/spread_controller.dart';
@@ -209,7 +210,7 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
             language: language,
           );
           final navigation = ColoredBox(
-            color: AppColors.canvas,
+            color: TaroColors.background.withValues(alpha: 0.92),
             child: Column(
               children: [
                 if (bounds.maxHeight < 450)
@@ -244,7 +245,7 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
               PinnedHeaderSliver(
                 child: ColoredBox(
                   key: const ValueKey('almanac-filters'),
-                  color: AppColors.canvas,
+                  color: TaroColors.background.withValues(alpha: 0.92),
                   child: Column(
                     children: [
                       Padding(
@@ -255,9 +256,9 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
                           onChanged: (_) => setState(() {}),
                           style: const TextStyle(
                             fontSize: 14,
-                            color: AppColors.textPrimary,
+                            color: TaroColors.textPrimary,
                           ),
-                          cursorColor: AppColors.lavender,
+                          cursorColor: TaroColors.lavender,
                           decoration: InputDecoration(
                             hintText: AppStrings.t(
                               language,
@@ -267,15 +268,16 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
                             ),
                             hintStyle: const TextStyle(
                               fontSize: 13,
-                              color: AppColors.textMuted,
+                              color: TaroColors.textSecondary,
                             ),
                             prefixIcon: const Icon(
                               Icons.search_outlined,
                               size: 18,
+                              color: TaroColors.textSecondary,
                             ),
                             isDense: true,
                             filled: true,
-                            fillColor: AppColors.surface,
+                            fillColor: TaroColors.surface.withValues(alpha: 0.78),
                             prefixIconConstraints: const BoxConstraints(
                               minWidth: 40,
                               minHeight: 40,
@@ -285,14 +287,16 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: AppColors.border,
+                              borderSide: BorderSide(
+                                color: TaroColors.mist.withValues(
+                                  alpha: TaroOpacity.border,
+                                ),
                               ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(
-                                color: AppColors.lavender,
+                                color: TaroColors.lavender,
                               ),
                             ),
                           ),
@@ -332,16 +336,11 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
     final count = zodiac ? signs.length : cards.length;
     if (count == 0) {
       return SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Center(
-            child: Text(
-              AppStrings.t(
-                language,
-                zodiac ? 'almanac.noSigns' : 'almanac.noCards',
-              ),
-              style: const TextStyle(color: AppColors.textMuted),
-            ),
+        child: TaroGlassEmptyState(
+          icon: Icons.search_off_outlined,
+          title: AppStrings.t(
+            language,
+            zodiac ? 'almanac.noSigns' : 'almanac.noCards',
           ),
         ),
       );
@@ -489,49 +488,17 @@ class _AlmanacSystemSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          for (final t in AlmanacTab.values)
-            Expanded(
-              child: GestureDetector(
-                key: ValueKey('almanac-system-${t.name}'),
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onChanged(t),
-                child: Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 7),
-                  decoration: BoxDecoration(
-                    color: tab == t
-                        ? AppColors.lavender.withValues(alpha: 0.16)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      AppStrings.t(language, 'almanac.${t.name}'),
-                      style: AppTypography.label(
-                        fontSize: 9,
-                        letterSpacing: 0.7,
-                        fontWeight: FontWeight.w700,
-                        color: tab == t
-                            ? AppColors.lavender
-                            : AppColors.textMuted,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
+    return TaroGlassSegmentedControl<AlmanacTab>(
+      segments: [
+        for (final t in AlmanacTab.values)
+          TaroGlassSegment<AlmanacTab>(
+            key: ValueKey('almanac-system-${t.name}'),
+            value: t,
+            label: AppStrings.t(language, 'almanac.${t.name}'),
+          ),
+      ],
+      value: tab,
+      onChanged: onChanged,
     );
   }
 }
@@ -716,7 +683,8 @@ class _AlmanacTile extends StatelessWidget {
   }
 }
 
-/// Row 3 — the 4-element affinity filter bar (Tarot & Runes).
+/// Row 3 — the 4-element affinity filter bar (Tarot & Runes), styled as a
+/// Tarot Tree glass segmented strip while keeping toggle-off semantics.
 class _ElementFilterBar extends StatelessWidget {
   const _ElementFilterBar({
     required this.active,
@@ -733,63 +701,85 @@ class _ElementFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-      child: Row(
-        children: [
-          for (var i = 0; i < Element.values.length; i++) ...[
-            if (i > 0) const SizedBox(width: 8),
-            Expanded(
-              child: GestureDetector(
-                key: ValueKey('element-filter-${Element.values[i].name}'),
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onToggle(Element.values[i]),
-                child: Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: active == Element.values[i]
-                        ? Element.values[i].accent.withValues(alpha: 0.14)
-                        : AppColors.surface.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: active == Element.values[i]
-                          ? Element.values[i].accent
-                          : AppColors.border,
+      child: TaroGlassSurface(
+        radius: TaroRadii.segment,
+        fillColor: TaroColors.surface,
+        child: Padding(
+          padding: const EdgeInsets.all(3),
+          child: Row(
+            children: [
+              for (var i = 0; i < Element.values.length; i++) ...[
+                if (i > 0) const SizedBox(width: 4),
+                Expanded(
+                  child: Semantics(
+                    button: true,
+                    selected: active == Element.values[i],
+                    label: AppStrings.t(
+                      language,
+                      'almanac.${Element.values[i].name}',
                     ),
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          Element.values[i].glyph,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Element.values[i].accent,
+                    child: GestureDetector(
+                      key: ValueKey('element-filter-${Element.values[i].name}'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => onToggle(Element.values[i]),
+                      child: Container(
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(vertical: 7),
+                        decoration: BoxDecoration(
+                          color: active == Element.values[i]
+                              ? Element.values[i].accent.withValues(alpha: 0.20)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(
+                            TaroRadii.segment - 3,
+                          ),
+                          border: active == Element.values[i]
+                              ? Border.all(
+                                  color: Element.values[i].accent.withValues(
+                                    alpha: 0.8,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                Element.values[i].glyph,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Element.values[i].accent,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                AppStrings.t(
+                                  language,
+                                  'almanac.${Element.values[i].name}',
+                                ),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: active == Element.values[i]
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: active == Element.values[i]
+                                      ? TaroColors.textPrimary
+                                      : TaroColors.textSecondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 5),
-                        Text(
-                          AppStrings.t(
-                            language,
-                            'almanac.${Element.values[i].name}',
-                          ),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: active == Element.values[i]
-                                ? Element.values[i].accent
-                                : AppColors.textMuted,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          ],
-        ],
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -811,36 +801,17 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: GestureDetector(
+      child: TaroGlassChip(
+        label: label,
+        selected: active,
+        compact: true,
         onTap: onTap,
-        child: Container(
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: active
-                ? AppColors.lavender.withValues(alpha: 0.16)
-                : AppColors.surface.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: active ? AppColors.lavender : AppColors.border,
-            ),
-          ),
-          child: Text(
-            label,
-            style: AppTypography.label(
-              fontSize: 9.5,
-              letterSpacing: 1,
-              fontWeight: FontWeight.w700,
-              color: active ? AppColors.lavender : AppColors.textMuted,
-            ),
-          ),
-        ),
       ),
     );
   }
 }
 
-/// One bespoke obsidian-lavender zodiac card.
+/// One Tarot Tree zodiac card.
 class _ZodiacTile extends StatelessWidget {
   const _ZodiacTile({required this.entry, required this.onOpen, super.key});
 
@@ -859,7 +830,7 @@ class _ZodiacTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.85),
+          color: TaroColors.surface.withValues(alpha: 0.78),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: element.accent.withValues(alpha: 0.45)),
         ),
@@ -888,7 +859,7 @@ class _ZodiacTile extends StatelessWidget {
                 fontSize: 19,
                 fontWeight: FontWeight.w700,
                 height: 1.05,
-                color: AppColors.textPrimary,
+                color: TaroColors.textPrimary,
               ),
             ),
             const SizedBox(height: 2),
@@ -899,7 +870,7 @@ class _ZodiacTile extends StatelessWidget {
               style: AppTypography.label(
                 fontSize: 8,
                 letterSpacing: 1.0,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
             const Spacer(),
@@ -910,7 +881,7 @@ class _ZodiacTile extends StatelessWidget {
               style: AppTypography.body(
                 fontSize: 10,
                 height: 1.3,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
             const SizedBox(height: 6),
@@ -923,7 +894,7 @@ class _ZodiacTile extends StatelessWidget {
                 fontSize: 7.5,
                 letterSpacing: 0.8,
                 fontWeight: FontWeight.w700,
-                color: AppColors.lavender,
+                color: TaroColors.lavender,
               ),
             ),
           ],

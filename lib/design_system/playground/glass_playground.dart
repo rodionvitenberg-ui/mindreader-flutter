@@ -242,6 +242,31 @@ class _GlassPlaygroundState extends State<GlassPlayground> {
                           const TaroGlassProgress(
                             label: 'WEAVING THE READING · · ·',
                           ),
+                          const SizedBox(height: 22),
+                          const TaroGlassSectionLabel(
+                            eyebrow: 'G5 Controls · Snackbar / EmptyState',
+                            title: 'TaroGlassSnackbar & TaroGlassEmptyState',
+                          ),
+                          const SizedBox(height: 12),
+                          TaroGlassButton(
+                            label: 'Show Toast',
+                            variant: TaroGlassButtonVariant.secondary,
+                            onPressed: () => showTaroGlassSnackbar(
+                              context,
+                              message: 'Reading saved locally on this device.',
+                              tone: TaroGlassSnackbarTone.success,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TaroGlassEmptyState(
+                            icon: Icons.auto_awesome_outlined,
+                            title: 'NO READINGS YET',
+                            subtitle:
+                                'Draw your first spread and the archive will bloom here.',
+                            actionLabel: 'New Spread',
+                            framed: true,
+                            onAction: () {},
+                          ),
                         ],
                       ),
                     ),

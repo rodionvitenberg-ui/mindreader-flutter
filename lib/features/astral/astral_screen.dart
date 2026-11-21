@@ -12,8 +12,7 @@ import '../../core/services/local_storage_service.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/services/transit_forecast_service.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
+import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/astral_controller.dart';
 import '../profile/widgets/profile_header.dart';
@@ -298,7 +297,7 @@ class _AstralScreenState extends State<AstralScreen>
             forDate: _now.toUtc(),
           );
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -432,7 +431,8 @@ class _AstralScreenState extends State<AstralScreen>
   }
 }
 
-/// The `[ NATAL CHART | HOROSCOPE ]` two-segment window switcher.
+/// The `[ NATAL CHART | HOROSCOPE | SYNASTRY ]` window switcher (Phase G5:
+/// migrated to [TaroGlassSegmentedControl]).
 class _AstralWindowSwitcher extends StatelessWidget {
   const _AstralWindowSwitcher({required this.window, required this.onChanged});
 
@@ -447,49 +447,17 @@ class _AstralWindowSwitcher extends StatelessWidget {
       AstralWindow.horoscope: AppStrings.t(lang, 'astral.horoscope'),
       AstralWindow.synastry: AppStrings.t(lang, 'astral.synastry'),
     };
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          for (final w in AstralWindow.values)
-            Expanded(
-              child: GestureDetector(
-                key: ValueKey('astral-window-${w.name}'),
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onChanged(w),
-                child: Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 9),
-                  decoration: BoxDecoration(
-                    color: window == w
-                        ? AppColors.lavender.withValues(alpha: 0.16)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      labels[w]!,
-                      style: AppTypography.label(
-                        fontSize: 9,
-                        letterSpacing: 0.8,
-                        fontWeight: FontWeight.w700,
-                        color: window == w
-                            ? AppColors.lavender
-                            : AppColors.textMuted,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
+    return TaroGlassSegmentedControl<AstralWindow>(
+      segments: [
+        for (final w in AstralWindow.values)
+          TaroGlassSegment<AstralWindow>(
+            key: ValueKey('astral-window-${w.name}'),
+            value: w,
+            label: labels[w]!,
+          ),
+      ],
+      value: window,
+      onChanged: onChanged,
     );
   }
 }

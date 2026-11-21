@@ -9,8 +9,8 @@ import '../../../core/models/natal_chart.dart';
 import '../../../core/services/natal_calculator_service.dart';
 import '../../../core/services/birth_time_service.dart';
 import '../astral_copy.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 import '../../../state/astral_controller.dart';
 import '../../../state/user_profile_controller.dart';
 import 'astral_gradient_button.dart';
@@ -25,12 +25,8 @@ class BirthDataFormSheet extends StatefulWidget {
   final NatalChart? chart;
 
   static Future<NatalChart?> show(BuildContext context, {NatalChart? chart}) {
-    HapticFeedback.selectionClick();
-    return showModalBottomSheet<NatalChart>(
+    return showTaroGlassSheet<NatalChart>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
       builder: (_) => BirthDataFormSheet(chart: chart),
     );
   }
@@ -97,12 +93,12 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme: const ColorScheme.dark(
-            primary: AppColors.lavender,
-            surface: AppColors.surface,
-            onPrimary: AppColors.canvas,
+            primary: TaroColors.lavender,
+            surface: TaroColors.surface,
+            onPrimary: TaroColors.background,
           ),
           dialogTheme: const DialogThemeData(
-            backgroundColor: AppColors.surface,
+            backgroundColor: TaroColors.surface,
           ),
         ),
         child: child!,
@@ -118,12 +114,12 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme: const ColorScheme.dark(
-            primary: AppColors.lavender,
-            surface: AppColors.surface,
-            onPrimary: AppColors.canvas,
+            primary: TaroColors.lavender,
+            surface: TaroColors.surface,
+            onPrimary: TaroColors.background,
           ),
           dialogTheme: const DialogThemeData(
-            backgroundColor: AppColors.surface,
+            backgroundColor: TaroColors.surface,
           ),
         ),
         child: child!,
@@ -136,14 +132,13 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
   void _fillFromProfile() {
     final profile = context.read<UserProfileController>();
     if (!profile.hasBirthData) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      showTaroGlassSnackbar(
+        context,
+        message:
             context.read<AppSettingsController?>()?.language == AppLanguage.ru
                 ? 'Сначала добавьте дату и город рождения в Профиле.'
                 : 'Add your birth date and city in Profile first.',
-          ),
-        ),
+        tone: TaroGlassSnackbarTone.warning,
       );
       return;
     }
@@ -289,140 +284,100 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
         ? const <AstroCity>[]
         : searchAstroCities(query, limit: 5);
 
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: Container(
-        color: const Color(0xEB13131A),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.textMuted.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    context.astralText(
-                      widget.chart == null ? 'newChart' : 'edit',
-                    ),
-                    style: Theme.of(context).textTheme.displayMedium,
-                  ),
-                  const SizedBox(height: 18),
-                  _ProfileFillPill(onFill: _fillFromProfile),
-                  const SizedBox(height: 14),
-                  _eyebrow(context.astralText('name')),
-                  TextField(
-                    controller: _nameCtrl,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                    ),
-                    decoration: _fieldDecoration(
-                      context.astralRussian
-                          ? 'Как назвать карту'
-                          : 'How to address this chart',
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _eyebrow(context.astralText('date')),
-                            _PickerField(
-                              glyph: '◷',
-                              value: _dateLabel,
-                              onTap: _pickDate,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _eyebrow(context.astralText('time')),
-                            _PickerField(
-                              glyph: '☾',
-                              value: _timeKnown ? _timeLabel : '--:--',
-                              onTap: _timeKnown ? _pickTime : null,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  _TimeKnownSwitch(
-                    value: _timeKnown,
-                    onChanged: (value) => setState(() => _timeKnown = value),
-                  ),
-                  const SizedBox(height: 14),
-                  _eyebrow(context.astralText('city')),
-                  TextField(
-                    controller: _cityCtrl,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textPrimary,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                    decoration: _fieldDecoration(
-                      context.astralText('searchCity'),
-                    ),
-                  ),
-                  if (_city != null) ...[
-                    const SizedBox(height: 8),
-                    _SelectedCity(city: _city!),
-                  ],
-                  for (final city in results)
-                    _CityResult(
-                      city: city,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() {
-                          _city = city;
-                          _cityCtrl.clear();
-                        });
-                      },
-                    ),
-                  if (_timeKnown) ...[
-                    const SizedBox(height: 16),
-                    _eyebrow(context.astralText('house')),
-                    AstralHouseSelector(
-                      value: _house,
-                      onChanged: (system) => setState(() => _house = system),
-                    ),
-                  ],
-                  const SizedBox(height: 22),
-                  AstralGradientButton(
-                    label: context.astralText(
-                      widget.chart == null ? 'generate' : 'save',
-                    ),
-                    onTap: _generate,
-                  ),
-                ],
-              ),
-            ),
+    return TaroGlassSheet(
+      title: context.astralText(widget.chart == null ? 'newChart' : 'edit'),
+      padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _ProfileFillPill(onFill: _fillFromProfile),
+          const SizedBox(height: 14),
+          TaroGlassInput(
+            label: context.astralText('name'),
+            controller: _nameCtrl,
+            hint: context.astralRussian
+                ? 'Как назвать карту'
+                : 'How to address this chart',
           ),
-        ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _eyebrow(context.astralText('date')),
+                    _PickerField(
+                      glyph: '◷',
+                      value: _dateLabel,
+                      onTap: _pickDate,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _eyebrow(context.astralText('time')),
+                    _PickerField(
+                      glyph: '☾',
+                      value: _timeKnown ? _timeLabel : '--:--',
+                      onTap: _timeKnown ? _pickTime : null,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _TimeKnownSwitch(
+            value: _timeKnown,
+            onChanged: (value) => setState(() => _timeKnown = value),
+          ),
+          const SizedBox(height: 14),
+          TaroGlassInput(
+            label: context.astralText('city'),
+            controller: _cityCtrl,
+            hint: context.astralText('searchCity'),
+            onChanged: (_) => setState(() {}),
+          ),
+          if (_city != null) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _SelectedCity(city: _city!),
+            ),
+          ],
+          for (final city in results)
+            _CityResult(
+              city: city,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _city = city;
+                  _cityCtrl.clear();
+                });
+              },
+            ),
+          if (_timeKnown) ...[
+            const SizedBox(height: 16),
+            _eyebrow(context.astralText('house')),
+            AstralHouseSelector(
+              value: _house,
+              onChanged: (system) => setState(() => _house = system),
+            ),
+          ],
+          const SizedBox(height: 22),
+          AstralGradientButton(
+            label: context.astralText(
+              widget.chart == null ? 'generate' : 'save',
+            ),
+            onTap: _generate,
+          ),
+        ],
       ),
     );
   }
@@ -446,24 +401,8 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
       style: AppTypography.label(
         fontSize: 9,
         letterSpacing: 1.0,
-        color: AppColors.textMuted,
+        color: TaroColors.textSecondary,
       ),
-    ),
-  );
-
-  InputDecoration _fieldDecoration(String hint) => InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-    filled: true,
-    fillColor: AppColors.surface,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.border),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.lavender),
     ),
   );
 }
@@ -487,13 +426,15 @@ class _PickerField extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: TaroColors.surface.withValues(alpha: 0.72),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+            color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+          ),
         ),
         child: Row(
           children: [
-            Text(glyph, style: const TextStyle(color: AppColors.lavender)),
+            Text(glyph, style: const TextStyle(color: TaroColors.lavender)),
             const SizedBox(width: 8),
             Expanded(
               child: FittedBox(
@@ -503,7 +444,7 @@ class _PickerField extends StatelessWidget {
                   value,
                   style: const TextStyle(
                     fontSize: 14,
-                    color: AppColors.textPrimary,
+                    color: TaroColors.textPrimary,
                   ),
                 ),
               ),
@@ -531,16 +472,13 @@ class _TimeKnownSwitch extends StatelessWidget {
             style: AppTypography.label(
               fontSize: 9,
               letterSpacing: 1.0,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
         ),
-        Switch(
+        TaroGlassToggle(
           value: value,
-          activeThumbColor: AppColors.lavender,
-          activeTrackColor: AppColors.indigo.withValues(alpha: 0.5),
-          inactiveThumbColor: AppColors.textMuted,
-          inactiveTrackColor: AppColors.surface,
+          semanticLabel: context.astralText('selectTime'),
           onChanged: onChanged,
         ),
       ],
@@ -555,30 +493,10 @@ class _SelectedCity extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.lavender.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.place_outlined, size: 14, color: AppColors.lavender),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              '${city.name}, ${city.country}',
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return TaroGlassPill(
+      label: '${city.name}, ${city.country}',
+      icon: Icons.place_outlined,
+      accent: true,
     );
   }
 }
@@ -604,7 +522,7 @@ class _CityResult extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 13,
-                  color: AppColors.textPrimary,
+                  color: TaroColors.textPrimary,
                 ),
               ),
             ),
@@ -623,39 +541,12 @@ class _ProfileFillPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return TaroGlassChip(
+      label: context.astralText('profileFill'),
+      icon: Icons.person_pin_circle_outlined,
+      selected: true,
+      expanded: true,
       onTap: onFill,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.lavender.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.45)),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.person_pin_circle_outlined,
-              size: 14,
-              color: AppColors.lavender,
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                context.astralText('profileFill'),
-                style: AppTypography.label(
-                  fontSize: 9,
-                  letterSpacing: 0.8,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.lavender,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -6,6 +6,7 @@ import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/birth_time_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../design_system/taro.dart';
 import 'widgets/astral_gradient_button.dart';
 import 'widgets/astral_house_selector.dart';
 import 'widgets/birth_data_form_sheet.dart';
@@ -33,12 +34,8 @@ class NatalProfileDetailSheet extends StatefulWidget {
     required NatalChart chart,
     ValueChanged<HouseSystem>? onHouseSystemChanged,
   }) {
-    HapticFeedback.selectionClick();
-    return showModalBottomSheet<void>(
+    return showTaroGlassSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.6),
       builder: (_) => NatalProfileDetailSheet(
         chart: chart,
         onHouseSystemChanged: onHouseSystemChanged,
@@ -75,72 +72,52 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
     final asc = chart.planets
         .where((p) => p.planet == PlanetId.ascendant)
         .firstOrNull;
-    return Container(
+    return SizedBox(
       key: const ValueKey('natal-profile-detail'),
       height: MediaQuery.of(context).size.height * 0.92,
-      decoration: const BoxDecoration(
-        color: AppColors.canvas,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 10),
-          Container(
-            width: 44,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: BorderRadius.circular(2),
+      child: TaroGlassSheet(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _header(context, chart),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              key: const ValueKey('astral-edit-birth-data'),
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: Text(context.astralText('edit')),
+              onPressed: () async {
+                final updated = await BirthDataFormSheet.show(
+                  context,
+                  chart: _chart,
+                );
+                if (mounted && updated != null) {
+                  setState(() => _chart = updated);
+                }
+              },
             ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _header(context, chart),
-                  const SizedBox(height: 16),
-                  TextButton.icon(
-                    key: const ValueKey('astral-edit-birth-data'),
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: Text(context.astralText('edit')),
-                    onPressed: () async {
-                      final updated = await BirthDataFormSheet.show(
-                        context,
-                        chart: _chart,
-                      );
-                      if (mounted && updated != null) {
-                        setState(() => _chart = updated);
-                      }
-                    },
-                  ),
-                  if (chart.timezoneId == null)
-                    Text(context.astralText('legacyTime')),
-                  if (!chart.timeKnown) Text(context.astralText('unknownTime')),
-                  if (chart.moonSignUncertain)
-                    Text(context.astralText('unknownMoon')),
-                  const SizedBox(height: 10),
-                  _bigThree(sun, moon, asc),
-                  if (chart.timeKnown) ...[
-                    const SizedBox(height: 18),
-                    _houseSection(chart),
-                  ],
-                  const SizedBox(height: 18),
-                  _ledger(chart),
-                  const SizedBox(height: 18),
-                  _aspects(chart.aspects),
-                  const SizedBox(height: 20),
-                  AstralGradientButton(
-                    label: context.astralText('close'),
-                    onTap: () => Navigator.of(context).maybePop(),
-                  ),
-                ],
-              ),
+            if (chart.timezoneId == null)
+              Text(context.astralText('legacyTime')),
+            if (!chart.timeKnown) Text(context.astralText('unknownTime')),
+            if (chart.moonSignUncertain)
+              Text(context.astralText('unknownMoon')),
+            const SizedBox(height: 10),
+            _bigThree(sun, moon, asc),
+            if (chart.timeKnown) ...[
+              const SizedBox(height: 18),
+              _houseSection(chart),
+            ],
+            const SizedBox(height: 18),
+            _ledger(chart),
+            const SizedBox(height: 18),
+            _aspects(chart.aspects),
+            const SizedBox(height: 20),
+            AstralGradientButton(
+              label: context.astralText('close'),
+              onTap: () => Navigator.of(context).maybePop(),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

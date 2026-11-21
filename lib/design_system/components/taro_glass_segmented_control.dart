@@ -7,10 +7,16 @@ import '../taro_tokens.dart';
 
 /// Один сегмент сегментированного контрола.
 class TaroGlassSegment<T> {
-  const TaroGlassSegment({required this.value, required this.label, this.icon});
+  const TaroGlassSegment({
+    required this.value,
+    required this.label,
+    this.icon,
+    this.key,
+  });
   final T value;
   final String label;
   final IconData? icon;
+  final Key? key;
 }
 
 /// Сегментированный контрол со плавным скольжением активного индикатора.
@@ -79,6 +85,7 @@ class TaroGlassSegmentedControl<T> extends StatelessWidget {
                       for (var i = 0; i < n; i++)
                         Expanded(
                           child: _SegmentTap(
+                            key: segments[i].key,
                             segment: segments[i],
                             active: i == activeIndex,
                             onTap: () {
@@ -101,6 +108,7 @@ class TaroGlassSegmentedControl<T> extends StatelessWidget {
 
 class _SegmentTap<T> extends StatelessWidget {
   const _SegmentTap({
+    super.key,
     required this.segment,
     required this.active,
     required this.onTap,

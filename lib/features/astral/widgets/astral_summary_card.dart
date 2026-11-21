@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/natal_chart.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
-import 'astral_gradient_button.dart';
+import '../../../design_system/taro.dart';
 import '../astral_copy.dart';
 
-/// Live summary for the active profile: birth metadata, the Big Three and a
-/// shortcut into the full natal profile sheet.
+/// Live summary for the active profile (Phase G5: [TaroGlassPanel]).
 class AstralSummaryCard extends StatelessWidget {
   const AstralSummaryCard({
     required this.chart,
@@ -27,13 +25,9 @@ class AstralSummaryCard extends StatelessWidget {
         .firstOrNull;
     final day = chart.birthLocalDay.toString().padLeft(2, '0');
     final month = chart.birthLocalMonth.toString().padLeft(2, '0');
-    return Container(
+    return TaroGlassPanel(
+      radius: 18,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -48,7 +42,7 @@ class AstralSummaryCard extends StatelessWidget {
             style: AppTypography.label(
               fontSize: 9,
               letterSpacing: 0.7,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
           const SizedBox(height: 14),
@@ -77,14 +71,14 @@ class AstralSummaryCard extends StatelessWidget {
                     style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 0.9,
-                      color: AppColors.lavender,
+                      color: TaroColors.lavender,
                     ),
                   ),
                   const SizedBox(width: 4),
                   const Icon(
                     Icons.arrow_forward_rounded,
                     size: 14,
-                    color: AppColors.lavender,
+                    color: TaroColors.lavender,
                   ),
                 ],
               ),
@@ -115,7 +109,7 @@ class _BigThreeChip extends StatelessWidget {
             style: AppTypography.label(
               fontSize: 8.5,
               letterSpacing: 0.8,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
           const SizedBox(height: 2),
@@ -126,7 +120,7 @@ class _BigThreeChip extends StatelessWidget {
             style: AppTypography.body(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: TaroColors.textPrimary,
             ),
           ),
         ],
@@ -135,7 +129,7 @@ class _BigThreeChip extends StatelessWidget {
   }
 }
 
-/// Shown before the first profile exists.
+/// Shown before the first profile exists (Phase G5: [TaroGlassEmptyState]).
 class AstralEmptyState extends StatelessWidget {
   const AstralEmptyState({required this.onGenerate, super.key});
 
@@ -143,41 +137,17 @@ class AstralEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.astralRussian
-                ? 'НАТАЛЬНОЙ КАРТЫ ПОКА НЕТ'
-                : 'NO NATAL PROFILE YET',
-            style: AppTypography.label(
-              fontSize: 9,
-              letterSpacing: 1.0,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.astralRussian
-                ? 'Укажите дату, время и город рождения.'
-                : 'Enter your birth date, time and city.',
-            style: AppTypography.body(
-              fontSize: 13,
-              height: 1.45,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 16),
-          AstralGradientButton(label: '✦ ADD FIRST PROFILE', onTap: onGenerate),
-        ],
-      ),
+    return TaroGlassEmptyState(
+      icon: Icons.auto_awesome_outlined,
+      title: context.astralRussian
+          ? 'НАТАЛЬНОЙ КАРТЫ ПОКА НЕТ'
+          : 'NO NATAL PROFILE YET',
+      subtitle: context.astralRussian
+          ? 'Укажите дату, время и город рождения.'
+          : 'Enter your birth date, time and city.',
+      actionLabel: '✦ ADD FIRST PROFILE',
+      framed: true,
+      onAction: onGenerate,
     );
   }
 }

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro.dart';
 import '../../../state/user_profile_controller.dart';
 import 'profile_card.dart';
 
-/// Card 3 — device-to-device migration. The snapshot is a portable JSON
-/// document produced entirely on-device; it is never silently uploaded.
+/// Card 3 — device-to-device migration (Phase G5: [ProfileCard] +
+/// [TaroGlassButton] + [showTaroGlassSnackbar]).
 class ProfileMigrationCard extends StatelessWidget {
   const ProfileMigrationCard({super.key});
 
@@ -16,13 +16,13 @@ class ProfileMigrationCard extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: TaroColors.surface,
         title: const Text(
           'EXPORT DATA',
           style: TextStyle(
             fontSize: 14,
             letterSpacing: 1.4,
-            color: AppColors.textPrimary,
+            color: TaroColors.textPrimary,
           ),
         ),
         content: Text(
@@ -34,7 +34,7 @@ class ProfileMigrationCard extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             height: 1.45,
-            color: AppColors.textMuted.withValues(alpha: 0.95),
+            color: TaroColors.textSecondary.withValues(alpha: 0.95),
           ),
         ),
         actions: [
@@ -57,13 +57,13 @@ class ProfileMigrationCard extends StatelessWidget {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: TaroColors.surface,
         title: const Text(
           'SNAPSHOT READY',
           style: TextStyle(
             fontSize: 14,
             letterSpacing: 1.4,
-            color: AppColors.textPrimary,
+            color: TaroColors.textPrimary,
           ),
         ),
         content: SizedBox(
@@ -72,7 +72,10 @@ class ProfileMigrationCard extends StatelessWidget {
           child: SingleChildScrollView(
             child: SelectableText(
               payload,
-              style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
+              style: const TextStyle(
+                fontSize: 10,
+                color: TaroColors.textSecondary,
+              ),
             ),
           ),
         ),
@@ -92,22 +95,23 @@ class ProfileMigrationCard extends StatelessWidget {
     final payload = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: TaroColors.surface,
         title: const Text(
           'IMPORT DATA',
           style: TextStyle(
             fontSize: 14,
             letterSpacing: 1.4,
-            color: AppColors.textPrimary,
+            color: TaroColors.textPrimary,
           ),
         ),
         content: TextField(
           controller: controller,
           maxLines: 8,
-          style: const TextStyle(fontSize: 11, color: AppColors.textPrimary),
+          cursorColor: TaroColors.lavender,
+          style: const TextStyle(fontSize: 11, color: TaroColors.textPrimary),
           decoration: const InputDecoration(
             hintText: 'Paste the backup JSON here',
-            hintStyle: TextStyle(fontSize: 11, color: AppColors.textMuted),
+            hintStyle: TextStyle(fontSize: 11, color: TaroColors.textSecondary),
           ),
         ),
         actions: [
@@ -126,12 +130,12 @@ class ProfileMigrationCard extends StatelessWidget {
     if (payload == null || payload.trim().isEmpty || !context.mounted) return;
     final ok = context.read<UserProfileController>().importUserDataJson(payload);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok
-            ? 'Backup imported — profile, sessions and natal charts merged.'
-            : 'This payload is not a valid backup.'),
-      ),
+    showTaroGlassSnackbar(
+      context,
+      message: ok
+          ? 'Backup imported — profile, sessions and natal charts merged.'
+          : 'This payload is not a valid backup.',
+      tone: ok ? TaroGlassSnackbarTone.success : TaroGlassSnackbarTone.error,
     );
   }
 
@@ -140,56 +144,22 @@ class ProfileMigrationCard extends StatelessWidget {
     return ProfileCard(
       title: 'DEVICE MIGRATION',
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _action(
+          TaroGlassButton(
             icon: Icons.cloud_upload_outlined,
             label: 'EXPORT DATA FOR NEW DEVICE',
-            onTap: () => _export(context),
+            variant: TaroGlassButtonVariant.secondary,
+            onPressed: () => _export(context),
           ),
           const SizedBox(height: 10),
-          _action(
+          TaroGlassButton(
             icon: Icons.download_outlined,
             label: 'IMPORT DATA',
-            onTap: () => _import(context),
+            variant: TaroGlassButtonVariant.secondary,
+            onPressed: () => _import(context),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _action({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-        decoration: BoxDecoration(
-          color: AppColors.canvas.withValues(alpha: 0.65),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: AppColors.lavender),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 10,
-                  letterSpacing: 1.1,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
