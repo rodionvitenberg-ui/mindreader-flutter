@@ -7,7 +7,7 @@ from datetime import timedelta
 from django.core.exceptions import RequestDataTooBig, TooManyFilesSent
 from django.db import transaction
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import APIException
@@ -16,6 +16,9 @@ from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
 from .models import Counter, Operation
+
+
+IDEMPOTENCY = OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER, required=True)
 
 
 class Problem(APIException):
@@ -35,7 +38,7 @@ def error_response(exc, context):
         response.data = {
             "code": code or {400: "invalid_request", 404: "not_found"}.get(response.status_code, "request_failed"),
             "detail": detail or "The request could not be accepted.",
-            "requestId": str(uuid.uuid4()),
+            "requestId": getattr(context.get("request"), "api_request_id", None) or str(uuid.uuid4()),
         }
         if detail is None:
             response.data["fields"] = data

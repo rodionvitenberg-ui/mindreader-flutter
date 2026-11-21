@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 
-from .models import Deck, DeckVersion
+from .models import Deck, DeckAsset, DeckVersion
 from .packages import save_validated_version
 
 
@@ -24,9 +24,21 @@ class VersionForm(forms.ModelForm):
         widgets = {"package": forms.FileInput}
 
 
+class AssetInline(admin.TabularInline):
+    model = DeckAsset
+    fields = ("kind", "card_id", "path", "sha256")
+    readonly_fields = fields
+    max_num = 0
+    can_delete = False
+
+    def has_add_permission(self, request, obj):
+        return False
+
+
 @admin.register(DeckVersion)
 class DeckVersionAdmin(admin.ModelAdmin):
     form = VersionForm
+    inlines = (AssetInline,)
     list_display = ("deck", "version", "min_app_version", "incomplete", "published", "card_count")
     list_filter = ("published", "incomplete")
     readonly_fields = ("id", "sha256", "size_bytes", "card_count")

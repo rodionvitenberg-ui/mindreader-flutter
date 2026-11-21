@@ -58,3 +58,35 @@ class GatewayTests(TestCase):
             routing.generate([])
         self.assertEqual(result.exception.get_codes(), "provider_unavailable")
         send.assert_not_called()
+
+
+    @patch("apps.ai_gateway.adapters.request_json")
+    def test_disabled_primary_does_not_promote_paid_fallback(self, send):
+        self.provider(enabled=False)
+        self.provider("paid", priority=20, is_paid=True, max_cost_per_request="0.02", daily_spending_limit="1")
+        with self.assertRaises(Problem) as result:
+            routing.generate([])
+        self.assertEqual(result.exception.get_codes(), "provider_unavailable")
+        send.assert_not_called()
+
+    def test_no_credentials_in_transport_error_and_no_redirect(self):
+        import httpx
+
+        from apps.ai_gateway.transport import request_json
+
+        self.provider(credential_ref="AI_CREDENTIAL_ORACLE_TEST")
+        provider = Provider.objects.get()
+        connection = httpx.Client
+        observed = []
+
+        def responder(request):
+            observed.append((str(request.url), request.headers.get("Authorization")))
+            return httpx.Response(302, headers={"Location": "https://other.example.test/leak"})
+
+        transport = httpx.MockTransport(responder)
+        with (patch.dict(os.environ, {"AI_CREDENTIAL_ORACLE_TEST": "mock-bearer"}),
+              patch("apps.ai_gateway.transport.httpx.Client", side_effect=lambda **kw: connection(transport=transport, **kw))):
+            with self.assertRaises(UpstreamError) as result:
+                request_json(provider, {})
+            self.assertEqual(str(result.exception), "provider_error")
+        self.assertEqual(observed, [("https://inference.example.test/api", "Bearer mock-bearer")])

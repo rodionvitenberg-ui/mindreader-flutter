@@ -10,9 +10,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.catalog.models import Deck
-from apps.core.api import Problem, checked, finish, operation, rate_limit, replay
+from apps.core.api import IDEMPOTENCY, Problem, checked, finish, operation, rate_limit, replay
 from apps.entitlements.models import Grant, active_grants
-from apps.oracle.api import IDEMPOTENCY
 
 from .models import Event, Order
 from .providers import get_provider
@@ -57,7 +56,7 @@ def order_data(order):
     }
 
 
-@extend_schema(request=CheckoutInput, responses={201: OrderOutput}, parameters=[IDEMPOTENCY])
+@extend_schema(request=CheckoutInput, responses={201: OrderOutput, 202: OrderOutput}, parameters=[IDEMPOTENCY])
 @api_view(["POST"])
 def checkout(request):
     owner = request.auth.principal
@@ -78,6 +77,7 @@ def checkout(request):
         row = Order.objects.create(
             owner=owner, deck=deck, provider=data["provider"], price_minor=deck.price_minor, currency=deck.currency,
         )
+        finish(op, order_data(row), 202)
     try:
         payment = adapter.create_checkout(row)
     except Problem as exc:

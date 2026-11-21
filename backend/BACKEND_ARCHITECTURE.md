@@ -1,20 +1,34 @@
 # Tarot Tree backend architecture
 
-Flutter reference: master at 5e822bb. The Django monolith has independent Oracle and Vision routes, with PostgreSQL as the source of truth for server sessions, orders and ownership. Local Flutter history, profiles and deck settings are a separate data store.
+Flutter reference: master at `5e822bb`. Django and PostgreSQL own server sessions, payment state and digital entitlements. Flutter owns device-local history, profile, rendering, deck settings, narration, camera detection and tracking. Server persistence starts when a client submits API data.
+
+## Flutter contract audit
 
 | Flutter reference | V1 server representation |
 | --- | --- |
-| core/models/oracle_payload.dart | Keep camelCase, schemaVersion 1, zero-based position, source and mode. Card IDs are tarot:0–77, lenormand:0–35, runes:0–23. |
-| state/spread_controller.dart | Store ordered base positions and distinct clarifiers. Custom spreads use 1–12 questions. The Digital Table supports three clarifiers and requires face-up base cards for synthesis. |
-| state/spread_session_snapshot.dart | Map integer cardId through the session system, reversed through orientation, and timestamp or sessionId to an owner-scoped clientSessionId. Preserve session ID mapping and ChatMessage role, text and slotIndex. |
-| core/services/vision/vision_engine.dart | HTTP accepts extracted images only. Map canonical card IDs back to system plus integer for Dart VisionCardCandidate. Keep optional track ID, orientation, recognition status and score type. Geometry and tracking stay on device. |
-| features/camera_scan/camera_scan_screen.dart | Existing Tarot legacy scan uses a review sheet for base cards and directly appends a physical clarifier. Both require confirmation when the server API is integrated. |
-| core/models/oracle_handoff.dart | Oracle sessions support Astral kinds with a separate versioned, minimized text context. Flutter remains responsible for calculating natal charts, forecasts and transits. |
-| core/services/oracle_synthesis_service.dart | Flutter performs direct worker/cloud calls and has a local synthesis fallback. Replace remote calls when integrating. Server provider settings are independent and credentials stay server-side. |
-| state/deck_pack_controller.dart | Use the existing per-system active pack selection in a future client integration. Store product ownership, package versions and asset mappings on server. Bundled defaults remain available offline. |
-| features/almanac/deck_shop_screen.dart | This screen is the future catalog entry. Its current external link only contains system and deck ID. API checkout starts an order with a verified owner. |
-| state/user_profile_controller.dart | Keep the local profile and backup local. Account membership requires verified proof and the Oracle accepts only session-specific subject context. |
+| `core/models/oracle_payload.dart` | Reuse camelCase, schema version 1, zero-based positions, `source` and `mode`. Card IDs are `tarot:0`–`tarot:77`, `lenormand:0`–`lenormand:35` and `runes:0`–`runes:23`. Lenormand index 0 is the printed card 1. |
+| `state/spread_controller.dart` | Ordered base positions and distinct clarifiers. Custom spreads accept 1–12 questions as position roles. The Digital Table supports up to three clarifiers after base synthesis. |
+| `state/oracle_session_controller.dart` and `state/spread_session_snapshot.dart` | A local session ID may be created after synthesis, with timestamps in legacy archives. The server creates a UUID before any generation, accepts optional owner-scoped `clientSessionId` and persists question, subject, positions, chapter data and chat roles. Map legacy numeric card IDs using the owning system and map `reversed` to the orientation enum. |
+| `core/services/vision/vision_engine.dart` | The adapter accepts extracted images. Map qualified HTTP card IDs to system plus integer for `VisionCardCandidate` and preserve orientation, optional track ID, score type and recognition status. Images and geometry are absent from Oracle context. |
+| `features/camera_scan/camera_scan_screen.dart` | Legacy Tarot scan currently has a review sheet for base cards and directly appends a physical clarifier. When integrating the API, both flows need confirmation before reading context is updated. Preserve the manual flow for unsupported systems and unavailable providers. |
+| `core/models/oracle_handoff.dart` | Card-free Astral sessions store a separate versioned summary. Flutter builds the summary from natal chart, selected transit, zodiac or synastry context. Full birth data and charts remain on device. |
+| `core/services/oracle_synthesis_service.dart` | Current builds can call worker and cloud endpoints directly through build-time config. A future client changes the remote call sites to API requests and retains the existing local fallback where appropriate. |
+| `state/deck_pack_controller.dart` and `features/almanac/deck_shop_screen.dart` | Active selection and user-selected cover are local state. The future client fetches products and ownership in the existing Almanac storefront. The shipped app links to an external website with the system and deck ID. Order creation moves to the server when integrated. Existing bundled decks and layouts remain free. |
+| `state/user_profile_controller.dart` | Account verification is independent of the local user profile. For readings on another person, explicitly supply that reading's context. Existing local backups stay local. |
 
-The server assigns its own UUID before generation. The client can pass its current local ISO-style ID as clientSessionId. A future client adapter handles field conversion and preserves existing offline paths. Server persistence begins with explicitly submitted API data. No automatic upload of local archives, local profiles or camera rolls occurs.
+The versioned public API is distinct from provider-specific wire formats. See [API.md](API.md) for examples. [The contract fixture](tests/fixtures/flutter_contract.json) pins the qualified and numeric card ID mapping.
 
-The remaining sections of this document are developed as the modules are implemented.
+## Modules and persistence
+
+| Module | Models and service responsibilities |
+| --- | --- |
+| `core` | Atomic fixed-window counters and owner-scoped idempotency operations. Common error format, upload guard, health and canonical catalog. |
+| `accounts` | `Principal`, `AccessToken` and `EmailChallenge`. Token digests at rest with timed access and revocation. |
+| `ai_gateway` | `Provider`, `RoutingPolicy`, `Usage` and `Lease`. Each provider belongs to a single capability. Configuration is read on each request, and the usage reservation locks a provider row per attempt. The network call runs outside the DB transaction. |
+| `oracle` | `Personality`, `Reading`, `Position`, `Message`. Persist card identity only after reveal or confirmation. Serialize generation within the reading, store one successful result per operation and scope all session data to the verified owner or guest token. Provider prompts get the current context and a bounded recent conversation. |
+| `vision` | `Recognition` stores candidates and confirmation decisions. Normalized images are transient. Confirmation locks the reading and commits the chosen card and decision together. Unique tracking and position constraints protect against duplicate insertion. |
+| `catalog` and `store` | `Deck`, `DeckVersion`, `DeckAsset`. PostgreSQL stores metadata, the manifest mapping and checksums. A private storage backend holds published ZIP files. Store APIs expose public previews, catalog entries and owner-authorized package downloads. |
+| `entitlements` | `Grant` records free, purchase, administrative and promotional rights independently. A deck is owned while at least one grant is active. |
+| `payments` | `Order` fixes price and currency. `Event` stores deduplicated verified status changes. Status and purchase-level grant changes commit together under the order lock. |
+
+No external inference or payment account is needed for Django to start. The sample personality is installed by migration. Admin starts with no providers or catalog products, so configured health and published rights reflect only operator-supplied data. SQLite is an explicit convenience for fast unit tests. PostgreSQL is required for transactional verification and production.

@@ -52,9 +52,9 @@ def request_json(provider, payload=None, *, health=False):
         base = urlsplit(url)
         url = urlunsplit((base.scheme, base.netloc, provider.health_path, "", ""))
 
-    timeout = httpx.Timeout(min(provider.inference_timeout, 2.0), connect=provider.connect_timeout)
+    timeout = httpx.Timeout(provider.inference_timeout, connect=provider.connect_timeout)
     deadline = time.monotonic() + provider.connect_timeout + provider.inference_timeout
-    headers = credentials(provider)
+    headers = {"Accept-Encoding": "identity", **credentials(provider)}
     try:
         with httpx.Client(timeout=timeout, follow_redirects=False, trust_env=False) as client:
             with client.stream("GET" if health else "POST", url, headers=headers, json=payload) as response:
@@ -62,10 +62,14 @@ def request_json(provider, payload=None, *, health=False):
                     raise UpstreamError("provider_unavailable")
                 if response.status_code == 429:
                     raise UpstreamError("provider_busy")
+                if time.monotonic() >= deadline:
+                    raise UpstreamError("provider_timeout")
                 if not 200 <= response.status_code < 300:
                     raise UpstreamError("provider_error")
                 if health:
                     return None
+                if response.headers.get("content-encoding", "identity").lower() != "identity":
+                    raise UpstreamError("provider_invalid_response")
                 data = bytearray()
                 for chunk in response.iter_bytes(chunk_size=16384):
                     if time.monotonic() >= deadline:
@@ -73,6 +77,8 @@ def request_json(provider, payload=None, *, health=False):
                     data.extend(chunk)
                     if len(data) > 1024 * 1024:
                         raise UpstreamError("provider_invalid_response")
+                if time.monotonic() >= deadline:
+                    raise UpstreamError("provider_timeout")
                 return json.loads(data)
     except (httpx.ConnectError, httpx.ConnectTimeout):
         raise UpstreamError("provider_unavailable", safe_retry=True) from None

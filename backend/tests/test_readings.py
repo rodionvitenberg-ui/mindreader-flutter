@@ -127,3 +127,25 @@ class ReadingTests(TestCase):
                             "cardId": "tarot:0", "orientation": "upright", "position": 0})
         self.assertEqual(response.status_code, 200, response.data)
         self.assertEqual(response.json()["position"]["card"]["source"], "physical")
+
+
+    def test_oversized_upload_and_early_context_switch(self):
+        reading = self.reading(source="physical", selfContext="private biography")
+        prefix = f"/api/v1/oracle/sessions/{reading}/"
+        result = self.client.patch(prefix, {"subject": "other", "question": "A new question"}, format="json")
+        self.assertEqual(result.json()["subjectContext"], "")
+        self.assertEqual(result.json()["question"], "A new question")
+        large = SimpleUploadedFile("oversized.jpg", bytes(4 * 1024 * 1024 + 1), content_type="image/jpeg")
+        fields = {"sessionId": reading, "items": '[{"itemId":"a"}]', "images": [large]}
+        response = self.post("/api/v1/vision/recognize/", fields, format="multipart")
+        self.assertEqual(response.status_code, 413)
+
+
+    def test_clarifier_flag_cannot_bypass_required_physical_confirmation(self):
+        reading = self.reading(source="physical")
+        prefix = f"/api/v1/oracle/sessions/{reading}/"
+        data = {"position": 0, "cardId": "tarot:1", "orientation": "upright", "clarifier": True}
+        self.assertEqual(self.post(prefix + "cards/", data).json()["code"], "position_kind_conflict")
+        data["clarifier"] = False
+        self.assertEqual(self.post(prefix + "cards/", data).json()["code"], "physical_confirmation_required")
+        self.assertFalse(Position.objects.exclude(card_id="").exists())

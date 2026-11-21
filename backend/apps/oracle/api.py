@@ -1,18 +1,16 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from apps.core.api import Problem, checked, finish, operation, rate_limit, replay
+from apps.core.api import IDEMPOTENCY, Problem, checked, finish, operation, rate_limit, replay
 
 from .models import Personality, Position, Reading
 from .serializers import (CardUpdate, MessageInput, PersonalityOutput, PositionOutput,
-                          ReadingInput, ReadingOutput, Synthesis, Turn)
+                          ReadingContext, ReadingInput, ReadingOutput, Synthesis, Turn)
 from .service import owned, place, position_data, reading_data, require_idle, run_turn
-
-IDEMPOTENCY = OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER, required=True)
 
 
 @extend_schema_view(
@@ -55,14 +53,28 @@ class Sessions(generics.GenericAPIView):
             return finish(op, reading_data(reading, full=True), status.HTTP_201_CREATED)
 
 
-@extend_schema(responses={200: ReadingOutput, 204: None})
-@api_view(["GET", "DELETE"])
+@extend_schema(methods=["GET"], responses=ReadingOutput)
+@extend_schema(methods=["PATCH"], request=ReadingContext, responses=ReadingOutput)
+@extend_schema(methods=["DELETE"], responses={204: None})
+@api_view(["GET", "PATCH", "DELETE"])
 def session(request, session_id):
     if request.method == "GET":
         return Response(reading_data(owned(request, session_id), full=True))
     with transaction.atomic():
         reading = owned(request, session_id, lock=True)
         require_idle(reading)
+        if request.method == "PATCH":
+            if reading.synthesis or reading.messages.exists():
+                raise Problem("context_locked", 409, "The reading has already started its Oracle conversation.")
+            data = checked(ReadingContext, request.data)
+            subject = data.get("subject", reading.subject)
+            key = "selfContext" if subject == "self" else "otherContext"
+            reading.subject_context = data.get(key, reading.subject_context if reading.subject == subject else "")
+            reading.subject = subject
+            reading.question = data.get("question", reading.question)
+            reading.notes = data.get("notes", reading.notes)
+            reading.save(update_fields=["subject", "subject_context", "question", "notes", "updated_at"])
+            return Response(reading_data(reading, full=True))
         # Clear replay records with reading snapshots or generated content as well.
         ops = request.auth.principal.operation_set
         ops.filter(response__sessionId=str(session_id)).delete()
