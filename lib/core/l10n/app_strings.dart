@@ -209,6 +209,7 @@ class AppStrings {
       AppLanguage.en: 'No active transits for this day.',
       AppLanguage.ru: 'На этот день нет активных транзитов.',
     },
+    'header.oracle': {AppLanguage.en: 'Oracle', AppLanguage.ru: 'Оракул'},
     'header.almanac': {AppLanguage.en: 'Almanac', AppLanguage.ru: 'Альманах'},
     'header.profile': {AppLanguage.en: 'Profile', AppLanguage.ru: 'Профиль'},
 

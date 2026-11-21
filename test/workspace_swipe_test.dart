@@ -72,7 +72,7 @@ void main() {
     // Swipe left on the table background (never on the deck) → Pane 1.
     await goToPane(tester, 1);
     expect(find.text('NO READING YET'), findsOneWidget);
-    expect(find.text('CURRENT SPREAD'), findsOneWidget);
+    expect(find.text('Oracle'), findsOneWidget);
 
     // Swipe once more → Pane 2: Spread History & Notebooks (PRO).
     await goToPane(tester, 2);
@@ -168,6 +168,12 @@ void main() {
     expect(paneController.page!.round(), 1);
     expect(find.text('What should I focus on?'), findsOneWidget);
     expect(find.textContaining('Sitting with your question'), findsOneWidget);
+
+    expect(find.byKey(const ValueKey('oracle-input')), findsOneWidget);
+    await tester.tap(find.byTooltip('Show reading cards'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byKey(const ValueKey('oracle-rail-slot-0')), findsOneWidget);
 
     // The exact cards are restored face-up back on the table (Pane 0).
     await goToPane(tester, 0);

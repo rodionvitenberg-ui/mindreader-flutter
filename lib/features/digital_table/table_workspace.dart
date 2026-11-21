@@ -50,6 +50,7 @@ class TableWorkspace extends StatefulWidget {
     this.onOpenCameraClarifier,
     this.onResumeCamera,
     this.astralHandoff,
+    this.oracleService,
   });
 
   /// Shell callback: switches to the Camera tab armed for a single-card
@@ -63,6 +64,7 @@ class TableWorkspace extends StatefulWidget {
   /// Cross-tab handoff published by the ASTRAL tab; the workspace consumes
   /// it and streams a natal or synastry reading from the Oracle.
   final ValueNotifier<OracleHandoff?>? astralHandoff;
+  final OracleSynthesisService? oracleService;
 
   @override
   State<TableWorkspace> createState() => _TableWorkspaceState();
@@ -78,6 +80,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
   int? _tableSessionEpoch;
   bool _restoringSpread = false;
   final _dictation = ReadingDictation();
+  bool _finishingDraft = false;
 
   late final SpreadController _ctrl = context.read<SpreadController>();
   late final OracleSessionController _session = context
@@ -146,7 +149,6 @@ class _TableWorkspaceState extends State<TableWorkspace>
         if (_session.epoch == _tableSessionEpoch) _session.reset();
         _tableSessionEpoch = null;
         _sessionTimestamp = null;
-        _selectedChip = null;
       }
     }
     setState(() {});
@@ -255,54 +257,73 @@ class _TableWorkspaceState extends State<TableWorkspace>
   }
   // ---- synthesis ----
 
-  /// Runs the structured AI synthesis and slides the PageView into the
-  /// Oracle AI Chat (Pane 1).
+  // The spread service returns a complete response. Issuing the request
+  // only starts the preparation spinner; usable response text opens chat.
   Future<void> _runSynthesis() async {
-    final requestedEpoch = _session.epoch;
-    await _dictation.finish();
-    if (!mounted ||
-        !_session.isCurrentSession(requestedEpoch) ||
-        _session.generatingInitial) {
-      return;
-    }
+    if (_finishingDraft || _session.generatingInitial) return;
     if (_session.hasSynthesis) {
       _goToPane(chatPane);
       return;
     }
     if (!_ctrl.canSynthesize) return;
-    FocusManager.instance.primaryFocus?.unfocus();
-    _ctrl.setReadingForSelf(_forSelf);
-    _session.startGenerating();
-    setState(() {});
-    final contexts = {
-      for (final s in _ctrl.slots)
-        if (s.userContext != null) s.index: s.userContext!,
-    };
-    final lens = [
-      if (_ctrl.readingQuestion.trim().isNotEmpty) _ctrl.readingQuestion.trim(),
-      ..._ctrl.sessionContextNotes,
-    ];
+    if (_sessionKind != SessionKind.divinationSpread) {
+      _session.reset();
+      _sessionKind = SessionKind.divinationSpread;
+      _sessionTimestamp = null;
+      _clearAstralContext();
+    }
     final epoch = _session.epoch;
     _tableSessionEpoch = epoch;
-    final result = await OracleSynthesisService().synthesizeStructured(
-      slots: _ctrl.slots,
-      type: _ctrl.spreadType,
-      spreadLabel: _ctrl.spreadLabel,
-      focusLine: _ctrl.spreadFocusLine,
-      system: _ctrl.system,
-      contextChip: lens.isEmpty ? null : lens.join(' · '),
-      slotContexts: contexts,
-      profileContext: _tableSubject,
-      positionQuestions: _ctrl.customSpread?.questions,
-      relationships: _ctrl.relationships,
-    );
+    // Keep the active editor mounted until the recognizer delivers its
+    // final result, then leave the table and submit the confirmed draft.
+    _finishingDraft = true;
+    _session.startGenerating();
+    StructuredSynthesis result;
+    try {
+      try {
+        await _dictation.finish();
+      } finally {
+        _finishingDraft = false;
+      }
+      if (!mounted || !_session.isCurrentSession(epoch)) return;
+      FocusManager.instance.primaryFocus?.unfocus();
+      _goToPane(chatPane);
+      if (!_ctrl.canSynthesize) {
+        _session.failInitial();
+        return;
+      }
+      _ctrl.setReadingForSelf(_forSelf);
+      final contexts = {
+        for (final s in _ctrl.slots)
+          if (s.userContext != null) s.index: s.userContext!,
+      };
+      final lens = [
+        if (_ctrl.readingQuestion.trim().isNotEmpty) _ctrl.readingQuestion.trim(),
+        ..._ctrl.sessionContextNotes,
+      ];
+      final oracle = widget.oracleService ?? OracleSynthesisService();
+      result = await oracle.synthesizeStructured(
+        slots: _ctrl.slots,
+        type: _ctrl.spreadType,
+        spreadLabel: _ctrl.spreadLabel,
+        focusLine: _ctrl.spreadFocusLine,
+        system: _ctrl.system,
+        contextChip: lens.isEmpty ? null : lens.join(' · '),
+        slotContexts: contexts,
+        profileContext: _tableSubject,
+        positionQuestions: _ctrl.customSpread?.questions,
+        relationships: _ctrl.relationships,
+      );
+    } catch (_) {
+      if (mounted && _session.isCurrentSession(epoch)) _session.failInitial();
+      return;
+    }
     if (!mounted || !_session.isCurrentSession(epoch)) return;
+    if (result.narrative.trim().isEmpty) {
+      _session.failInitial();
+      return;
+    }
     _session.markInitial(result);
-    // A spread synthesized after an Astral reading starts its own history
-    // entry instead of overwriting the astral one.
-    if (_sessionKind != SessionKind.divinationSpread) _sessionTimestamp = null;
-    _sessionKind = SessionKind.divinationSpread;
-    _clearAstralContext();
     _sessionTimestamp ??= DateTime.now().toIso8601String();
     // The reading is now an active session: stable id + provenance
     // (source mapped once from the table-level source mode).
@@ -311,12 +332,9 @@ class _TableWorkspaceState extends State<TableWorkspace>
       source: ReadingSourceX.fromTableSourceMode(_ctrl.sourceMode),
       mode: ReadingMode.standard,
     );
-    final completedEpoch = _session.epoch;
-    _tableSessionEpoch = completedEpoch;
-    await _captureSession();
-    if (!mounted || !_session.isCurrentSession(completedEpoch)) return;
+    _tableSessionEpoch = _session.epoch;
     HapticFeedback.mediumImpact();
-    _goToPane(chatPane);
+    await _captureSession();
   }
 
   /// Upserts the in-progress session into the local archive: a spread uses
@@ -395,7 +413,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
     await _captureSession();
   }
 
-  // ---- Digital Table context → the ether (Pane 0 chips → Pane 1) ----
+  // ---- Context actions from the existing composer menu ----
 
   void _sendChipToEther(String chip) {
     // Never duplicate the same context note in the session.
@@ -408,21 +426,6 @@ class _TableWorkspaceState extends State<TableWorkspace>
       _ctrl.clearPendingContext();
     }
     _playCosmos(chip);
-  }
-
-  /// The single active context pill in the Oracle Chat pane (radio
-  /// behavior) — null when none is selected.
-  String? _selectedChip;
-
-  /// Toggles a context pill on the Oracle Chat pane: EXACTLY ONE pill may
-  /// be active at a time (tapping it again deselects it). Selection
-  /// silently updates the active context state — it NEVER appends
-  /// `Context woven into the reading` lines into the chat log.
-  void _toggleContextChip(String chip) {
-    HapticFeedback.selectionClick();
-    final wasSelected = _selectedChip == chip;
-    setState(() => _selectedChip = wasSelected ? null : chip);
-    if (!wasSelected) _sendChipToEther(chip);
   }
 
   void _playCosmos(String label) {
@@ -634,6 +637,16 @@ class _TableWorkspaceState extends State<TableWorkspace>
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
+    final session = context.watch<OracleSessionController>();
+    final isSpread = _sessionKind == SessionKind.divinationSpread;
+    final inConversation =
+        session.hasSynthesis ||
+        (isSpread
+            ? session.messages.any(
+                (message) =>
+                    message.role == 'oracle' && message.text.trim().isNotEmpty,
+              )
+            : session.messages.isNotEmpty);
     return Provider.value(
       value: _dictation,
       child: SafeArea(
@@ -650,7 +663,9 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 children: [
                   const Column(children: [Expanded(child: DigitalTableScreen()), ReadingGuide()]),
                   OracleChatPane(
-                    session: _session,
+                    session: session,
+                    inConversation: inConversation,
+                    showReadingCards: isSpread,
                     capsuleText: _capsuleText,
                     onBackToTable: () => _goToPane(tablePane),
                     onSynthesize: _runSynthesis,
@@ -680,7 +695,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
                   accentColor: TaroColors.dawn,
                 ),
               ),
-            if (_pane != historyPane) _buildBottomArea(ctrl),
+            if (_pane == tablePane || (_pane == chatPane && inConversation))
+              _buildBottomArea(ctrl),
           ],
         ),
       ),
@@ -689,8 +705,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
 
   /// Pane 0 (Digital Table): the armed-clarifier banner + the PERMANENT
   /// dormant/ignited ✦ SYNTHESIZE IN CHAT CTA — a pure tactile sanctuary,
-  /// no chat UI. Pane 1 (Oracle AI Chat): the context chips + the shared
-  /// Gemini input capsule. Plus the "Sent to Cosmos" overlay on either.
+  /// no chat UI. Pane 1 (Oracle Conversation) uses the same anchored capsule
+  /// independently of the message viewport.
   Widget _buildBottomArea(SpreadController ctrl) {
     final onTable = _pane == tablePane;
     // Step 1 (spread selection) is a clean picker — no reading-subject
@@ -714,7 +730,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 ),
                 const SizedBox(height: 2),
               ],
-              if (!_session.hasSynthesis && !_session.generatingInitial)
+              if (!_session.hasSynthesis &&
+                  (!_session.generatingInitial || _finishingDraft))
                 const Padding(
                   padding: EdgeInsets.only(bottom: 6),
                   child: ReadingSubjectToggle(),
@@ -729,11 +746,6 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 onTap: _runSynthesis,
               ),
             ] else ...[
-              _ChatContextChips(
-                selected: _selectedChip,
-                onChipTap: _toggleContextChip,
-              ),
-              const SizedBox(height: 2),
               GeminiInputCapsule(
                 fieldKey: const ValueKey('oracle-input'),
                 sendKey: const ValueKey('oracle-send'),
@@ -754,51 +766,6 @@ class _TableWorkspaceState extends State<TableWorkspace>
             child: CosmosSendBurst(animation: _cosmosCtl, label: _cosmosLabel),
           ),
       ],
-    );
-  }
-}
-
-/// Context pills docked above the input capsule on the Oracle AI Chat
-/// pane: SINGLE-SELECT radio behavior (one active pill at a time, tap
-/// again to deselect). All 3 pills live in one `Row` of `Expanded`
-/// children with equal width, 8 px gaps and 16 px horizontal screen
-/// padding — they NEVER change size when tapped and NEVER overflow any
-/// screen width. Selection is shown purely by a soft lavender tint
-/// (#A78BFA @ 22%) and a glowing 1.2 px lavender border — no ✓ icon,
-/// no font/padding growth.
-class _ChatContextChips extends StatelessWidget {
-  const _ChatContextChips({required this.selected, required this.onChipTap});
-
-  /// The single active pill — null when none is selected.
-  final String? selected;
-  final ValueChanged<String> onChipTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          for (var i = 0; i < tableContextChips.length; i++) ...[
-            if (i > 0) const SizedBox(width: 8),
-            Expanded(
-              child: KeyedSubtree(
-                key: selected == tableContextChips[i]
-                    ? ValueKey('context-chip-$i-active')
-                    : null,
-                child: TaroGlassChip(
-                  key: ValueKey('context-chip-$i'),
-                  label: tableContextChips[i],
-                  selected: selected == tableContextChips[i],
-                  expanded: true,
-                  compact: true,
-                  onTap: () => onChipTap(tableContextChips[i]),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
     );
   }
 }

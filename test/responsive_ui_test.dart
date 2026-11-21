@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mindreader/features/digital_table/widgets/gemini_input_capsule.dart';
 import 'package:mindreader/main.dart';
+import 'package:mindreader/state/spread_controller.dart';
+import 'package:provider/provider.dart';
 
 import 'fakes/fake_camera_platform.dart';
 import 'helpers/table_test_helpers.dart';
@@ -44,13 +46,28 @@ void main() {
     expect(find.byIcon(Icons.menu_book_outlined), findsOneWidget);
     expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
 
-    // Oracle Chat pane renders its input capsule without overflowing. Jump
-    // the workspace PageView directly (gesture distance is viewport-dependent
-    // and irrelevant to the layout contract this test asserts).
-    final pageView = tester.widget<PageView>(find.byType(PageView).first);
-    pageView.controller!.jumpToPage(1);
+    // Check both Oracle layouts at each size.
+    final pages = find.byType(PageView).first;
+    tester.widget<PageView>(pages).controller!.jumpToPage(1);
+    await tester.pump();
+    expect(find.text('NO READING YET'), findsOneWidget);
+    expect(find.byType(GeminiInputCapsule), findsNothing);
+
+    final spread = tester.element(pages).read<SpreadController>();
+    for (var i = 0; i < spread.spreadCardCount; i++) {
+      spread.dealNextCard();
+      spread.flipSlot(i);
+    }
+    await tester.pump();
+    final synthesize = find.text('✦ SYNTHESIZE IN CHAT →');
+    await tester.ensureVisible(synthesize);
+    await tester.tap(synthesize);
     await tester.pump();
     expect(find.byType(GeminiInputCapsule), findsOneWidget);
+    await tester.tap(find.byTooltip('Show reading cards'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byKey(const ValueKey('oracle-card-rail')), findsOneWidget);
   }
 
   testWidgets('compact portrait (360x640) renders without overflow',

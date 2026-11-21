@@ -1,14 +1,10 @@
-import 'package:flutter/material.dart' hide Element;
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/models/dealt_card_slot.dart';
-import '../../core/models/divination_card.dart';
-import '../../core/models/divination_system.dart';
-import '../../core/models/tarot_card_model.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/services/oracle_voice_service.dart';
-import '../../core/theme/element_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import '../../state/oracle_session_controller.dart';
@@ -16,17 +12,16 @@ import '../../state/spread_controller.dart';
 import '../../state/synthesis_session.dart';
 import '../profile/widgets/profile_header.dart';
 import 'widgets/oracle_session_meta_bar.dart';
+import 'widgets/oracle_card_rail.dart';
 import 'widgets/reading_subject_toggle.dart';
 
-/// Pane 1 — ORACLE AI CHAT: a full-width Gemini-style conversation. The
-/// pinned spread header strip (mini card icons + elemental badges) sits on
-/// top and slides back to the Digital Table on tap; below it streams the
-/// structured synthesis, the AI-generated +1 Clarifier questions, the
-/// clarifier expansions and the free dialog.
+/// Preparation and conversation share the same Oracle session and header.
 class OracleChatPane extends StatefulWidget {
   const OracleChatPane({
     super.key,
     required this.session,
+    required this.inConversation,
+    required this.showReadingCards,
     required this.capsuleText,
     required this.onBackToTable,
     required this.onSynthesize,
@@ -37,6 +32,8 @@ class OracleChatPane extends StatefulWidget {
   });
 
   final OracleSessionController session;
+  final bool inConversation;
+  final bool showReadingCards;
 
   /// The shared input capsule's text — the `+1 CARD FOR MY QUESTION` chip
   /// reads the reader's own typed follow-up from it.
@@ -94,6 +91,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
     if (!mounted) return;
     _speakNewestAnswer();
     setState(() {});
+    if (!_scroll.hasClients) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
         _scroll.jumpTo(_scroll.position.maxScrollExtent);
@@ -148,11 +146,6 @@ class _OracleChatPaneState extends State<OracleChatPane> {
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
     final session = widget.session;
-    final hasContent =
-        session.generatingInitial ||
-        session.hasSynthesis ||
-        session.chapters.isNotEmpty ||
-        session.messages.isNotEmpty;
     return SafeArea(
       bottom: false,
       child: Column(
@@ -162,7 +155,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
               color: TaroColors.lavender,
               onPressed: widget.onBackToTable,
             ),
-            child: _SpreadHeaderStrip(ctrl: ctrl, onTap: widget.onBackToTable),
+            child: const ProfileHeaderTitle('header.oracle'),
           ),
           OracleSessionMetaBar(
             session: session,
@@ -170,7 +163,15 @@ class _OracleChatPaneState extends State<OracleChatPane> {
             onResumeCamera: widget.onResumeCamera,
           ),
           Expanded(
-            child: hasContent ? _chatStream(ctrl, session) : _emptyState(ctrl),
+            child: widget.inConversation
+                ? OracleMessageViewport(
+                    key: ValueKey(session.epoch),
+                    showCards:
+                        widget.showReadingCards &&
+                        ctrl.slots.any((slot) => slot.card != null),
+                    messages: _chatStream(ctrl, session),
+                  )
+                : _preparation(ctrl),
           ),
           // Suggested clarifier actions: a fixed footer of the chat pane
           // (Gemini-style suggestion chips) — always reachable, never
@@ -204,9 +205,6 @@ class _OracleChatPaneState extends State<OracleChatPane> {
 
   Widget _chatStream(SpreadController ctrl, SynthesisSession session) {
     final children = <Widget>[];
-    if (session.generatingInitial) {
-      children.add(_OracleResponse.typing('The Oracle is weaving the reading…'));
-    }
     if (session.hasSynthesis) {
       children.add(_SynthesisResponse(synthesis: session.initial!));
     }
@@ -262,8 +260,9 @@ class _OracleChatPaneState extends State<OracleChatPane> {
     );
   }
 
-  Widget _emptyState(SpreadController ctrl) {
+  Widget _preparation(SpreadController ctrl) {
     final ready = ctrl.canSynthesize;
+    final waiting = widget.session.generatingInitial;
     // Scrollable + centered: on a tall screen the empty state is vertically
     // centered, and on a short/landscape screen it scrolls instead of
     // overflowing the Column.
@@ -327,166 +326,40 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                   ),
                   if (ready) ...[
                     const SizedBox(height: 18),
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 10),
-                      child: ReadingSubjectToggle(),
+                    ExcludeFocus(
+                      excluding: waiting,
+                      child: IgnorePointer(
+                        ignoring: waiting,
+                        child: const ReadingSubjectToggle(),
+                      ),
                     ),
                     const SizedBox(height: 14),
+                    if (widget.session.initialFailed)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Semantics(
+                          liveRegion: true,
+                          child: const Text(
+                            'The Oracle could not finish this reading. Try again.',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
                     TaroGlassButton(
-                      label: '✦ SYNTHESIZE IN CHAT →',
+                      label: waiting
+                          ? 'CONNECTING TO THE ORACLE…'
+                          : widget.session.initialFailed
+                          ? 'RETRY SYNTHESIS'
+                          : '✦ SYNTHESIZE IN CHAT →',
+                      loading: waiting,
                       variant: TaroGlassButtonVariant.primary,
-                      onPressed: () {
-                        HapticFeedback.mediumImpact();
-                        widget.onSynthesize();
-                      },
+                      onPressed: waiting ? null : widget.onSynthesize,
                     ),
                   ],
                 ],
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Pinned spread header strip: mini icons of the dealt cards + elemental
-/// balance badges. Tapping it (or swiping back) slides to the table.
-class _SpreadHeaderStrip extends StatelessWidget {
-  const _SpreadHeaderStrip({required this.ctrl, required this.onTap});
-
-  final SpreadController ctrl;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final dealt = [
-      for (final s in ctrl.slots)
-        if (s.card != null) s,
-    ];
-    final balance = elementalBalance(ctrl.slots);
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        height: ProfileHeader.actionSize,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: TaroColors.surface.withValues(alpha: 0.82),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: TaroColors.border),
-        ),
-        child: Row(
-          children: [
-            Flexible(
-              child: Text(
-                'CURRENT SPREAD',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.label(
-                  fontSize: 9.5,
-                  letterSpacing: 0.9,
-                  fontWeight: FontWeight.w700,
-                  color: TaroColors.textSecondary,
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final s in dealt)
-                      _MiniCardGlyph(card: s.card!, reversed: s.isReversed),
-                    if (dealt.isEmpty)
-                      Text(
-                        'NO CARDS ON THE TABLE',
-                        style: AppTypography.label(
-                          fontSize: 9,
-                          letterSpacing: 0.7,
-                          fontWeight: FontWeight.w500,
-                          color: TaroColors.textSecondary.withValues(alpha: 0.75),
-                        ),
-                      ),
-                    const SizedBox(width: 6),
-                    for (final e in Element.values)
-                      if ((balance[e] ?? 0) > 0) ...[
-                        const SizedBox(width: 4),
-                        _ElementMiniBadge(element: e, count: balance[e]!),
-                      ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MiniCardGlyph extends StatelessWidget {
-  const _MiniCardGlyph({required this.card, required this.reversed});
-
-  final DivinationCard card;
-  final bool reversed;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = card.element.accent;
-    final glyph = card.system == DivinationSystem.runes
-        ? (card as RuneDivinationCard).stone.glyph
-        : card.element.glyph;
-    return Container(
-      width: 24,
-      height: 38,
-      margin: const EdgeInsets.only(right: 6),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: accent.withValues(alpha: 0.6)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            glyph,
-            style: TextStyle(
-              fontSize: card.system == DivinationSystem.runes ? 13 : 10,
-              color: accent,
-            ),
-          ),
-          if (reversed) Text('↓', style: TextStyle(fontSize: 7, color: accent)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ElementMiniBadge extends StatelessWidget {
-  const _ElementMiniBadge({required this.element, required this.count});
-
-  final Element element;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = element.accent;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        '${element.glyph}×$count',
-        style: AppTypography.label(
-          fontSize: 8.5,
-          letterSpacing: 0.3,
-          fontWeight: FontWeight.w700,
-          color: accent,
         ),
       ),
     );
