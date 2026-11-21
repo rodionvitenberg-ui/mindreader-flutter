@@ -1,7 +1,7 @@
 {
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
-  "active_feature_or_sprint": "PHASE 5 (Unification, QA & Vision Integration Readiness) COMPLETE — 5.1..5.7 DONE (session continuity A-H + epoch-on-restore; History metadata customSpread/pendingGuidedPosition + DIGITAL/PHYSICAL/GUIDED/LIVE badge; PRIVACY.md; JPEG compress off UI thread; responsive overflow fixes; permission-denied fallback test; VISION_ENGINE_CONTRACT.md). Full suite 455/455 green.",
+  "active_feature_or_sprint": "PHASE G1 (Tarot Tree Glass Design System) IN PROGRESS — liquid_glass_renderer 1.0.0-dev.2 + Flutter GPU; new lib/design_system/ (tokens + TaroGlassLayer/TaroGlassSurface + 6 components + GlassPlayground); 7 new tests; flutter analyze clean.",
   "status": "IN_PROGRESS",
   "context": {
     "stack": [
@@ -211,7 +211,7 @@
       "5.6 Tests: permission-denied camera fallback test (no hardware -> simulated viewfinder) + FakeCameraPlatform.noCameras",
       "5.7 VISION_ENGINE_CONTRACT.md: interface/capabilities/frame/orientation/recognition/events/lifecycle/cancellation/adapter/checklist"
     ],
-    "current_task": "PHASE 5 COMPLETE — final acceptance gates",
+    "current_task": "Run Android profile build + capture FPS/screenshot, then final checkpoint commit.",
     "pending_tasks": []
   },
   "discovered_bugs_or_blockers": [
@@ -249,5 +249,5 @@
     "ITER5 KNOWN: Lenormand pair pills are placed between adjacent dealt cards in the focus pillar only (the spread overview still shows no cords for Lenormand/Runes and no pills).",
     "RESOLVED (PRE-1.5 AUDIT): workspace_swipe_test + phase2_flow_test goToPane swipe-hang -- ROOT CAUSE was the TEST HELPER, not the app: after the two-step refactor the app boots on Step 1 whose horizontal SpreadBlueprintCarousel ListView eats the (200,300) drag, so the workspace PageView never moves and the unbounded `while (current != pane)` loops forever. Both loops are now bounded (capped pump + descriptive TestFailure diagnostics) and the tests enter Step 2 first via activateSpread(). All 21 pre-existing failures were stale pre-refactor assertions (Step-2 UI + 168x275 deck) -- zero real regressions."
   ],
-  "latest_observation_summary": "PHASE 5 COMPLETE (2026-11-19) — Unification, QA & Vision Integration Readiness. VERIFY (actual): flutter analyze = No issues found; full flutter test = 455/455 green (EXIT 0). 5.1 added session_continuity_test (A-H) and fixed restoreSession to bump the epoch (stale async answers never land in a restored conversation). 5.2 added snapshot customSpread/pendingGuidedPosition + readingSessionBadge (DIGITAL/PHYSICAL/GUIDED/LIVE) + flow badge on History tiles. 5.3 PRIVACY.md documents the local-first/network guarantees. 5.4 moved JPEG compress into a compute isolate (budget-device frame budget). 5.5 fixed two real landscape overflows (Choose-Spread Column + Oracle Chat empty-state Column) and added responsive_ui_test sweeping 360x640/412x915/640x360 + 1.3x text scale. 5.6 added the permission-denied camera fallback test (FakeCameraPlatform.noCameras). 5.7 VISION_ENGINE_CONTRACT.md documents the VisionEngine contract for the Phase 0 real-engine hookup. KNOWN deferrals (not regressions): (a) mic-duck (STT stops while Oracle speaks) still NOT wired; (b) the Live Oracle freeform camera UI is still not composed into CameraScanScreen (domain/service core 4.5-4.7 ready); (c) customSpread/pendingGuidedPosition are persisted/restored but the resume-guided-position loop is future work; (d) natal astronomy runs on the UI thread (user-triggered, not per-frame)."
+  "latest_observation_summary": "G1 components implemented and unit-tested in simple mode; Android profile-mode perf run and screenshot pending."
 }

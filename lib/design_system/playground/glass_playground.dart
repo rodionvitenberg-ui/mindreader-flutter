@@ -1,0 +1,346 @@
+import 'package:flutter/material.dart';
+
+import '../../core/theme/app_typography.dart';
+import '../taro.dart';
+
+/// Изолированный playground дизайн-системы Tarot Tree (Phase G1).
+///
+/// Проверяет все компоненты на фоне «мягких сумерек» (лавандовый +
+/// пыльно-розовый + рассветное свечение) и позволяет переключать режим
+/// рендеринга стекла для замеров производительности.
+class GlassPlayground extends StatefulWidget {
+  const GlassPlayground({super.key});
+
+  @override
+  State<GlassPlayground> createState() => _GlassPlaygroundState();
+}
+
+class _GlassPlaygroundState extends State<GlassPlayground> {
+  TaroGlassMode _mode = TaroGlassMode.glass;
+  int _segment = 0;
+  int _dockIndex = 1;
+  String _deck = 'Rider–Waite';
+  final TextEditingController _input = TextEditingController();
+
+  static const _decks = <String>[
+    'Rider–Waite',
+    'Marseille',
+    'Thoth Obsidian',
+    'Botanical',
+    'Visconti–Sforza',
+  ];
+
+  static const _dock = <TaroDockItem>[
+    TaroDockItem(icon: Icons.camera_alt_outlined, label: 'Camera'),
+    TaroDockItem(icon: Icons.style_outlined, label: 'Table'),
+    TaroDockItem(icon: Icons.menu_book_outlined, label: 'Almanac'),
+    TaroDockItem(icon: Icons.auto_awesome_outlined, label: 'Astral'),
+  ];
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          const _DuskBackground(),
+          SafeArea(
+            child: TaroGlassLayer(
+              mode: _mode,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _header(),
+                    const SizedBox(height: 20),
+                    _modeSwitcher(),
+                    const SizedBox(height: 24),
+                    const TaroGlassSectionLabel(
+                      eyebrow: 'Controls · Buttons',
+                      title: 'TaroGlassButton',
+                    ),
+                    const SizedBox(height: 12),
+                    _buttons(),
+                    const SizedBox(height: 24),
+                    const TaroGlassSectionLabel(
+                      eyebrow: 'Controls · Segmented',
+                      title: 'TaroGlassSegmentedControl',
+                    ),
+                    const SizedBox(height: 12),
+                    TaroGlassSegmentedControl<int>(
+                      segments: const [
+                        TaroGlassSegment(value: 0, label: 'Standard'),
+                        TaroGlassSegment(value: 1, label: 'Guided'),
+                        TaroGlassSegment(value: 2, label: 'Live Oracle'),
+                      ],
+                      value: _segment,
+                      onChanged: (v) => setState(() => _segment = v),
+                    ),
+                    const SizedBox(height: 24),
+                    const TaroGlassSectionLabel(
+                      eyebrow: 'Surfaces · Panel',
+                      title: 'TaroGlassPanel',
+                    ),
+                    const SizedBox(height: 12),
+                    _panel(),
+                    const SizedBox(height: 24),
+                    const TaroGlassSectionLabel(
+                      eyebrow: 'Inputs · Field',
+                      title: 'TaroGlassInput',
+                    ),
+                    const SizedBox(height: 12),
+                    _inputs(),
+                    const SizedBox(height: 24),
+                    const TaroGlassSectionLabel(
+                      eyebrow: 'Selectors · Deck',
+                      title: 'TaroGlassSelect',
+                    ),
+                    const SizedBox(height: 12),
+                    TaroGlassSelect<String>(
+                      label: 'Deck',
+                      value: _deck,
+                      options: [
+                        for (final d in _decks)
+                          TaroSelectOption<String>(
+                            value: d,
+                            label: d,
+                            subtitle: d == 'Rider–Waite'
+                                ? '78 cards · classic'
+                                : 'procedural back',
+                          ),
+                      ],
+                      onChanged: (v) => setState(() => _deck = v),
+                    ),
+                    const SizedBox(height: 24),
+                    const TaroGlassSectionLabel(
+                      eyebrow: 'Navigation · Dock',
+                      title: 'TaroGlassDock',
+                    ),
+                    const SizedBox(height: 12),
+                    TaroGlassDock(
+                      items: _dock,
+                      index: _dockIndex,
+                      onTap: (i) => setState(() => _dockIndex = i),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _header() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'TAROT TREE',
+          style: AppTypography.label(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2.4,
+            color: TaroColors.dawn,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Glass Design System',
+          style: AppTypography.display(
+            fontSize: 30,
+            fontWeight: FontWeight.w800,
+            color: TaroColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'de-press.co direction · warm summer dawn after rain',
+          style: AppTypography.body(
+            fontSize: 13,
+            color: TaroColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _modeSwitcher() {
+    return TaroGlassSegmentedControl<TaroGlassMode>(
+      segments: const [
+        TaroGlassSegment(value: TaroGlassMode.glass, label: 'Glass'),
+        TaroGlassSegment(value: TaroGlassMode.fake, label: 'Fake'),
+        TaroGlassSegment(value: TaroGlassMode.simple, label: 'Simple'),
+        TaroGlassSegment(value: TaroGlassMode.opaque, label: 'Opaque'),
+      ],
+      value: _mode,
+      onChanged: (v) => setState(() => _mode = v),
+    );
+  }
+
+  Widget _buttons() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TaroGlassButton(
+                label: 'Primary',
+                icon: Icons.auto_awesome,
+                onPressed: () {},
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TaroGlassButton(
+                label: 'Secondary',
+                variant: TaroGlassButtonVariant.secondary,
+                onPressed: () {},
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TaroGlassButton(
+                label: 'Ghost',
+                variant: TaroGlassButtonVariant.ghost,
+                onPressed: () {},
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TaroGlassButton(
+                label: 'Loading',
+                loading: true,
+                onPressed: () {},
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TaroGlassButton(
+                label: 'Disabled',
+                onPressed: null,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _panel() {
+    return TaroGlassPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Soft depth',
+            style: AppTypography.heading(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: TaroColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Semi-transparent, rounded, softly glowing. Thin highlights and '
+            'moderate refraction over a warm dusk backdrop.',
+            style: AppTypography.body(
+              fontSize: 13.5,
+              height: 1.5,
+              color: TaroColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _inputs() {
+    return Column(
+      children: [
+        TaroGlassInput(
+          label: 'Question',
+          hint: 'What weighs on you?',
+          controller: _input,
+        ),
+        const SizedBox(height: 12),
+        TaroGlassInput(
+          label: 'Email',
+          hint: 'you@example.com',
+          errorText: 'Please enter a valid email',
+        ),
+      ],
+    );
+  }
+}
+
+
+/// Фон «мягкие сумерки»: градиент + рассветное свечение + атмосферная глубина.
+///
+/// Обычный [Container] / [Positioned] с радиальными градиентами — без дорогих
+/// эффектов стекла на весь фон (фон не сэмплится бэкдропом).
+class _DuskBackground extends StatelessWidget {
+  const _DuskBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF151725),
+            Color(0xFF2A2338),
+            Color(0xFF3A2E3E),
+          ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -120,
+            right: -80,
+            child: _glow(const Color(0xFFA78BFA), 0.30, 240),
+          ),
+          Positioned(
+            top: 120,
+            left: -100,
+            child: _glow(const Color(0xFFD4A8AC), 0.22, 220),
+          ),
+          Positioned(
+            bottom: -140,
+            left: 40,
+            child: _glow(const Color(0xFFF0C7A4), 0.18, 300),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _glow(Color color, double alpha, double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [color.withValues(alpha: alpha), color.withValues(alpha: 0)],
+        ),
+      ),
+    );
+  }
+}
