@@ -12,10 +12,12 @@ class TaroDockItem {
   final String label;
 }
 
-/// Стеклянный нижний док — зеркало `_GlassNavBar` (4 раздела).
+/// Стеклянный нижний док (Phase G3) — замена `_GlassNavBar` (4 раздела).
 ///
 /// Принимает `items` + активный `index` + `onTap`, чтобы переиспользовать
 /// существующую семантику навигации, не привязываясь к i18n.
+/// Активный индикатор анимируется через [AnimatedAlign] (GPU-композиция),
+/// высота слота ≥ 48 px (touch-target ≥ 44 px).
 class TaroGlassDock extends StatelessWidget {
   const TaroGlassDock({
     required this.items,
@@ -30,23 +32,69 @@ class TaroGlassDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final n = items.length;
+    final activeIndex = n == 0 ? 0 : index.clamp(0, n - 1);
+
     return TaroGlassSurface(
       radius: TaroRadii.dock,
       fillColor: TaroColors.surface,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Row(
-          children: [
-            for (var i = 0; i < items.length; i++)
-              Expanded(
-                child: _DockItem(
-                  item: items[i],
-                  active: i == index,
-                  onTap: () => onTap(i),
-                ),
+      glow: TaroGlow.soft(
+        TaroColors.lavender,
+        alpha: 0.20,
+        blur: 22,
+        offset: const Offset(0, 6),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const pad = 3.0;
+          final innerWidth = (constraints.maxWidth - pad * 2).clamp(0.0, double.infinity);
+          final itemWidth = n > 0 ? innerWidth / n : 0.0;
+          final alignX = n <= 1 ? 0.0 : -1.0 + 2.0 * activeIndex / (n - 1);
+
+          return Padding(
+            padding: const EdgeInsets.all(pad),
+            child: SizedBox(
+              height: 48,
+              child: Stack(
+                children: [
+                  if (n > 0)
+                    AnimatedAlign(
+                      duration: TaroMotion.normal,
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment(alignX, 0),
+                      child: Container(
+                        width: itemWidth,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: TaroColors.lavender.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(
+                            TaroRadii.dock - pad,
+                          ),
+                          border: Border.all(
+                            color: TaroColors.lavender.withValues(
+                              alpha: TaroOpacity.borderStrong,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  Row(
+                    children: [
+                      for (var i = 0; i < n; i++)
+                        Expanded(
+                          child: _DockItem(
+                            item: items[i],
+                            active: i == activeIndex,
+                            onTap: () => onTap(i),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
               ),
-          ],
-        ),
+            ),
+          );
+        },
       ),
     );
   }

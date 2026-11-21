@@ -1,6 +1,6 @@
 # GLASS.md — План перевода интерфейса на дизайн-систему Tarot Tree
 
-Статус: **G2 завершён** (фундамент G1 + тема `buildTaroTheme()`, флаг `kTarotTreeThemeEnabled`, фон `TaroDuskBackground` и `TaroGlassLayer` в `MainNavigationShell`).
+Статус: **G3 завершён** (фундамент G1 + тема/фон G2 + Shell `TaroGlassDock`, `TaroGlassSheet`/`Toggle`/`Slider`/`IconButton`, `AppSettingsSheet`, `ProSubscriptionSheet`).
 Этот документ — полный план поэтапного перевода всего UI приложения на новый
 «стеклянный» дизайн **без поломки существующей логики**.
 
@@ -84,7 +84,7 @@ lib/core/theme/
 |------|-----------|---------------------|
 | **G1** | Фундамент: токены + 6 компонентов + playground + capability | ✅ сделано |
 | **G2** | Тема: `buildTaroTheme()`, подключение в `main.dart`, фон-подложка, шрифт | ✅ сделано (513/513 тестов, проверено на Redmi Impeller GLES) |
-| **G3** | Shell + навигация: док `TaroGlassDock`, sheet-обёртки, безопасные области | 4 вкладки переключаются, стиль дока новый |
+| **G3** | Shell + навигация: док `TaroGlassDock`, sheet-обёртки, безопасные области | ✅ сделано (523/523 тестов, `flutter analyze` 0 issues, debug APK собран) |
 | **G4** | Digital Table (главный экран): панели, input, select, сегменты, bottom-sheet | рабочий стол полностью в Tarot Tree |
 | **G5** | Almanac + Astral + Profile | три раздела переведены |
 | **G6** | Camera HUD + Oracle overlay | оверлеи/HUD переведены, читаемость сохранена |

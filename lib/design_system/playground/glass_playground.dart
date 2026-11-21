@@ -20,6 +20,9 @@ class _GlassPlaygroundState extends State<GlassPlayground> {
   int _segment = 0;
   int _dockIndex = 1;
   String _deck = 'Rider–Waite';
+  bool _quietMode = false;
+  double _voiceSpeed = 0.5;
+  bool _micActive = false;
   final TextEditingController _input = TextEditingController();
 
   static const _decks = <String>[
@@ -127,6 +130,82 @@ class _GlassPlaygroundState extends State<GlassPlayground> {
                       items: _dock,
                       index: _dockIndex,
                       onTap: (i) => setState(() => _dockIndex = i),
+                    ),
+                    const SizedBox(height: 24),
+                    TaroGlassLayer(
+                      mode: _mode,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const TaroGlassSectionLabel(
+                            eyebrow: 'G3 Controls · Toggle / Slider / Icons',
+                            title: 'Settings & Actions',
+                          ),
+                          const SizedBox(height: 12),
+                          TaroGlassToggle(
+                            label: 'Quiet guidance',
+                            subtitle: 'Suppress movement beats during reading',
+                            value: _quietMode,
+                            onChanged: (v) => setState(() => _quietMode = v),
+                          ),
+                          const SizedBox(height: 14),
+                          TaroGlassSlider(
+                            label: 'Oracle voice cadence',
+                            value: _voiceSpeed,
+                            divisions: 10,
+                            valueLabel:
+                                '${(0.75 + _voiceSpeed * 0.5).toStringAsFixed(2)}x',
+                            onChanged: (v) => setState(() => _voiceSpeed = v),
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              TaroGlassIconButton(
+                                icon: Icons.arrow_back,
+                                tooltip: 'Back',
+                                onPressed: () {},
+                              ),
+                              const SizedBox(width: 10),
+                              TaroGlassIconButton(
+                                icon: Icons.add,
+                                tooltip: 'Add card',
+                                onPressed: () {},
+                              ),
+                              const SizedBox(width: 10),
+                              TaroGlassIconButton(
+                                icon: Icons.mic_none,
+                                tooltip: 'Voice input',
+                                active: _micActive,
+                                onPressed: () =>
+                                    setState(() => _micActive = !_micActive),
+                              ),
+                              const SizedBox(width: 10),
+                              TaroGlassIconButton(
+                                icon: Icons.send_rounded,
+                                tooltip: 'Send',
+                                variant: TaroGlassButtonVariant.primary,
+                                onPressed: () {},
+                              ),
+                              const Spacer(),
+                              TaroGlassButton(
+                                label: 'Open Sheet',
+                                variant: TaroGlassButtonVariant.secondary,
+                                onPressed: () => showTaroGlassSheet<void>(
+                                  context: context,
+                                  builder: (_) => const TaroGlassSheet(
+                                    title: 'TaroGlassSheet',
+                                    subtitle: 'UNIVERSAL GLASS BOTTOM SHEET',
+                                    child: Text(
+                                      'Shared glass sheet wrapper with drag '
+                                      'handle, SafeArea and keyboard inset.',
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

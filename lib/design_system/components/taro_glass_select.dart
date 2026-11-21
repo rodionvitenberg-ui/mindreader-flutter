@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/theme/app_typography.dart';
 import '../taro_glass.dart';
 import '../taro_tokens.dart';
+import 'taro_glass_sheet.dart';
 
 /// Один вариант выбора (колода или расклад).
 class TaroSelectOption<T> {
@@ -102,63 +103,44 @@ class TaroGlassSelect<T> extends StatelessWidget {
   }
 
   Future<void> _open(BuildContext context) async {
-    final result = await showModalBottomSheet<T>(
+    final result = await showTaroGlassSheet<T>(
       context: context,
-      backgroundColor: Colors.transparent,
       builder: (context) => _SelectSheet<T>(
         options: options,
         value: value,
+        title: label,
       ),
     );
     if (result != null) onChanged(result);
   }
 }
 
-
 class _SelectSheet<T> extends StatelessWidget {
-  const _SelectSheet({required this.options, required this.value});
+  const _SelectSheet({
+    required this.options,
+    required this.value,
+    this.title,
+  });
 
   final List<TaroSelectOption<T>> options;
   final T value;
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: TaroColors.background,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 12),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: TaroColors.mist.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(2),
-              ),
+    return TaroGlassSheet(
+      title: title,
+      padding: const EdgeInsets.fromLTRB(4, 12, 4, 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final option in options)
+            _OptionTile<T>(
+              option: option,
+              selected: option.value == value,
+              onTap: () => Navigator.of(context).pop(option.value),
             ),
-            const SizedBox(height: 12),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  for (final option in options)
-                    _OptionTile<T>(
-                      option: option,
-                      selected: option.value == value,
-                      onTap: () => Navigator.of(context).pop(option.value),
-                    ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }

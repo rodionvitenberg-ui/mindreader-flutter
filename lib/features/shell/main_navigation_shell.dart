@@ -102,8 +102,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     }
 
     // Один общий TaroGlassLayer на уровне shell: все стеклянные поверхности
-    // (включая док в G3 и экраны в G4–G6) делят один backdrop sample поверх
-    // градиента сумерек TaroDuskBackground (сам фон в стекло не оборачивается).
+    // (включая док TaroGlassDock и экраны в G4–G6) делят один backdrop sample
+    // поверх градиента сумерек TaroDuskBackground (сам фон не в стекле).
     return Stack(
       children: [
         const Positioned.fill(child: TaroDuskBackground()),
@@ -111,13 +111,41 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           child: Scaffold(
             backgroundColor: Colors.transparent,
             body: stack,
-            bottomNavigationBar: _GlassNavBar(
+            bottomNavigationBar: _TaroNavDock(
               index: _index,
               onTap: _switchTo,
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Phase G3: стеклянный нижний док на [TaroGlassDock] с безопасной областью.
+class _TaroNavDock extends StatelessWidget {
+  const _TaroNavDock({required this.index, required this.onTap});
+
+  final int index;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final lang = context.watch<AppSettingsController>().language;
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: TaroGlassDock(
+        items: [
+          for (final tab in _GlassNavBar._tabs)
+            TaroDockItem(
+              icon: tab.$1,
+              label: AppStrings.t(lang, tab.$2),
+            ),
+        ],
+        index: index,
+        onTap: onTap,
+      ),
     );
   }
 }

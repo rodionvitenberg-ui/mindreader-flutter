@@ -106,25 +106,26 @@ class _TaroGlassButtonState extends State<TaroGlassButton> {
         onTapUp: _up,
         onTapCancel: _cancel,
         onTap: _onTap,
-        child: AnimatedOpacity(
-          duration: TaroMotion.fast,
-          opacity: disabled ? 0.5 : (_pressed ? 0.82 : 1.0),
-          child: TaroGlassSurface(
-            radius: TaroRadii.button,
-            tint: tint,
-            fillColor: widget.variant == TaroGlassButtonVariant.ghost
-                ? Colors.transparent
-                : TaroColors.surface,
-            borderColor: widget.variant == TaroGlassButtonVariant.primary
-                ? TaroColors.lavender.withValues(
-                    alpha: TaroOpacity.borderStrong,
-                  )
-                : null,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 13,
-              ),
+        child: TaroGlassSurface(
+          radius: TaroRadii.button,
+          tint: tint,
+          visibility: disabled ? 0.5 : (_pressed ? 0.82 : 1.0),
+          fillColor: widget.variant == TaroGlassButtonVariant.ghost
+              ? Colors.transparent
+              : TaroColors.surface,
+          borderColor: widget.variant == TaroGlassButtonVariant.primary
+              ? TaroColors.lavender.withValues(
+                  alpha: TaroOpacity.borderStrong,
+                )
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 13,
+            ),
+            child: AnimatedOpacity(
+              duration: TaroMotion.fast,
+              opacity: disabled ? 0.55 : (_pressed ? 0.82 : 1.0),
               child: content,
             ),
           ),

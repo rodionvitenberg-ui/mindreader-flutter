@@ -117,6 +117,7 @@ class TaroGlassLayer extends StatelessWidget {
         settings: settings,
         defaultAppearance: appearance,
         fake: resolved == TaroGlassMode.fake,
+        useBackdropGroup: true,
         child: child,
       ),
     );
@@ -138,6 +139,7 @@ class TaroGlassSurface extends StatelessWidget {
     this.fillColor,
     this.borderColor,
     this.glow,
+    this.visibility = 1.0,
     super.key,
   });
 
@@ -161,6 +163,10 @@ class TaroGlassSurface extends StatelessWidget {
   /// Мягкое свечение/тень.
   final List<BoxShadow>? glow;
 
+  /// Видимость стекла (0..1) без внешнего [Opacity] между [LiquidGlass] и
+  /// [LiquidGlassLayer] (требование `liquid_glass_renderer`).
+  final double visibility;
+
   @override
   Widget build(BuildContext context) {
     final scope = _TaroGlassScope.maybeOf(context);
@@ -169,9 +175,15 @@ class TaroGlassSurface extends StatelessWidget {
     final mode = scope?.mode ?? TaroGlassMode.auto;
     final liquidShape =
         shape ?? LiquidRoundedSuperellipse(borderRadius: radius);
-    final appearance = tint != null
+    final baseAppearance = tint != null
         ? taroAppearance(brightness, tint: tint)
         : scope?.appearance;
+    final clampedVisibility = visibility.clamp(0.0, 1.0);
+    final appearance = clampedVisibility < 1.0
+        ? (baseAppearance ?? taroAppearance(brightness)).copyWith(
+            visibility: clampedVisibility,
+          )
+        : baseAppearance;
     final shadows = glow ?? const <BoxShadow>[];
 
     switch (mode) {
@@ -199,7 +211,7 @@ class TaroGlassSurface extends StatelessWidget {
       case TaroGlassMode.opaque:
         final isOpaque = mode == TaroGlassMode.opaque;
         final fill = fillColor ?? TaroColors.surface;
-        return Container(
+        final box = Container(
           decoration: BoxDecoration(
             color: isOpaque
                 ? fill
@@ -214,6 +226,9 @@ class TaroGlassSurface extends StatelessWidget {
           ),
           child: child,
         );
+        return clampedVisibility < 1.0
+            ? Opacity(opacity: clampedVisibility, child: box)
+            : box;
     }
   }
 }
