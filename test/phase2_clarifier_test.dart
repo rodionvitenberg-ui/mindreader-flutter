@@ -319,19 +319,6 @@ void main() {
       expect(text, contains('The step to take:'));
     });
 
-    test('elemental thread gradient pairs follow the spec', () {
-      expect(elementalThreadColors(Element.fire).first,
-          const Color(0xFFF59E0B));
-      expect(elementalThreadColors(Element.fire).last,
-          const Color(0xFFDC2626));
-      expect(elementalThreadColors(Element.water).last,
-          const Color(0xFF6366F1));
-      expect(elementalThreadColors(Element.air).first,
-          const Color(0xFFCBD5E1));
-      expect(elementalThreadColors(Element.earth).last,
-          const Color(0xFFFBBF24));
-    });
-
     test('rectEdgeToward anchors a thread on the facing card edges', () {
       final above = const Rect.fromLTWH(0, 0, 220, 360);
       final below = const Rect.fromLTWH(0, 416, 220, 360);
@@ -350,79 +337,9 @@ void main() {
     });
   });
 
-  group('elemental thread cord spec (sprint 1/3)', () {
-    List<DealtCardSlot> dealtOf(SpreadController ctrl) =>
-        [for (final s in ctrl.slots) if (s.card != null) s];
-
-    test('anchors sit 8 px INSIDE both facing edges — zero visible gap', () {
-      final ctrl = SpreadController(random: Random(11));
-      ctrl.dealCardAt(0);
-      ctrl.dealCardAt(0);
-      ctrl.flipSlot(0);
-      ctrl.flipSlot(1);
-      final dealt = dealtOf(ctrl);
-      // Vertical neighbours: bottom-center (8 px inside) → top-center
-      // (8 px inside) — the cord physically reaches into both cards.
-      final vertical = threadSegmentsFor(dealt, const [
-        Rect.fromLTWH(0, 0, 220, 360),
-        Rect.fromLTWH(0, 416, 220, 360),
-      ]);
-      expect(vertical.length, 1);
-      expect(vertical.first.from, const Offset(110, 352)); // 360 - 8
-      expect(vertical.first.to, const Offset(110, 424)); // 416 + 8
-      expect(vertical.first.pairKey, dealt[0].index);
-
-      // Horizontal neighbours: right edge − 8 → left edge + 8.
-      final horizontal = threadSegmentsFor(dealt, const [
-        Rect.fromLTWH(0, 0, 220, 360),
-        Rect.fromLTWH(276, 0, 220, 360),
-      ]);
-      expect(horizontal.first.from, const Offset(212, 180)); // 220 - 8
-      expect(horizontal.first.to, const Offset(284, 180)); // 276 + 8
-    });
-
-    test('a thread exists ONLY when BOTH adjacent cards are face-up', () {
-      final ctrl = SpreadController(random: Random(3));
-      ctrl.dealCardAt(0);
-      ctrl.dealCardAt(0);
-      ctrl.flipSlot(0); // only the first card
-      const rects = [
-        Rect.fromLTWH(0, 0, 220, 360),
-        Rect.fromLTWH(0, 416, 220, 360),
-      ];
-      expect(threadSegmentsFor(dealtOf(ctrl), rects), isEmpty);
-      ctrl.flipSlot(1); // the second card finishes flipping face-up
-      expect(threadSegmentsFor(dealtOf(ctrl), rects).length, 1);
-    });
-
-    test('ignite flash duration is the 480ms spec', () {
-      expect(igniteFlashDuration, const Duration(milliseconds: 480));
-    });
-
-    test('painter repaints as the ignite flash advances', () {
-      const seg = ElementalThreadSegment(
-        from: Offset.zero,
-        to: Offset(0, 200),
-        elementA: Element.fire,
-        elementB: Element.water,
-        tone: ThreadTone.neutral,
-        pairKey: 0,
-      );
-      final pulse = AlwaysStoppedAnimation<double>(0.0);
-      final cold = ElementalThreadsPainter(
-          segments: const [seg], pulse: pulse, ignite: const {0: 0.0});
-      final half = ElementalThreadsPainter(
-          segments: const [seg], pulse: pulse, ignite: const {0: 0.5});
-      final lit = ElementalThreadsPainter(
-          segments: const [seg], pulse: pulse, ignite: const {0: 1.0});
-      expect(cold.shouldRepaint(half), isTrue);
-      expect(half.shouldRepaint(lit), isTrue);
-      expect(
-        lit.shouldRepaint(ElementalThreadsPainter(
-            segments: const [seg], pulse: pulse, ignite: const {0: 1.0})),
-        isFalse,
-      );
-    });
+  test('branch painter repaints as growth advances', () {
+    const segments = [(start: Offset.zero,end:Offset(0,200),element:Element.fire)];
+    expect(const ElementalBranchPainter(segments, .4).shouldRepaint(const ElementalBranchPainter(segments, .2)), isTrue);
+    expect(const ElementalBranchPainter(segments, 1).shouldRepaint(const ElementalBranchPainter(segments, 1)), isFalse);
   });
 }
-

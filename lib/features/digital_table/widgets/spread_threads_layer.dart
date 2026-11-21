@@ -1,52 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../../../core/models/dealt_card_slot.dart';
+import '../../../state/app_settings_controller.dart';
+import '../../../state/spread_controller.dart';
 import 'elemental_threads_painter.dart';
 
-/// The shimmering Elemental Fate Threads painted BEHIND the spread canvas
-/// in Spread Overview mode: segments between adjacent face-up cards in
-/// their true table geometry (design coordinates).
-class SpreadThreadsLayer extends StatefulWidget {
+class SpreadThreadsLayer extends StatelessWidget {
   const SpreadThreadsLayer({
     super.key,
-    required this.dealt,
+    required this.selected,
     required this.rects,
   });
-
-  /// Dealt cards in reading order.
-  final List<DealtCardSlot> dealt;
-
-  /// Parallel card rectangles in the canvas design space.
-  final List<Rect> rects;
-
-  @override
-  State<SpreadThreadsLayer> createState() => _SpreadThreadsLayerState();
-}
-
-class _SpreadThreadsLayerState extends State<SpreadThreadsLayer>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 3),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
+  final int? selected;
+  final Map<int, Rect> rects;
 
   @override
   Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: IgnorePointer(
-        child: CustomPaint(
-          painter: ElementalThreadsPainter(
-            segments: threadSegmentsFor(widget.dealt, widget.rects),
-            pulse: _pulse,
-          ),
-          size: Size.infinite,
-        ),
+    final ctrl = context.watch<SpreadController>();
+    final settings = context.watch<AppSettingsController>();
+    if (selected == null ||
+        !settings.enabled(ReadingAid.relationships) ||
+        !elementalThreadsVisibleFor(ctrl.system) ||
+        !ctrl.allDealt ||
+        (settings.enabled(ReadingAid.guide) && !ctrl.allFaceUp)) {
+      return const SizedBox.shrink();
+    }
+    final links = ctrl.relationships.where(
+      (r) => r.influence != null && r.includes(selected!),
+    );
+    final segments = <BranchSegment>[];
+    for (final link in links) {
+      final a = rects[link.from], b = rects[link.to];
+      if (a == null || b == null) continue;
+      segments.add((
+        start: rectEdgeToward(a, b.center, inset: 8),
+        end: rectEdgeToward(b, a.center, inset: 8),
+        element: ctrl.slots[link.from].card!.element,
+      ));
+    }
+    if (segments.isEmpty) return const SizedBox.shrink();
+    Widget branches(double progress) => CustomPaint(
+      painter: ElementalBranchPainter(segments, progress),
+      size: Size.infinite,
+    );
+    return IgnorePointer(
+      child: RepaintBoundary(
+        child: MediaQuery.disableAnimationsOf(context)
+            ? branches(1)
+            : TweenAnimationBuilder<double>(
+                key: ValueKey(selected),
+                tween: Tween(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 680),
+                curve: Curves.easeOut,
+                builder: (_, v, _) => branches(v),
+              ),
       ),
     );
   }

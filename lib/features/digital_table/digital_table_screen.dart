@@ -231,6 +231,17 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
         });
   }
 
+  int? _inspected;
+  int? _inspectedRevision;
+  Future<void> _inspect(int index) async {
+    final revision = _controller.readingRevision;
+    await ReadingBottomSheet.show(context, cardIndex:index);
+    if (mounted && revision == _controller.readingRevision) {
+      setState(() { _inspected=index; _inspectedRevision=revision; });
+    }
+  }
+  int? get _selected => _inspectedRevision == _controller.readingRevision ? _inspected : null;
+
   int? _dealOverviewPiece() {
     final ctrl = context.read<SpreadController>();
     final clarifier = ctrl.nextEmptySlotIndex == null;
@@ -346,6 +357,8 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
           key: ValueKey(ctrl.readingRevision),
           header: header,
           onDeal: _dealOverviewPiece,
+          inspect: _inspect,
+          selected: _selected,
           badge: _ResetTableButton(enabled: canReset, onReset: _resetTable),
         ),
       );
@@ -392,11 +405,8 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
                               ),
                               const SizedBox(height: deckToPillarGap),
                               BoardPillarView(
-                                onTapFaceUp: (slotIndex) =>
-                                    ReadingBottomSheet.show(
-                                      context,
-                                      cardIndex: slotIndex,
-                                    ),
+                                onTapFaceUp: _inspect,
+                                selected: _selected,
                               ),
                               const SizedBox(height: 32),
                             ],

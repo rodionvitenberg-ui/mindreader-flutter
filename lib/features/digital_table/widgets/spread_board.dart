@@ -18,10 +18,8 @@ import '../../../state/app_settings_controller.dart';
 import '../../../state/spread_controller.dart';
 import '../../profile/widgets/profile_header.dart';
 import 'deal_lock_prompt.dart';
-import 'elemental_threads_painter.dart';
 import 'shuffle_physics.dart';
 import 'slotted_divination_card.dart';
-import 'reading_bottom_sheet.dart';
 import 'spread_deck_dock.dart';
 import 'spread_threads_layer.dart';
 import 'spread_viewport.dart';
@@ -31,11 +29,15 @@ part 'spread_deal_motion.dart';
 class SpreadBoard extends StatefulWidget {
   const SpreadBoard({
     super.key,
+    required this.inspect,
+    this.selected,
     required this.header,
     required this.badge,
     required this.onDeal,
   });
 
+  final ValueChanged<int> inspect;
+  final int? selected;
   final Widget header;
   final Widget badge;
   final int? Function() onDeal;
@@ -408,11 +410,6 @@ class _SpreadBoardState extends State<SpreadBoard>
   ) {
     if (viewport.isEmpty) return const SizedBox.shrink();
     final design = geometry.canvasSize;
-    final dealt = [
-      for (final s in ctrl.slots)
-        if (s.card != null) s,
-    ];
-
     final rects = geometry.slotRects;
 
     final designCanvas = SizedBox(
@@ -420,10 +417,7 @@ class _SpreadBoardState extends State<SpreadBoard>
       height: design.height,
       child: Stack(
         children: [
-          // The living Elemental Fate Threads across the spread geometry —
-          // TAROT ONLY. Runes keep their rim glow, Lenormand its pair pills.
-          if (elementalThreadsVisibleFor(ctrl.system))
-            SpreadThreadsLayer(dealt: dealt, rects: rects),
+          Positioned.fill(child: SpreadThreadsLayer(selected:widget.selected,rects:rects.asMap())),
           for (var i = 0; i < rects.length; i++)
             Positioned.fromRect(
               rect: geometry.crossingSlotIndex == i
@@ -439,6 +433,7 @@ class _SpreadBoardState extends State<SpreadBoard>
                   key: _slotKeys.putIfAbsent(i, GlobalKey.new),
                   child: _OverviewSlot(
                     key: ValueKey('spread-slot-$i'),
+                    inspect: widget.inspect,
                     slot: i < ctrl.slots.length ? ctrl.slots[i] : null,
                     slotIndex: i,
                     highlighted: _index == i && _phase == _DealPhase.dragging,
@@ -469,12 +464,14 @@ class _OverviewSlot extends StatefulWidget {
     super.key,
     required this.slot,
     required this.slotIndex,
+    required this.inspect,
     required this.highlighted,
     required this.inFlight,
   });
 
   final DealtCardSlot? slot;
   final int slotIndex;
+  final ValueChanged<int> inspect;
   final bool highlighted;
   final bool inFlight;
 
@@ -557,8 +554,7 @@ class _OverviewSlotState extends State<_OverviewSlot>
       width: deckWidth,
       height: deckHeight,
       onFlip: () => context.read<SpreadController>().flipSlot(slot.index),
-      onTapFaceUp: () =>
-          ReadingBottomSheet.show(context, cardIndex: slot.index),
+      onTapFaceUp: () => widget.inspect(slot.index),
     );
     if (card.system != DivinationSystem.runes) return piece;
     return AnimatedBuilder(

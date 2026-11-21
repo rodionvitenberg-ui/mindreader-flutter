@@ -1,3 +1,4 @@
+import '../../../state/app_settings_controller.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -219,6 +220,11 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
           if (slot != null && card != null) ...[
             // ---- Card Inspector Sheet (tapped face-up card) ----
             _CardInspectorHeader(slot: slot, card: card),
+            if (context.watch<AppSettingsController>().enabled(ReadingAid.relationships))
+              for (final link in ctrl.relationships.where((r) => r.includes(slot.index)))
+                Padding(padding: const EdgeInsets.only(top:8),
+                  child: Text('${ctrl.slots[link.from].card!.name} · ${ctrl.slots[link.to].card!.name}\n${link.method}. ${link.explanation}')),
+
             const SizedBox(height: 18),
             Text(
               slot.isReversed && card.reversed != null

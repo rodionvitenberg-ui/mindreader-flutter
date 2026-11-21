@@ -7,7 +7,8 @@ import '../../../core/models/divination_system.dart';
 import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/spread_controller.dart';
-import 'elemental_threads_painter.dart';
+import 'spread_threads_layer.dart';
+import '../../../state/app_settings_controller.dart';
 import 'shuffle_physics.dart';
 import 'slotted_divination_card.dart';
 
@@ -16,65 +17,15 @@ import 'slotted_divination_card.dart';
 /// (220×360, gap 56 — the expanded Phase 2 space that hosts the living
 /// Elemental Fate Threads). No inner scrolling, no placeholders: the
 /// screen's single scroll controller moves deck + pillar as one canvas.
-class BoardPillarView extends StatefulWidget {
-  const BoardPillarView({super.key, required this.onTapFaceUp});
+class BoardPillarView extends StatelessWidget {
+  const BoardPillarView({super.key, this.selected, required this.onTapFaceUp});
 
   final void Function(int slotIndex) onTapFaceUp;
 
-  @override
-  State<BoardPillarView> createState() => _BoardPillarViewState();
-}
-
-class _BoardPillarViewState extends State<BoardPillarView>
-    with TickerProviderStateMixin {
-  static const cardWidth = deckWidth; // 220 — identical to the deck
-  static const cardHeight = deckHeight; // 360 — identical to the deck
-  static const slotGap = slotGapPx; // 20
-
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 2),
-  )..repeat();
-
-  /// Per-pair ignite flash controllers, keyed by the first card's slot
-  /// index ([ElementalThreadSegment.pairKey]). A 480ms bolt shoots the
-  /// moment BOTH cards of a pair are face-up (the second/subsequent card
-  /// just finished flipping).
-  final Map<int, AnimationController> _ignites = {};
-
-  @override
-  void dispose() {
-    for (final controller in _ignites.values) {
-      controller.dispose();
-    }
-    _ignites.clear();
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  /// Starts the 480ms ignite for every NEW face-up pair and disposes the
-  /// controllers of pairs that vanished (table reset). Synchronous removal
-  /// from the map makes double-dispose impossible; [Ticker.dispose] is
-  /// legal while the ticker is still active.
-  void _syncIgnites(List<ElementalThreadSegment> segments) {
-    final keys = {for (final segment in segments) segment.pairKey};
-    for (final key in keys) {
-      _ignites.putIfAbsent(
-        key,
-        () => AnimationController(
-          vsync: this,
-          duration: igniteFlashDuration,
-        )..forward(),
-      );
-    }
-    final stale = [
-      for (final key in _ignites.keys)
-        if (!keys.contains(key)) key,
-    ];
-    for (final key in stale) {
-      _ignites.remove(key)?.dispose();
-    }
-  }
+  final int? selected;
+  static const cardWidth = deckWidth;
+  static const cardHeight = deckHeight;
+  static const slotGap = slotGapPx;
 
   @override
   Widget build(BuildContext context) {
@@ -96,12 +47,8 @@ class _BoardPillarViewState extends State<BoardPillarView>
     ];
     // Elemental Fate Threads exist for TAROT only: runes keep their chiseled
     // rim glow, Lenormand reads through pair combinations instead.
-    final isTarot = elementalThreadsVisibleFor(controller.system);
-    final isLenormand = controller.system == DivinationSystem.lenormand;
-    final segments =
-        isTarot ? threadSegmentsFor(dealt, rects) : const <ElementalThreadSegment>[];
-    _syncIgnites(segments);
-
+    final isLenormand = controller.system == DivinationSystem.lenormand &&
+        context.watch<AppSettingsController>().enabled(ReadingAid.relationships);
     // Nothing is rendered before the first deal — no dashed placeholders.
     if (dealt.isEmpty) return const SizedBox.shrink();
 
@@ -112,22 +59,9 @@ class _BoardPillarViewState extends State<BoardPillarView>
         height: totalHeight,
         child: Stack(
           children: [
-            if (isTarot)
-              Positioned.fill(
-                child: AnimatedBuilder(
-                  animation: Listenable.merge([_pulse, ..._ignites.values]),
-                  builder: (context, _) => CustomPaint(
-                    painter: ElementalThreadsPainter(
-                      segments: segments,
-                      pulse: _pulse,
-                      ignite: {
-                        for (var i = 0; i < segments.length; i++)
-                          i: _ignites[segments[i].pairKey]?.value ?? 1.0,
-                      },
-                    ),
-                  ),
-                ),
-              ),
+            Positioned.fill(child: SpreadThreadsLayer(selected:selected,rects:{
+              for(var i=0;i<dealt.length;i++) dealt[i].index:rects[i],
+            })),
             Column(
               children: [
                 for (var i = 0; i < dealt.length; i++) ...[
@@ -161,7 +95,7 @@ class _BoardPillarViewState extends State<BoardPillarView>
       width: cardWidth,
       height: cardHeight,
       onFlip: () => context.read<SpreadController>().flipSlot(slot.index),
-      onTapFaceUp: () => widget.onTapFaceUp(slot.index),
+      onTapFaceUp: () => onTapFaceUp(slot.index),
     );
   }
 }
