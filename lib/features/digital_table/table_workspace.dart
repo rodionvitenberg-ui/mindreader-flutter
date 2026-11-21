@@ -22,13 +22,12 @@ import '../../state/user_profile_controller.dart';
 import 'digital_table_screen.dart';
 import 'oracle_chat_pane.dart';
 import 'spread_history_pane.dart';
+import 'widgets/analyze_reading_button.dart';
 import 'widgets/cosmos_send_burst.dart';
 import 'widgets/deal_lock_prompt.dart';
 import 'widgets/gemini_input_capsule.dart';
 import 'widgets/reading_context_field.dart';
 import 'widgets/reading_guide.dart';
-import 'widgets/reading_subject_toggle.dart';
-import 'widgets/synthesize_chat_cta.dart';
 
 /// Pane indices of the 3-screen horizontal workspace.
 const tablePane = 0;
@@ -687,14 +686,14 @@ class _TableWorkspaceState extends State<TableWorkspace>
     );
   }
 
-  /// Pane 0 (Digital Table): the armed-clarifier banner + the PERMANENT
-  /// dormant/ignited ✦ SYNTHESIZE IN CHAT CTA — a pure tactile sanctuary,
-  /// no chat UI. Pane 1 (Oracle AI Chat): the context chips + the shared
-  /// Gemini input capsule. Plus the "Sent to Cosmos" overlay on either.
+  /// Pane 0 (Digital Table): the optional armed-clarifier banner + a single
+  /// compact glass button that opens the Oracle pane without auto-synthesizing.
+  /// Pane 1 (Oracle AI Chat): the context chips + the shared Gemini input
+  /// capsule. Plus the "Sent to Cosmos" overlay on either.
   Widget _buildBottomArea(SpreadController ctrl) {
     final onTable = _pane == tablePane;
     // Step 1 (spread selection) is a clean picker — no reading-subject
-    // toggle, no synthesize CTA, no clarifier banner.
+    // toggle, no analyze button, no clarifier banner.
     if (onTable && !ctrl.isSpreadActive) {
       return const SizedBox.shrink();
     }
@@ -714,19 +713,12 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 ),
                 const SizedBox(height: 2),
               ],
-              if (!_session.hasSynthesis && !_session.generatingInitial)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 6),
-                  child: ReadingSubjectToggle(),
-                ),
-              SynthesizeChatCta(
-                key: const ValueKey('synthesize-cta'),
-                ignited: ctrl.canSynthesize,
-                synthesized: _session.hasSynthesis,
-                generating: _session.generatingInitial,
-                faceUp: ctrl.faceUpCount,
-                total: ctrl.slots.length,
-                onTap: _runSynthesis,
+              AnalyzeReadingButton(
+                key: const ValueKey('analyze-reading-button'),
+                enabled:
+                    (ctrl.canSynthesize || _session.hasSynthesis) &&
+                    !_session.generatingInitial,
+                onPressed: () => _goToPane(chatPane),
               ),
             ] else ...[
               _ChatContextChips(

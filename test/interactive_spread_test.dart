@@ -6,6 +6,7 @@ import 'package:mindreader/core/models/divination_system.dart';
 import 'package:mindreader/core/models/spread_type.dart';
 import 'package:mindreader/design_system/taro.dart';
 import 'package:mindreader/features/digital_table/digital_table_screen.dart';
+import 'package:mindreader/features/digital_table/widgets/analyze_reading_button.dart';
 import 'package:mindreader/features/digital_table/widgets/reading_bottom_sheet.dart';
 import 'package:mindreader/features/digital_table/widgets/slotted_divination_card.dart';
 import 'package:mindreader/features/digital_table/widgets/tarot_card_3d_widget.dart';
@@ -207,14 +208,10 @@ void main() {
         await tester.pump();
         final oracle = context.read<OracleSessionController>();
         final reset = find.text('TAP TO RESET');
-        final synthesize = find.byKey(const ValueKey('synthesize-cta'));
-        final synthesizeLabel = find.descendant(
-          of: synthesize,
-          matching: find.textContaining('SYNTHESIZE IN CHAT'),
-        );
-        final effects = find.descendant(
-          of: synthesize,
-          matching: find.byType(CustomPaint),
+        final analyze = find.byKey(const ValueKey('analyze-reading-button'));
+        final analyzeLabel = find.descendant(
+          of: analyze,
+          matching: find.text('Analyze Reading'),
         );
         final disabledColor = TaroColors.textDisabled;
 
@@ -231,17 +228,17 @@ void main() {
           await tester.pump();
         }
         expect(ctrl.allDealt, isTrue);
-      expect(tester.widget<Text>(reset).style!.color, isNot(disabledColor));
+        expect(tester.widget<Text>(reset).style!.color, isNot(disabledColor));
         for (var index = 0; index < ctrl.spreadCardCount - 1; index++) {
           ctrl.flipSlot(index);
         }
         await tester.pump();
         expect(
-          tester.widget<Text>(synthesizeLabel).style!.color,
+          tester.widget<Text>(analyzeLabel).style!.color,
           disabledColor,
         );
-        expect(effects, findsNothing);
-        await tester.tap(synthesize);
+        expect(tester.widget<AnalyzeReadingButton>(analyze).enabled, isFalse);
+        await tester.tap(analyze);
         await tester.pump();
         expect(oracle.generatingInitial, isFalse);
         expect(oracle.hasSynthesis, isFalse);
@@ -249,17 +246,28 @@ void main() {
         ctrl.flipSlot(ctrl.spreadCardCount - 1);
         await tester.pump();
         expect(
-          tester.widget<Text>(synthesizeLabel).style!.color,
+          tester.widget<Text>(analyzeLabel).style!.color,
           isNot(disabledColor),
         );
-        expect(effects, findsOneWidget);
+        expect(tester.widget<AnalyzeReadingButton>(analyze).enabled, isTrue);
         await tester.tap(reset);
         await tester.pump();
         expect(ctrl.dealtCount, 0);
         expect(tester.widget<Text>(reset).style!.color, disabledColor);
-        expect(effects, findsNothing);
+        expect(tester.widget<AnalyzeReadingButton>(analyze).enabled, isFalse);
       },
     );
+  }
+
+  Future<void> dealRevealAndOpenOracle(WidgetTester tester) async {
+    final ctrl = table(tester).read<SpreadController>();
+    ctrl.dealNextCardOrClarifier();
+    ctrl.flipSlot(0);
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('analyze-reading-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
   }
 
   testWidgets('typing stays available when microphone permission is denied', (
@@ -270,6 +278,7 @@ void main() {
     messenger.setMockMethodCallHandler(channel, (_) async => false);
     addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
     await openTable(tester);
+    await dealRevealAndOpenOracle(tester);
     await tester.tap(find.byTooltip('Dictate question'));
     await tester.pump();
     expect(
@@ -278,7 +287,7 @@ void main() {
     );
     await tester.enterText(field, 'Written question');
     expect(
-      table(tester).read<SpreadController>().readingQuestion,
+      tester.element(field).read<SpreadController>().readingQuestion,
       'Written question',
     );
   });
@@ -310,6 +319,7 @@ void main() {
 
       await openTable(tester);
       final ctrl = table(tester).read<SpreadController>();
+      await dealRevealAndOpenOracle(tester);
       await tester.enterText(field, 'Job change');
       await tester.tap(find.byTooltip('Dictate question'));
       await tester.pump();
@@ -325,15 +335,13 @@ void main() {
       await tester.enterText(field, 'A different question');
       expect(ctrl.readingQuestion, 'A different question');
       await tester.testTextInput.receiveAction(TextInputAction.done);
-      ctrl.dealNextCardOrClarifier();
-      ctrl.flipSlot(0);
       await tester.pump();
       await tester.tap(find.byTooltip('Dictate question').hitTestable());
       await tester.pump();
       await fromRecognizer('notifyStatus', 'listening');
       await words('about', 0);
-      final oracle = table(tester).read<OracleSessionController>();
-      await tester.tap(find.byKey(const ValueKey('synthesize-cta')));
+      final oracle = tester.element(field).read<OracleSessionController>();
+      await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
       await tester.pump();
       expect(calls, contains('stop'));
       expect(oracle.hasSynthesis, isFalse);
@@ -347,25 +355,33 @@ void main() {
   );
 
   testWidgets(
-    'the draft is editable with the keyboard open on a short landscape display',
+    'the draft is editable on Oracle with the keyboard open and Table stays clean on short screens',
     (tester) async {
-      await openTable(tester, size: const Size(760, 360));
+      await openTable(tester, size: const Size(390, 844));
+      await dealRevealAndOpenOracle(tester);
       addTearDown(tester.view.resetViewInsets);
+      final draft = find.byKey(const ValueKey('reading-context'));
+      await tester.ensureVisible(draft);
+      await tester.pump();
       await tester.tap(field);
       tester.view.viewInsets = const FakeViewPadding(bottom: 205);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
+      await tester.ensureVisible(draft);
+      await tester.pump();
       expect(field, findsOneWidget);
       await tester.enterText(field, 'Preparing for tomorrow');
       expect(
-        table(tester).read<SpreadController>().readingQuestion,
+        tester.element(field).read<SpreadController>().readingQuestion,
         'Preparing for tomorrow',
       );
       tester.view.resetViewInsets();
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
+      await goToPane(tester, 0);
       expect(viewport, findsOneWidget);
+      expect(find.byKey(const ValueKey('analyze-reading-button')), findsOneWidget);
     },
   );
 
@@ -381,6 +397,7 @@ void main() {
         context.read<UserProfileController>()
           ..setPersonalBioContext('Owner biography')
           ..setTargetPersonNote('Previous recipient');
+        await dealRevealAndOpenOracle(tester);
         const question = 'What should I ask at the interview?';
         await tester.enterText(field, question);
         await tester.testTextInput.receiveAction(TextInputAction.done);
@@ -390,15 +407,20 @@ void main() {
         if (forSelf) await tester.tap(find.text('FOR MYSELF (PROFILE)'));
         await tester.pump();
         expect(tester.widget<TextField>(field).controller!.text, question);
+
+        // Returning to Table (Spread/Focus) and back to Oracle preserves the draft.
+        await goToPane(tester, 0);
         await tester.tap(find.text('FOCUS VIEW'));
         await tester.pump();
-        expect(tester.widget<TextField>(field).controller!.text, question);
         await tester.tap(find.text('SPREAD VIEW'));
         await tester.pump();
-        ctrl.dealNextCardOrClarifier();
-        ctrl.flipSlot(0);
+        await tester.tap(find.byKey(const ValueKey('analyze-reading-button')));
         await tester.pump();
-        await tester.tap(find.byKey(const ValueKey('synthesize-cta')));
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+        expect(tester.widget<TextField>(field).controller!.text, question);
+
+        await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
         await tester.pump();
@@ -417,7 +439,7 @@ void main() {
         ctrl.resetTable();
         await tester.pump();
         expect(oracle.hasSynthesis, isFalse);
-        expect(tester.widget<TextField>(field).controller!.text, isEmpty);
+        expect(ctrl.readingQuestion, isEmpty);
       },
     );
   }
@@ -446,45 +468,47 @@ void main() {
   );
 
   testWidgets(
-    'SYNTHESIZE CTA keeps the exact same size across dormant, ready, and OPEN ORACLE CHAT states',
+    'Analyze Reading button keeps the exact same size across dormant, ready, and post-synthesis states',
     (tester) async {
       await openTable(tester);
       final ctrl = table(tester).read<SpreadController>()
         ..setSpreadType(SpreadType.three);
       await tester.pump();
 
-      final cta = find.byKey(const ValueKey('synthesize-cta'));
-      expect(find.text('✦ SYNTHESIZE IN CHAT'), findsOneWidget);
-      expect(find.textContaining('FLIP ALL CARDS'), findsNothing);
+      final cta = find.byKey(const ValueKey('analyze-reading-button'));
+      expect(find.text('Analyze Reading'), findsOneWidget);
       final dormantSize = tester.getSize(cta);
 
-      // Deal all 3 and flip 1 → still dormant with compact count, identical size.
+      // Deal all 3 and flip 1 → still dormant, identical size.
       for (var i = 0; i < 3; i++) {
         ctrl.dealNextCardOrClarifier();
       }
       ctrl.flipSlot(0);
       await tester.pump();
-      expect(find.text('✦ SYNTHESIZE IN CHAT (1/3)'), findsOneWidget);
+      expect(tester.widget<AnalyzeReadingButton>(cta).enabled, isFalse);
       expect(tester.getSize(cta), dormantSize);
 
-      // Flip remaining cards → State 2 (ignited): identical size after settle.
+      // Flip remaining cards → ready: identical size.
       ctrl.flipSlot(1);
       ctrl.flipSlot(2);
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 650));
-      expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsOneWidget);
+      expect(tester.widget<AnalyzeReadingButton>(cta).enabled, isTrue);
       final readySize = tester.getSize(cta);
       expect(readySize.width, closeTo(dormantSize.width, 0.01));
       expect(readySize.height, closeTo(dormantSize.height, 0.01));
 
-      // Synthesize → State 3 (OPEN ORACLE CHAT) back on Table: identical size.
+      // Navigate to Oracle → synthesize → return to Table: identical size.
       await tester.tap(cta);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       await tester.pump();
       await goToPane(tester, 0);
-      await tester.pump(const Duration(milliseconds: 650));
-      expect(find.text('✦ OPEN ORACLE CHAT →'), findsOneWidget);
+      await tester.pump();
+      expect(find.text('Analyze Reading'), findsOneWidget);
       final postSize = tester.getSize(cta);
       expect(postSize.width, closeTo(readySize.width, 0.01));
       expect(postSize.height, closeTo(readySize.height, 0.01));

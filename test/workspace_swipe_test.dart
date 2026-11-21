@@ -48,6 +48,10 @@ void main() {
       await flipCard(tester, i);
     }
     await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('analyze-reading-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
     await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
     await tester.pump();
     await tester.pump();

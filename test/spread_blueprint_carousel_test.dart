@@ -355,8 +355,12 @@ void main() {
     expect(prompt, contains('12. Question: "Month 12 focus?" — Card:'));
     expect(prompt, contains('weave all pairs together into one cohesive'));
 
-    // Synthesize in Chat → saves custom spread + questions in History.
-    await tester.tap(find.byKey(const ValueKey('synthesize-cta')));
+    // Navigate to Oracle → synthesize in Chat → saves custom spread + questions in History.
+    await tester.tap(find.byKey(const ValueKey('analyze-reading-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+    await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
     await tester.pump();

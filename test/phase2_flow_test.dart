@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/models/dealt_card_slot.dart';
+import 'package:mindreader/features/digital_table/widgets/analyze_reading_button.dart';
 import 'package:mindreader/features/digital_table/widgets/gemini_input_capsule.dart';
 import 'package:mindreader/features/digital_table/widgets/interactive_deck_widget.dart';
 import 'package:mindreader/features/digital_table/widgets/tarot_card_3d_widget.dart';
@@ -65,10 +66,14 @@ void main() {
       await flipCard(tester, i);
     }
     await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('analyze-reading-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500)); // pane slide to Oracle
+    await tester.pump();
     await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
     await tester.pump(); // synthesis starts
     await tester.pump(); // local engine resolves
-    await tester.pump(const Duration(milliseconds: 700)); // pane slide
+    await tester.pump(const Duration(milliseconds: 700)); // settle
     await tester.pump();
   }
 
@@ -129,8 +134,8 @@ void main() {
     expect(find.textContaining('not synthesized yet'), findsOneWidget);
   });
   testWidgets(
-      'synthesize CTA stays permanently on the table: dormant with flip '
-      'progress, ignites when every base card is face-up, then opens chat',
+      'Analyze Reading stays dormant until every base card is face-up, '
+      'opens Oracle without auto-synthesizing, and lets Oracle run synthesis',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
@@ -141,12 +146,13 @@ void main() {
     await dealOne(tester);
     await tester.pump();
 
-    // Cards are face-down: the CTA is visible but DORMANT — dim, without
-    // "(FLIP ALL CARDS)", and a tap does nothing (no synthesis, no slide).
-    expect(find.text('✦ SYNTHESIZE IN CHAT'), findsOneWidget);
-    expect(find.textContaining('FLIP ALL CARDS'), findsNothing);
-    expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsNothing);
-    await tester.tap(find.text('✦ SYNTHESIZE IN CHAT'));
+    // Cards are face-down: the button is visible but disabled, and tapping
+    // stays on the table (no navigation, no synthesis).
+    final analyzeBtn = find.byKey(const ValueKey('analyze-reading-button'));
+    expect(analyzeBtn, findsOneWidget);
+    expect(find.text('Analyze Reading'), findsOneWidget);
+    expect(tester.widget<AnalyzeReadingButton>(analyzeBtn).enabled, isFalse);
+    await tester.tap(analyzeBtn);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump();
@@ -155,26 +161,31 @@ void main() {
 
     await flipCard(tester, 0);
     await tester.pump();
-
-    // The dormant label counts down the remaining flips in compact form.
-    expect(find.text('✦ SYNTHESIZE IN CHAT (1/3)'), findsOneWidget);
+    expect(tester.widget<AnalyzeReadingButton>(analyzeBtn).enabled, isFalse);
 
     await flipCard(tester, 1);
     await flipCard(tester, 2);
     await tester.pump();
 
-    // All face-up: the CTA is IGNITED with the live label.
-    expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsOneWidget);
-    expect(find.text('✦ SYNTHESIZE IN CHAT (2/3)'), findsNothing);
+    // All face-up: Analyze Reading is enabled.
+    expect(tester.widget<AnalyzeReadingButton>(analyzeBtn).enabled, isTrue);
 
+    // Tapping opens Oracle WITHOUT triggering synthesis automatically.
+    await tester.tap(analyzeBtn);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500)); // pane slide
+    await tester.pump();
+    expect(find.text('YOUR SPREAD IS READY'), findsOneWidget);
+    expect(find.text('1 · CORE NARRATIVE SYNTHESIS'), findsNothing);
+    expect(find.text('CURRENT SPREAD'), findsOneWidget);
+
+    // Running synthesis from the Oracle screen streams the full reading.
     await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
     await tester.pump();
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700)); // pane slide
+    await tester.pump(const Duration(milliseconds: 700));
     await tester.pump();
 
-    // The structured synthesis streams as the first message of the
-    // full-width Oracle AI Chat pane (no narrow modal box).
     expect(find.text('1 · CORE NARRATIVE SYNTHESIS'), findsOneWidget);
     expect(find.text('2 · ELEMENTAL ALCHEMY'), findsOneWidget);
     expect(find.text('3 · ACTIONABLE VERDICT'), findsOneWidget);
@@ -346,12 +357,16 @@ void main() {
     await tester.pump();
 
     // Back on the table: physical-sync badge + all 3 cards face-up and
-    // the CTA ready immediately.
+    // the Analyze Reading button ready immediately.
     expect(find.text('PHYSICAL SYNC'), findsOneWidget);
     expect(find.byType(TarotCard3DWidget), findsNWidgets(3));
-    expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsOneWidget);
+    expect(find.text('Analyze Reading'), findsOneWidget);
 
-    // Synthesize the photographed spread → lands in the chat pane.
+    // Open Oracle → synthesize the photographed spread.
+    await tester.tap(find.byKey(const ValueKey('analyze-reading-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
     await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
     await tester.pump();
     await tester.pump();

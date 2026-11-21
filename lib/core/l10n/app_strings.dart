@@ -313,6 +313,10 @@ class AppStrings {
       AppLanguage.en: 'Deal next card',
       AppLanguage.ru: 'Выложить следующую карту',
     },
+    'table.analyzeReading': {
+      AppLanguage.en: 'Analyze Reading',
+      AppLanguage.ru: 'Анализ расклада',
+    },
     'table.myself': {
       AppLanguage.en: 'FOR MYSELF (PROFILE)',
       AppLanguage.ru: 'НА СЕБЯ',

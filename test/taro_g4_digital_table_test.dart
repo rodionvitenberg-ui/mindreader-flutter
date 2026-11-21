@@ -127,17 +127,44 @@ void main() {
 
   group('G4 Digital Table migration', () {
     testWidgets(
-      'Active Table uses TaroGlassSegmentedControl for subject and TaroGlassSurface for CTA',
+      'Active Table shows compact AnalyzeReadingButton and Oracle keeps TaroGlassSegmentedControl for subject',
       (tester) async {
         await tester.pumpWidget(const MindreaderApp());
         await tester.pump();
         await activateSpread(tester, 'Three Cards');
 
+        // Digital Table has no subject toggle or legacy large CTA.
+        expect(find.byType(ReadingSubjectToggle), findsNothing);
+        expect(find.byType(SynthesizeChatCta), findsNothing);
+        expect(find.byKey(const ValueKey('analyze-reading-button')), findsOneWidget);
+
+        // Deal and reveal all 3 cards so the button illuminates with TaroGlassSurface.
+        final ctrl = tester
+            .element(find.byType(PageView))
+            .read<SpreadController>();
+        for (var i = 0; i < 3; i++) {
+          ctrl.dealNextCardOrClarifier();
+          ctrl.flipSlot(i);
+        }
+        await tester.pump();
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('analyze-reading-button')),
+            matching: find.byType(TaroGlassSurface),
+          ),
+          findsOneWidget,
+        );
+
+        // Tapping opens Oracle where the subject segmented control lives.
+        await tester.tap(find.byKey(const ValueKey('analyze-reading-button')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+
         expect(find.byType(ReadingSubjectToggle), findsOneWidget);
         expect(find.byType(TaroGlassSegmentedControl<bool>), findsOneWidget);
-        expect(find.byType(SynthesizeChatCta), findsOneWidget);
 
-        // Toggle subject Myself -> Someone Else.
+        // Toggle subject Myself -> Someone Else on the Oracle screen.
         await tester.tap(find.text('FOR SOMEONE ELSE'));
         await tester.pump();
         final seg = tester.widget<TaroGlassSegmentedControl<bool>>(
