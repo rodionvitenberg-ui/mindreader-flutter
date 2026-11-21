@@ -1,0 +1,9 @@
+{
+  "oraclePayload": {
+    "schemaVersion": 1, "sessionId": "2026-11-21T12:00:00.000",
+    "source": "physical", "mode": "guidedSpread", "system": "lenormand", "spreadId": "one",
+    "cards": [{"cardId": "lenormand:0", "position": 0, "role": "The Signal", "orientation": "upright", "source": "physical", "confirmed": true}]
+  },
+  "legacyCard": {"cardId": 0, "reversed": false, "role": "The Signal"},
+  "visionCandidate": {"system": "lenormand", "canonicalCardId": 0, "orientation": "upright", "trackId": "c1"}
+}

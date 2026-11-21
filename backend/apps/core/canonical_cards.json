@@ -1,0 +1,554 @@
+{
+  "tarot:0": {
+    "name": "The Fool",
+    "reversible": true
+  },
+  "tarot:1": {
+    "name": "The Magician",
+    "reversible": true
+  },
+  "tarot:2": {
+    "name": "The High Priestess",
+    "reversible": true
+  },
+  "tarot:3": {
+    "name": "The Empress",
+    "reversible": true
+  },
+  "tarot:4": {
+    "name": "The Emperor",
+    "reversible": true
+  },
+  "tarot:5": {
+    "name": "The Hierophant",
+    "reversible": true
+  },
+  "tarot:6": {
+    "name": "The Lovers",
+    "reversible": true
+  },
+  "tarot:7": {
+    "name": "The Chariot",
+    "reversible": true
+  },
+  "tarot:8": {
+    "name": "Strength",
+    "reversible": true
+  },
+  "tarot:9": {
+    "name": "The Hermit",
+    "reversible": true
+  },
+  "tarot:10": {
+    "name": "Wheel of Fortune",
+    "reversible": true
+  },
+  "tarot:11": {
+    "name": "Justice",
+    "reversible": true
+  },
+  "tarot:12": {
+    "name": "The Hanged Man",
+    "reversible": true
+  },
+  "tarot:13": {
+    "name": "Death",
+    "reversible": true
+  },
+  "tarot:14": {
+    "name": "Temperance",
+    "reversible": true
+  },
+  "tarot:15": {
+    "name": "The Devil",
+    "reversible": true
+  },
+  "tarot:16": {
+    "name": "The Tower",
+    "reversible": true
+  },
+  "tarot:17": {
+    "name": "The Star",
+    "reversible": true
+  },
+  "tarot:18": {
+    "name": "The Moon",
+    "reversible": true
+  },
+  "tarot:19": {
+    "name": "The Sun",
+    "reversible": true
+  },
+  "tarot:20": {
+    "name": "Judgement",
+    "reversible": true
+  },
+  "tarot:21": {
+    "name": "The World",
+    "reversible": true
+  },
+  "tarot:22": {
+    "name": "Ace of Wands",
+    "reversible": true
+  },
+  "tarot:23": {
+    "name": "Two of Wands",
+    "reversible": true
+  },
+  "tarot:24": {
+    "name": "Three of Wands",
+    "reversible": true
+  },
+  "tarot:25": {
+    "name": "Four of Wands",
+    "reversible": true
+  },
+  "tarot:26": {
+    "name": "Five of Wands",
+    "reversible": true
+  },
+  "tarot:27": {
+    "name": "Six of Wands",
+    "reversible": true
+  },
+  "tarot:28": {
+    "name": "Seven of Wands",
+    "reversible": true
+  },
+  "tarot:29": {
+    "name": "Eight of Wands",
+    "reversible": true
+  },
+  "tarot:30": {
+    "name": "Nine of Wands",
+    "reversible": true
+  },
+  "tarot:31": {
+    "name": "Ten of Wands",
+    "reversible": true
+  },
+  "tarot:32": {
+    "name": "Page of Wands",
+    "reversible": true
+  },
+  "tarot:33": {
+    "name": "Knight of Wands",
+    "reversible": true
+  },
+  "tarot:34": {
+    "name": "Queen of Wands",
+    "reversible": true
+  },
+  "tarot:35": {
+    "name": "King of Wands",
+    "reversible": true
+  },
+  "tarot:36": {
+    "name": "Ace of Cups",
+    "reversible": true
+  },
+  "tarot:37": {
+    "name": "Two of Cups",
+    "reversible": true
+  },
+  "tarot:38": {
+    "name": "Three of Cups",
+    "reversible": true
+  },
+  "tarot:39": {
+    "name": "Four of Cups",
+    "reversible": true
+  },
+  "tarot:40": {
+    "name": "Five of Cups",
+    "reversible": true
+  },
+  "tarot:41": {
+    "name": "Six of Cups",
+    "reversible": true
+  },
+  "tarot:42": {
+    "name": "Seven of Cups",
+    "reversible": true
+  },
+  "tarot:43": {
+    "name": "Eight of Cups",
+    "reversible": true
+  },
+  "tarot:44": {
+    "name": "Nine of Cups",
+    "reversible": true
+  },
+  "tarot:45": {
+    "name": "Ten of Cups",
+    "reversible": true
+  },
+  "tarot:46": {
+    "name": "Page of Cups",
+    "reversible": true
+  },
+  "tarot:47": {
+    "name": "Knight of Cups",
+    "reversible": true
+  },
+  "tarot:48": {
+    "name": "Queen of Cups",
+    "reversible": true
+  },
+  "tarot:49": {
+    "name": "King of Cups",
+    "reversible": true
+  },
+  "tarot:50": {
+    "name": "Ace of Swords",
+    "reversible": true
+  },
+  "tarot:51": {
+    "name": "Two of Swords",
+    "reversible": true
+  },
+  "tarot:52": {
+    "name": "Three of Swords",
+    "reversible": true
+  },
+  "tarot:53": {
+    "name": "Four of Swords",
+    "reversible": true
+  },
+  "tarot:54": {
+    "name": "Five of Swords",
+    "reversible": true
+  },
+  "tarot:55": {
+    "name": "Six of Swords",
+    "reversible": true
+  },
+  "tarot:56": {
+    "name": "Seven of Swords",
+    "reversible": true
+  },
+  "tarot:57": {
+    "name": "Eight of Swords",
+    "reversible": true
+  },
+  "tarot:58": {
+    "name": "Nine of Swords",
+    "reversible": true
+  },
+  "tarot:59": {
+    "name": "Ten of Swords",
+    "reversible": true
+  },
+  "tarot:60": {
+    "name": "Page of Swords",
+    "reversible": true
+  },
+  "tarot:61": {
+    "name": "Knight of Swords",
+    "reversible": true
+  },
+  "tarot:62": {
+    "name": "Queen of Swords",
+    "reversible": true
+  },
+  "tarot:63": {
+    "name": "King of Swords",
+    "reversible": true
+  },
+  "tarot:64": {
+    "name": "Ace of Pentacles",
+    "reversible": true
+  },
+  "tarot:65": {
+    "name": "Two of Pentacles",
+    "reversible": true
+  },
+  "tarot:66": {
+    "name": "Three of Pentacles",
+    "reversible": true
+  },
+  "tarot:67": {
+    "name": "Four of Pentacles",
+    "reversible": true
+  },
+  "tarot:68": {
+    "name": "Five of Pentacles",
+    "reversible": true
+  },
+  "tarot:69": {
+    "name": "Six of Pentacles",
+    "reversible": true
+  },
+  "tarot:70": {
+    "name": "Seven of Pentacles",
+    "reversible": true
+  },
+  "tarot:71": {
+    "name": "Eight of Pentacles",
+    "reversible": true
+  },
+  "tarot:72": {
+    "name": "Nine of Pentacles",
+    "reversible": true
+  },
+  "tarot:73": {
+    "name": "Ten of Pentacles",
+    "reversible": true
+  },
+  "tarot:74": {
+    "name": "Page of Pentacles",
+    "reversible": true
+  },
+  "tarot:75": {
+    "name": "Knight of Pentacles",
+    "reversible": true
+  },
+  "tarot:76": {
+    "name": "Queen of Pentacles",
+    "reversible": true
+  },
+  "tarot:77": {
+    "name": "King of Pentacles",
+    "reversible": true
+  },
+  "lenormand:0": {
+    "name": "Rider",
+    "reversible": false
+  },
+  "lenormand:1": {
+    "name": "Clover",
+    "reversible": false
+  },
+  "lenormand:2": {
+    "name": "Ship",
+    "reversible": false
+  },
+  "lenormand:3": {
+    "name": "House",
+    "reversible": false
+  },
+  "lenormand:4": {
+    "name": "Tree",
+    "reversible": false
+  },
+  "lenormand:5": {
+    "name": "Clouds",
+    "reversible": false
+  },
+  "lenormand:6": {
+    "name": "Snake",
+    "reversible": false
+  },
+  "lenormand:7": {
+    "name": "Coffin",
+    "reversible": false
+  },
+  "lenormand:8": {
+    "name": "Bouquet",
+    "reversible": false
+  },
+  "lenormand:9": {
+    "name": "Scythe",
+    "reversible": false
+  },
+  "lenormand:10": {
+    "name": "Whip",
+    "reversible": false
+  },
+  "lenormand:11": {
+    "name": "Birds",
+    "reversible": false
+  },
+  "lenormand:12": {
+    "name": "Child",
+    "reversible": false
+  },
+  "lenormand:13": {
+    "name": "Fox",
+    "reversible": false
+  },
+  "lenormand:14": {
+    "name": "Bear",
+    "reversible": false
+  },
+  "lenormand:15": {
+    "name": "Stars",
+    "reversible": false
+  },
+  "lenormand:16": {
+    "name": "Stork",
+    "reversible": false
+  },
+  "lenormand:17": {
+    "name": "Dog",
+    "reversible": false
+  },
+  "lenormand:18": {
+    "name": "Tower",
+    "reversible": false
+  },
+  "lenormand:19": {
+    "name": "Garden",
+    "reversible": false
+  },
+  "lenormand:20": {
+    "name": "Mountain",
+    "reversible": false
+  },
+  "lenormand:21": {
+    "name": "Crossroads",
+    "reversible": false
+  },
+  "lenormand:22": {
+    "name": "Mice",
+    "reversible": false
+  },
+  "lenormand:23": {
+    "name": "Heart",
+    "reversible": false
+  },
+  "lenormand:24": {
+    "name": "Ring",
+    "reversible": false
+  },
+  "lenormand:25": {
+    "name": "Book",
+    "reversible": false
+  },
+  "lenormand:26": {
+    "name": "Letter",
+    "reversible": false
+  },
+  "lenormand:27": {
+    "name": "Gentleman",
+    "reversible": false
+  },
+  "lenormand:28": {
+    "name": "Lady",
+    "reversible": false
+  },
+  "lenormand:29": {
+    "name": "Lily",
+    "reversible": false
+  },
+  "lenormand:30": {
+    "name": "Sun",
+    "reversible": false
+  },
+  "lenormand:31": {
+    "name": "Moon",
+    "reversible": false
+  },
+  "lenormand:32": {
+    "name": "Key",
+    "reversible": false
+  },
+  "lenormand:33": {
+    "name": "Fish",
+    "reversible": false
+  },
+  "lenormand:34": {
+    "name": "Anchor",
+    "reversible": false
+  },
+  "lenormand:35": {
+    "name": "Cross",
+    "reversible": false
+  },
+  "runes:0": {
+    "name": "Fehu",
+    "reversible": true
+  },
+  "runes:1": {
+    "name": "Uruz",
+    "reversible": true
+  },
+  "runes:2": {
+    "name": "Thurisaz",
+    "reversible": true
+  },
+  "runes:3": {
+    "name": "Ansuz",
+    "reversible": true
+  },
+  "runes:4": {
+    "name": "Raidho",
+    "reversible": true
+  },
+  "runes:5": {
+    "name": "Kenaz",
+    "reversible": true
+  },
+  "runes:6": {
+    "name": "Gebo",
+    "reversible": false
+  },
+  "runes:7": {
+    "name": "Wunjo",
+    "reversible": true
+  },
+  "runes:8": {
+    "name": "Hagalaz",
+    "reversible": false
+  },
+  "runes:9": {
+    "name": "Nauthiz",
+    "reversible": true
+  },
+  "runes:10": {
+    "name": "Isa",
+    "reversible": false
+  },
+  "runes:11": {
+    "name": "Jera",
+    "reversible": false
+  },
+  "runes:12": {
+    "name": "Eihwaz",
+    "reversible": false
+  },
+  "runes:13": {
+    "name": "Perthro",
+    "reversible": true
+  },
+  "runes:14": {
+    "name": "Algiz",
+    "reversible": true
+  },
+  "runes:15": {
+    "name": "Sowilo",
+    "reversible": false
+  },
+  "runes:16": {
+    "name": "Tiwaz",
+    "reversible": true
+  },
+  "runes:17": {
+    "name": "Berkano",
+    "reversible": true
+  },
+  "runes:18": {
+    "name": "Ehwaz",
+    "reversible": true
+  },
+  "runes:19": {
+    "name": "Mannaz",
+    "reversible": true
+  },
+  "runes:20": {
+    "name": "Laguz",
+    "reversible": true
+  },
+  "runes:21": {
+    "name": "Ingwaz",
+    "reversible": false
+  },
+  "runes:22": {
+    "name": "Dagaz",
+    "reversible": false
+  },
+  "runes:23": {
+    "name": "Othala",
+    "reversible": true
+  }
+}
