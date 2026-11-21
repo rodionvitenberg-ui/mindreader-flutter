@@ -67,6 +67,7 @@ class Position(models.Model):
     orientation = models.CharField(max_length=10, blank=True)
     source = models.CharField(max_length=8, blank=True)
     track_id = models.CharField(max_length=100, blank=True)
+    clarifier_question = models.TextField(blank=True)
     clarification = models.TextField(blank=True)
 
     class Meta:

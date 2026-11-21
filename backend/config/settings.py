@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.core.http.api_headers",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -109,7 +110,7 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = True
 EMAIL_TIMEOUT = 5
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "tarot@example.invalid")
-if PRODUCTION and EMAIL_VERIFICATION_ENABLED and not EMAIL_HOST:
+if PRODUCTION and EMAIL_VERIFICATION_ENABLED and (not EMAIL_HOST or DEFAULT_FROM_EMAIL.endswith(".invalid")):
     raise ImproperlyConfigured("Set SMTP configuration before enabling email verification.")
 
 REST_FRAMEWORK = {
@@ -120,4 +121,11 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.core.api.error_response",
 }
-SPECTACULAR_SETTINGS = {"TITLE": "Tarot Tree API", "VERSION": "1.0.0", "SERVE_INCLUDE_SCHEMA": False}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Tarot Tree API", "VERSION": "1.0.0", "SERVE_INCLUDE_SCHEMA": False,
+    "ENUM_NAME_OVERRIDES": {
+        "CardOrientation": ["upright", "reversed"],
+        "RecognitionOrientation": ["upright", "reversed", "unknown"],
+    },
+    "COMPONENT_SPLIT_REQUEST": True,
+}

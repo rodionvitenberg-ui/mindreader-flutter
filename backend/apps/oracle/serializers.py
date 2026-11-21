@@ -47,6 +47,14 @@ class ReadingInput(serializers.Serializer):
         return attrs
 
 
+class ReadingContext(serializers.Serializer):
+    question = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+    notes = serializers.ListField(child=serializers.CharField(max_length=500), max_length=12, required=False)
+    subject = serializers.ChoiceField(("self", "other"), required=False)
+    selfContext = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+    otherContext = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+
+
 class CardInput(serializers.Serializer):
     cardId = serializers.CharField(max_length=20)
     orientation = serializers.ChoiceField(ORIENTATIONS)
@@ -68,6 +76,7 @@ class PositionOutput(BasePosition):
     position = serializers.IntegerField(min_value=0, max_value=14)
     card = CardOutput(allow_null=True)
     clarifier = serializers.BooleanField()
+    clarifierQuestion = serializers.CharField(allow_blank=True)
     clarification = serializers.CharField(allow_blank=True)
 
 

@@ -26,7 +26,8 @@ def owned(request, session_id, *, lock=False):
 def position_data(position):
     return {
         "position": position.index, "role": position.role, "note": position.note,
-        "clarifier": position.clarifier, "clarification": position.clarification,
+        "clarifier": position.clarifier, "clarifierQuestion": position.clarifier_question,
+        "clarification": position.clarification,
         "card": {
             "cardId": position.card_id, "orientation": position.orientation,
             "source": position.source, "confirmed": True,
@@ -93,6 +94,8 @@ def place(reading, data, *, source, track=""):
         if not role:
             raise Problem("position_role_required", 400, "Supply the position role.")
         position = Position(reading=reading, index=index, role=role, clarifier=clarifier)
+    if position.clarifier != data.get("clarifier", False):
+        raise Problem("position_kind_conflict", 409, "The declared position kind does not match.")
     if position.card_id:
         if (position.card_id, position.orientation, position.source, position.track_id) != (
             data["cardId"], data["orientation"], source, track
@@ -201,7 +204,7 @@ def run_turn(request, session_id, turn, payload, index=None):
             current.synthesis = data
         else:
             if turn == "clarify":
-                current.positions.filter(index=index).update(clarification=data["text"], note=text)
+                current.positions.filter(index=index).update(clarification=data["text"], clarifier_question=text)
             Message.objects.bulk_create([
                 Message(reading=current, role="user", text=text, slot_index=index),
                 Message(reading=current, role="oracle", text=data["text"], slot_index=index),

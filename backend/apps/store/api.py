@@ -1,4 +1,3 @@
-import re
 from pathlib import PurePosixPath
 from zipfile import BadZipFile, ZipFile
 
@@ -8,7 +7,7 @@ from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiParameter, extend_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, serializers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -16,10 +15,9 @@ from rest_framework.response import Response
 
 from apps.catalog.models import VERSION, Deck, DeckAsset, DeckVersion
 from apps.catalog.packages import MIME
-from apps.core.api import Problem, checked, finish, operation, replay
+from apps.core.api import IDEMPOTENCY, Problem, checked, finish, operation, replay
 from apps.core.cards import SYSTEM_SIZES
 from apps.entitlements.models import Grant, active_grants
-from apps.oracle.api import IDEMPOTENCY
 
 
 class Filters(serializers.Serializer):

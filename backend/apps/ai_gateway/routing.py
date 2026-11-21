@@ -16,7 +16,7 @@ def reserve(candidate):
         provider = Provider.objects.select_for_update().get(pk=candidate.pk)
         if not provider.enabled or provider.capability != candidate.capability:
             raise UpstreamError("provider_unavailable")
-        if candidate.is_paid != provider.is_paid:
+        if candidate.is_paid != provider.is_paid or candidate.priority != provider.priority:
             raise UpstreamError("provider_unavailable")
         if not endpoint_allowed(provider.endpoint, provider.capability):
             raise UpstreamError("provider_unavailable")
@@ -44,12 +44,14 @@ def reserve(candidate):
 
 
 def route(capability, invoke, *, provider_id=None):
-    providers = list(Provider.objects.filter(capability=capability, enabled=True))
+    providers = list(Provider.objects.filter(capability=capability))
     if provider_id is not None:
         providers = [provider for provider in providers if provider.pk == provider_id]
     allow_paid_fallback = RoutingPolicy.objects.filter(capability=capability, allow_paid_fallback=True).exists()
     last = UpstreamError("provider_unavailable")
     for index, candidate in enumerate(providers):
+        if not candidate.enabled:
+            continue
         if index and candidate.is_paid and not allow_paid_fallback:
             continue
         for attempt in range(candidate.retries + 1):

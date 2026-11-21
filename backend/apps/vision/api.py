@@ -10,9 +10,8 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 
 from apps.ai_gateway.routing import recognize as route_vision
-from apps.core.api import Problem, checked, finish, operation, rate_limit, replay
+from apps.core.api import IDEMPOTENCY, Problem, checked, finish, operation, rate_limit, replay
 from apps.core.cards import validate_card
-from apps.oracle.api import IDEMPOTENCY
 from apps.oracle.service import owned, place, position_data, require_idle
 
 from .images import MAX_BATCH_BYTES, normalize_image
@@ -30,7 +29,10 @@ def result_data(row):
 
 
 def process_upload(request, *, single):
-    data = checked(Upload, {**request.data.dict(), "images": request.FILES.getlist("images")})
+    form = request.data
+    if getattr(request, "vision_upload_too_large", False):
+        raise Problem("request_too_large", 413, "Request exceeds the upload limit.")
+    data = checked(Upload, {**form.dict(), "images": request.FILES.getlist("images")})
     files = data["images"]
     if (single and len(files) != 1) or sum(image.size for image in files) > MAX_BATCH_BYTES:
         raise serializers.ValidationError({"images": "Invalid image count or total upload exceeds 20 MiB."})
