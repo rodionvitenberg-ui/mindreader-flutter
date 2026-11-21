@@ -56,7 +56,7 @@ void main() {
   });
 
   group('MindreaderApp Tarot Tree theme wiring', () {
-    testWidgets('boots in Tarot Tree theme with dusk backdrop and glass layer', (
+    testWidgets('boots with a dusk backdrop and visible tab and dock glass', (
       tester,
     ) async {
       await tester.pumpWidget(const MindreaderApp());
@@ -67,7 +67,7 @@ void main() {
       expect(materialApp.theme?.extension<TaroOpticsTheme>(), isNotNull);
 
       expect(find.byType(TaroDuskBackground), findsOneWidget);
-      expect(find.byType(TaroGlassLayer), findsOneWidget);
+      expect(find.byType(TaroGlassLayer), findsNWidgets(2));
       expect(find.byType(TaroGlassDock), findsOneWidget);
     });
 

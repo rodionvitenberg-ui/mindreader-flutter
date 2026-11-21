@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/l10n/app_strings.dart';
 import 'package:mindreader/design_system/taro.dart';
+import 'package:mindreader/features/almanac/almanac_screen.dart';
+import 'package:mindreader/features/astral/astral_screen.dart';
+import 'package:mindreader/features/camera_scan/camera_scan_screen.dart';
+import 'package:mindreader/features/digital_table/table_workspace.dart';
 import 'package:mindreader/features/shell/widgets/app_settings_sheet.dart';
 import 'package:mindreader/features/shell/widgets/pro_subscription_sheet.dart';
 import 'package:mindreader/main.dart';
@@ -193,6 +197,46 @@ void main() {
   });
 
   group('G3 Shell migration', () {
+    testWidgets('isolates tab and dock glass while preserving tab state', (tester) async {
+      await tester.pumpWidget(const MindreaderApp());
+      await tester.pump();
+
+      final camera = find.byType(CameraScanScreen, skipOffstage: false);
+      final table = find.byType(TableWorkspace, skipOffstage: false);
+      final tableState = tester.state(table);
+      final cameraState = tester.state(camera);
+
+      final layers = [
+        camera,
+        table,
+        find.byType(AlmanacScreen, skipOffstage: false),
+        find.byType(AstralScreen, skipOffstage: false),
+        find.byType(TaroGlassDock),
+      ].map((target) {
+        final layer = find.ancestor(
+          of: target,
+          matching: find.byType(TaroGlassLayer, skipOffstage: false),
+        );
+        return tester.element(layer);
+      }).toSet();
+      expect(layers, hasLength(5));
+
+      const shutter = ValueKey('shutter');
+      expect(find.byKey(shutter, skipOffstage: false), findsOneWidget);
+      expect(find.byKey(shutter, skipOffstage: false).hitTestable(), findsNothing);
+
+      await tester.tap(find.text('CAMERA'));
+      await tester.pump();
+      expect(find.byKey(shutter).hitTestable(), findsOneWidget);
+
+      await tester.tap(find.text('TABLE'));
+      await tester.pump();
+      expect(find.byKey(shutter, skipOffstage: false).hitTestable(), findsNothing);
+      expect(tester.state(table), same(tableState));
+      expect(tester.state(camera), same(cameraState));
+      expect(find.byType(TaroGlassDock), findsOneWidget);
+    });
+
     testWidgets('MainNavigationShell uses TaroGlassDock and switches all 4 tabs', (
       tester,
     ) async {

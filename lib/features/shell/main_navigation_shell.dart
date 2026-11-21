@@ -64,40 +64,48 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
-    final stack = IndexedStack(
-      index: _index,
-      children: [
-        CameraScanScreen(
-          isActiveTab: _index == 0,
-          onHandoff: () => _switchTo(1),
-        ),
-        TableWorkspace(
-          onOpenCameraClarifier: () => _switchTo(0),
-          onResumeCamera: () => _switchTo(0),
-          astralHandoff: _handoff,
-        ),
-        AlmanacScreen(onOpenZodiacHoroscope: _openZodiacHoroscope),
-        AstralScreen(
-          isActive: _index == 3,
-          onOpenOracle: _openOracle,
-          browseZodiacSign: _browseSign,
-        ),
-      ],
-    );
-
-    // Один общий TaroGlassLayer на уровне shell: все стеклянные поверхности
-    // делят один backdrop sample поверх градиента сумерек TaroDuskBackground
-    // (сам фон не в стекле).
     return Stack(
       children: [
         const Positioned.fill(child: TaroDuskBackground()),
-        TaroGlassLayer(
+        // The dock and the visible tab share a backdrop capture. Their
+        // separate glass layers keep the shape lists independent.
+        BackdropGroup(
           child: Scaffold(
             backgroundColor: Colors.transparent,
-            body: stack,
-            bottomNavigationBar: _TaroNavDock(
+            // A glass layer also paints the shapes of mounted, hidden children.
+            // Keep each layer inside its tab so IndexedStack hides it as well.
+            body: IndexedStack(
               index: _index,
-              onTap: _switchTo,
+              children: [
+                TaroGlassLayer(
+                  child: CameraScanScreen(
+                    isActiveTab: _index == 0,
+                    onHandoff: () => _switchTo(1),
+                  ),
+                ),
+                TaroGlassLayer(
+                  child: TableWorkspace(
+                    onOpenCameraClarifier: () => _switchTo(0),
+                    onResumeCamera: () => _switchTo(0),
+                    astralHandoff: _handoff,
+                  ),
+                ),
+                TaroGlassLayer(
+                  child: AlmanacScreen(
+                    onOpenZodiacHoroscope: _openZodiacHoroscope,
+                  ),
+                ),
+                TaroGlassLayer(
+                  child: AstralScreen(
+                    isActive: _index == 3,
+                    onOpenOracle: _openOracle,
+                    browseZodiacSign: _browseSign,
+                  ),
+                ),
+              ],
+            ),
+            bottomNavigationBar: TaroGlassLayer(
+              child: _TaroNavDock(index: _index, onTap: _switchTo),
             ),
           ),
         ),
