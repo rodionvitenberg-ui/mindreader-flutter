@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "rest_framework", "drf_spectacular", "corsheaders",
     "apps.core", "apps.accounts", "apps.ai_gateway", "apps.oracle", "apps.vision",
-    "apps.catalog", "apps.store", "apps.entitlements",
+    "apps.catalog", "apps.store", "apps.entitlements", "apps.payments",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
