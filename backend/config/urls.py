@@ -8,6 +8,7 @@ from apps.core import api as core
 urlpatterns = [
     path("api/v1/oracle/", include("apps.oracle.urls")),
     path("api/v1/vision/", include("apps.vision.urls")),
+    path("api/v1/store/", include("apps.store.urls")),
     path("admin/", admin.site.urls),
     path("api/v1/health/", core.health),
     path("api/v1/config/public/", core.public_config),
