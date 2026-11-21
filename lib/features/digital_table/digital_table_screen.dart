@@ -19,6 +19,7 @@ import '../../state/deck_pack_controller.dart';
 import '../../state/spread_controller.dart';
 import '../profile/widgets/profile_header.dart';
 import 'widgets/board_pillar_view.dart';
+import 'widgets/reading_guide.dart';
 import 'widgets/custom_spread_sheet.dart';
 import 'widgets/deal_lock_prompt.dart';
 import 'widgets/foil_glint.dart';
@@ -393,7 +394,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
                               SizedBox(
                                 width: deckWidth,
                                 height: deckBoxHeight,
-                                child: ctrl.system == DivinationSystem.runes
+                                child: GuideHighlight(child: ctrl.system == DivinationSystem.runes
                                     ? InteractiveRuneStonesWidget(
                                         key: _deckKey,
                                         onCastRelease: _onRuneCastRelease,
@@ -401,7 +402,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
                                     : InteractiveDeckWidget(
                                         key: _deckKey,
                                         onDealRelease: _onDealRelease,
-                                      ),
+                                      )),
                               ),
                               const SizedBox(height: deckToPillarGap),
                               BoardPillarView(

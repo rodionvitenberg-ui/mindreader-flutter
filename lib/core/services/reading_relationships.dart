@@ -11,11 +11,13 @@ ElementalInfluence influenceOf(Element a, Element b) {
   if (a == b) return ElementalInfluence.reinforcing;
   final pair = {a, b};
   if (pair.containsAll([Element.fire, Element.air]) ||
-      pair.containsAll([Element.water, Element.earth]))
+      pair.containsAll([Element.water, Element.earth])) {
     return ElementalInfluence.supportive;
+  }
   if (pair.containsAll([Element.fire, Element.water]) ||
-      pair.containsAll([Element.air, Element.earth]))
+      pair.containsAll([Element.air, Element.earth])) {
     return ElementalInfluence.opposing;
+  }
   return ElementalInfluence.neutral;
 }
 
@@ -59,8 +61,9 @@ List<ReadingRelationship> readingRelationships({
     if (a.state != SlotState.faceUp ||
         b.state != SlotState.faceUp ||
         a.card?.system != system ||
-        b.card?.system != system)
+        b.card?.system != system) {
       return;
+    }
     result.add(
       ReadingRelationship(
         a,

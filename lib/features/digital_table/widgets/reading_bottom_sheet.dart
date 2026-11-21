@@ -220,6 +220,10 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
           if (slot != null && card != null) ...[
             // ---- Card Inspector Sheet (tapped face-up card) ----
             _CardInspectorHeader(slot: slot, card: card),
+            if (context.watch<AppSettingsController>().enabled(ReadingAid.guide))
+              Padding(padding: const EdgeInsets.symmetric(vertical:8),
+                child: Text('${slot.role} · ${card.keywords.first}\n${card.reflection}')),
+
             if (context.watch<AppSettingsController>().enabled(ReadingAid.relationships))
               for (final link in ctrl.relationships.where((r) => r.includes(slot.index)))
                 Padding(padding: const EdgeInsets.only(top:8),

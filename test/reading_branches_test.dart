@@ -28,6 +28,7 @@ void main() {
           child: MediaQuery(
             data: const MediaQueryData(disableAnimations: true),
             child: Stack(
+              textDirection: TextDirection.ltr,
               children: [
                 Positioned.fill(
                   child: GestureDetector(
@@ -46,7 +47,6 @@ void main() {
                   ),
                 ),
               ],
-              textDirection: TextDirection.ltr,
             ),
           ),
         ),

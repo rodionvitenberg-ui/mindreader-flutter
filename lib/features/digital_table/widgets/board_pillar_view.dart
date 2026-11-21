@@ -10,6 +10,7 @@ import '../../../state/spread_controller.dart';
 import 'spread_threads_layer.dart';
 import '../../../state/app_settings_controller.dart';
 import 'shuffle_physics.dart';
+import 'reading_guide.dart';
 import 'slotted_divination_card.dart';
 
 /// "The Pillar" — a strictly vertical column of DEALT cards inside the
@@ -88,7 +89,7 @@ class BoardPillarView extends StatelessWidget {
   }
 
   Widget _buildCard(BuildContext context, DealtCardSlot slot) {
-    return SlottedDivinationCard(
+    return GuideHighlight(slot:slot.index,child: SlottedDivinationCard(
       // Key changes on state flip → the widget remounts with the face
       // already revealed at rotateY(0), visually continuous with the flip.
       slot: slot,
@@ -96,7 +97,7 @@ class BoardPillarView extends StatelessWidget {
       height: cardHeight,
       onFlip: () => context.read<SpreadController>().flipSlot(slot.index),
       onTapFaceUp: () => onTapFaceUp(slot.index),
-    );
+    ));
   }
 }
 

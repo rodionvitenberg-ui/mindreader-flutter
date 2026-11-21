@@ -21,6 +21,7 @@ import 'deal_lock_prompt.dart';
 import 'shuffle_physics.dart';
 import 'slotted_divination_card.dart';
 import 'spread_deck_dock.dart';
+import 'reading_guide.dart';
 import 'spread_threads_layer.dart';
 import 'spread_viewport.dart';
 
@@ -233,7 +234,7 @@ class _SpreadBoardState extends State<SpreadBoard>
             TweenSequenceItem(tween: Tween(begin: 1, end: 1.05), weight: 1),
             TweenSequenceItem(tween: Tween(begin: 1.05, end: 1), weight: 2),
           ]).animate(_motion),
-          child: deck,
+          child: GuideHighlight(child:deck),
         ),
       );
     }
@@ -245,7 +246,7 @@ class _SpreadBoardState extends State<SpreadBoard>
         onLongPressStart: _pickUp,
         onLongPressMoveUpdate: (d) => _move(d.globalPosition),
         onLongPressEnd: _release,
-        child: deck,
+        child: GuideHighlight(child:deck),
       ),
     );
   }
@@ -431,14 +432,14 @@ class _SpreadBoardState extends State<SpreadBoard>
                 quarterTurns: geometry.crossingSlotIndex == i ? 1 : 0,
                 child: SizedBox.expand(
                   key: _slotKeys.putIfAbsent(i, GlobalKey.new),
-                  child: _OverviewSlot(
+                  child: GuideHighlight(slot:i, child: _OverviewSlot(
                     key: ValueKey('spread-slot-$i'),
                     inspect: widget.inspect,
                     slot: i < ctrl.slots.length ? ctrl.slots[i] : null,
                     slotIndex: i,
                     highlighted: _index == i && _phase == _DealPhase.dragging,
                     inFlight: _index == i && _phase == _DealPhase.landing,
-                  ),
+                  )),
                 ),
               ),
             ),

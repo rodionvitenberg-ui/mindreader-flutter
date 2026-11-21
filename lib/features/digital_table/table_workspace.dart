@@ -26,6 +26,7 @@ import 'widgets/cosmos_send_burst.dart';
 import 'widgets/deal_lock_prompt.dart';
 import 'widgets/gemini_input_capsule.dart';
 import 'widgets/reading_context_field.dart';
+import 'widgets/reading_guide.dart';
 import 'widgets/reading_subject_toggle.dart';
 import 'widgets/synthesize_chat_cta.dart';
 
@@ -647,7 +648,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
                   setState(() => _pane = index);
                 },
                 children: [
-                  const DigitalTableScreen(),
+                  const Column(children: [Expanded(child: DigitalTableScreen()), ReadingGuide()]),
                   OracleChatPane(
                     session: _session,
                     capsuleText: _capsuleText,
