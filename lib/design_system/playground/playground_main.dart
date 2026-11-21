@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
@@ -6,15 +8,16 @@ import '../taro.dart';
 import 'glass_playground.dart';
 
 /// Отдельная точка входа для изолированного playground:
-/// `flutter run -t lib/design_system/playground/playground_main.dart
-///   --enable-impeller --enable-flutter-gpu`
+/// `flutter run -t lib/design_system/playground/playground_main.dart`
 ///
 /// Основной `lib/main.dart` НЕ затрагивается до визуального согласования.
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // Грузим шейдеры заранее, чтобы первый кадр стекла был настоящим.
-  await LiquidGlass.precache();
   runApp(const _PlaygroundApp());
+  // Прогрев шейдеров в фоне, НЕ блокируя первый кадр. На устройствах без
+  // Flutter GPU (Impeller OpenGLES) `precache()` может зависнуть, и тогда
+  // `runApp` не выполнится вовсе (чёрный экран). Стекло само падает в FakeGlass.
+  unawaited(LiquidGlass.precache());
 }
 
 class _PlaygroundApp extends StatelessWidget {

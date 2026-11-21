@@ -55,4 +55,21 @@ flutter run --profile -t lib/design_system/playground/playground_main.dart
 ```
 
 FPS замеряется на физическом устройстве (DevTools / `flutter run --profile`).
-На эмуляторе Flutter GPU недоступен → стекло падает в FakeGlass.
+
+## Проверено на устройстве (Android 13, Impeller OpenGLES)
+
+Скриншот: `lib/design_system/playground/screenshot_fake.png`.
+
+Важный вывод по рендереру:
+
+| Режим | На Impeller GLES (без Flutter GPU/Vulkan) |
+|-------|-------------------------------------------|
+| `glass` | **чёрный кадр** — настоящий glass требует Impeller Vulkan + Flutter GPU |
+| `fake`  | **работает** — FakeGlass даёт стеклянный вид (blur + tint + rim) |
+| `simple`| работает |
+| `opaque`| работает |
+
+Поэтому дефолт playground — `fake` (устойчив на любых устройствах). На телефоне с
+Impeller Vulkan + Flutter GPU можно переключить на `glass` для настоящего
+преломления. Режимы `simple`/`opaque` — для слабых GPU и замеров без backdrop
+sampling.
