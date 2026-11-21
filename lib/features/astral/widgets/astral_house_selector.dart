@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -25,7 +26,7 @@ class AstralHouseSelector extends StatelessWidget {
       children: [
         for (final system in HouseSystem.values)
           _HousePill(
-            label: system.label,
+            label: context.astroHouseSystem(system),
             selected: value == system,
             onTap: () {
               HapticFeedback.selectionClick();

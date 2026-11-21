@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
 import 'natal_wheel_painter.dart';
@@ -64,7 +65,8 @@ class PlanetAspectInspectorCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${body.title.toUpperCase()} · HOUSE ${position.house}',
+                      '${context.astroPlanet(body).toUpperCase()}'
+                      '${position.house == null ? '' : ' · ${context.astralRussian ? 'ДОМ' : 'HOUSE'} ${position.house}'}',
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 9,
                         letterSpacing: 1.4,
@@ -74,7 +76,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       '${position.sign.glyph} '
-                      '${position.sign.title.toUpperCase()} · '
+                      '${context.astroSign(position.sign).toUpperCase()} · '
                       '${position.formattedDegree}',
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 8,
@@ -105,7 +107,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            position.interpretation,
+            context.astroPlacement(position),
             style: GoogleFonts.inter(
               fontSize: 12,
               height: 1.45,
@@ -115,7 +117,9 @@ class PlanetAspectInspectorCard extends StatelessWidget {
           const SizedBox(height: 12),
           if (aspects.isEmpty)
             Text(
-              'NO MAJOR ASPECTS — AN UNASPECTED DEGREE ACTS ALONE',
+              context.astralRussian
+                  ? 'НЕТ ОСНОВНЫХ АСПЕКТОВ'
+                  : 'NO MAJOR ASPECTS',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 8,
                 letterSpacing: 1.3,
@@ -124,7 +128,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
             )
           else ...[
             Text(
-              'ACTIVE ASPECTS · ${aspects.length}',
+              '${context.astralRussian ? 'АСПЕКТЫ' : 'ACTIVE ASPECTS'} · ${aspects.length}',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 8,
                 letterSpacing: 1.6,
@@ -140,6 +144,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
     );
   }
 }
+
 class _AspectRow extends StatelessWidget {
   const _AspectRow({required this.aspect, required this.selected});
 
@@ -163,7 +168,7 @@ class _AspectRow extends StatelessWidget {
             child: Text(
               '${other.glyph} ${other.title.toUpperCase()} · '
               '${aspect.type.baseAngle.round()}° · '
-              'ORB ${aspect.orb.toStringAsFixed(1)}°',
+              '${context.astralText('orb').toUpperCase()} ${aspect.orb.toStringAsFixed(1)}°',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 8,
                 letterSpacing: 1.1,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -10,15 +12,16 @@ import '../../core/models/zodiac_forecast.dart';
 import '../../core/services/local_storage_service.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/oracle_synthesis_service.dart';
+import '../../core/services/transit_forecast_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/astral_controller.dart';
 import '../profile/widgets/profile_header.dart';
 import 'natal_profile_detail_sheet.dart';
+import 'astral_copy.dart';
 import 'widgets/synastry_window.dart';
 import 'widgets/astral_cosmic_bar.dart';
 import 'widgets/astral_gradient_button.dart';
-import 'widgets/astral_house_selector.dart';
 import 'widgets/astral_profile_bar.dart';
 import 'widgets/astral_pro_paywall_sheet.dart';
 import 'widgets/astral_summary_card.dart';
@@ -35,7 +38,14 @@ enum AstralWindow { natalChart, horoscope, synastry }
 /// `[ NATAL CHART | HOROSCOPE ]`, 2-profile synastry and an Oracle Chat
 /// handoff.
 class AstralScreen extends StatefulWidget {
-  const AstralScreen({super.key, this.onOpenOracle, this.browseZodiacSign});
+  const AstralScreen({
+    super.key,
+    this.onOpenOracle,
+    this.browseZodiacSign,
+    this.isActive = true,
+  });
+
+  final bool isActive;
 
   /// Shell callback: hands a natal, horoscope or synastry reading to the
   /// Oracle Chat pane (Table tab) and switches the tab.
@@ -49,10 +59,59 @@ class AstralScreen extends StatefulWidget {
   State<AstralScreen> createState() => _AstralScreenState();
 }
 
-class _AstralScreenState extends State<AstralScreen> {
+class _AstralScreenState extends State<AstralScreen>
+    with WidgetsBindingObserver {
   final LocalStorageService _storage = LocalStorageService();
-  final MoonPhase _phase =
-      NatalCalculatorService.computeMoonPhase(DateTime.now().toUtc());
+  DateTime _now = DateTime.now();
+  Timer? _midnight;
+  bool _showWeek = false;
+  int _dayOffset = 0;
+  NatalChart? _forecastChart;
+  final _reports = <int, DailyHoroscopeReport>{};
+
+  DateTime get _today => DateTime(_now.year, _now.month, _now.day);
+  DateTime _dayAt(int offset) =>
+      DateTime(_today.year, _today.month, _today.day + offset);
+
+  void _scheduleRefresh() {
+    _midnight?.cancel();
+    if (!widget.isActive) return;
+    final tomorrow = _dayAt(1);
+    _midnight = Timer(
+      tomorrow.difference(DateTime.now()).isNegative
+          ? Duration.zero
+          : tomorrow.difference(DateTime.now()),
+      _refreshSky,
+    );
+  }
+
+  void _refreshSky() {
+    if (!mounted || !widget.isActive) return;
+    final now = DateTime.now();
+    if (DateTime(now.year, now.month, now.day) != _today) {
+      _reports.clear();
+      _dayOffset = 0;
+    }
+    setState(() => _now = now);
+    _scheduleRefresh();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshSky();
+  }
+
+  DailyHoroscopeReport _reportFor(NatalChart chart, int offset) {
+    if (_forecastChart != chart) {
+      _forecastChart = chart;
+      _reports.clear();
+    }
+    return _reports.putIfAbsent(
+      offset,
+      () => TransitForecastService.forDay(chart, _dayAt(offset)),
+    );
+  }
+
   int _streak = 0;
 
   AstralWindow _window = AstralWindow.natalChart;
@@ -64,15 +123,14 @@ class _AstralScreenState extends State<AstralScreen> {
 
   /// The sign to show when no natal profile exists yet — the current Sun.
   ZodiacSign get _defaultSign => ZodiacSignX.fromLongitude(
-        NatalCalculatorService.computeEclipticLongitude(
-          PlanetId.sun,
-          DateTime.now().toUtc(),
-        ),
-      );
+    NatalCalculatorService.computeEclipticLongitude(PlanetId.sun, _now.toUtc()),
+  );
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _scheduleRefresh();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<AstralController>().load();
@@ -84,6 +142,13 @@ class _AstralScreenState extends State<AstralScreen> {
   @override
   void didUpdateWidget(covariant AstralScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.isActive != widget.isActive) {
+      if (widget.isActive) {
+        _refreshSky();
+      } else {
+        _midnight?.cancel();
+      }
+    }
     if (oldWidget.browseZodiacSign != widget.browseZodiacSign) {
       oldWidget.browseZodiacSign?.removeListener(_onBrowseSign);
       widget.browseZodiacSign?.addListener(_onBrowseSign);
@@ -93,6 +158,8 @@ class _AstralScreenState extends State<AstralScreen> {
   @override
   void dispose() {
     widget.browseZodiacSign?.removeListener(_onBrowseSign);
+    WidgetsBinding.instance.removeObserver(this);
+    _midnight?.cancel();
     _windowController.dispose();
     super.dispose();
   }
@@ -118,12 +185,13 @@ class _AstralScreenState extends State<AstralScreen> {
     }
   }
 
-  void _openNewChart() {
+  Future<NatalChart?> _openNewChart() async {
     final astral = context.read<AstralController>();
     if (astral.canCreateOrGenerateChart()) {
-      BirthDataFormSheet.show(context);
+      return BirthDataFormSheet.show(context);
     } else {
-      AstralProPaywallSheet.show(context);
+      await AstralProPaywallSheet.show(context);
+      return null;
     }
   }
 
@@ -139,7 +207,10 @@ class _AstralScreenState extends State<AstralScreen> {
   void _handoffNatalToOracle(NatalChart chart) {
     final onOpenOracle = widget.onOpenOracle;
     if (onOpenOracle == null) return;
-    final horoscope = context.read<AstralController>().activeHoroscope;
+    final horoscope = NatalCalculatorService.computeDailyHoroscope(
+      chart,
+      forDate: _now,
+    );
     onOpenOracle(
       OracleHandoff(
         prompt: OracleSynthesisService.buildNatalPrompt(chart, horoscope),
@@ -150,15 +221,24 @@ class _AstralScreenState extends State<AstralScreen> {
     );
   }
 
-  void _handoffHoroscopeToOracle(NatalChart chart, DailyHoroscopeReport report) {
+  void _handoffHoroscopeToOracle(
+    NatalChart chart,
+    DailyHoroscopeReport report,
+    DailyTransitItem? transit,
+  ) {
     final onOpenOracle = widget.onOpenOracle;
     if (onOpenOracle == null) return;
     onOpenOracle(
       OracleHandoff(
-        prompt: OracleSynthesisService.buildHoroscopePrompt(chart, report),
+        prompt: OracleSynthesisService.buildHoroscopePrompt(
+          chart,
+          report,
+          transit: transit,
+        ),
         kind: OracleHandoffKind.horoscope,
         chart: chart,
         horoscope: report,
+        transit: transit,
       ),
     );
   }
@@ -168,7 +248,10 @@ class _AstralScreenState extends State<AstralScreen> {
     if (onOpenOracle == null) return;
     onOpenOracle(
       OracleHandoff(
-        prompt: OracleSynthesisService.buildZodiacForecastPrompt(sign, forecast),
+        prompt: OracleSynthesisService.buildZodiacForecastPrompt(
+          sign,
+          forecast,
+        ),
         kind: OracleHandoffKind.zodiac,
         zodiacSign: sign,
         zodiacForecast: forecast,
@@ -194,20 +277,17 @@ class _AstralScreenState extends State<AstralScreen> {
     _selectWindow(AstralWindow.synastry);
   }
 
-  NatalChart? _otherProfile(AstralController astral) {
-    final active = astral.activeProfile;
-    if (active == null) return null;
-    for (final p in astral.profiles) {
-      if (p.id != active.id) return p;
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final astral = context.watch<AstralController>();
     final chart = astral.activeProfile;
-    final report = astral.activeHoroscope;
+    final report =
+        widget.isActive &&
+            _window == AstralWindow.horoscope &&
+            chart != null &&
+            _quickSign == null
+        ? _reportFor(chart, _showWeek ? _dayOffset : 0)
+        : null;
     // Quick-sign mode: an explicit sign wins; without a chart the current
     // Sun's sign keeps the Horoscope window populated.
     final sign = _quickSign ?? (chart == null ? _defaultSign : null);
@@ -215,7 +295,7 @@ class _AstralScreenState extends State<AstralScreen> {
         ? null
         : NatalCalculatorService.computeZodiacSignForecast(
             sign,
-            forDate: DateTime.now().toUtc(),
+            forDate: _now.toUtc(),
           );
     return Scaffold(
       backgroundColor: AppColors.canvas,
@@ -224,7 +304,10 @@ class _AstralScreenState extends State<AstralScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ProfileHeader(
-              child: AstralCosmicBar(phase: _phase, streak: _streak),
+              child: AstralCosmicBar(
+                phase: NatalCalculatorService.computeMoonPhase(_now.toUtc()),
+                streak: _streak,
+              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -271,24 +354,10 @@ class _AstralScreenState extends State<AstralScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'HOUSE SYSTEM',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 9,
-              letterSpacing: 1.8,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 6),
-          AstralHouseSelector(
-            value: astral.activeHouseSystem,
-            onChanged: astral.setHouseSystem,
-          ),
-          const SizedBox(height: 16),
           if (chart == null)
             const AstralWheelPlaceholder(chart: null)
           else
-            NatalWheelWidget(chart: chart),
+            NatalWheelWidget(chart: chart, now: _now),
           const SizedBox(height: 16),
           if (chart == null)
             AstralEmptyState(onGenerate: _openNewChart)
@@ -299,13 +368,17 @@ class _AstralScreenState extends State<AstralScreen> {
             ),
             const SizedBox(height: 14),
             AstralGradientButton(
-              label: '✦ DISCUSS NATAL CHART WITH ORACLE',
+              label: context.astralRussian
+                  ? context.astralText('discuss')
+                  : '✦ DISCUSS NATAL CHART WITH ORACLE',
               onTap: () => _handoffNatalToOracle(chart),
             ),
             if (astral.profiles.length >= 2) ...[
               const SizedBox(height: 10),
               AstralGradientButton(
-                label: '⚡ COMPARE 2 PROFILES · SYNASTRY',
+                label: context.astralRussian
+                    ? 'Сравнить карты'
+                    : '⚡ COMPARE 2 PROFILES · SYNASTRY',
                 onTap: () => _openSynastry(astral),
               ),
             ],
@@ -326,16 +399,18 @@ class _AstralScreenState extends State<AstralScreen> {
       child: HoroscopeWindow(
         chart: chart,
         report: report,
-        selectedSign: _quickSign,
+        selectedSign: chart == null ? sign : _quickSign,
         forecast: forecast,
-        sevenDayPeaks: chart == null
-            ? null
-            : NatalCalculatorService.computeSevenDayForecast(chart),
+        days: [for (var i = 0; i < 7; i++) _dayAt(i)],
+        showWeek: _showWeek,
+        selectedDay: _dayOffset,
+        onToggleWeek: (value) => setState(() => _showWeek = value),
+        onSelectDay: (value) => setState(() => _dayOffset = value),
         onSelectSign: (s) => setState(() => _quickSign = s),
         onPersonal: () => setState(() => _quickSign = null),
-        onDiscuss: () {
+        onDiscuss: (transit) {
           if (_quickSign == null && chart != null && report != null) {
-            _handoffHoroscopeToOracle(chart, report);
+            _handoffHoroscopeToOracle(chart, report, transit);
           } else if (sign != null && forecast != null) {
             _handoffZodiacToOracle(sign, forecast);
           }
@@ -347,9 +422,10 @@ class _AstralScreenState extends State<AstralScreen> {
   Widget _buildSynastryWindow(AstralController astral) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-      child: SynastryWindow(
-        a: astral.activeProfile,
-        b: _otherProfile(astral),
+      child: SynastryPairPicker(
+        profiles: astral.profiles,
+        active: astral.activeProfile,
+        onAdd: _openNewChart,
         onDiscuss: widget.onOpenOracle,
       ),
     );
@@ -417,4 +493,3 @@ class _AstralWindowSwitcher extends StatelessWidget {
     );
   }
 }
-

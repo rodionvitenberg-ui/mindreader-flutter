@@ -88,7 +88,7 @@ class NatalWheelPainter extends CustomPainter {
 
     _paintBackdrop(canvas, center, radius);
     _paintZodiacRing(canvas, center, radius, t, ringSpin);
-    _paintHouseGrid(canvas, center, radius, t);
+    if (chart.timeKnown) _paintHouseGrid(canvas, center, radius, t);
     final anchors = _paintPlanets(canvas, center, radius, t);
     _paintAspects(canvas, t, anchors);
     _paintTransits(canvas, center, radius);
@@ -179,8 +179,7 @@ class NatalWheelPainter extends CustomPainter {
     final medium = Path();
     final major = Path();
     for (var deg = 0; deg < 360; deg++) {
-      final angle =
-          chartScreenAngle(deg.toDouble(), ascendantLongitude) + spin;
+      final angle = chartScreenAngle(deg.toDouble(), ascendantLongitude) + spin;
       final length = deg % 10 == 0 ? 8.0 : (deg % 5 == 0 ? 4.5 : 2.0);
       final from = pointOnCircle(center, outer - 1.5, angle);
       final to = pointOnCircle(center, outer - 1.5 - length, angle);
@@ -214,17 +213,23 @@ class NatalWheelPainter extends CustomPainter {
     ..color = AppColors.lavender.withValues(alpha: alpha);
   // ---- Stage 2: house grid sweep + live morph -------------------------
 
-  void _paintHouseGrid(
-    Canvas canvas,
-    Offset center,
-    double radius,
-    double t,
-  ) {
+  void _paintHouseGrid(Canvas canvas, Offset center, double radius, double t) {
     final rInner = radius * wheelCoreFactor;
     final rOuter = radius * wheelHouseOuterFactor;
     final rLabel = radius * wheelHouseLabelFactor;
     const axisLabels = [
-      'ASC', '', '', 'IC', '', '', 'DSC', '', '', 'MC', '', '',
+      'ASC',
+      '',
+      '',
+      'IC',
+      '',
+      '',
+      'DSC',
+      '',
+      '',
+      'MC',
+      '',
+      '',
     ];
 
     for (var i = 0; i < 12; i++) {
@@ -271,9 +276,7 @@ class NatalWheelPainter extends CustomPainter {
       final cusp = i < houseCusps.length
           ? houseCusps[i]
           : ascendantLongitude + i * 30.0;
-      final next = i + 1 < houseCusps.length
-          ? houseCusps[i + 1]
-          : cusp + 30.0;
+      final next = i + 1 < houseCusps.length ? houseCusps[i + 1] : cusp + 30.0;
       final mid = lerpLongitude(cusp, next, 0.5);
       final angle = chartScreenAngle(mid, ascendantLongitude);
       final tp = _text(
@@ -307,7 +310,8 @@ class NatalWheelPainter extends CustomPainter {
 
     final bodies = [
       for (final p in chart.planets)
-        if (p.planet.isBody) p,
+        if (p.planet.isBody && (chart.timeKnown || p.planet != PlanetId.moon))
+          p,
     ];
     final display = resolveCollisions([for (final p in bodies) p.longitude]);
     final pulsePhase = pulse.value * 2 * math.pi;
@@ -386,11 +390,7 @@ class NatalWheelPainter extends CustomPainter {
   }
   // ---- Stage 4: flashing aspect chords + living pulse -----------------
 
-  void _paintAspects(
-    Canvas canvas,
-    double t,
-    Map<PlanetId, Offset> anchors,
-  ) {
+  void _paintAspects(Canvas canvas, double t, Map<PlanetId, Offset> anchors) {
     final aspects = chart.aspects;
     for (var k = 0; k < aspects.length; k++) {
       final aspect = aspects[k];
@@ -402,7 +402,8 @@ class NatalWheelPainter extends CustomPainter {
       final flash = _window(t, begin, math.min(begin + 0.08, 1.0));
       if (flash <= 0) continue;
 
-      final connected = selectedPlanet == null ||
+      final connected =
+          selectedPlanet == null ||
           aspect.bodyA == selectedPlanet ||
           aspect.bodyB == selectedPlanet;
       final (start, end) = _chordColors(aspect.type);
@@ -436,8 +437,11 @@ class NatalWheelPainter extends CustomPainter {
           head,
           4.5,
           Paint()
-            ..color = Color.lerp(start, end, flash)!
-                .withValues(alpha: 0.3 + 0.6 * (1 - flash))
+            ..color = Color.lerp(
+              start,
+              end,
+              flash,
+            )!.withValues(alpha: 0.3 + 0.6 * (1 - flash))
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
         );
       } else if (connected) {
@@ -521,7 +525,7 @@ class NatalWheelPainter extends CustomPainter {
     );
 
     final intro = _window(t, 0.30, 0.42);
-    if (intro > 0.01) {
+    if (chart.timeKnown && intro > 0.01) {
       final sign = ZodiacSignX.fromLongitude(ascendantLongitude);
       final asc = _text(
         '${sign.glyph} ${_formatDegree(ascendantLongitude)}',
@@ -536,7 +540,10 @@ class NatalWheelPainter extends CustomPainter {
         color: AppColors.textMuted.withValues(alpha: 0.9 * intro),
         letterSpacing: 1.8,
       );
-      system.paint(canvas, Offset(center.dx - system.width / 2, center.dy + 12));
+      system.paint(
+        canvas,
+        Offset(center.dx - system.width / 2, center.dy + 12),
+      );
       final tag = _text(
         'ASC',
         size: 6,
@@ -546,7 +553,7 @@ class NatalWheelPainter extends CustomPainter {
       tag.paint(canvas, Offset(center.dx - tag.width / 2, center.dy + 24));
     }
 
-    _paintHud(canvas, center, t);
+    if (chart.timeKnown) _paintHud(canvas, center, t);
   }
 
   void _paintHud(Canvas canvas, Offset center, double t) {
@@ -605,19 +612,18 @@ class NatalWheelPainter extends CustomPainter {
     required double size,
     required Color color,
     double letterSpacing = 0,
-  }) =>
-      TextPainter(
-        text: TextSpan(
-          text: text,
-          style: TextStyle(
-            fontSize: size,
-            color: color,
-            letterSpacing: letterSpacing,
-            fontFamily: 'monospace',
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
+  }) => TextPainter(
+    text: TextSpan(
+      text: text,
+      style: TextStyle(
+        fontSize: size,
+        color: color,
+        letterSpacing: letterSpacing,
+        fontFamily: 'monospace',
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout();
 
   @override
   bool shouldRepaint(covariant NatalWheelPainter oldDelegate) {

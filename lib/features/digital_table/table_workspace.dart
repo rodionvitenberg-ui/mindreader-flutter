@@ -5,11 +5,10 @@ import 'package:provider/provider.dart';
 
 import '../../core/data/intention_prompts.dart' show tableContextChips;
 import '../../core/models/dealt_card_slot.dart';
-import '../../core/models/natal_chart.dart';
 import '../../core/models/oracle_handoff.dart';
+import '../../core/models/natal_chart.dart' show ZodiacSignX;
 import '../../core/models/reading_mode.dart';
 import '../../core/models/reading_source.dart';
-import '../../core/models/zodiac_forecast.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -107,11 +106,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
   SessionKind _sessionKind = SessionKind.divinationSpread;
   String? _astralTitle;
   String? _astralChartId;
-  NatalChart? _astralChart;
-  NatalChart? _astralOtherChart;
-  DailyHoroscopeReport? _astralHoroscope;
-  ZodiacSign? _astralZodiacSign;
-  ZodiacSignForecast? _astralZodiacForecast;
+  OracleHandoff? _astralContext;
 
   @override
   void initState() {
@@ -175,25 +170,17 @@ class _TableWorkspaceState extends State<TableWorkspace>
     _sessionKind = _sessionKindFor(handoff.kind);
     _astralTitle = _astralTitleFor(handoff);
     _astralChartId = handoff.chart?.id;
-    _astralChart = handoff.chart;
-    _astralOtherChart = handoff.otherChart;
-    _astralHoroscope = handoff.horoscope;
-    _astralZodiacSign = handoff.zodiacSign;
-    _astralZodiacForecast = handoff.zodiacForecast;
+    _astralContext = handoff;
 
     _session.addUserMessage(handoff.prompt);
     _session.beginAnswer();
     _goToPane(chatPane);
     final epoch = _session.epoch;
     await _captureSession(); // persist the moment the CTA is tapped
-    final answer = await OracleSynthesisService().synthesizeNatalReading(
-      prompt: handoff.prompt,
-      chart: handoff.chart,
-      otherChart: handoff.otherChart,
-      horoscope: handoff.horoscope,
-      zodiacSign: handoff.zodiacSign,
-      zodiacForecast: handoff.zodiacForecast,
-      history: _session.messages,
+    if (!mounted || !_session.isCurrentSession(epoch)) return;
+    final answer = await OracleSynthesisService().answerAstral(
+      context: handoff,
+      history: const [],
     );
     if (!mounted || !_session.isCurrentSession(epoch)) return;
     _session.addOracleMessage(answer);
@@ -342,6 +329,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
           kind: _sessionKind,
           title: _astralTitle ?? 'Astral reading',
           natalChartId: _astralChartId,
+          astralContext: _astralContext,
           messages: [..._session.messages],
         ),
       );
@@ -378,13 +366,13 @@ class _TableWorkspaceState extends State<TableWorkspace>
     }
     _session.addUserMessage(question);
     _session.beginAnswer();
-    final profileContext = _sessionKind == SessionKind.divinationSpread
-        ? _tableSubject
-        : context.read<UserProfileController>().oracleContext;
+    final isSpread = _sessionKind == SessionKind.divinationSpread;
+    final profileContext = isSpread ? _tableSubject : null;
     final epoch = _session.epoch;
     await _captureSession(); // persist the turn immediately
+    if (!mounted || !_session.isCurrentSession(epoch)) return;
     final oracle = OracleSynthesisService();
-    final answer = _sessionKind == SessionKind.divinationSpread
+    final answer = isSpread
         ? await oracle.answerChat(
             question: question,
             slots: _ctrl.slots,
@@ -393,14 +381,10 @@ class _TableWorkspaceState extends State<TableWorkspace>
             history: _session.messages,
             profileContext: profileContext,
           )
-        : await oracle.synthesizeNatalReading(
-            prompt: question,
-            chart: _astralChart,
-            otherChart: _astralOtherChart,
-            horoscope: _astralHoroscope,
-            zodiacSign: _astralZodiacSign,
-            zodiacForecast: _astralZodiacForecast,
-            history: _session.messages,
+        : await oracle.answerAstral(
+            context: _astralContext,
+            question: question,
+            history: _session.messages.skip(1).toList(),
           );
     if (!mounted || !_session.isCurrentSession(epoch)) return;
     _session.addOracleMessage(answer);
@@ -493,11 +477,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
   void _clearAstralContext() {
     _astralTitle = null;
     _astralChartId = null;
-    _astralChart = null;
-    _astralOtherChart = null;
-    _astralHoroscope = null;
-    _astralZodiacSign = null;
-    _astralZodiacForecast = null;
+    _astralContext = null;
   }
 
   /// 1-tap full session restore: the exact conversation in Pane 1 AND the
@@ -536,19 +516,32 @@ class _TableWorkspaceState extends State<TableWorkspace>
       );
       _tableSessionEpoch = _session.epoch;
     } else {
-      // Astral sessions carry no dealt cards: restore the conversation only
-      // and re-resolve the natal context so follow-ups keep the chart.
       _clearAstralContext();
       _astralTitle = snapshot.astralSessionTitle;
       _astralChartId = snapshot.natalChartId;
-      if (snapshot.natalChartId != null) {
-        final astral = context.read<AstralController>();
-        for (final p in astral.profiles) {
-          if (p.id == snapshot.natalChartId) {
-            _astralChart = p;
-            _astralHoroscope = NatalCalculatorService.computeDailyHoroscope(p);
-            break;
-          }
+      _astralContext = snapshot.astralContext;
+      if (_astralContext == null &&
+          snapshot.natalChartId != null &&
+          snapshot.kind != SessionKind.synastryReading) {
+        final chart = context
+            .read<AstralController>()
+            .profiles
+            .where((p) => p.id == snapshot.natalChartId)
+            .firstOrNull;
+        if (chart != null) {
+          _astralContext = OracleHandoff(
+            prompt: '',
+            kind: snapshot.kind == SessionKind.horoscopeReading
+                ? OracleHandoffKind.horoscope
+                : OracleHandoffKind.natalChart,
+            chart: chart,
+            horoscope: snapshot.kind == SessionKind.horoscopeReading
+                ? NatalCalculatorService.computeDailyHoroscope(
+                    chart,
+                    forDate: DateTime.tryParse(snapshot.timestamp),
+                  )
+                : null,
+          );
         }
       }
       _session.restoreSession(

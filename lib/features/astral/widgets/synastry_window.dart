@@ -9,6 +9,115 @@ import '../../../core/services/natal_calculator_service.dart';
 import '../../../core/services/oracle_synthesis_service.dart';
 import '../../../core/theme/app_colors.dart';
 import 'astral_gradient_button.dart';
+import '../astral_copy.dart';
+
+/// Keeps the selected pair by chart ID so reordering and editing are safe.
+class SynastryPairPicker extends StatefulWidget {
+  const SynastryPairPicker({
+    required this.profiles,
+    required this.active,
+    required this.onAdd,
+    required this.onDiscuss,
+    super.key,
+  });
+
+  final List<NatalChart> profiles;
+  final NatalChart? active;
+  final Future<NatalChart?> Function() onAdd;
+  final ValueChanged<OracleHandoff>? onDiscuss;
+
+  @override
+  State<SynastryPairPicker> createState() => _SynastryPairPickerState();
+}
+
+class _SynastryPairPickerState extends State<SynastryPairPicker>
+    with AutomaticKeepAliveClientMixin {
+  String? _firstId;
+  String? _secondId;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  NatalChart? _chart(String? id) =>
+      widget.profiles.where((p) => p.id == id).firstOrNull;
+
+  Future<void> _add(NatalChart? first) async {
+    final created = await widget.onAdd();
+    if (!mounted || created == null) return;
+    setState(() {
+      _firstId = first?.id ?? created.id;
+      _secondId = first == null ? null : created.id;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final first = _chart(_firstId) ?? widget.active;
+    final savedSecond = _chart(_secondId);
+    final otherCharts = widget.profiles
+        .where((p) => p.id != first?.id)
+        .toList();
+    final second = savedSecond != null && savedSecond.id != first?.id
+        ? savedSecond
+        : otherCharts.length == 1
+        ? otherCharts.single
+        : null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DropdownButtonFormField<String>(
+          key: ValueKey('synastry-first-${first?.id}'),
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: context.astralText('chooseFirst'),
+          ),
+          initialValue: first?.id,
+          items: [
+            for (final p in widget.profiles)
+              DropdownMenuItem(
+                value: p.id,
+                child: Text(p.profileName, overflow: TextOverflow.ellipsis),
+              ),
+          ],
+          onChanged: (id) => setState(() {
+            if (id == second?.id) _secondId = first?.id;
+            _firstId = id;
+          }),
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          key: ValueKey('synastry-second-${second?.id}'),
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: context.astralText('chooseSecond'),
+          ),
+          initialValue: second?.id,
+          items: [
+            for (final p in otherCharts)
+              DropdownMenuItem(
+                value: p.id,
+                child: Text(p.profileName, overflow: TextOverflow.ellipsis),
+              ),
+          ],
+          onChanged: (id) => setState(() {
+            _firstId = first?.id;
+            _secondId = id;
+          }),
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => _add(first),
+            icon: const Icon(Icons.person_add_outlined),
+            label: Text(context.astralText('addPerson')),
+          ),
+        ),
+        SynastryWindow(a: first, b: second, onDiscuss: widget.onDiscuss),
+      ],
+    );
+  }
+}
 
 /// ASTRAL window 2 — the 2-profile synastry workspace: an overall resonance
 /// score, four compatibility axes, the combined elemental balance, the
@@ -55,8 +164,7 @@ class SynastryWindow extends StatelessWidget {
           border: Border.all(color: AppColors.border),
         ),
         child: Text(
-          'Synastry needs two saved profiles — create a second natal chart '
-          'on the NATAL CHART window first.',
+          context.astralText('selectPair'),
           style: GoogleFonts.inter(
             fontSize: 12,
             height: 1.4,
@@ -78,8 +186,6 @@ class SynastryWindow extends StatelessWidget {
       key: const ValueKey('synastry-window'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _label('SYNASTRY · 2 PROFILES'),
-        const SizedBox(height: 4),
         Text(
           '${chartA.profileName} × ${chartB.profileName}',
           style: GoogleFonts.cinzel(
@@ -89,48 +195,92 @@ class SynastryWindow extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        _ResonanceCard(score: report.overallScore),
-        const SizedBox(height: 12),
-        _label('COMPATIBILITY AXES'),
+        _label(context.astralText('relationshipThemes')),
         const SizedBox(height: 8),
-        for (final axis in report.axes) _AxisBar(axis: axis),
-        const SizedBox(height: 14),
-        _label('ELEMENTAL BALANCE'),
-        const SizedBox(height: 8),
-        for (final e in Element.values)
-          _ElementBar(element: e, count: balance[e] ?? 0, total: total),
-        const SizedBox(height: 14),
-        _label('CROSS-CHART ASPECTS'),
-        const SizedBox(height: 8),
+        for (final aspect in _featuredAspects(cross))
+          _CrossAspectRow(
+            withExplanation: true,
+            aspect: aspect,
+            a: chartA.profileName,
+            b: chartB.profileName,
+          ),
         if (cross.isEmpty)
           Text(
-            'No tight cross-chart aspects — this bond rests on temperament, '
-            'not friction.',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              height: 1.4,
-              color: AppColors.textMuted,
+            context.astralRussian
+                ? 'Нет близких аспектов.'
+                : 'No close cross-chart aspects.',
+          ),
+        ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          title: Text(context.astralText('synastryDetails')),
+          children: [
+            _ResonanceCard(score: report.overallScore),
+            const SizedBox(height: 12),
+            _label(
+              context.astralRussian
+                  ? 'ТЕМЫ СОВМЕСТИМОСТИ'
+                  : 'COMPATIBILITY AXES',
             ),
-          )
-        else
-          for (final aspect in cross.take(6)) _CrossAspectRow(aspect: aspect),
+            const SizedBox(height: 8),
+            for (final axis in report.axes) _AxisBar(axis: axis),
+            const SizedBox(height: 12),
+            _label(
+              context.astralRussian ? 'БАЛАНС СТИХИЙ' : 'ELEMENTAL BALANCE',
+            ),
+            for (final e in Element.values)
+              _ElementBar(element: e, count: balance[e] ?? 0, total: total),
+            const SizedBox(height: 12),
+            _label(context.astralText('allAspects')),
+            for (final aspect in cross)
+              _CrossAspectRow(
+                aspect: aspect,
+                a: chartA.profileName,
+                b: chartB.profileName,
+              ),
+          ],
+        ),
         const SizedBox(height: 16),
         AstralGradientButton(
-          label: '✦ DISCUSS SYNASTRY WITH ORACLE →',
+          label: context.astralRussian
+              ? context.astralText('discuss')
+              : '✦ DISCUSS SYNASTRY WITH ORACLE →',
           onTap: () => _send(context),
         ),
       ],
     );
   }
 
+  // Prefer a distinct chart interaction for each relationship theme.
+  List<NatalAspect> _featuredAspects(List<NatalAspect> aspects) {
+    final selected = <NatalAspect>[];
+    for (final bodies in [
+      {PlanetId.moon},
+      {PlanetId.mercury},
+      {PlanetId.venus, PlanetId.mars},
+    ]) {
+      final match = aspects
+          .where(
+            (a) =>
+                !selected.contains(a) &&
+                (bodies.contains(a.bodyA) || bodies.contains(a.bodyB)),
+          )
+          .firstOrNull;
+      if (match != null) selected.add(match);
+    }
+    return [
+      ...selected,
+      ...aspects.where((a) => !selected.contains(a)),
+    ].take(3).toList();
+  }
+
   Widget _label(String text) => Text(
-        text,
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 9,
-          letterSpacing: 1.8,
-          color: AppColors.textMuted,
-        ),
-      );
+    text,
+    style: GoogleFonts.jetBrainsMono(
+      fontSize: 9,
+      letterSpacing: 1.8,
+      color: AppColors.textMuted,
+    ),
+  );
 }
 
 /// The big 0..100 resonance read at the top of the synastry window.
@@ -144,8 +294,8 @@ class _ResonanceCard extends StatelessWidget {
     final color = score >= 66
         ? AppColors.harmonyCyan
         : score >= 40
-            ? AppColors.lavender
-            : AppColors.conflictRose;
+        ? AppColors.lavender
+        : AppColors.conflictRose;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -159,7 +309,7 @@ class _ResonanceCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                'OVERALL RESONANCE',
+                context.astralRussian ? 'ОБЩИЙ БАЛЛ' : 'OVERALL RESONANCE',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 8.5,
                   letterSpacing: 1.6,
@@ -208,8 +358,8 @@ class _AxisBar extends StatelessWidget {
     final color = axis.score >= 66
         ? AppColors.harmonyCyan
         : axis.score >= 40
-            ? AppColors.lavender
-            : AppColors.conflictRose;
+        ? AppColors.lavender
+        : AppColors.conflictRose;
     return Padding(
       padding: const EdgeInsets.only(bottom: 9),
       child: Column(
@@ -219,7 +369,16 @@ class _AxisBar extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  axis.title.toUpperCase(),
+                  (context.astralRussian
+                          ? switch (axis.title) {
+                              'Emotional Bond' => 'Эмоциональная связь',
+                              'Attraction & Spark' => 'Притяжение',
+                              'Mental & Communication' => 'Мышление и общение',
+                              'Growth & Friction' => 'Рост и напряжение',
+                              _ => axis.title,
+                            }
+                          : axis.title)
+                      .toUpperCase(),
                   style: GoogleFonts.jetBrainsMono(
                     fontSize: 9,
                     letterSpacing: 1.2,
@@ -253,7 +412,15 @@ class _AxisBar extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            axis.text,
+            context.astralRussian
+                ? switch (axis.title) {
+                    'Emotional Bond' => 'Связи Луны и Венеры описывают, как люди выражают чувства и замечают потребности друг друга.',
+                    'Attraction & Spark' => 'Связи Венеры, Марса и Солнца описывают различия в симпатиях и инициативе.',
+                    'Mental & Communication' => 'Аспекты Меркурия показывают, где проще договориться и где важно переспросить.',
+                    'Growth & Friction' => 'Связи Сатурна и напряжённые аспекты указывают, о чём стоит договариваться прямо.',
+                    _ => axis.text,
+                  }
+                : axis.text,
             style: GoogleFonts.inter(
               fontSize: 11,
               height: 1.35,
@@ -328,7 +495,16 @@ class _ElementBar extends StatelessWidget {
 /// One cross-chart aspect: the two bodies and the aspect glyph, tinted by
 /// register, with the orb on the right.
 class _CrossAspectRow extends StatelessWidget {
-  const _CrossAspectRow({required this.aspect});
+  const _CrossAspectRow({
+    required this.aspect,
+    required this.a,
+    required this.b,
+    this.withExplanation = false,
+  });
+
+  final bool withExplanation;
+  final String a;
+  final String b;
 
   final NatalAspect aspect;
 
@@ -340,41 +516,33 @@ class _CrossAspectRow extends StatelessWidget {
       AspectHarmony.intense => AppColors.lavender,
     };
     return Padding(
-      padding: const EdgeInsets.only(bottom: 7),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 44,
-            child: Text(
-              '${aspect.bodyA.glyph} ${aspect.type.glyph} '
-              '${aspect.bodyB.glyph}',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 11,
-                letterSpacing: 1,
-                color: AppColors.textPrimary,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '$a · ${context.astroPlanet(aspect.bodyA)} ${aspect.type.glyph} '
+                  '$b · ${context.astroPlanet(aspect.bodyB)}',
+                  style: const TextStyle(fontSize: 13),
+                ),
               ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              aspect.synthesis,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
-                fontSize: 11.5,
-                color: AppColors.textMuted,
+              const SizedBox(width: 8),
+              Text(
+                '${aspect.orb.toStringAsFixed(1)}°',
+                style: TextStyle(fontSize: 12, color: color),
               ),
+            ],
+          ),
+          if (withExplanation)
+            Text(
+              context.astroAspectAdvice(aspect.type),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '${aspect.orb.toStringAsFixed(1)}°',
-            style: GoogleFonts.jetBrainsMono(fontSize: 9, color: color),
-          ),
         ],
       ),
     );
   }
 }
-
-

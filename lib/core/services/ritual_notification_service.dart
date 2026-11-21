@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tzdata;
+
+import 'birth_time_service.dart';
+
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 
@@ -26,7 +28,7 @@ class RitualNotificationService {
     if (_initialized || !supported) return;
     _initialized = true;
     try {
-      tzdata.initializeTimeZones();
+      BirthTimeService.initialize();
       final tzName = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(tzName));
     } catch (_) {
@@ -41,7 +43,8 @@ class RitualNotificationService {
     try {
       await _plugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.requestNotificationsPermission();
     } catch (_) {
       // Permission prompt unavailable — scheduling still proceeds.
@@ -61,8 +64,7 @@ class RitualNotificationService {
       const android = AndroidNotificationDetails(
         'daily_ritual',
         'Daily Ritual',
-        channelDescription:
-            'Morning anchor and evening reflection reminders.',
+        channelDescription: 'Morning anchor and evening reflection reminders.',
         importance: Importance.defaultImportance,
         priority: Priority.defaultPriority,
       );

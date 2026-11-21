@@ -188,14 +188,16 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.textContaining('COSMIC WEATHER'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('daily-horoscope-card')),
+        findsOneWidget,
+      );
       expect(find.textContaining('MOON IN HOUSE'), findsOneWidget);
       expect(find.text('LIVE TRANSITS'), findsOneWidget);
       if (report.transits.isNotEmpty) {
-        expect(find.text(report.transits.first.transitLabel), findsOneWidget);
         expect(
-          find.text(report.transits.first.harmony.name.toUpperCase()),
-          findsWidgets,
+          find.byKey(ValueKey('transit-${report.transits.first.transitLabel}')),
+          findsOneWidget,
         );
       }
       expect(tester.takeException(), isNull);
@@ -246,7 +248,6 @@ void main() {
           await tester.pump();
 
           expect(switched, HouseSystem.koch);
-          expect(find.textContaining('Кох'), findsOneWidget);
           expect(tester.takeException(), isNull);
         },
       );

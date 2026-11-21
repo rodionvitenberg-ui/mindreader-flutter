@@ -137,6 +137,21 @@ extension ZodiacSignX on ZodiacSign {
   };
 
   /// The sign containing an ecliptic longitude in degrees (0..360).
+  String get titleRu => const [
+    'Овен',
+    'Телец',
+    'Близнецы',
+    'Рак',
+    'Лев',
+    'Дева',
+    'Весы',
+    'Скорпион',
+    'Стрелец',
+    'Козерог',
+    'Водолей',
+    'Рыбы',
+  ][index];
+
   static ZodiacSign fromLongitude(double longitude) {
     final idx = ((longitude % 360.0) / 30.0).floor();
     return ZodiacSign.values[idx < 0 ? 0 : (idx > 11 ? 11 : idx)];
@@ -291,7 +306,7 @@ class NatalPlanetPosition {
   final double degreeInSign;
 
   /// Natal house, 1..12 (ASC = 1, MC = 10).
-  final int house;
+  final int? house;
 
   final bool isRetrograde;
 
@@ -321,7 +336,7 @@ class NatalPlanetPosition {
         longitude: (json['longitude'] as num).toDouble(),
         sign: ZodiacSign.values.byName(json['sign'] as String),
         degreeInSign: (json['degreeInSign'] as num).toDouble(),
-        house: json['house'] as int,
+        house: json['house'] as int?,
         isRetrograde: json['isRetrograde'] as bool,
         interpretation: json['interpretation'] as String,
       );
@@ -405,17 +420,27 @@ class MoonPhase {
 /// One grounded daily focus sphere: a domain of life with one sentence of
 /// psychological guidance (relationships, career, inner state).
 class FocusSphere {
-  const FocusSphere({required this.title, required this.text});
+  const FocusSphere({
+    required this.title,
+    required this.text,
+    this.titleRu,
+    this.textRu,
+  });
 
   final String title;
   final String text;
+  final String? titleRu;
+  final String? textRu;
 
-  Map<String, dynamic> toJson() => {'title': title, 'text': text};
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'text': text,
+    if (titleRu != null) 'titleRu': titleRu,
+    if (textRu != null) 'textRu': textRu,
+  };
 
-  static FocusSphere fromJson(Map<String, dynamic> json) => FocusSphere(
-    title: json['title'] as String,
-    text: json['text'] as String,
-  );
+  static FocusSphere fromJson(Map<String, dynamic> json) =>
+      FocusSphere(title: json['title'] as String, text: json['text'] as String);
 }
 
 /// One active live transit of today's sky against the natal chart.
@@ -426,6 +451,12 @@ class DailyTransitItem {
     required this.orb,
     required this.advice,
     required this.harmony,
+    this.transitingBody,
+    this.natalBody,
+    this.aspectType,
+    this.closestAt,
+    this.activeFrom,
+    this.activeUntil,
   });
 
   /// Short headline, e.g. 'Mars stirs your Moon'.
@@ -443,12 +474,27 @@ class DailyTransitItem {
   /// Emotional register (Harmony cyan / Tension rose / Intense lavender).
   final AspectHarmony harmony;
 
+  final PlanetId? transitingBody;
+  final PlanetId? natalBody;
+  final AspectType? aspectType;
+  final DateTime? closestAt;
+  final DateTime? activeFrom;
+  final DateTime? activeUntil;
+
+  bool get reachesExact => closestAt != null && orb < 0.0001;
+
   Map<String, dynamic> toJson() => {
     'title': title,
     'transitLabel': transitLabel,
     'orb': orb,
     'advice': advice,
     'harmony': harmony.name,
+    if (transitingBody != null) 'transitingBody': transitingBody!.name,
+    if (natalBody != null) 'natalBody': natalBody!.name,
+    if (aspectType != null) 'aspectType': aspectType!.name,
+    if (closestAt != null) 'closestAt': closestAt!.toIso8601String(),
+    if (activeFrom != null) 'activeFrom': activeFrom!.toIso8601String(),
+    if (activeUntil != null) 'activeUntil': activeUntil!.toIso8601String(),
   };
 
   static DailyTransitItem fromJson(Map<String, dynamic> json) =>
@@ -458,6 +504,18 @@ class DailyTransitItem {
         orb: (json['orb'] as num).toDouble(),
         advice: json['advice'] as String,
         harmony: AspectHarmony.values.byName(json['harmony'] as String),
+        transitingBody: json['transitingBody'] == null
+            ? null
+            : PlanetId.values.byName(json['transitingBody'] as String),
+        natalBody: json['natalBody'] == null
+            ? null
+            : PlanetId.values.byName(json['natalBody'] as String),
+        aspectType: json['aspectType'] == null
+            ? null
+            : AspectType.values.byName(json['aspectType'] as String),
+        closestAt: DateTime.tryParse(json['closestAt'] as String? ?? ''),
+        activeFrom: DateTime.tryParse(json['activeFrom'] as String? ?? ''),
+        activeUntil: DateTime.tryParse(json['activeUntil'] as String? ?? ''),
       );
 }
 
@@ -471,6 +529,7 @@ class DailyHoroscopeReport {
     required this.transitingMoonSign,
     required this.transitingMoonHouse,
     required this.overallTheme,
+    this.overallThemeRu,
     required this.energyScore,
     required this.transits,
     this.focusSpheres = const [],
@@ -483,9 +542,10 @@ class DailyHoroscopeReport {
   final ZodiacSign transitingMoonSign;
 
   /// Which natal house today's Moon is passing through, 1..12.
-  final int transitingMoonHouse;
+  final int? transitingMoonHouse;
 
   final String overallTheme;
+  final String? overallThemeRu;
 
   /// Deterministic daily energy indicator, 1..100.
   final int energyScore;
@@ -504,6 +564,7 @@ class DailyHoroscopeReport {
     'transitingMoonSign': transitingMoonSign.name,
     'transitingMoonHouse': transitingMoonHouse,
     'overallTheme': overallTheme,
+    if (overallThemeRu != null) 'overallThemeRu': overallThemeRu,
     'energyScore': energyScore,
     'transits': [for (final t in transits) t.toJson()],
     'focusSpheres': [for (final f in focusSpheres) f.toJson()],
@@ -518,8 +579,9 @@ class DailyHoroscopeReport {
         transitingMoonSign: ZodiacSign.values.byName(
           json['transitingMoonSign'] as String,
         ),
-        transitingMoonHouse: json['transitingMoonHouse'] as int,
+        transitingMoonHouse: json['transitingMoonHouse'] as int?,
         overallTheme: json['overallTheme'] as String,
+        overallThemeRu: json['overallThemeRu'] as String?,
         energyScore: json['energyScore'] as int,
         transits: [
           for (final t in json['transits'] as List<dynamic>)
@@ -550,6 +612,8 @@ class NatalChart {
     required this.latitude,
     required this.longitude,
     required this.timezoneOffsetHours,
+    this.timezoneId,
+    this.moonSignUncertain = false,
     required this.houseSystem,
     required this.houseCusps,
     required this.planets,
@@ -574,6 +638,8 @@ class NatalChart {
   final double latitude;
   final double longitude;
   final double timezoneOffsetHours;
+  final String? timezoneId;
+  final bool moonSignUncertain;
   final HouseSystem houseSystem;
 
   /// 12 cusp longitudes, 0..360°, starting at the Ascendant.
@@ -598,42 +664,74 @@ class NatalChart {
     'latitude': latitude,
     'longitude': longitude,
     'timezoneOffsetHours': timezoneOffsetHours,
+    if (timezoneId != null) 'timezoneId': timezoneId,
+    'moonSignUncertain': moonSignUncertain,
     'houseSystem': houseSystem.name,
     'houseCusps': houseCusps,
     'planets': [for (final p in planets) p.toJson()],
     'aspects': [for (final a in aspects) a.toJson()],
   };
 
-  static NatalChart fromJson(Map<String, dynamic> json) => NatalChart(
-    id: json['id'] as String,
-    profileName: json['profileName'] as String,
-    createdAt: DateTime.parse(json['createdAt'] as String),
-    birthDateUtc: DateTime.parse(json['birthDateUtc'] as String),
-    birthLocalYear: json['birthLocalYear'] as int,
-    birthLocalMonth: json['birthLocalMonth'] as int,
-    birthLocalDay: json['birthLocalDay'] as int,
-    birthLocalHour: json['birthLocalHour'] as int,
-    birthLocalMinute: json['birthLocalMinute'] as int,
-    timeKnown: json['timeKnown'] as bool,
-    cityName: json['cityName'] as String,
-    country: json['country'] as String,
-    latitude: (json['latitude'] as num).toDouble(),
-    longitude: (json['longitude'] as num).toDouble(),
-    timezoneOffsetHours: (json['timezoneOffsetHours'] as num).toDouble(),
-    houseSystem: HouseSystem.values.byName(json['houseSystem'] as String),
-    houseCusps: [
-      for (final c in json['houseCusps'] as List<dynamic>)
-        (c as num).toDouble(),
-    ],
-    planets: [
-      for (final p in json['planets'] as List<dynamic>)
-        NatalPlanetPosition.fromJson(p as Map<String, dynamic>),
-    ],
-    aspects: [
-      for (final a in json['aspects'] as List<dynamic>)
-        NatalAspect.fromJson(a as Map<String, dynamic>),
-    ],
-  );
+  static NatalChart fromJson(Map<String, dynamic> json) {
+    final timeKnown = json['timeKnown'] as bool;
+    final moonUncertain = json['moonSignUncertain'] as bool? ?? !timeKnown;
+    final planets = (json['planets'] as List).cast<Map<String, dynamic>>().map(
+      NatalPlanetPosition.fromJson,
+    );
+    final aspects = (json['aspects'] as List).cast<Map<String, dynamic>>().map(
+      NatalAspect.fromJson,
+    );
+    bool usable(PlanetId planet) =>
+        (timeKnown || !planet.isAngle) &&
+        (timeKnown || planet != PlanetId.moon);
+    return NatalChart(
+      id: json['id'] as String,
+      profileName: json['profileName'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      birthDateUtc: DateTime.parse(json['birthDateUtc'] as String),
+      birthLocalYear: json['birthLocalYear'] as int,
+      birthLocalMonth: json['birthLocalMonth'] as int,
+      birthLocalDay: json['birthLocalDay'] as int,
+      birthLocalHour: json['birthLocalHour'] as int,
+      birthLocalMinute: json['birthLocalMinute'] as int,
+      timeKnown: timeKnown,
+      timezoneId: json['timezoneId'] as String?,
+      moonSignUncertain: moonUncertain,
+      cityName: json['cityName'] as String,
+      country: json['country'] as String,
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+      timezoneOffsetHours: (json['timezoneOffsetHours'] as num).toDouble(),
+      houseSystem: HouseSystem.values.byName(json['houseSystem'] as String),
+      houseCusps: timeKnown
+          ? (json['houseCusps'] as List)
+                .map((c) => (c as num).toDouble())
+                .toList()
+          : const [],
+      planets: [
+        for (final p in planets)
+          if (timeKnown || !p.planet.isAngle)
+            if (!timeKnown && p.house != null)
+              NatalPlanetPosition(
+                planet: p.planet,
+                longitude: p.longitude,
+                sign: p.sign,
+                degreeInSign: p.degreeInSign,
+                house: null,
+                isRetrograde: p.isRetrograde,
+                interpretation:
+                    '${p.planet.title} in ${p.sign.title}: '
+                    '${p.planet.archetype}.',
+              )
+            else
+              p,
+      ],
+      aspects: [
+        for (final a in aspects)
+          if (usable(a.bodyA) && usable(a.bodyB)) a,
+      ],
+    );
+  }
 }
 
 /// One axis of the four-axis synastry compatibility read.

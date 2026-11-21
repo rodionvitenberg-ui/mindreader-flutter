@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
 import 'astral_gradient_button.dart';
+import '../astral_copy.dart';
 
 /// Live summary for the active profile: birth metadata, the Big Three and a
 /// shortcut into the full natal profile sheet.
@@ -21,7 +22,9 @@ class AstralSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final sun = chart.planets.firstWhere((p) => p.planet == PlanetId.sun);
     final moon = chart.planets.firstWhere((p) => p.planet == PlanetId.moon);
-    final asc = chart.planets.firstWhere((p) => p.planet == PlanetId.ascendant);
+    final asc = chart.planets
+        .where((p) => p.planet == PlanetId.ascendant)
+        .firstOrNull;
     final day = chart.birthLocalDay.toString().padLeft(2, '0');
     final month = chart.birthLocalMonth.toString().padLeft(2, '0');
     return Container(
@@ -41,7 +44,7 @@ class AstralSummaryCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '$day.$month.${chart.birthLocalYear} · ${chart.cityName} · '
-            '${chart.houseSystem.label}',
+            '${chart.timeKnown ? chart.houseSystem.label : context.astralText('unknownTime')}',
             style: GoogleFonts.jetBrainsMono(
               fontSize: 9,
               letterSpacing: 1.2,
@@ -53,9 +56,12 @@ class AstralSummaryCard extends StatelessWidget {
             children: [
               _BigThreeChip(label: 'SUN', pos: sun),
               const SizedBox(width: 8),
-              _BigThreeChip(label: 'MOON', pos: moon),
-              const SizedBox(width: 8),
-              _BigThreeChip(label: 'RISING', pos: asc),
+              if (!chart.moonSignUncertain)
+                _BigThreeChip(label: 'MOON', pos: moon),
+              if (asc != null) ...[
+                const SizedBox(width: 8),
+                _BigThreeChip(label: 'RISING', pos: asc),
+              ],
             ],
           ),
           const SizedBox(height: 14),
@@ -67,7 +73,7 @@ class AstralSummaryCard extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'OPEN FULL PROFILE',
+                    context.astralText('details'),
                     style: GoogleFonts.jetBrainsMono(
                       fontSize: 9,
                       letterSpacing: 1.6,
@@ -103,7 +109,9 @@ class _BigThreeChip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            context.astralRussian
+                ? context.astroPlanet(pos.planet).toUpperCase()
+                : label,
             style: GoogleFonts.jetBrainsMono(
               fontSize: 8,
               letterSpacing: 1.4,
@@ -112,7 +120,7 @@ class _BigThreeChip extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            '${pos.sign.glyph} ${pos.sign.title}',
+            '${pos.sign.glyph} ${context.astroSign(pos.sign)}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
@@ -146,7 +154,9 @@ class AstralEmptyState extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'NO NATAL PROFILE YET',
+            context.astralRussian
+                ? 'НАТАЛЬНОЙ КАРТЫ ПОКА НЕТ'
+                : 'NO NATAL PROFILE YET',
             style: GoogleFonts.jetBrainsMono(
               fontSize: 9,
               letterSpacing: 1.8,
@@ -155,8 +165,9 @@ class AstralEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Add your birth date, time and city to compute your chart. '
-            'Everything stays on this device.',
+            context.astralRussian
+                ? 'Укажите дату, время и город рождения.'
+                : 'Enter your birth date, time and city.',
             style: GoogleFonts.inter(
               fontSize: 13,
               height: 1.45,
@@ -164,10 +175,7 @@ class AstralEmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          AstralGradientButton(
-            label: '✦ ADD FIRST PROFILE',
-            onTap: onGenerate,
-          ),
+          AstralGradientButton(label: '✦ ADD FIRST PROFILE', onTap: onGenerate),
         ],
       ),
     );

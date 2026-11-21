@@ -1,5 +1,5 @@
 /// ASTRAL Phase 1 — offline city catalog for natal chart birth data.
-/// Standard (non-DST) timezone offsets; coordinates are city centers.
+/// City-center coordinates, localized names, and historical IANA zone IDs.
 library;
 
 /// One searchable city with chart-relevant data.
@@ -10,6 +10,8 @@ class AstroCity {
     required this.latitude,
     required this.longitude,
     required this.timezoneOffsetHours,
+    this.timezoneId,
+    this.russianName,
   });
 
   final String name;
@@ -21,15 +23,20 @@ class AstroCity {
   /// East positive, degrees.
   final double longitude;
 
-  /// Standard UTC offset in hours (e.g. Bishkek = 6).
+  final String? timezoneId;
+  final String? russianName;
+
+  /// Fallback offset for legacy and manually specified locations.
   final double timezoneOffsetHours;
 }
 
-/// 90+ major world & CIS cities.
+/// Major world cities and a regional Central Asian catalog.
 const List<AstroCity> astroCities = [
   // Kyrgyzstan
   AstroCity(
     name: 'Bishkek',
+    timezoneId: 'Asia/Bishkek',
+    russianName: 'Бишкек',
     country: 'Kyrgyzstan',
     latitude: 42.8746,
     longitude: 74.5698,
@@ -37,6 +44,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Karakol',
+    timezoneId: 'Asia/Bishkek',
+    russianName: 'Каракол',
     country: 'Kyrgyzstan',
     latitude: 42.4907,
     longitude: 78.3936,
@@ -44,6 +53,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Osh',
+    timezoneId: 'Asia/Bishkek',
+    russianName: 'Ош',
     country: 'Kyrgyzstan',
     latitude: 40.5140,
     longitude: 72.8161,
@@ -51,6 +62,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Jalal-Abad',
+    timezoneId: 'Asia/Bishkek',
+    russianName: 'Джалал-Абад',
     country: 'Kyrgyzstan',
     latitude: 40.9331,
     longitude: 72.9960,
@@ -58,6 +71,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Naryn',
+    timezoneId: 'Asia/Bishkek',
+    russianName: 'Нарын',
     country: 'Kyrgyzstan',
     latitude: 41.4287,
     longitude: 75.9911,
@@ -65,6 +80,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Talas',
+    timezoneId: 'Asia/Bishkek',
+    russianName: 'Талас',
     country: 'Kyrgyzstan',
     latitude: 42.5228,
     longitude: 72.2426,
@@ -73,6 +90,8 @@ const List<AstroCity> astroCities = [
   // Kazakhstan
   AstroCity(
     name: 'Almaty',
+    timezoneId: 'Asia/Almaty',
+    russianName: 'Алматы',
     country: 'Kazakhstan',
     latitude: 43.2220,
     longitude: 76.8512,
@@ -80,6 +99,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Astana',
+    timezoneId: 'Asia/Almaty',
+    russianName: 'Астана',
     country: 'Kazakhstan',
     latitude: 51.1605,
     longitude: 71.4704,
@@ -87,6 +108,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Shymkent',
+    timezoneId: 'Asia/Almaty',
+    russianName: 'Шымкент',
     country: 'Kazakhstan',
     latitude: 42.3417,
     longitude: 69.5901,
@@ -94,6 +117,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Aktobe',
+    timezoneId: 'Asia/Aqtobe',
+    russianName: 'Актобе',
     country: 'Kazakhstan',
     latitude: 50.2839,
     longitude: 57.1670,
@@ -102,6 +127,8 @@ const List<AstroCity> astroCities = [
   // Uzbekistan
   AstroCity(
     name: 'Tashkent',
+    timezoneId: 'Asia/Tashkent',
+    russianName: 'Ташкент',
     country: 'Uzbekistan',
     latitude: 41.2995,
     longitude: 69.2401,
@@ -109,6 +136,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Samarkand',
+    timezoneId: 'Asia/Samarkand',
+    russianName: 'Самарканд',
     country: 'Uzbekistan',
     latitude: 39.6270,
     longitude: 66.9750,
@@ -116,6 +145,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Bukhara',
+    timezoneId: 'Asia/Samarkand',
+    russianName: 'Бухара',
     country: 'Uzbekistan',
     latitude: 39.7681,
     longitude: 64.4556,
@@ -124,6 +155,8 @@ const List<AstroCity> astroCities = [
   // Tajikistan / Turkmenistan
   AstroCity(
     name: 'Dushanbe',
+    timezoneId: 'Asia/Dushanbe',
+    russianName: 'Душанбе',
     country: 'Tajikistan',
     latitude: 38.5598,
     longitude: 68.7870,
@@ -131,6 +164,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Khujand',
+    timezoneId: 'Asia/Dushanbe',
+    russianName: 'Худжанд',
     country: 'Tajikistan',
     latitude: 40.2826,
     longitude: 69.6222,
@@ -138,6 +173,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Ashgabat',
+    timezoneId: 'Asia/Ashgabat',
+    russianName: 'Ашхабад',
     country: 'Turkmenistan',
     latitude: 37.9601,
     longitude: 58.3261,
@@ -146,6 +183,8 @@ const List<AstroCity> astroCities = [
   // Russia
   AstroCity(
     name: 'Moscow',
+    timezoneId: 'Europe/Moscow',
+    russianName: 'Москва',
     country: 'Russia',
     latitude: 55.7558,
     longitude: 37.6173,
@@ -153,6 +192,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Saint Petersburg',
+    timezoneId: 'Europe/Moscow',
+    russianName: 'Санкт-Петербург',
     country: 'Russia',
     latitude: 59.9311,
     longitude: 30.3609,
@@ -160,6 +201,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Kazan',
+    timezoneId: 'Europe/Moscow',
+    russianName: 'Казань',
     country: 'Russia',
     latitude: 55.7963,
     longitude: 49.1088,
@@ -167,6 +210,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Sochi',
+    timezoneId: 'Europe/Moscow',
+    russianName: 'Сочи',
     country: 'Russia',
     latitude: 43.5855,
     longitude: 39.7231,
@@ -174,6 +219,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Kaliningrad',
+    timezoneId: 'Europe/Kaliningrad',
+    russianName: 'Калининград',
     country: 'Russia',
     latitude: 54.7104,
     longitude: 20.4522,
@@ -181,6 +228,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Yekaterinburg',
+    timezoneId: 'Asia/Yekaterinburg',
+    russianName: 'Екатеринбург',
     country: 'Russia',
     latitude: 56.8389,
     longitude: 60.6057,
@@ -188,6 +237,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Novosibirsk',
+    timezoneId: 'Asia/Novosibirsk',
+    russianName: 'Новосибирск',
     country: 'Russia',
     latitude: 55.0084,
     longitude: 82.9357,
@@ -195,6 +246,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Irkutsk',
+    timezoneId: 'Asia/Irkutsk',
+    russianName: 'Иркутск',
     country: 'Russia',
     latitude: 52.2870,
     longitude: 104.2807,
@@ -202,6 +255,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Vladivostok',
+    timezoneId: 'Asia/Vladivostok',
+    russianName: 'Владивосток',
     country: 'Russia',
     latitude: 43.1198,
     longitude: 131.8869,
@@ -210,6 +265,8 @@ const List<AstroCity> astroCities = [
   // Ukraine / Belarus / Moldova
   AstroCity(
     name: 'Kyiv',
+    timezoneId: 'Europe/Kyiv',
+    russianName: 'Киев',
     country: 'Ukraine',
     latitude: 50.4501,
     longitude: 30.5234,
@@ -217,6 +274,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Odesa',
+    timezoneId: 'Europe/Kyiv',
+    russianName: 'Одесса',
     country: 'Ukraine',
     latitude: 46.4825,
     longitude: 30.7233,
@@ -224,6 +283,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Kharkiv',
+    timezoneId: 'Europe/Kyiv',
+    russianName: 'Харьков',
     country: 'Ukraine',
     latitude: 49.9935,
     longitude: 36.2304,
@@ -231,6 +292,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Lviv',
+    timezoneId: 'Europe/Kyiv',
+    russianName: 'Львов',
     country: 'Ukraine',
     latitude: 49.8397,
     longitude: 24.0297,
@@ -238,6 +301,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Minsk',
+    timezoneId: 'Europe/Minsk',
+    russianName: 'Минск',
     country: 'Belarus',
     latitude: 53.9006,
     longitude: 27.5590,
@@ -245,6 +310,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Chisinau',
+    timezoneId: 'Europe/Chisinau',
+    russianName: 'Кишинёв',
     country: 'Moldova',
     latitude: 47.0105,
     longitude: 28.8638,
@@ -253,6 +320,8 @@ const List<AstroCity> astroCities = [
   // Caucasus
   AstroCity(
     name: 'Tbilisi',
+    timezoneId: 'Asia/Tbilisi',
+    russianName: 'Тбилиси',
     country: 'Georgia',
     latitude: 41.7151,
     longitude: 44.8271,
@@ -260,6 +329,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Batumi',
+    timezoneId: 'Asia/Tbilisi',
+    russianName: 'Батуми',
     country: 'Georgia',
     latitude: 41.6168,
     longitude: 41.6367,
@@ -267,6 +338,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Yerevan',
+    timezoneId: 'Asia/Yerevan',
+    russianName: 'Ереван',
     country: 'Armenia',
     latitude: 40.1792,
     longitude: 44.4991,
@@ -274,6 +347,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Baku',
+    timezoneId: 'Asia/Baku',
+    russianName: 'Баку',
     country: 'Azerbaijan',
     latitude: 40.4093,
     longitude: 49.8671,
@@ -282,6 +357,8 @@ const List<AstroCity> astroCities = [
   // Baltics
   AstroCity(
     name: 'Riga',
+    timezoneId: 'Europe/Riga',
+    russianName: 'Рига',
     country: 'Latvia',
     latitude: 56.9496,
     longitude: 24.1052,
@@ -291,6 +368,8 @@ const List<AstroCity> astroCities = [
   // Central & Western Europe
   AstroCity(
     name: 'Warsaw',
+    timezoneId: 'Europe/Warsaw',
+    russianName: 'Варшава',
     country: 'Poland',
     latitude: 52.2297,
     longitude: 21.0122,
@@ -298,6 +377,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Prague',
+    timezoneId: 'Europe/Prague',
+    russianName: 'Прага',
     country: 'Czechia',
     latitude: 50.0755,
     longitude: 14.4378,
@@ -305,6 +386,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Bucharest',
+    timezoneId: 'Europe/Bucharest',
+    russianName: 'Бухарест',
     country: 'Romania',
     latitude: 44.4268,
     longitude: 26.1025,
@@ -312,6 +395,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Sofia',
+    timezoneId: 'Europe/Sofia',
+    russianName: 'София',
     country: 'Bulgaria',
     latitude: 42.6977,
     longitude: 23.3219,
@@ -319,6 +404,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Belgrade',
+    timezoneId: 'Europe/Belgrade',
+    russianName: 'Белград',
     country: 'Serbia',
     latitude: 44.7866,
     longitude: 20.4489,
@@ -326,6 +413,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Athens',
+    timezoneId: 'Europe/Athens',
+    russianName: 'Афины',
     country: 'Greece',
     latitude: 37.9838,
     longitude: 23.7275,
@@ -333,6 +422,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Istanbul',
+    timezoneId: 'Europe/Istanbul',
+    russianName: 'Стамбул',
     country: 'Turkey',
     latitude: 41.0082,
     longitude: 28.9784,
@@ -341,6 +432,8 @@ const List<AstroCity> astroCities = [
   // UK & Ireland
   AstroCity(
     name: 'London',
+    timezoneId: 'Europe/London',
+    russianName: 'Лондон',
     country: 'United Kingdom',
     latitude: 51.5074,
     longitude: -0.1278,
@@ -348,6 +441,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Manchester',
+    timezoneId: 'Europe/London',
+    russianName: 'Манчестер',
     country: 'United Kingdom',
     latitude: 53.4808,
     longitude: -2.2426,
@@ -355,6 +450,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Dublin',
+    timezoneId: 'Europe/Dublin',
+    russianName: 'Дублин',
     country: 'Ireland',
     latitude: 53.3498,
     longitude: -6.2603,
@@ -363,6 +460,8 @@ const List<AstroCity> astroCities = [
   // Western Europe
   AstroCity(
     name: 'Paris',
+    timezoneId: 'Europe/Paris',
+    russianName: 'Париж',
     country: 'France',
     latitude: 48.8566,
     longitude: 2.3522,
@@ -370,6 +469,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Berlin',
+    timezoneId: 'Europe/Berlin',
+    russianName: 'Берлин',
     country: 'Germany',
     latitude: 52.5200,
     longitude: 13.4050,
@@ -377,6 +478,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Munich',
+    timezoneId: 'Europe/Berlin',
+    russianName: 'Мюнхен',
     country: 'Germany',
     latitude: 48.1351,
     longitude: 11.5820,
@@ -384,6 +487,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Madrid',
+    timezoneId: 'Europe/Madrid',
+    russianName: 'Мадрид',
     country: 'Spain',
     latitude: 40.4168,
     longitude: -3.7038,
@@ -391,6 +496,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Barcelona',
+    timezoneId: 'Europe/Madrid',
+    russianName: 'Барселона',
     country: 'Spain',
     latitude: 41.3874,
     longitude: 2.1686,
@@ -398,6 +505,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Lisbon',
+    timezoneId: 'Europe/Lisbon',
+    russianName: 'Лиссабон',
     country: 'Portugal',
     latitude: 38.7223,
     longitude: -9.1393,
@@ -405,6 +514,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Rome',
+    timezoneId: 'Europe/Rome',
+    russianName: 'Рим',
     country: 'Italy',
     latitude: 41.9028,
     longitude: 12.4964,
@@ -412,6 +523,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Milan',
+    timezoneId: 'Europe/Rome',
+    russianName: 'Милан',
     country: 'Italy',
     latitude: 45.4642,
     longitude: 9.1900,
@@ -419,6 +532,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Amsterdam',
+    timezoneId: 'Europe/Amsterdam',
+    russianName: 'Амстердам',
     country: 'Netherlands',
     latitude: 52.3676,
     longitude: 4.9041,
@@ -426,6 +541,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Brussels',
+    timezoneId: 'Europe/Brussels',
+    russianName: 'Брюссель',
     country: 'Belgium',
     latitude: 50.8503,
     longitude: 4.3517,
@@ -433,6 +550,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Vienna',
+    timezoneId: 'Europe/Vienna',
+    russianName: 'Вена',
     country: 'Austria',
     latitude: 48.2082,
     longitude: 16.3738,
@@ -440,6 +559,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Zurich',
+    timezoneId: 'Europe/Zurich',
+    russianName: 'Цюрих',
     country: 'Switzerland',
     latitude: 47.3769,
     longitude: 8.5417,
@@ -448,6 +569,8 @@ const List<AstroCity> astroCities = [
   // Scandinavia
   AstroCity(
     name: 'Stockholm',
+    timezoneId: 'Europe/Stockholm',
+    russianName: 'Стокгольм',
     country: 'Sweden',
     latitude: 59.3293,
     longitude: 18.0686,
@@ -455,6 +578,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Oslo',
+    timezoneId: 'Europe/Oslo',
+    russianName: 'Осло',
     country: 'Norway',
     latitude: 59.9139,
     longitude: 10.7522,
@@ -462,6 +587,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Copenhagen',
+    timezoneId: 'Europe/Copenhagen',
+    russianName: 'Копенгаген',
     country: 'Denmark',
     latitude: 55.6761,
     longitude: 12.5683,
@@ -469,6 +596,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Helsinki',
+    timezoneId: 'Europe/Helsinki',
+    russianName: 'Хельсинки',
     country: 'Finland',
     latitude: 60.1699,
     longitude: 24.9384,
@@ -476,6 +605,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Reykjavik',
+    timezoneId: 'Atlantic/Reykjavik',
+    russianName: 'Рейкьявик',
     country: 'Iceland',
     latitude: 64.1466,
     longitude: -21.9426,
@@ -484,6 +615,8 @@ const List<AstroCity> astroCities = [
   // North America
   AstroCity(
     name: 'New York',
+    timezoneId: 'America/New_York',
+    russianName: 'Нью-Йорк',
     country: 'United States',
     latitude: 40.7128,
     longitude: -74.0060,
@@ -491,6 +624,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Los Angeles',
+    timezoneId: 'America/Los_Angeles',
+    russianName: 'Лос-Анджелес',
     country: 'United States',
     latitude: 34.0522,
     longitude: -118.2437,
@@ -498,6 +633,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Chicago',
+    timezoneId: 'America/Chicago',
+    russianName: 'Чикаго',
     country: 'United States',
     latitude: 41.8781,
     longitude: -87.6298,
@@ -505,6 +642,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'San Francisco',
+    timezoneId: 'America/Los_Angeles',
+    russianName: 'Сан-Франциско',
     country: 'United States',
     latitude: 37.7749,
     longitude: -122.4194,
@@ -512,6 +651,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Seattle',
+    timezoneId: 'America/Los_Angeles',
+    russianName: 'Сиэтл',
     country: 'United States',
     latitude: 47.6062,
     longitude: -122.3321,
@@ -519,6 +660,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Miami',
+    timezoneId: 'America/New_York',
+    russianName: 'Майами',
     country: 'United States',
     latitude: 25.7617,
     longitude: -80.1918,
@@ -526,6 +669,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Toronto',
+    timezoneId: 'America/Toronto',
+    russianName: 'Торонто',
     country: 'Canada',
     latitude: 43.6532,
     longitude: -79.3832,
@@ -533,6 +678,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Vancouver',
+    timezoneId: 'America/Vancouver',
+    russianName: 'Ванкувер',
     country: 'Canada',
     latitude: 49.2827,
     longitude: -123.1207,
@@ -540,6 +687,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Mexico City',
+    timezoneId: 'America/Mexico_City',
+    russianName: 'Мехико',
     country: 'Mexico',
     latitude: 19.4326,
     longitude: -99.1332,
@@ -548,6 +697,8 @@ const List<AstroCity> astroCities = [
   // South America
   AstroCity(
     name: 'Sao Paulo',
+    timezoneId: 'America/Sao_Paulo',
+    russianName: 'Сан-Паулу',
     country: 'Brazil',
     latitude: -23.5505,
     longitude: -46.6333,
@@ -555,6 +706,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Rio de Janeiro',
+    timezoneId: 'America/Sao_Paulo',
+    russianName: 'Рио-де-Жанейро',
     country: 'Brazil',
     latitude: -22.9068,
     longitude: -43.1729,
@@ -562,6 +715,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Buenos Aires',
+    timezoneId: 'America/Argentina/Buenos_Aires',
+    russianName: 'Буэнос-Айрес',
     country: 'Argentina',
     latitude: -34.6037,
     longitude: -58.3816,
@@ -569,6 +724,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Lima',
+    timezoneId: 'America/Lima',
+    russianName: 'Лима',
     country: 'Peru',
     latitude: -12.0464,
     longitude: -77.0428,
@@ -577,6 +734,8 @@ const List<AstroCity> astroCities = [
 
   AstroCity(
     name: 'Vilnius',
+    timezoneId: 'Europe/Vilnius',
+    russianName: 'Вильнюс',
     country: 'Lithuania',
     latitude: 54.6872,
     longitude: 25.2797,
@@ -584,6 +743,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Tallinn',
+    timezoneId: 'Europe/Tallinn',
+    russianName: 'Таллин',
     country: 'Estonia',
     latitude: 59.4370,
     longitude: 24.7536,
@@ -593,6 +754,8 @@ const List<AstroCity> astroCities = [
   // East Asia
   AstroCity(
     name: 'Tokyo',
+    timezoneId: 'Asia/Tokyo',
+    russianName: 'Токио',
     country: 'Japan',
     latitude: 35.6762,
     longitude: 139.6503,
@@ -600,6 +763,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Osaka',
+    timezoneId: 'Asia/Tokyo',
+    russianName: 'Осака',
     country: 'Japan',
     latitude: 34.6937,
     longitude: 135.5023,
@@ -607,6 +772,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Seoul',
+    timezoneId: 'Asia/Seoul',
+    russianName: 'Сеул',
     country: 'South Korea',
     latitude: 37.5665,
     longitude: 126.9780,
@@ -614,6 +781,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Beijing',
+    timezoneId: 'Asia/Shanghai',
+    russianName: 'Пекин',
     country: 'China',
     latitude: 39.9042,
     longitude: 116.4074,
@@ -621,6 +790,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Shanghai',
+    timezoneId: 'Asia/Shanghai',
+    russianName: 'Шанхай',
     country: 'China',
     latitude: 31.2304,
     longitude: 121.4737,
@@ -628,6 +799,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Hong Kong',
+    timezoneId: 'Asia/Hong_Kong',
+    russianName: 'Гонконг',
     country: 'China',
     latitude: 22.3193,
     longitude: 114.1694,
@@ -636,6 +809,8 @@ const List<AstroCity> astroCities = [
   // South & Southeast Asia
   AstroCity(
     name: 'Singapore',
+    timezoneId: 'Asia/Singapore',
+    russianName: 'Сингапур',
     country: 'Singapore',
     latitude: 1.3521,
     longitude: 103.8198,
@@ -643,6 +818,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Bangkok',
+    timezoneId: 'Asia/Bangkok',
+    russianName: 'Бангкок',
     country: 'Thailand',
     latitude: 13.7563,
     longitude: 100.5018,
@@ -650,6 +827,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Delhi',
+    timezoneId: 'Asia/Kolkata',
+    russianName: 'Дели',
     country: 'India',
     latitude: 28.6139,
     longitude: 77.2090,
@@ -657,6 +836,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Mumbai',
+    timezoneId: 'Asia/Kolkata',
+    russianName: 'Мумбаи',
     country: 'India',
     latitude: 19.0760,
     longitude: 72.8777,
@@ -665,6 +846,8 @@ const List<AstroCity> astroCities = [
   // Middle East & Africa
   AstroCity(
     name: 'Dubai',
+    timezoneId: 'Asia/Dubai',
+    russianName: 'Дубай',
     country: 'United Arab Emirates',
     latitude: 25.2048,
     longitude: 55.2708,
@@ -672,6 +855,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Tel Aviv',
+    timezoneId: 'Asia/Jerusalem',
+    russianName: 'Тель-Авив',
     country: 'Israel',
     latitude: 32.0853,
     longitude: 34.7818,
@@ -679,6 +864,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Cairo',
+    timezoneId: 'Africa/Cairo',
+    russianName: 'Каир',
     country: 'Egypt',
     latitude: 30.0444,
     longitude: 31.2357,
@@ -686,6 +873,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Johannesburg',
+    timezoneId: 'Africa/Johannesburg',
+    russianName: 'Йоханнесбург',
     country: 'South Africa',
     latitude: -26.2041,
     longitude: 28.0473,
@@ -693,6 +882,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Cape Town',
+    timezoneId: 'Africa/Johannesburg',
+    russianName: 'Кейптаун',
     country: 'South Africa',
     latitude: -33.9249,
     longitude: 18.4241,
@@ -700,6 +891,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Nairobi',
+    timezoneId: 'Africa/Nairobi',
+    russianName: 'Найроби',
     country: 'Kenya',
     latitude: -1.2921,
     longitude: 36.8219,
@@ -708,6 +901,8 @@ const List<AstroCity> astroCities = [
   // Oceania
   AstroCity(
     name: 'Sydney',
+    timezoneId: 'Australia/Sydney',
+    russianName: 'Сидней',
     country: 'Australia',
     latitude: -33.8688,
     longitude: 151.2093,
@@ -715,6 +910,8 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Melbourne',
+    timezoneId: 'Australia/Melbourne',
+    russianName: 'Мельбурн',
     country: 'Australia',
     latitude: -37.8136,
     longitude: 144.9631,
@@ -722,24 +919,199 @@ const List<AstroCity> astroCities = [
   ),
   AstroCity(
     name: 'Auckland',
+    timezoneId: 'Pacific/Auckland',
+    russianName: 'Окленд',
     country: 'New Zealand',
     latitude: -36.8509,
     longitude: 174.7645,
     timezoneOffsetHours: 12,
   ),
+  AstroCity(
+    name: 'Tokmok',
+    russianName: 'Токмок',
+    country: 'Kyrgyzstan',
+    latitude: 42.8419,
+    longitude: 75.3015,
+    timezoneOffsetHours: 6,
+    timezoneId: 'Asia/Bishkek',
+  ),
+  AstroCity(
+    name: 'Batken',
+    russianName: 'Баткен',
+    country: 'Kyrgyzstan',
+    latitude: 40.0626,
+    longitude: 70.8194,
+    timezoneOffsetHours: 6,
+    timezoneId: 'Asia/Bishkek',
+  ),
+  AstroCity(
+    name: 'Kochkor',
+    russianName: 'Кочкор',
+    country: 'Kyrgyzstan',
+    latitude: 42.2155,
+    longitude: 75.7566,
+    timezoneOffsetHours: 6,
+    timezoneId: 'Asia/Bishkek',
+  ),
+  AstroCity(
+    name: 'Cholpon-Ata',
+    russianName: 'Чолпон-Ата',
+    country: 'Kyrgyzstan',
+    latitude: 42.6490,
+    longitude: 77.0823,
+    timezoneOffsetHours: 6,
+    timezoneId: 'Asia/Bishkek',
+  ),
+  AstroCity(
+    name: 'Kyzyl-Kiya',
+    russianName: 'Кызыл-Кия',
+    country: 'Kyrgyzstan',
+    latitude: 40.2568,
+    longitude: 72.1279,
+    timezoneOffsetHours: 6,
+    timezoneId: 'Asia/Bishkek',
+  ),
+  AstroCity(
+    name: 'Taraz',
+    russianName: 'Тараз',
+    country: 'Kazakhstan',
+    latitude: 42.9000,
+    longitude: 71.3667,
+    timezoneOffsetHours: 5,
+    timezoneId: 'Asia/Almaty',
+  ),
+  AstroCity(
+    name: 'Karaganda',
+    russianName: 'Караганда',
+    country: 'Kazakhstan',
+    latitude: 49.8047,
+    longitude: 73.1094,
+    timezoneOffsetHours: 5,
+    timezoneId: 'Asia/Almaty',
+  ),
+  AstroCity(
+    name: 'Atyrau',
+    russianName: 'Атырау',
+    country: 'Kazakhstan',
+    latitude: 47.0945,
+    longitude: 51.9238,
+    timezoneOffsetHours: 5,
+    timezoneId: 'Asia/Atyrau',
+  ),
+  AstroCity(
+    name: 'Pavlodar',
+    russianName: 'Павлодар',
+    country: 'Kazakhstan',
+    latitude: 52.2873,
+    longitude: 76.9674,
+    timezoneOffsetHours: 5,
+    timezoneId: 'Asia/Almaty',
+  ),
+  AstroCity(
+    name: 'Andijan',
+    russianName: 'Андижан',
+    country: 'Uzbekistan',
+    latitude: 40.7821,
+    longitude: 72.3442,
+    timezoneOffsetHours: 5,
+    timezoneId: 'Asia/Tashkent',
+  ),
+  AstroCity(
+    name: 'Fergana',
+    russianName: 'Фергана',
+    country: 'Uzbekistan',
+    latitude: 40.3842,
+    longitude: 71.7843,
+    timezoneOffsetHours: 5,
+    timezoneId: 'Asia/Tashkent',
+  ),
+  AstroCity(
+    name: 'Nukus',
+    russianName: 'Нукус',
+    country: 'Uzbekistan',
+    latitude: 42.4619,
+    longitude: 59.6166,
+    timezoneOffsetHours: 5,
+    timezoneId: 'Asia/Samarkand',
+  ),
+  AstroCity(
+    name: 'Omsk',
+    russianName: 'Омск',
+    country: 'Russia',
+    latitude: 54.9885,
+    longitude: 73.3242,
+    timezoneOffsetHours: 6,
+    timezoneId: 'Asia/Omsk',
+  ),
+  AstroCity(
+    name: 'Tomsk',
+    russianName: 'Томск',
+    country: 'Russia',
+    latitude: 56.4977,
+    longitude: 84.9744,
+    timezoneOffsetHours: 7,
+    timezoneId: 'Asia/Tomsk',
+  ),
+  AstroCity(
+    name: 'Krasnoyarsk',
+    russianName: 'Красноярск',
+    country: 'Russia',
+    latitude: 56.0153,
+    longitude: 92.8932,
+    timezoneOffsetHours: 7,
+    timezoneId: 'Asia/Krasnoyarsk',
+  ),
+  AstroCity(
+    name: 'Samara',
+    russianName: 'Самара',
+    country: 'Russia',
+    latitude: 53.1959,
+    longitude: 50.1002,
+    timezoneOffsetHours: 4,
+    timezoneId: 'Europe/Samara',
+  ),
+  AstroCity(
+    name: 'Murmansk',
+    russianName: 'Мурманск',
+    country: 'Russia',
+    latitude: 68.9585,
+    longitude: 33.0827,
+    timezoneOffsetHours: 3,
+    timezoneId: 'Europe/Moscow',
+  ),
+  AstroCity(
+    name: 'Jakarta',
+    russianName: 'Джакарта',
+    country: 'Indonesia',
+    latitude: -6.1754,
+    longitude: 106.8272,
+    timezoneOffsetHours: 7,
+    timezoneId: 'Asia/Jakarta',
+  ),
+  AstroCity(
+    name: 'Santiago',
+    russianName: 'Сантьяго',
+    country: 'Chile',
+    latitude: -33.4489,
+    longitude: -70.6693,
+    timezoneOffsetHours: -4,
+    timezoneId: 'America/Santiago',
+  ),
 ];
 
 /// Case-insensitive city search; prefix matches first, capped at [limit].
 List<AstroCity> searchAstroCities(String query, {int limit = 12}) {
-  final q = query.trim().toLowerCase();
+  String normalize(String value) => value.toLowerCase().replaceAll('ё', 'е');
+  final q = normalize(query.trim());
   if (q.isEmpty) return const [];
   final starts = <AstroCity>[];
   final contains = <AstroCity>[];
   for (final city in astroCities) {
-    final name = city.name.toLowerCase();
-    if (name.startsWith(q)) {
+    final names = [normalize(city.name), normalize(city.russianName ?? '')];
+    if (names.any((name) => name.startsWith(q))) {
       starts.add(city);
-    } else if (name.contains(q) || city.country.toLowerCase().contains(q)) {
+    } else if (names.any((name) => name.contains(q)) ||
+        city.country.toLowerCase().contains(q)) {
       contains.add(city);
     }
   }

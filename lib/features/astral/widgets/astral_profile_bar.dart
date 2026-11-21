@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -47,10 +48,10 @@ class AstralProfileBar extends StatelessWidget {
   }
 
   String _glyphAt(int index) => switch (index) {
-        0 => '👤',
-        1 => '☽',
-        _ => '✦',
-      };
+    0 => '👤',
+    1 => '☽',
+    _ => '✦',
+  };
 }
 
 class _ProfilePill extends StatelessWidget {
@@ -118,7 +119,7 @@ class _AddPill extends StatelessWidget {
           border: Border.all(color: AppColors.border),
         ),
         child: Text(
-          locked ? '🔒 + NEW CHART · PRO' : '+ NEW CHART',
+          '+ ${context.astralRussian ? 'НОВАЯ КАРТА' : 'NEW CHART'}${locked ? ' · PRO' : ''}',
           style: GoogleFonts.jetBrainsMono(
             fontSize: 9,
             letterSpacing: 1.4,

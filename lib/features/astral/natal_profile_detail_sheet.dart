@@ -4,9 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/models/natal_chart.dart';
 import '../../core/services/natal_calculator_service.dart';
+import '../../core/services/birth_time_service.dart';
 import '../../core/theme/app_colors.dart';
 import 'widgets/astral_gradient_button.dart';
 import 'widgets/astral_house_selector.dart';
+import 'widgets/birth_data_form_sheet.dart';
+import 'astral_copy.dart';
 
 /// Aspect filter inside the full natal profile sheet.
 enum _AspectFilter { all, harmony, tension }
@@ -56,7 +59,10 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
     if (system == _chart.houseSystem) return;
     HapticFeedback.selectionClick();
     setState(() {
-      _chart = NatalCalculatorService.recalculateWithHouseSystem(_chart, system);
+      _chart = NatalCalculatorService.recalculateWithHouseSystem(
+        _chart,
+        system,
+      );
     });
     widget.onHouseSystemChanged?.call(system);
   }
@@ -66,7 +72,9 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
     final chart = _chart;
     final sun = _position(chart, PlanetId.sun);
     final moon = _position(chart, PlanetId.moon);
-    final asc = _position(chart, PlanetId.ascendant);
+    final asc = chart.planets
+        .where((p) => p.planet == PlanetId.ascendant)
+        .firstOrNull;
     return Container(
       key: const ValueKey('natal-profile-detail'),
       height: MediaQuery.of(context).size.height * 0.92,
@@ -94,16 +102,38 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
                 children: [
                   _header(context, chart),
                   const SizedBox(height: 16),
+                  TextButton.icon(
+                    key: const ValueKey('astral-edit-birth-data'),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: Text(context.astralText('edit')),
+                    onPressed: () async {
+                      final updated = await BirthDataFormSheet.show(
+                        context,
+                        chart: _chart,
+                      );
+                      if (mounted && updated != null) {
+                        setState(() => _chart = updated);
+                      }
+                    },
+                  ),
+                  if (chart.timezoneId == null)
+                    Text(context.astralText('legacyTime')),
+                  if (!chart.timeKnown) Text(context.astralText('unknownTime')),
+                  if (chart.moonSignUncertain)
+                    Text(context.astralText('unknownMoon')),
+                  const SizedBox(height: 10),
                   _bigThree(sun, moon, asc),
-                  const SizedBox(height: 18),
-                  _houseSection(chart),
+                  if (chart.timeKnown) ...[
+                    const SizedBox(height: 18),
+                    _houseSection(chart),
+                  ],
                   const SizedBox(height: 18),
                   _ledger(chart),
                   const SizedBox(height: 18),
                   _aspects(chart.aspects),
                   const SizedBox(height: 20),
                   AstralGradientButton(
-                    label: 'CLOSE PROFILE',
+                    label: context.astralText('close'),
                     onTap: () => Navigator.of(context).maybePop(),
                   ),
                 ],
@@ -119,10 +149,11 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
       chart.planets.firstWhere((p) => p.planet == planet);
 
   Widget _header(BuildContext context, NatalChart chart) {
-    final stamp = '${_two(chart.birthLocalDay)}.'
-        '${_two(chart.birthLocalMonth)}.${chart.birthLocalYear} · '
-        '${_two(chart.birthLocalHour)}:${_two(chart.birthLocalMinute)}';
-    final timeLine = chart.timeKnown ? 'LOCAL' : 'TIME UNKNOWN (NOON)';
+    final stamp =
+        '${_two(chart.birthLocalDay)}.'
+        '${_two(chart.birthLocalMonth)}.${chart.birthLocalYear}'
+        '${chart.timeKnown ? ' · ${_two(chart.birthLocalHour)}:${_two(chart.birthLocalMinute)}' : ''}';
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -131,7 +162,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'NATAL PROFILE',
+                context.astralRussian ? 'НАТАЛЬНАЯ КАРТА' : 'NATAL PROFILE',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 9,
                   letterSpacing: 1.8,
@@ -149,7 +180,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
               ),
               const SizedBox(height: 6),
               Text(
-                '$stamp · $timeLine',
+                '$stamp${chart.timeKnown ? ' · ${BirthTimeService.offsetLabel(Duration(seconds: (chart.timezoneOffsetHours * 3600).round()))}' : ''}',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 9,
                   letterSpacing: 1.2,
@@ -179,20 +210,35 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
   Widget _bigThree(
     NatalPlanetPosition sun,
     NatalPlanetPosition moon,
-    NatalPlanetPosition asc,
+    NatalPlanetPosition? asc,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('BIG THREE'),
+        _sectionLabel(
+          context.astralRussian ? 'ОСНОВНЫЕ ПОЛОЖЕНИЯ' : 'BIG THREE',
+        ),
         const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(child: _SpotlightTile(pos: sun, label: 'SUN')),
+            Expanded(
+              child: _SpotlightTile(pos: sun, label: 'SUN'),
+            ),
             const SizedBox(width: 8),
-            Expanded(child: _SpotlightTile(pos: moon, label: 'MOON')),
-            const SizedBox(width: 8),
-            Expanded(child: _SpotlightTile(pos: asc, label: 'RISING')),
+            if (!_chart.moonSignUncertain)
+              Expanded(
+                child: _SpotlightTile(
+                  pos: moon,
+                  label: 'MOON',
+                  showDegree: _chart.timeKnown,
+                ),
+              ),
+            if (asc != null) ...[
+              const SizedBox(width: 8),
+              Expanded(
+                child: _SpotlightTile(pos: asc, label: 'RISING'),
+              ),
+            ],
           ],
         ),
       ],
@@ -203,14 +249,16 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('HOUSE SYSTEM'),
+        _sectionLabel(context.astralText('house')),
         const SizedBox(height: 8),
         AstralHouseSelector(value: chart.houseSystem, onChanged: _switchHouse),
-        const SizedBox(height: 6),
-        Text(
-          chart.houseSystem.ruSubtitle,
-          style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted),
-        ),
+        if (context.astralRussian) ...[
+          const SizedBox(height: 6),
+          Text(
+            chart.houseSystem.ruSubtitle,
+            style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted),
+          ),
+        ],
       ],
     );
   }
@@ -219,9 +267,14 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('FULL PLACEMENTS'),
+        _sectionLabel(context.astralText('placement')),
         const SizedBox(height: 8),
-        for (final p in chart.planets) _LedgerRow(position: p),
+        for (final p in chart.planets)
+          if (!chart.moonSignUncertain || p.planet != PlanetId.moon)
+            _LedgerRow(
+              position: p,
+              showDegree: chart.timeKnown || p.planet != PlanetId.moon,
+            ),
       ],
     );
   }
@@ -231,7 +284,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionLabel('ASPECT MATRIX'),
+        _sectionLabel(context.astralText('matrix')),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -252,7 +305,9 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
         const SizedBox(height: 10),
         if (filtered.isEmpty)
           Text(
-            'No aspects in this register.',
+            context.astralRussian
+                ? 'В этой группе нет аспектов.'
+                : 'No aspects in this register.',
             style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted),
           )
         else
@@ -265,30 +320,35 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
       switch (_filter) {
         _AspectFilter.all => all,
         _AspectFilter.harmony => [
-            for (final a in all)
-              if (a.type.harmony == AspectHarmony.harmonious) a,
-          ],
+          for (final a in all)
+            if (a.type.harmony == AspectHarmony.harmonious) a,
+        ],
         _AspectFilter.tension => [
-            for (final a in all)
-              if (a.type.harmony != AspectHarmony.harmonious) a,
-          ],
+          for (final a in all)
+            if (a.type.harmony != AspectHarmony.harmonious) a,
+        ],
       };
 
   Widget _sectionLabel(String text) => Text(
-        text,
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 9,
-          letterSpacing: 1.8,
-          color: AppColors.textMuted,
-        ),
-      );
+    text,
+    style: GoogleFonts.jetBrainsMono(
+      fontSize: 9,
+      letterSpacing: 1.8,
+      color: AppColors.textMuted,
+    ),
+  );
 
   static String _two(int value) => value.toString().padLeft(2, '0');
 }
 
 /// One of the Big Three: glyph, label, sign and degree + house.
 class _SpotlightTile extends StatelessWidget {
-  const _SpotlightTile({required this.pos, required this.label});
+  const _SpotlightTile({
+    required this.pos,
+    required this.label,
+    this.showDegree = true,
+  });
+  final bool showDegree;
 
   final NatalPlanetPosition pos;
   final String label;
@@ -310,7 +370,9 @@ class _SpotlightTile extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            label,
+            context.astralRussian
+                ? context.astroPlanet(pos.planet).toUpperCase()
+                : label,
             style: GoogleFonts.jetBrainsMono(
               fontSize: 8,
               letterSpacing: 1.4,
@@ -319,7 +381,7 @@ class _SpotlightTile extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '${pos.sign.glyph} ${pos.sign.title}',
+            '${pos.sign.glyph} ${context.astroSign(pos.sign)}',
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -331,7 +393,8 @@ class _SpotlightTile extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            '${pos.formattedDegree} · H${pos.house}',
+            '${showDegree ? pos.formattedDegree : ''}'
+            '${pos.house == null ? '' : ' · H${pos.house}'}',
             style: GoogleFonts.jetBrainsMono(
               fontSize: 8,
               letterSpacing: 0.6,
@@ -346,7 +409,8 @@ class _SpotlightTile extends StatelessWidget {
 
 /// One full placement: planet, sign + degree, house chip and retrograde R.
 class _LedgerRow extends StatelessWidget {
-  const _LedgerRow({required this.position});
+  const _LedgerRow({required this.position, required this.showDegree});
+  final bool showDegree;
 
   final NatalPlanetPosition position;
 
@@ -367,7 +431,7 @@ class _LedgerRow extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              p.planet.title,
+              context.astroPlanet(p.planet),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
@@ -380,7 +444,7 @@ class _LedgerRow extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Text(
-              '${p.sign.glyph} ${p.sign.title} ${p.formattedDegree}',
+              '${p.sign.glyph} ${context.astroSign(p.sign)} ${showDegree ? p.formattedDegree : ''}',
               textAlign: TextAlign.right,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -392,7 +456,7 @@ class _LedgerRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          _HouseChip(house: p.house),
+          if (p.house case final house?) _HouseChip(house: house),
           SizedBox(
             width: 12,
             child: p.isRetrograde
