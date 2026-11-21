@@ -176,6 +176,7 @@ class _GlassPlaygroundState extends State<GlassPlayground> {
   Widget _modeSwitcher() {
     return TaroGlassSegmentedControl<TaroGlassMode>(
       segments: const [
+        TaroGlassSegment(value: TaroGlassMode.auto, label: 'Auto'),
         TaroGlassSegment(value: TaroGlassMode.glass, label: 'Glass'),
         TaroGlassSegment(value: TaroGlassMode.fake, label: 'Fake'),
         TaroGlassSegment(value: TaroGlassMode.simple, label: 'Simple'),

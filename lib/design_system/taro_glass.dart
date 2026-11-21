@@ -1,22 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
+import 'taro_glass_capability.dart';
+import 'taro_glass_mode.dart';
 import 'taro_tokens.dart';
 
-/// Режим рендеринга стекла (переключается в playground для замеров FPS/батареи).
-enum TaroGlassMode {
-  /// Полный liquid glass (Impeller + Flutter GPU); без GPU сам падает в FakeGlass.
-  glass,
-
-  /// Принудительно [FakeGlass] — дешевле, но всё ещё сэмплит backdrop.
-  fake,
-
-  /// Простые полупрозрачные поверхности — без glass и без backdrop filter.
-  simple,
-
-  /// Непрозрачные поверхности — ноль backdrop sampling, минимальная нагрузка.
-  opaque,
-}
+export 'taro_glass_mode.dart';
 
 /// Собирает [LiquidGlassSettings] из токенов Tarot Tree.
 ///
@@ -71,14 +60,15 @@ class _TaroGlassScope extends InheritedWidget {
 
 /// Единый слой стекла для экрана / playground.
 ///
-/// В режимах [TaroGlassMode.glass] / [TaroGlassMode.fake] оборачивает поддерево
-/// в ОДИН [LiquidGlassLayer] — все [TaroGlassSurface] внутри делят один backdrop
-/// sample (не по слою на кнопку). В [simple]/[opaque] режимах стекло не
-/// создаётся вовсе, и поверхности рендерятся простыми заливками.
+/// По умолчанию [TaroGlassMode.auto]: резолвит режим по возможностям устройства
+/// через [TaroGlassCapability] — [TaroGlassMode.glass] где доступно (Impeller
+/// Metal/Vulkan + Flutter GPU), иначе [TaroGlassMode.fake]. В glass/fake
+/// оборачивает поддерево в ОДИН [LiquidGlassLayer] — все [TaroGlassSurface]
+/// внутри делят один backdrop sample. В simple/opaque стекло не создаётся.
 class TaroGlassLayer extends StatelessWidget {
   const TaroGlassLayer({
     required this.child,
-    this.mode = TaroGlassMode.glass,
+    this.mode = TaroGlassMode.auto,
     super.key,
   });
 
@@ -87,15 +77,27 @@ class TaroGlassLayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (mode != TaroGlassMode.auto) return _buildResolved(context, mode);
+    // Резолвим возможности один раз после первого кадра (не блокируя его).
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => TaroGlassCapability.ensureResolved(),
+    );
+    return ValueListenableBuilder<TaroGlassMode>(
+      valueListenable: TaroGlassCapability.mode,
+      builder: (context, resolved, _) => _buildResolved(context, resolved),
+    );
+  }
+
+  Widget _buildResolved(BuildContext context, TaroGlassMode resolved) {
     final brightness = MediaQuery.platformBrightnessOf(context);
     final settings = taroSettings(brightness);
     final appearance = taroAppearance(brightness);
     final useGlass =
-        mode == TaroGlassMode.glass || mode == TaroGlassMode.fake;
+        resolved == TaroGlassMode.glass || resolved == TaroGlassMode.fake;
 
     if (!useGlass) {
       return _TaroGlassScope(
-        mode: mode,
+        mode: resolved,
         brightness: brightness,
         settings: settings,
         appearance: appearance,
@@ -104,14 +106,14 @@ class TaroGlassLayer extends StatelessWidget {
     }
 
     return _TaroGlassScope(
-      mode: mode,
+      mode: resolved,
       brightness: brightness,
       settings: settings,
       appearance: appearance,
       child: LiquidGlassLayer(
         settings: settings,
         defaultAppearance: appearance,
-        fake: mode == TaroGlassMode.fake,
+        fake: resolved == TaroGlassMode.fake,
         child: child,
       ),
     );
@@ -161,7 +163,7 @@ class TaroGlassSurface extends StatelessWidget {
     final scope = _TaroGlassScope.maybeOf(context);
     final brightness =
         scope?.brightness ?? MediaQuery.platformBrightnessOf(context);
-    final mode = scope?.mode ?? TaroGlassMode.glass;
+    final mode = scope?.mode ?? TaroGlassMode.auto;
     final liquidShape =
         shape ?? LiquidRoundedSuperellipse(borderRadius: radius);
     final appearance = tint != null
@@ -171,6 +173,7 @@ class TaroGlassSurface extends StatelessWidget {
 
     switch (mode) {
       case TaroGlassMode.glass:
+      case TaroGlassMode.auto:
       case TaroGlassMode.fake:
         if (scope != null) {
           return LiquidGlass(

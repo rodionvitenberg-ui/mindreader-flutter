@@ -40,6 +40,7 @@ flutter run -t lib/design_system/playground/playground_main.dart \
 
 | Режим | Что рисует | Backdrop sampling |
 |-------|-----------|-------------------|
+| `auto`   | выбор по устройству (см. ниже) | как у выбранного |
 | `glass`  | полный liquid glass | да (1 слой на экран) |
 | `fake`   | FakeGlass | да |
 | `simple` | полупрозрачные поверхности | нет |
@@ -47,6 +48,28 @@ flutter run -t lib/design_system/playground/playground_main.dart \
 
 Все поверхности внутри одного `TaroGlassLayer` делят один backdrop sample
 (не по слою на кнопку).
+
+### Автовыбор (`auto`) — [`TaroGlassCapability`](taro_glass_capability.dart)
+
+`TaroGlassLayer` по умолчанию работает в `auto`: после первого кадра резолвит
+режим один раз и кеширует (`TaroGlassCapability.mode`, `ValueNotifier`):
+
+- нет shader-фильтров (`ImageFilter.isShaderFilterSupported == false`) → `fake`;
+- iOS/macOS (Impeller Metal + Flutter GPU) → `glass`;
+- Android → `glass` только если нативный провайдер `taro/glass_capability`
+  сообщает поддержку **Vulkan** (`FEATURE_VULKAN_HARDWARE_LEVEL`), иначе `fake`;
+- остальные платформы → `fake`.
+
+Пока идёт проба — безопасный `fake`, поэтому первый кадр не чёрный.
+Логика решения (`TaroGlassCapability.decide`) покрыта тестами
+`test/taro_glass_capability_test.dart`. Переопределение — передать `mode`
+в `TaroGlassLayer` явно (`glass`/`fake`/`simple`/`opaque`).
+
+> Ограничение: некоторые устройства (часть MediaTek) рапортуют Vulkan, но
+> Impeller у них на GLES и настоящий glass рисуется чёрным. Для таких — явный
+> `fake`. Полностью автоматически это ловится только render-самопроверкой
+> (следующий шаг).
+
 
 ## Производительность (profile)
 
