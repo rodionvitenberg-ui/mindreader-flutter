@@ -13,6 +13,7 @@ class Grant(models.Model):
     owner = models.ForeignKey("accounts.Principal", on_delete=models.CASCADE)
     deck = models.ForeignKey("catalog.Deck", on_delete=models.PROTECT)
     source = models.CharField(max_length=10, choices=Source)
+    order = models.OneToOneField("payments.Order", null=True, blank=True, editable=False, on_delete=models.PROTECT)
     granted_at = models.DateTimeField(auto_now_add=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
     granted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, editable=False, on_delete=models.SET_NULL)

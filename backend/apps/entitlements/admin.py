@@ -8,11 +8,12 @@ from .models import Grant
 class GrantAdmin(admin.ModelAdmin):
     list_display = ("owner", "deck", "source", "granted_at", "revoked_at")
     list_filter = ("source",)
+    list_select_related = ("owner", "deck", "order")
     actions = ["revoke"]
-    fields = ("owner", "deck", "source", "reason", "granted_by", "granted_at", "revoked_at")
+    fields = ("owner", "deck", "source", "reason", "order", "granted_by", "granted_at", "revoked_at")
 
     def get_readonly_fields(self, request, obj=None):
-        return self.fields if obj else ("granted_by", "granted_at", "revoked_at")
+        return self.fields if obj else ("order", "granted_by", "granted_at", "revoked_at")
 
     def formfield_for_choice_field(self, db_field, request, **kwargs):
         if db_field.name == "source":
