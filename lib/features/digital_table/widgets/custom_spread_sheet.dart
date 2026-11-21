@@ -335,6 +335,7 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
     final atLimit = _entries.length >= CustomSpreadConfig.maxPositions;
     final geometry = spreadBoardGeometryForCustom(
       effectiveCount == 0 ? 1 : effectiveCount,
+      fiveCardLine: _compareNeighbors && system == DivinationSystem.tarot,
     );
 
     return ConstrainedBox(
@@ -413,10 +414,19 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
                 AppStrings.t(lang, 'spread.customTitleLabel'),
               ),
             ),
-            if (context.read<SpreadController>().system == DivinationSystem.tarot &&
-                _collectQuestions().length >= 2 && _collectQuestions().length <= 4)
+            if (system == DivinationSystem.tarot &&
+                effectiveCount >= 2 &&
+                effectiveCount <= 5)
               SwitchListTile.adaptive(
-                title: Text(lang == AppLanguage.en ? 'Compare elements of successive positions' : 'Сравнивать стихии последовательных позиций'),
+                title: Text(
+                  effectiveCount == 5
+                      ? (lang == AppLanguage.en
+                            ? 'Read as a five-card elemental line'
+                            : 'Читать как стихийный ряд из пяти карт')
+                      : (lang == AppLanguage.en
+                            ? 'Compare elements of successive positions'
+                            : 'Сравнивать стихии последовательных позиций'),
+                ),
                 value: _compareNeighbors,
                 onChanged: (v) => setState(() => _compareNeighbors = v),
               ),

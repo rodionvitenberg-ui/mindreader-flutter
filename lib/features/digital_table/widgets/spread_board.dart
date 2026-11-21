@@ -339,7 +339,7 @@ class _SpreadBoardState extends State<SpreadBoard>
             ? 1
             : 0);
     return ctrl.isCustomSpread
-        ? spreadBoardGeometryForCustom(ctrl.spreadCardCount, totalSlots: count)
+        ? spreadBoardGeometryForCustom(ctrl.spreadCardCount, totalSlots: count, fiveCardLine: ctrl.customSpread!.isFiveCardLine)
         : spreadBoardGeometryForCount(
             ctrl.spreadCardCount,
             totalSlots: count,
@@ -418,7 +418,7 @@ class _SpreadBoardState extends State<SpreadBoard>
       height: design.height,
       child: Stack(
         children: [
-          Positioned.fill(child: SpreadThreadsLayer(selected:widget.selected,rects:rects.asMap())),
+          Positioned.fill(child: SpreadThreadsLayer(selected:_phase == null ? widget.selected : null,rects:rects.asMap())),
           for (var i = 0; i < rects.length; i++)
             Positioned.fromRect(
               rect: geometry.crossingSlotIndex == i

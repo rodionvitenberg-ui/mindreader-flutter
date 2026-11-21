@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:mindreader/design_system/taro.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,7 +30,24 @@ void main() {
       final guide = find.byKey(const ValueKey('reading-guide'));
       expect(guide, findsNothing);
       final order = ctrl.deckTop.map((c) => c.id).take(3).toList();
-      await tester.tap(find.byKey(const ValueKey('overview-deck')));
+      final finger = await tester.startGesture(
+        tester.getCenter(find.byKey(const ValueKey('overview-deck'))),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 16));
+      final target = find.byKey(const ValueKey('spread-slot-0'));
+      final highlight = find.descendant(
+        of: target,
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).color ==
+                  TaroColors.lavender.withValues(alpha: .12),
+        ),
+      );
+      expect(highlight, findsOneWidget);
+      await finger.moveTo(tester.getCenter(target));
+      await finger.up();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       await settings.setAid(ReadingAid.guide, true);

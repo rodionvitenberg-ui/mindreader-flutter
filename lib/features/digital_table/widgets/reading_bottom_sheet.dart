@@ -1,4 +1,3 @@
-import '../../../state/app_settings_controller.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -16,6 +15,7 @@ import '../../../core/services/oracle_synthesis_service.dart';
 import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
+import '../../../state/app_settings_controller.dart';
 import '../../../state/spread_controller.dart';
 
 /// Glassmorphic bottom sheet with two faces:
@@ -155,7 +155,11 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
     // Never throws — the local synthesis is the guaranteed fallback.
     final text = await OracleSynthesisService().synthesize(
       relationships: ctrl.relationships,
-      slots: ctrl.slots,
+      slots: ctrl.slots.where((slot) => slot.state == SlotState.faceUp).toList(),
+      system: ctrl.system,
+      focusLine: ctrl.spreadFocusLine,
+      spreadLabel: ctrl.spreadLabel,
+      positionQuestions: ctrl.customSpread?.questions,
       type: ctrl.spreadType,
       contextChip: _contextChip,
     );
@@ -222,7 +226,7 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
             _CardInspectorHeader(slot: slot, card: card),
             if (context.watch<AppSettingsController>().enabled(ReadingAid.guide))
               Padding(padding: const EdgeInsets.symmetric(vertical:8),
-                child: Text('${slot.role} · ${card.keywords.first}\n${card.reflection}')),
+                child: Text('${slot.role} · ${card.keywords.take(2).join(', ')}\n${card.reflection}')),
 
             if (context.watch<AppSettingsController>().enabled(ReadingAid.relationships))
               for (final link in ctrl.relationships.where((r) => r.includes(slot.index)))

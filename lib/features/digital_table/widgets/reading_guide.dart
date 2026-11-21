@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/data/intention_prompts.dart';
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/divination_system.dart';
 import '../../../core/models/spread_type.dart';
@@ -104,6 +105,31 @@ class ReadingGuide extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(ctrl.spreadFocusLine),
+                if (i != null && i < ctrl.spreadCardCount)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      ctrl.isCustomSpread
+                          ? ctrl.customSpread!.questions[i]
+                          : ctrl.system == DivinationSystem.tarot &&
+                                ctrl.spreadType == SpreadType.three
+                          ? intentionForSlot(i).question
+                          : (ru
+                                ? 'Как образ карты раскрывает тему «$role» в этом раскладе?'
+                                : 'Which detail in the image helps you read “$role” in this spread?'),
+                    ),
+                  ),
+                if (ctrl.system == DivinationSystem.tarot &&
+                    ctrl.faceUpCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      ru
+                          ? 'В этой системе Жезлы — Огонь, Кубки — Вода, Мечи — Воздух, Пентакли — Земля. Переворот меняет трактовку карты, сохраняя её стихию.'
+                          : 'In this system Wands carry Fire, Cups Water, Swords Air and Pentacles Earth. Reversal changes how you read a card while its element stays the same.',
+                    ),
+                  ),
+
                 const SizedBox(height: 12),
                 if (dealing)
                   Text(dealingTip)

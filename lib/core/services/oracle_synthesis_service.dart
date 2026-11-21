@@ -331,8 +331,9 @@ String synthesizeSpreadFor(
   final tensions = threads.where((t) => t.tone == ThreadTone.conflict).length;
   b.writeln();
   if (relationships != null) {
+    final roles = {for (final slot in faceUp) slot.index: slot.role};
     for (final link in relationships) {
-      b.writeln('${slots[link.from].role} / ${slots[link.to].role} — ${link.explanation}');
+      b.writeln('${roles[link.from]} / ${roles[link.to]} — ${link.explanation}');
     }
   } else if (threads.isEmpty) {
     b.writeln('The cards stand alone for now — a single clear signal rather than a chorus.');

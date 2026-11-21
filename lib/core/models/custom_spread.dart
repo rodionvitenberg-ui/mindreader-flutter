@@ -41,7 +41,8 @@ class CustomSpreadConfig {
       return '${q.substring(0, 23)}…';
     });
     return CustomSpreadConfig(
-      compareNeighbors: compareNeighbors && cleaned.length >= 2 && cleaned.length <= 4,
+      compareNeighbors:
+          compareNeighbors && cleaned.length >= 2 && cleaned.length <= 5,
       name: resolvedName,
       questions: List.unmodifiable(cleaned),
       slotRoleShorts: List.unmodifiable(shorts),
@@ -50,7 +51,11 @@ class CustomSpreadConfig {
 
   /// Display name of the custom spread (e.g. "Свой расклад" / "Custom Spread").
   final String name;
+
+  /// Explicit reading method. With five questions this defines a line with
+  /// positions 2 and 4 as the centers of two overlapping triples.
   final bool compareNeighbors;
+  bool get isFiveCardLine => compareNeighbors && cardCount == 5;
 
   /// Ordered list of user questions — one question per table position (1..12).
   final List<String> questions;

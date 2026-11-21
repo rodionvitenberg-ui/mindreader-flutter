@@ -75,7 +75,24 @@ List<ReadingRelationship> readingRelationships({
   }
 
   if (custom != null) {
-    if (custom.compareNeighbors &&
+    if (custom.isFiveCardLine) {
+      // Positions 1–2–3 and 3–4–5. Each center is read with its two
+      // immediate influences. No cross-table all-pairs network.
+      for (final center in [1, 3]) {
+        pair(
+          center - 1,
+          center,
+          'Five-card line: influence on neighboring center',
+          elemental: true,
+        );
+        pair(
+          center + 1,
+          center,
+          'Five-card line: influence on neighboring center',
+          elemental: true,
+        );
+      }
+    } else if (custom.compareNeighbors &&
         custom.cardCount >= 2 &&
         custom.cardCount <= 4) {
       for (var i = 1; i < custom.cardCount; i++) {

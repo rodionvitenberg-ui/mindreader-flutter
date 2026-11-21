@@ -231,7 +231,7 @@ void main() {
           of: find.byType(ProfileScreen),
           matching: find.byType(TaroGlassPanel),
         ),
-        findsNWidgets(4),
+        findsNWidgets(5),
       );
       expect(
         find.descendant(

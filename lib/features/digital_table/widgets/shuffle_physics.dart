@@ -499,11 +499,13 @@ SpreadBoardGeometry spreadBoardGeometryForRune(
 /// Clarifier slots beyond [count] append as full-width rows below the base.
 SpreadBoardGeometry spreadBoardGeometryForCustom(
   int count, {
+  bool fiveCardLine = false,
   int? totalSlots,
 }) {
   final baseCount = math.max(1, count);
   final slots = math.max(baseCount, totalSlots ?? baseCount);
   final cols = switch (baseCount) {
+    5 when fiveCardLine => 5,
     1 => 1,
     2 => 2,
     4 => 2,
