@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/models/dealt_card_slot.dart';
 import 'package:mindreader/features/digital_table/widgets/analyze_reading_button.dart';
-import 'package:mindreader/features/digital_table/widgets/gemini_input_capsule.dart';
 import 'package:mindreader/features/digital_table/widgets/interactive_deck_widget.dart';
 import 'package:mindreader/features/digital_table/widgets/tarot_card_3d_widget.dart';
 import 'package:mindreader/main.dart';
@@ -11,11 +10,6 @@ import 'package:provider/provider.dart';
 
 import 'helpers/table_test_helpers.dart';
 
-/// Sprint 2/3 → 4 end-to-end widget flows: the context chips + Gemini
-/// input capsule now live EXCLUSIVELY on the Oracle AI Chat pane, the
-/// ✦ SYNTHESIZE IN CHAT CTA is permanently anchored on the Digital Table
-/// (dormant → ignited), the clarifier loop and the phygital camera-to-
-/// table sync.
 void main() {
   /// SPREAD VIEW is the default; deal-driven flows opt back into FOCUS VIEW.
   /// Also enters the Active Table (Step 2) from the Step 1 spread picker.
@@ -56,8 +50,9 @@ void main() {
     await tester.pump();
   }
 
-  /// Deals and flips the whole Triad spread, then taps the ignited CTA —
-  /// synthesis runs and the workspace slides into the Oracle AI Chat pane.
+  /// Deals and flips the whole Triad spread, opens the Oracle with the
+  /// compact Analyze Reading button, then runs the synthesis from the Oracle
+  /// preparation screen and waits for the conversation to appear.
   Future<void> dealFlipAndSynthesize(WidgetTester tester) async {
     for (var i = 0; i < 3; i++) {
       await dealOne(tester);
@@ -78,64 +73,8 @@ void main() {
   }
 
   testWidgets(
-      'Pane 1 exclusively hosts the chips + capsule; chip tap toggles ✓ '
-      'and weaves context into the reading', (tester) async {
-    await tester.pumpWidget(const MindreaderApp());
-    await tester.pump();
-    await activateSpread(tester, 'Three Cards');
-
-    // Pane 0 is a pure table: no capsule, no context chips.
-    expect(find.text('SLOT 1 · BEFORE YOU DRAW'), findsNothing);
-    expect(find.byType(GeminiInputCapsule), findsNothing);
-    expect(find.text('✨ Relationships'), findsNothing);
-    expect(find.text('⚡ Crossroads'), findsNothing);
-    expect(find.text('🔮 Blind Draw'), findsNothing);
-
-    await goToPane(tester, 1);
-
-    // Pane 1 (Oracle AI Chat) holds both exclusively.
-    expect(find.byType(GeminiInputCapsule), findsOneWidget);
-    expect(find.text('✨ Relationships'), findsOneWidget);
-    expect(find.text('⚡ Crossroads'), findsOneWidget);
-    expect(find.text('🔮 Blind Draw'), findsOneWidget);
-
-    // A chip tap activates ONE pill (single-select radio, soft glow — no
-    // ✓ icon) and silently weaves the context into the session state.
-    // NO 'Context woven into the reading' lines may be appended to chat.
-    await tester.tap(find.byKey(const ValueKey('context-chip-0')));
-    await tester.pump();
-    expect(find.byIcon(Icons.check_rounded), findsNothing);
-    expect(find.byKey(const ValueKey('context-chip-0-active')), findsOneWidget);
-    final ctrl = tester
-        .element(find.byType(GeminiInputCapsule))
-        .read<SpreadController>();
-    expect(ctrl.sessionContextNotes, contains('✨ Relationships'));
-    expect(find.textContaining('Context woven into the reading'), findsNothing);
-
-    // A second tap deselects the active pill.
-    await tester.tap(find.byKey(const ValueKey('context-chip-0')));
-    await tester.pump();
-    expect(find.byKey(const ValueKey('context-chip-0-active')), findsNothing);
-
-    // Tapping another pill switches the single active context.
-    await tester.tap(find.byKey(const ValueKey('context-chip-1')));
-    await tester.pump();
-    expect(find.byKey(const ValueKey('context-chip-0-active')), findsNothing);
-    expect(find.byKey(const ValueKey('context-chip-1-active')), findsOneWidget);
-
-    // The capsule drives the chat; before synthesis it guides back to
-    // the table instead of sending context into the ether.
-    await tester.enterText(
-      find.byKey(const ValueKey('oracle-input')),
-      'my own words',
-    );
-    await tester.tap(find.byKey(const ValueKey('oracle-send')));
-    await tester.pump();
-    expect(find.textContaining('not synthesized yet'), findsOneWidget);
-  });
-  testWidgets(
       'Analyze Reading stays dormant until every base card is face-up, '
-      'opens Oracle without auto-synthesizing, and lets Oracle run synthesis',
+      'opens Oracle without auto-synthesizing, then Oracle runs synthesis',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
@@ -154,7 +93,7 @@ void main() {
     expect(tester.widget<AnalyzeReadingButton>(analyzeBtn).enabled, isFalse);
     await tester.tap(analyzeBtn);
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
     expect(find.byType(InteractiveDeckWidget), findsOneWidget); // still on the table
     expect(find.text('1 · CORE NARRATIVE SYNTHESIS'), findsNothing);
@@ -177,22 +116,22 @@ void main() {
     await tester.pump();
     expect(find.text('YOUR SPREAD IS READY'), findsOneWidget);
     expect(find.text('1 · CORE NARRATIVE SYNTHESIS'), findsNothing);
-    expect(find.text('CURRENT SPREAD'), findsOneWidget);
 
-    // Running synthesis from the Oracle screen streams the full reading.
+    // The Oracle preparation screen runs the synthesis on demand.
     await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
     await tester.pump();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump();
 
+    // The structured synthesis streams as the first message of the
+    // full-width Oracle AI Chat pane (no narrow modal box).
     expect(find.text('1 · CORE NARRATIVE SYNTHESIS'), findsOneWidget);
     expect(find.text('2 · ELEMENTAL ALCHEMY'), findsOneWidget);
     expect(find.text('3 · ACTIONABLE VERDICT'), findsOneWidget);
     // The narrative text itself carries the closing Socratic question.
     expect(find.textContaining('The question to sit with:'), findsWidgets);
-    // The pinned spread header strip is on top of the chat.
-    expect(find.text('CURRENT SPREAD'), findsOneWidget);
+    expect(find.byTooltip('Show reading cards'), findsOneWidget);
   });
 
   testWidgets(
@@ -248,6 +187,19 @@ void main() {
     await tester.pump();
     expect(find.text('CLARIFIER EXPANSION'), findsOneWidget);
     expect(find.textContaining(question), findsWidgets);
+
+    await tester.tap(find.byTooltip('Show reading cards'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('oracle-rail-slot-3')),
+      150,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey('oracle-card-rail')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(find.byKey(const ValueKey('oracle-rail-slot-3')), findsOneWidget);
   });
 
   testWidgets('custom question in the input bar arms a +1 card draw',
@@ -360,12 +312,12 @@ void main() {
     // the Analyze Reading button ready immediately.
     expect(find.text('PHYSICAL SYNC'), findsOneWidget);
     expect(find.byType(TarotCard3DWidget), findsNWidgets(3));
-    expect(find.text('Analyze Reading'), findsOneWidget);
+    expect(find.byKey(const ValueKey('analyze-reading-button')), findsOneWidget);
 
-    // Open Oracle → synthesize the photographed spread.
+    // Open the Oracle with the compact button, then synthesize there.
     await tester.tap(find.byKey(const ValueKey('analyze-reading-button')));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 500)); // pane slide
     await tester.pump();
     await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
     await tester.pump();

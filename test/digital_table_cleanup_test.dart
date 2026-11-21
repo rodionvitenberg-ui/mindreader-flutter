@@ -127,8 +127,8 @@ void main() {
       expect(find.byType(ReadingSubjectToggle), findsOneWidget);
       expect(find.byType(ReadingContextField), findsOneWidget);
 
-      // Navigate back to the table via the spread header strip.
-      await tester.tap(find.text('CURRENT SPREAD'));
+      // Navigate back to the table via the Oracle back button.
+      await tester.tap(find.byType(BackButton));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump();

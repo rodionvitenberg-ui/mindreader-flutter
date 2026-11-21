@@ -29,6 +29,8 @@ class ClarifierChapter {
 class SynthesisSession extends ChangeNotifier {
   StructuredSynthesis? initial;
   bool generatingInitial = false;
+  bool _initialFailed = false;
+  bool get initialFailed => _initialFailed;
 
   final List<ClarifierChapter> chapters = [];
 
@@ -50,11 +52,19 @@ class SynthesisSession extends ChangeNotifier {
   }
 
   void startGenerating() {
+    _initialFailed = false;
     generatingInitial = true;
     notifyListeners();
   }
 
+  void failInitial() {
+    generatingInitial = false;
+    _initialFailed = true;
+    notifyListeners();
+  }
+
   void markInitial(StructuredSynthesis synthesis) {
+    _initialFailed = false;
     initial = synthesis;
     generatingInitial = false;
     notifyListeners();
@@ -107,6 +117,7 @@ class SynthesisSession extends ChangeNotifier {
     required List<ClarifierChapter> chapters,
     required List<ChatMessage> messages,
   }) {
+    _initialFailed = false;
     this.initial = initial;
     generatingInitial = false;
     generatingAnswer = false;
@@ -120,6 +131,7 @@ class SynthesisSession extends ChangeNotifier {
   }
 
   void reset() {
+    _initialFailed = false;
     initial = null;
     generatingInitial = false;
     generatingAnswer = false;
