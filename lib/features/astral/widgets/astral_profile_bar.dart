@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 
 /// Horizontal profile switcher: saved natal charts as selectable pills plus
@@ -78,11 +78,11 @@ class _ProfilePill extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.lavender.withValues(alpha: 0.16)
-              : AppColors.surface,
+              ? TaroColors.lavender.withValues(alpha: 0.16)
+              : TaroColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? AppColors.lavender : AppColors.border,
+            color: selected ? TaroColors.lavender : TaroColors.border,
           ),
         ),
         child: Text(
@@ -90,7 +90,7 @@ class _ProfilePill extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            color: selected ? AppColors.lavender : AppColors.textPrimary,
+            color: selected ? TaroColors.lavender : TaroColors.textPrimary,
           ),
         ),
       ),
@@ -106,7 +106,7 @@ class _AddPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = locked ? AppColors.indigo : AppColors.textMuted;
+    final accent = locked ? TaroColors.indigo : TaroColors.textSecondary;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
@@ -114,9 +114,9 @@ class _AddPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: TaroColors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: TaroColors.border),
         ),
         child: Text(
           '+ ${context.astralRussian ? 'НОВАЯ КАРТА' : 'NEW CHART'}${locked ? ' · PRO' : ''}',

@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../core/models/natal_chart.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 import '../astral_copy.dart';
 
@@ -16,10 +16,10 @@ class EnergyResonanceBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = score >= 66
-        ? AppColors.harmonyCyan
+        ? TaroColors.cyan
         : score >= 40
-        ? AppColors.lavender
-        : AppColors.conflictRose;
+        ? TaroColors.lavender
+        : TaroColors.conflictRose;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -31,7 +31,7 @@ class EnergyResonanceBar extends StatelessWidget {
                 fontSize: 9,
                 letterSpacing: 1.0,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
             const Spacer(),
@@ -51,7 +51,7 @@ class EnergyResonanceBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(3),
           child: Container(
             height: 6,
-            color: AppColors.canvas,
+            color: TaroColors.background,
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
               widthFactor: score.clamp(0, 100) / 100,
@@ -76,9 +76,9 @@ class FocusSphereCard extends StatelessWidget {
       key: ValueKey('focus-sphere-${sphere.title}'),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.72),
+        color: TaroColors.surface.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: TaroColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,7 +92,7 @@ class FocusSphereCard extends StatelessWidget {
               fontSize: 9,
               letterSpacing: 0.8,
               fontWeight: FontWeight.w700,
-              color: AppColors.lavender,
+              color: TaroColors.lavender,
             ),
           ),
           const SizedBox(height: 5),
@@ -101,7 +101,7 @@ class FocusSphereCard extends StatelessWidget {
             style: AppTypography.body(
               fontSize: 12,
               height: 1.4,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
         ],
@@ -140,7 +140,7 @@ class SevenDayForecastCard extends StatelessWidget {
             final day = days[i];
             final weekday = weekdays[day.weekday - 1];
             final selected = i == selectedDay;
-            final color = selected ? AppColors.lavender : AppColors.textMuted;
+            final color = selected ? TaroColors.lavender : TaroColors.textSecondary;
             return Semantics(
               selected: selected,
               button: true,
@@ -153,11 +153,11 @@ class SevenDayForecastCard extends StatelessWidget {
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       color: selected
-                          ? AppColors.lavender.withValues(alpha: 0.16)
-                          : AppColors.surface,
+                          ? TaroColors.lavender.withValues(alpha: 0.16)
+                          : TaroColors.surface,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: selected ? AppColors.lavender : AppColors.border,
+                        color: selected ? TaroColors.lavender : TaroColors.border,
                       ),
                     ),
                     child: Center(

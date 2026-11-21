@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/divination_card.dart';
 import '../../../core/models/divination_system.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/spread_controller.dart';
 import 'elemental_threads_painter.dart';
@@ -201,9 +201,9 @@ class _LenormandPairPill extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 220),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.9),
+        color: TaroColors.surface.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: TaroColors.border),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -216,7 +216,7 @@ class _LenormandPairPill extends StatelessWidget {
               fontSize: 8,
               letterSpacing: 0.7,
               fontWeight: FontWeight.w700,
-              color: AppColors.lavender,
+              color: TaroColors.lavender,
             ),
           ),
           if (hint != null)
@@ -230,7 +230,7 @@ class _LenormandPairPill extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 8.5,
                   height: 1.25,
-                  color: AppColors.textMuted.withValues(alpha: 0.95),
+                  color: TaroColors.textSecondary.withValues(alpha: 0.95),
                 ),
               ),
             ),

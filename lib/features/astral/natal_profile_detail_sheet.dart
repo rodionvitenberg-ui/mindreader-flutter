@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import '../../core/models/natal_chart.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/birth_time_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import 'widgets/astral_gradient_button.dart';
@@ -143,7 +142,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
                 style: AppTypography.label(
                   fontSize: 9,
                   letterSpacing: 1.0,
-                  color: AppColors.lavender,
+                  color: TaroColors.lavender,
                 ),
               ),
               const SizedBox(height: 4),
@@ -152,7 +151,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
                 style: AppTypography.display(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: TaroColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
@@ -161,7 +160,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
                 style: AppTypography.label(
                   fontSize: 9,
                   letterSpacing: 0.7,
-                  color: AppColors.textMuted,
+                  color: TaroColors.textSecondary,
                 ),
               ),
               const SizedBox(height: 2),
@@ -170,7 +169,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
                 style: AppTypography.label(
                   fontSize: 9,
                   letterSpacing: 0.7,
-                  color: AppColors.textMuted,
+                  color: TaroColors.textSecondary,
                 ),
               ),
             ],
@@ -178,7 +177,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
         ),
         IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
+          icon: const Icon(Icons.close_rounded, color: TaroColors.textSecondary),
         ),
       ],
     );
@@ -233,7 +232,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
           const SizedBox(height: 6),
           Text(
             chart.houseSystem.ruSubtitle,
-            style: AppTypography.body(fontSize: 11, color: AppColors.textMuted),
+            style: AppTypography.body(fontSize: 11, color: TaroColors.textSecondary),
           ),
         ],
       ],
@@ -285,7 +284,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
             context.astralRussian
                 ? 'В этой группе нет аспектов.'
                 : 'No aspects in this register.',
-            style: AppTypography.body(fontSize: 12, color: AppColors.textMuted),
+            style: AppTypography.body(fontSize: 12, color: TaroColors.textSecondary),
           )
         else
           for (final aspect in filtered.take(14)) _AspectRow(aspect: aspect),
@@ -311,7 +310,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
     style: AppTypography.label(
       fontSize: 9,
       letterSpacing: 1.0,
-      color: AppColors.textMuted,
+      color: TaroColors.textSecondary,
     ),
   );
 
@@ -335,15 +334,15 @@ class _SpotlightTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: TaroColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: TaroColors.border),
       ),
       child: Column(
         children: [
           Text(
             pos.planet.glyph,
-            style: const TextStyle(fontSize: 22, color: AppColors.lavender),
+            style: const TextStyle(fontSize: 22, color: TaroColors.lavender),
           ),
           const SizedBox(height: 4),
           Text(
@@ -353,7 +352,7 @@ class _SpotlightTile extends StatelessWidget {
             style: AppTypography.label(
               fontSize: 8.5,
               letterSpacing: 0.8,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
           const SizedBox(height: 4),
@@ -365,7 +364,7 @@ class _SpotlightTile extends StatelessWidget {
             style: AppTypography.body(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: TaroColors.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
@@ -375,7 +374,7 @@ class _SpotlightTile extends StatelessWidget {
             style: AppTypography.label(
               fontSize: 8.5,
               letterSpacing: 0.6,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
         ],
@@ -402,7 +401,7 @@ class _LedgerRow extends StatelessWidget {
             width: 26,
             child: Text(
               p.planet.glyph,
-              style: const TextStyle(fontSize: 15, color: AppColors.lavender),
+              style: const TextStyle(fontSize: 15, color: TaroColors.lavender),
             ),
           ),
           Expanded(
@@ -414,7 +413,7 @@ class _LedgerRow extends StatelessWidget {
               style: AppTypography.body(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+                color: TaroColors.textPrimary,
               ),
             ),
           ),
@@ -428,7 +427,7 @@ class _LedgerRow extends StatelessWidget {
               style: AppTypography.label(
                 fontSize: 10,
                 letterSpacing: 0.3,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
           ),
@@ -443,7 +442,7 @@ class _LedgerRow extends StatelessWidget {
                     style: AppTypography.label(
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.conflictAmber,
+                      color: TaroColors.amber,
                     ),
                   )
                 : null,
@@ -464,7 +463,7 @@ class _HouseChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.lavender.withValues(alpha: 0.12),
+        color: TaroColors.lavender.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -472,7 +471,7 @@ class _HouseChip extends StatelessWidget {
         style: AppTypography.label(
           fontSize: 8.5,
           letterSpacing: 0.4,
-          color: AppColors.lavender,
+          color: TaroColors.lavender,
         ),
       ),
     );
@@ -499,11 +498,11 @@ class _FilterPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.lavender.withValues(alpha: 0.16)
-              : AppColors.surface,
+              ? TaroColors.lavender.withValues(alpha: 0.16)
+              : TaroColors.surface,
           borderRadius: BorderRadius.circular(9),
           border: Border.all(
-            color: selected ? AppColors.lavender : AppColors.border,
+            color: selected ? TaroColors.lavender : TaroColors.border,
           ),
         ),
         child: Text(
@@ -511,7 +510,7 @@ class _FilterPill extends StatelessWidget {
           style: AppTypography.label(
             fontSize: 9,
             letterSpacing: 0.7,
-            color: selected ? AppColors.lavender : AppColors.textMuted,
+            color: selected ? TaroColors.lavender : TaroColors.textSecondary,
           ),
         ),
       ),
@@ -529,9 +528,9 @@ class _AspectRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (aspect.type.harmony) {
-      AspectHarmony.harmonious => AppColors.harmonyCyan,
-      AspectHarmony.tense => AppColors.conflictRose,
-      AspectHarmony.intense => AppColors.lavender,
+      AspectHarmony.harmonious => TaroColors.cyan,
+      AspectHarmony.tense => TaroColors.conflictRose,
+      AspectHarmony.intense => TaroColors.lavender,
     };
     return Padding(
       key: ValueKey(
@@ -548,7 +547,7 @@ class _AspectRow extends StatelessWidget {
               style: AppTypography.label(
                 fontSize: 11,
                 letterSpacing: 1,
-                color: AppColors.textPrimary,
+                color: TaroColors.textPrimary,
               ),
             ),
           ),
@@ -558,7 +557,7 @@ class _AspectRow extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: aspect.strength,
                 minHeight: 5,
-                backgroundColor: AppColors.canvas,
+                backgroundColor: TaroColors.background,
                 valueColor: AlwaysStoppedAnimation<Color>(color),
               ),
             ),
@@ -571,7 +570,7 @@ class _AspectRow extends StatelessWidget {
               textAlign: TextAlign.right,
               style: AppTypography.label(
                 fontSize: 9,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
           ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 import 'natal_wheel_painter.dart';
 
@@ -30,9 +30,9 @@ class PlanetAspectInspectorCard extends StatelessWidget {
       key: const ValueKey('planet-inspector-card'),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: TaroColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: TaroColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,16 +46,16 @@ class PlanetAspectInspectorCard extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.lavender.withValues(alpha: 0.10),
+                  color: TaroColors.lavender.withValues(alpha: 0.10),
                   border: Border.all(
-                    color: AppColors.lavender.withValues(alpha: 0.55),
+                    color: TaroColors.lavender.withValues(alpha: 0.55),
                   ),
                 ),
                 child: Text(
                   body.glyph,
                   style: const TextStyle(
                     fontSize: 16,
-                    color: AppColors.lavender,
+                    color: TaroColors.lavender,
                   ),
                 ),
               ),
@@ -70,7 +70,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
                       style: AppTypography.label(
                         fontSize: 9,
                         letterSpacing: 0.8,
-                        color: AppColors.lavender,
+                        color: TaroColors.lavender,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -81,7 +81,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
                       style: AppTypography.label(
                         fontSize: 8.5,
                         letterSpacing: 0.7,
-                        color: AppColors.textMuted,
+                        color: TaroColors.textSecondary,
                       ),
                     ),
                   ],
@@ -98,7 +98,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
                       '✕',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textMuted,
+                        color: TaroColors.textSecondary,
                       ),
                     ),
                   ),
@@ -111,7 +111,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
             style: AppTypography.body(
               fontSize: 12,
               height: 1.45,
-              color: AppColors.textPrimary,
+              color: TaroColors.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -123,7 +123,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
               style: AppTypography.label(
                 fontSize: 8.5,
                 letterSpacing: 0.7,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             )
           else ...[
@@ -132,7 +132,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
               style: AppTypography.label(
                 fontSize: 8.5,
                 letterSpacing: 0.9,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
             const SizedBox(height: 6),
@@ -172,7 +172,7 @@ class _AspectRow extends StatelessWidget {
               style: AppTypography.label(
                 fontSize: 8.5,
                 letterSpacing: 1.1,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
           ),
@@ -199,14 +199,14 @@ class _RetrogradeBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: AppColors.textMuted.withValues(alpha: 0.4)),
+        border: Border.all(color: TaroColors.textSecondary.withValues(alpha: 0.4)),
       ),
       child: Text(
         'Rx',
         style: AppTypography.label(
           fontSize: 7.5,
           letterSpacing: 1,
-          color: AppColors.textMuted,
+          color: TaroColors.textSecondary,
         ),
       ),
     );

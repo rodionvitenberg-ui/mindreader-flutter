@@ -55,12 +55,10 @@ class TaroOpticsTheme extends ThemeExtension<TaroOpticsTheme> {
   }
 }
 
-/// Основная тема дизайн-системы **Tarot Tree** (Phase G2).
+/// Основная тема дизайн-системы **Tarot Tree**.
 ///
 /// Построена на токенах [TaroColors], [TaroOpacity], [TaroRadii], [TaroOptics]
-/// и типографике [AppTypography] (шрифт Allo 1.0.3). Подключается в `main.dart`
-/// за флагом `kTarotTreeThemeEnabled`; legacy [buildAppTheme] и [AppColors]
-/// остаются для отката и непереведённых экранов до G7.
+/// и типографике [AppTypography] (шрифт Allo 1.0.3).
 ThemeData buildTaroTheme() {
   final borderHairline = TaroColors.mist.withValues(alpha: TaroOpacity.border);
   final borderStrong = TaroColors.mist.withValues(

@@ -4,7 +4,8 @@ import '../astral_copy.dart';
 import '../../../core/data/zodiac_almanac_data.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/models/zodiac_forecast.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
+import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import 'horoscope_blocks.dart';
 
@@ -23,9 +24,9 @@ class ZodiacForecastCard extends StatelessWidget {
       key: const ValueKey('zodiac-forecast-card'),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: TaroColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: TaroColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,7 +49,7 @@ class ZodiacForecastCard extends StatelessWidget {
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                         height: 1.05,
-                        color: AppColors.textPrimary,
+                        color: TaroColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -57,7 +58,7 @@ class ZodiacForecastCard extends StatelessWidget {
                       style: AppTypography.label(
                         fontSize: 8.5,
                         letterSpacing: 0.7,
-                        color: AppColors.textMuted,
+                        color: TaroColors.textSecondary,
                       ),
                     ),
                   ],
@@ -69,7 +70,7 @@ class ZodiacForecastCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
-              color: AppColors.canvas,
+              color: TaroColors.background,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -88,7 +89,7 @@ class ZodiacForecastCard extends StatelessWidget {
                     style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 1.0,
-                      color: AppColors.lavender,
+                      color: TaroColors.lavender,
                     ),
                   ),
                 ),
@@ -103,7 +104,7 @@ class ZodiacForecastCard extends StatelessWidget {
             style: AppTypography.body(
               fontSize: 12,
               height: 1.45,
-              color: AppColors.textPrimary,
+              color: TaroColors.textPrimary,
             ),
           ),
           const SizedBox(height: 12),

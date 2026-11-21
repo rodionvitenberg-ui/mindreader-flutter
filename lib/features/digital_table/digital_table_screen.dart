@@ -11,7 +11,7 @@ import '../../core/models/divination_system.dart';
 import '../../core/models/rune_stone.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/models/tarot_deck_pack.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/card_motion.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
@@ -465,7 +465,7 @@ class _ActiveTableHeader extends StatelessWidget {
     return ProfileHeader(
       leading: BackButton(
         key: const ValueKey('table-back-button'),
-        color: AppColors.lavender,
+        color: TaroColors.lavender,
         onPressed: onBack,
       ),
       child: Center(
@@ -514,7 +514,7 @@ class _SpreadSelectionView extends StatelessWidget {
                       style: AppTypography.display(
                         fontSize: 32,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: TaroColors.textPrimary,
                       ),
                     ),
                   ),

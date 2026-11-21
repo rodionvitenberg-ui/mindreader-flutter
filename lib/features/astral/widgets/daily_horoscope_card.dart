@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/natal_chart.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 import '../astral_copy.dart';
 
@@ -26,9 +26,9 @@ class DailyHoroscopeCard extends StatelessWidget {
       key: const ValueKey('daily-horoscope-card'),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: TaroColors.surface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: TaroColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,7 +47,7 @@ class DailyHoroscopeCard extends StatelessWidget {
                       style: AppTypography.label(
                         fontSize: 9,
                         letterSpacing: 1.0,
-                        color: AppColors.textMuted,
+                        color: TaroColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -62,7 +62,7 @@ class DailyHoroscopeCard extends StatelessWidget {
                         fontSize: 19,
                         fontWeight: FontWeight.w700,
                         height: 1.1,
-                        color: AppColors.textPrimary,
+                        color: TaroColors.textPrimary,
                       ),
                     ),
                   ],
@@ -75,7 +75,7 @@ class DailyHoroscopeCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
-              color: AppColors.canvas,
+              color: TaroColors.background,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -84,7 +84,7 @@ class DailyHoroscopeCard extends StatelessWidget {
                   report.transitingMoonSign.glyph,
                   style: const TextStyle(
                     fontSize: 14,
-                    color: AppColors.lavender,
+                    color: TaroColors.lavender,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -96,7 +96,7 @@ class DailyHoroscopeCard extends StatelessWidget {
                     style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 0.7,
-                      color: AppColors.lavender,
+                      color: TaroColors.lavender,
                     ),
                   ),
                 ),
@@ -111,7 +111,7 @@ class DailyHoroscopeCard extends StatelessWidget {
             style: AppTypography.body(
               fontSize: 13,
               height: 1.45,
-              color: AppColors.textPrimary,
+              color: TaroColors.textPrimary,
             ),
           ),
           if (report.transits.isNotEmpty) ...[
@@ -121,7 +121,7 @@ class DailyHoroscopeCard extends StatelessWidget {
               style: AppTypography.label(
                 fontSize: 9,
                 letterSpacing: 1.0,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
             const SizedBox(height: 6),
@@ -150,10 +150,10 @@ class _EnergyBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = score >= 66
-        ? AppColors.harmonyCyan
+        ? TaroColors.cyan
         : score >= 40
-        ? AppColors.lavender
-        : AppColors.conflictRose;
+        ? TaroColors.lavender
+        : TaroColors.conflictRose;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -220,7 +220,7 @@ class _TransitTile extends StatelessWidget {
         key: ValueKey('transit-${transit.transitLabel}'),
         padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
-          color: AppColors.canvas,
+          color: TaroColors.background,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withValues(alpha: 0.28)),
         ),
@@ -235,7 +235,7 @@ class _TransitTile extends StatelessWidget {
                     style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 0.8,
-                      color: AppColors.textPrimary,
+                      color: TaroColors.textPrimary,
                     ),
                   ),
                 ),
@@ -245,7 +245,7 @@ class _TransitTile extends StatelessWidget {
                   style: AppTypography.label(
                     fontSize: 9,
                     letterSpacing: 0.6,
-                    color: AppColors.textMuted,
+                    color: TaroColors.textSecondary,
                   ),
                 ),
               ],
@@ -275,7 +275,7 @@ class _TransitTile extends StatelessWidget {
               style: AppTypography.body(
                 fontSize: 11.5,
                 height: 1.4,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
             if (onDiscuss != null)
@@ -290,8 +290,8 @@ class _TransitTile extends StatelessWidget {
   }
 
   static Color _harmonyColor(AspectHarmony harmony) => switch (harmony) {
-    AspectHarmony.harmonious => AppColors.harmonyCyan,
-    AspectHarmony.tense => AppColors.conflictRose,
-    AspectHarmony.intense => AppColors.lavender,
+    AspectHarmony.harmonious => TaroColors.cyan,
+    AspectHarmony.tense => TaroColors.conflictRose,
+    AspectHarmony.intense => TaroColors.lavender,
   };
 }

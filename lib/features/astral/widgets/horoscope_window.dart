@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/models/zodiac_forecast.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 import 'astral_gradient_button.dart';
 import 'daily_horoscope_card.dart';
@@ -190,11 +190,11 @@ class _SignChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
           decoration: BoxDecoration(
             color: active
-                ? AppColors.lavender.withValues(alpha: 0.16)
-                : AppColors.surface.withValues(alpha: 0.6),
+                ? TaroColors.lavender.withValues(alpha: 0.16)
+                : TaroColors.surface.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: active ? AppColors.lavender : AppColors.border,
+              color: active ? TaroColors.lavender : TaroColors.border,
             ),
           ),
           child: Row(
@@ -204,7 +204,7 @@ class _SignChip extends StatelessWidget {
                 glyph,
                 style: TextStyle(
                   fontSize: 12,
-                  color: active ? AppColors.lavender : AppColors.textMuted,
+                  color: active ? TaroColors.lavender : TaroColors.textSecondary,
                 ),
               ),
               const SizedBox(width: 5),
@@ -214,7 +214,7 @@ class _SignChip extends StatelessWidget {
                   fontSize: 9,
                   letterSpacing: 1.0,
                   fontWeight: FontWeight.w700,
-                  color: active ? AppColors.lavender : AppColors.textMuted,
+                  color: active ? TaroColors.lavender : TaroColors.textSecondary,
                 ),
               ),
             ],
@@ -233,16 +233,16 @@ class _NoHoroscope extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.72),
+        color: TaroColors.surface.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: TaroColors.border),
       ),
       child: Text(
         'No horoscope yet — create a natal profile or pick a sign above.',
         style: AppTypography.body(
           fontSize: 12,
           height: 1.4,
-          color: AppColors.textMuted,
+          color: TaroColors.textSecondary,
         ),
       ),
     );

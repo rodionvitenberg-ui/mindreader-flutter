@@ -5,7 +5,7 @@ import 'package:mindreader/core/models/oracle_handoff.dart';
 import 'package:mindreader/core/services/natal_calculator_service.dart';
 import 'package:mindreader/core/services/oracle_synthesis_service.dart';
 import 'package:mindreader/core/services/oracle_voice_service.dart';
-import 'package:mindreader/core/theme/app_theme.dart';
+import 'package:mindreader/design_system/taro.dart';
 import 'package:mindreader/features/astral/natal_profile_detail_sheet.dart';
 import 'package:mindreader/features/astral/synastry_summary_sheet.dart';
 import 'package:mindreader/features/astral/widgets/daily_horoscope_card.dart';
@@ -176,7 +176,7 @@ void main() {
       final report = _report(_selfChart());
       await tester.pumpWidget(
         MaterialApp(
-          theme: buildAppTheme(),
+          theme: buildTaroTheme(),
           home: Scaffold(
             backgroundColor: Colors.black,
             body: SingleChildScrollView(
@@ -212,7 +212,7 @@ void main() {
     }) async {
       await tester.pumpWidget(
         MaterialApp(
-          theme: buildAppTheme(),
+          theme: buildTaroTheme(),
           home: Scaffold(
             backgroundColor: Colors.black,
             body: NatalProfileDetailSheet(
@@ -263,7 +263,7 @@ void main() {
       OracleHandoff? captured;
       await tester.pumpWidget(
         MaterialApp(
-          theme: buildAppTheme(),
+          theme: buildTaroTheme(),
           home: Scaffold(
             backgroundColor: Colors.black,
             body: SynastrySummarySheet(
@@ -317,7 +317,7 @@ void main() {
             ChangeNotifierProvider(create: (_) => UserProfileController()),
           ],
           child: MaterialApp(
-            theme: buildAppTheme(),
+            theme: buildTaroTheme(),
             home: Scaffold(body: TableWorkspace(astralHandoff: handoff)),
           ),
         ),

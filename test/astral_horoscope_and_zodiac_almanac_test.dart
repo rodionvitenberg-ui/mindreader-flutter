@@ -9,7 +9,7 @@ import 'package:mindreader/core/services/local_storage_service.dart';
 import 'package:mindreader/core/services/natal_calculator_service.dart';
 import 'package:mindreader/core/services/oracle_synthesis_service.dart';
 import 'package:mindreader/core/services/oracle_voice_service.dart';
-import 'package:mindreader/core/theme/app_theme.dart';
+import 'package:mindreader/design_system/taro.dart';
 import 'package:mindreader/features/astral/widgets/horoscope_window.dart';
 import 'package:mindreader/features/digital_table/spread_history_pane.dart';
 import 'package:mindreader/features/digital_table/table_workspace.dart';
@@ -225,7 +225,7 @@ void main() {
         ChangeNotifierProvider(
           create: (_) => AppSettingsController(),
           child: MaterialApp(
-            theme: buildAppTheme(),
+            theme: buildTaroTheme(),
             home: Scaffold(
               body: SpreadHistoryPane(
                 history: history,
@@ -278,7 +278,7 @@ void main() {
             ChangeNotifierProvider(create: (_) => UserProfileController()),
           ],
           child: MaterialApp(
-            theme: buildAppTheme(),
+            theme: buildTaroTheme(),
             home: Scaffold(body: TableWorkspace(astralHandoff: handoff)),
           ),
         ),

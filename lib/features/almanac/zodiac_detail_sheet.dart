@@ -5,7 +5,7 @@ import '../../core/data/zodiac_almanac_data.dart';
 import '../../core/models/natal_chart.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/services/natal_calculator_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/element_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 

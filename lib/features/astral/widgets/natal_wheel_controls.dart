@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 
 /// Small glass pill for wheel actions (replay, transits overlay).
@@ -29,13 +29,13 @@ class NatalWheelPill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: active
-              ? AppColors.lavender.withValues(alpha: 0.14)
-              : AppColors.surface,
+              ? TaroColors.lavender.withValues(alpha: 0.14)
+              : TaroColors.surface,
           borderRadius: BorderRadius.circular(9),
           border: Border.all(
             color: active
-                ? AppColors.lavender.withValues(alpha: 0.6)
-                : AppColors.border,
+                ? TaroColors.lavender.withValues(alpha: 0.6)
+                : TaroColors.border,
           ),
         ),
         child: Text(
@@ -43,7 +43,7 @@ class NatalWheelPill extends StatelessWidget {
           style: AppTypography.label(
             fontSize: 8.5,
             letterSpacing: 0.7,
-            color: active ? AppColors.lavender : AppColors.textMuted,
+            color: active ? TaroColors.lavender : TaroColors.textSecondary,
           ),
         ),
       ),
@@ -83,7 +83,7 @@ class NatalWheelHeader extends StatelessWidget {
                     style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 1.0,
-                      color: AppColors.textPrimary,
+                      color: TaroColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -94,7 +94,7 @@ class NatalWheelHeader extends StatelessWidget {
                     style: AppTypography.label(
                       fontSize: 8,
                       letterSpacing: 0.7,
-                      color: AppColors.textMuted,
+                      color: TaroColors.textSecondary,
                     ),
                   ),
                 ],
@@ -181,13 +181,13 @@ class NatalPlanetChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.lavender.withValues(alpha: 0.16)
+              ? TaroColors.lavender.withValues(alpha: 0.16)
               : const Color(0x0AFFFFFF),
           borderRadius: BorderRadius.circular(7),
           border: Border.all(
             color: selected
-                ? AppColors.lavender.withValues(alpha: 0.7)
-                : AppColors.border,
+                ? TaroColors.lavender.withValues(alpha: 0.7)
+                : TaroColors.border,
           ),
         ),
         child: Text(
@@ -195,7 +195,7 @@ class NatalPlanetChip extends StatelessWidget {
           style: AppTypography.label(
             fontSize: 9,
             letterSpacing: 0.6,
-            color: selected ? AppColors.lavender : AppColors.textMuted,
+            color: selected ? TaroColors.lavender : TaroColors.textSecondary,
           ),
         ),
       ),

@@ -12,7 +12,7 @@ import '../../../core/models/divination_system.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/oracle_synthesis_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
 import '../../../state/spread_controller.dart';

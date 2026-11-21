@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 
 /// "Sent to Cosmos" — the submitted thought/chip rises from the input
@@ -56,11 +56,11 @@ class CosmosSendBurst extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.lavender.withValues(alpha: 0.18),
+                          color: TaroColors.lavender.withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color:
-                                AppColors.lavender.withValues(alpha: 0.7),
+                                TaroColors.lavender.withValues(alpha: 0.7),
                           ),
                         ),
                         child: Text(
@@ -69,7 +69,7 @@ class CosmosSendBurst extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.body(
                             fontSize: 11,
-                            color: AppColors.lavender,
+                            color: TaroColors.lavender,
                           ),
                         ),
                       ),
@@ -102,10 +102,10 @@ class _StardustPainter extends CustomPainter {
     final fade =
         progress < 0.72 ? 1.0 : 1 - (progress - 0.72) / 0.28;
     const palette = [
-      AppColors.lavender,
-      AppColors.indigo,
-      AppColors.harmonyCyan,
-      AppColors.textPrimary,
+      TaroColors.lavender,
+      TaroColors.indigo,
+      TaroColors.cyan,
+      TaroColors.textPrimary,
     ];
     for (var i = 0; i < _count; i++) {
       final t = progress;
@@ -128,7 +128,7 @@ class _StardustPainter extends CustomPainter {
           Offset(x, y),
           r * 3.4,
           Paint()
-            ..color = AppColors.lavender.withValues(alpha: alpha * 0.2)
+            ..color = TaroColors.lavender.withValues(alpha: alpha * 0.2)
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
         );
       }

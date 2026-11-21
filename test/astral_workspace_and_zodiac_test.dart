@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' hide Element;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/models/natal_chart.dart';
 import 'package:mindreader/core/services/natal_calculator_service.dart';
-import 'package:mindreader/core/theme/app_theme.dart';
+import 'package:mindreader/design_system/taro.dart';
 import 'package:mindreader/features/astral/widgets/synastry_window.dart';
 
 /// STEP 2 — the 3-window Astral workspace engine: 2-profile synastry
@@ -120,7 +120,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: buildAppTheme(),
+          theme: buildTaroTheme(),
           home: Scaffold(
             body: SingleChildScrollView(
               child: SynastryWindow(a: a, b: b, onDiscuss: (h) => handoff = h),

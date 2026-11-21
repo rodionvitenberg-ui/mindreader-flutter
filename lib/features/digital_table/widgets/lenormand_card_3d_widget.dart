@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/lenormand_card.dart';
 import '../../../core/models/lenormand_pack.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/deck_pack_controller.dart';
 import 'foil_glint.dart';
@@ -149,7 +149,7 @@ class _LenormandCard3DWidgetState extends State<LenormandCard3DWidget>
                       if (mist > 0)
                         IgnorePointer(
                           child: Container(
-                            color: AppColors.surface.withValues(alpha: mist),
+                            color: TaroColors.surface.withValues(alpha: mist),
                           ),
                         ),
                       // The face, emerging from the center outward.
@@ -256,7 +256,7 @@ class _LenormandCard3DWidgetState extends State<LenormandCard3DWidget>
               fontSize: widget.width * 0.085,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.3,
-              color: isDark ? AppColors.textPrimary : AppColors.surface,
+              color: isDark ? TaroColors.textPrimary : TaroColors.surface,
             ),
           ),
           SizedBox(height: widget.height * 0.012),
@@ -267,7 +267,7 @@ class _LenormandCard3DWidgetState extends State<LenormandCard3DWidget>
               fontSize: widget.width * 0.048,
               letterSpacing: 0.6,
               height: 1.35,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
           SizedBox(height: widget.height * 0.012),

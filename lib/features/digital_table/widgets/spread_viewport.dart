@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 
 /// The board stays in card coordinates. Only the camera scales or moves.
 class SpreadViewport extends StatefulWidget {
@@ -128,7 +128,7 @@ class _SpreadViewportState extends State<SpreadViewport> {
                   icon: const Icon(
                     Icons.fit_screen_outlined,
                     size: 20,
-                    color: AppColors.lavender,
+                    color: TaroColors.lavender,
                   ),
                   onPressed: () => _camera.value = _fitMatrix(),
                 ),

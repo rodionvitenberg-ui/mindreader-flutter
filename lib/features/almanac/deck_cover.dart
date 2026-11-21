@@ -5,7 +5,7 @@ import '../../core/models/deck_pack.dart';
 import '../../core/models/lenormand_pack.dart';
 import '../../core/models/rune_pack.dart';
 import '../../core/models/tarot_deck_pack.dart';
-import '../../core/theme/app_colors.dart';
+import '../../design_system/taro_tokens.dart';
 import '../digital_table/widgets/rune_stone_3d_widget.dart';
 import '../digital_table/widgets/tarot_card_3d_widget.dart';
 
@@ -93,8 +93,8 @@ class _Preview extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.surface,
-            Color.lerp(AppColors.surface, accent, 0.34)!,
+            TaroColors.surface,
+            Color.lerp(TaroColors.surface, accent, 0.34)!,
           ],
         ),
       ),

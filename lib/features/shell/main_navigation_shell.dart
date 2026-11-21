@@ -2,12 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/config/app_flags.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/models/natal_chart.dart';
 import '../../core/models/oracle_handoff.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
 import '../almanac/almanac_screen.dart';
@@ -22,13 +19,7 @@ import '../digital_table/table_workspace.dart';
 /// that sprint lands). Rituals and Settings live on the full-page
 /// ProfileScreen.
 class MainNavigationShell extends StatefulWidget {
-  const MainNavigationShell({
-    super.key,
-    this.tarotTreeEnabled = kTarotTreeThemeEnabled,
-  });
-
-  /// Enables the shared twilight dusk backdrop and top-level [TaroGlassLayer].
-  final bool tarotTreeEnabled;
+  const MainNavigationShell({super.key});
 
   @override
   State<MainNavigationShell> createState() => _MainNavigationShellState();
@@ -94,16 +85,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       ],
     );
 
-    if (!widget.tarotTreeEnabled) {
-      return Scaffold(
-        body: stack,
-        bottomNavigationBar: _GlassNavBar(index: _index, onTap: _switchTo),
-      );
-    }
-
     // Один общий TaroGlassLayer на уровне shell: все стеклянные поверхности
-    // (включая док TaroGlassDock и экраны в G4–G6) делят один backdrop sample
-    // поверх градиента сумерек TaroDuskBackground (сам фон не в стекле).
+    // делят один backdrop sample поверх градиента сумерек TaroDuskBackground
+    // (сам фон не в стекле).
     return Stack(
       children: [
         const Positioned.fill(child: TaroDuskBackground()),
@@ -122,36 +106,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   }
 }
 
-/// Phase G3: стеклянный нижний док на [TaroGlassDock] с безопасной областью.
+/// Стеклянный нижний док на [TaroGlassDock] с безопасной областью.
 class _TaroNavDock extends StatelessWidget {
   const _TaroNavDock({required this.index, required this.onTap});
-
-  final int index;
-  final ValueChanged<int> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final lang = context.watch<AppSettingsController>().language;
-    return SafeArea(
-      top: false,
-      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-      child: TaroGlassDock(
-        items: [
-          for (final tab in _GlassNavBar._tabs)
-            TaroDockItem(
-              icon: tab.$1,
-              label: AppStrings.t(lang, tab.$2),
-            ),
-        ],
-        index: index,
-        onTap: onTap,
-      ),
-    );
-  }
-}
-
-class _GlassNavBar extends StatelessWidget {
-  const _GlassNavBar({required this.index, required this.onTap});
 
   final int index;
   final ValueChanged<int> onTap;
@@ -171,77 +128,17 @@ class _GlassNavBar extends StatelessWidget {
     final lang = context.watch<AppSettingsController>().language;
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.only(bottom: 4),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        height: 54,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.82),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            for (var i = 0; i < _tabs.length; i++)
-              Expanded(
-                child: _NavItem(
-                  icon: _tabs[i].$1,
-                  label: AppStrings.t(lang, _tabs[i].$2),
-                  active: i == index,
-                  onTap: () => onTap(i),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? AppColors.lavender : AppColors.textMuted;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(height: 2),
-          // Four dock segments must fit a 360 px screen: the label scales
-          // down rather than overflowing.
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                label,
-                maxLines: 1,
-                style: AppTypography.label(
-                  fontSize: 9,
-                  letterSpacing: 0.5,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: color,
-                ),
-              ),
+      minimum: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: TaroGlassDock(
+        items: [
+          for (final tab in _tabs)
+            TaroDockItem(
+              icon: tab.$1,
+              label: AppStrings.t(lang, tab.$2),
             ),
-          ),
         ],
+        index: index,
+        onTap: onTap,
       ),
     );
   }

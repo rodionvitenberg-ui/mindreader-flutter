@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../../core/models/reading_session_badge.dart';
 import '../../core/models/reading_source.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
@@ -55,7 +54,7 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
             children: [
               ProfileHeader(
                 leading: BackButton(
-                  color: AppColors.lavender,
+                  color: TaroColors.lavender,
                   onPressed: widget.onBackToTable,
                 ),
                 child: Row(
@@ -69,7 +68,7 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
                           fontSize: 13,
                           letterSpacing: 1.3,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: TaroColors.textPrimary,
                         ),
                       ),
                     ),
@@ -218,7 +217,7 @@ class _EmptyArchive extends StatelessWidget {
           Icon(
             Icons.history_toggle_off,
             size: 32,
-            color: AppColors.textMuted.withValues(alpha: 0.6),
+            color: TaroColors.textSecondary.withValues(alpha: 0.6),
           ),
           const SizedBox(height: 12),
           Text(
@@ -226,7 +225,7 @@ class _EmptyArchive extends StatelessWidget {
             style: AppTypography.label(
               fontSize: 10.5,
               letterSpacing: 1.0,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
           const SizedBox(height: 6),
@@ -234,7 +233,7 @@ class _EmptyArchive extends StatelessWidget {
             'Synthesize your first spread and it will wait here.',
             style: AppTypography.body(
               fontSize: 11,
-              color: AppColors.textMuted.withValues(alpha: 0.8),
+              color: TaroColors.textSecondary.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -302,7 +301,7 @@ class _SessionTile extends StatelessWidget {
                             fontSize: 10,
                             letterSpacing: 0.7,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.lavender,
+                            color: TaroColors.lavender,
                           ),
                         ),
                       ),
@@ -328,7 +327,7 @@ class _SessionTile extends StatelessWidget {
                     style: AppTypography.label(
                       fontSize: 8.5,
                       letterSpacing: 1.0,
-                      color: AppColors.textMuted,
+                      color: TaroColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -339,7 +338,7 @@ class _SessionTile extends StatelessWidget {
                     style: AppTypography.body(
                       fontSize: 10.5,
                       height: 1.35,
-                      color: AppColors.textMuted,
+                      color: TaroColors.textSecondary,
                     ),
                   ),
                 ],
@@ -351,7 +350,7 @@ class _SessionTile extends StatelessWidget {
               child: Icon(
                 Icons.chevron_right,
                 size: 16,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
           ],
@@ -374,14 +373,14 @@ class _CardGlyphStack extends StatelessWidget {
         width: 40,
         height: 44,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: TaroColors.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.4)),
+          border: Border.all(color: TaroColors.lavender.withValues(alpha: 0.4)),
         ),
         child: const Center(
           child: Text(
             '✦',
-            style: TextStyle(fontSize: 16, color: AppColors.lavender),
+            style: TextStyle(fontSize: 16, color: TaroColors.lavender),
           ),
         ),
       );
@@ -399,16 +398,16 @@ class _CardGlyphStack extends StatelessWidget {
                 width: 26,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: TaroColors.surface,
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: TaroColors.border),
                 ),
                 child: Center(
                   child: Text(
                     '${i + 1}',
                     style: AppTypography.label(
                       fontSize: 9,
-                      color: AppColors.lavender,
+                      color: TaroColors.lavender,
                     ),
                   ),
                 ),
@@ -430,9 +429,9 @@ class _NotebookTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.indigo.withValues(alpha: 0.14),
+        color: TaroColors.indigo.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.indigo.withValues(alpha: 0.5)),
+        border: Border.all(color: TaroColors.indigo.withValues(alpha: 0.5)),
       ),
       child: Text(
         label.toUpperCase(),
@@ -440,7 +439,7 @@ class _NotebookTag extends StatelessWidget {
           fontSize: 7.5,
           letterSpacing: 1.0,
           fontWeight: FontWeight.w700,
-          color: AppColors.harmonyCyan,
+          color: TaroColors.cyan,
         ),
       ),
     );
@@ -465,9 +464,9 @@ class _AstralBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.lavender.withValues(alpha: 0.14),
+        color: TaroColors.lavender.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.lavender.withValues(alpha: 0.5)),
+        border: Border.all(color: TaroColors.lavender.withValues(alpha: 0.5)),
       ),
       child: Text(
         label,
@@ -475,7 +474,7 @@ class _AstralBadge extends StatelessWidget {
           fontSize: 7.5,
           letterSpacing: 1.0,
           fontWeight: FontWeight.w700,
-          color: AppColors.lavender,
+          color: TaroColors.lavender,
         ),
       ),
     );
@@ -495,9 +494,9 @@ class _FlowBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.indigo.withValues(alpha: 0.18),
+        color: TaroColors.indigo.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.indigo.withValues(alpha: 0.55)),
+        border: Border.all(color: TaroColors.indigo.withValues(alpha: 0.55)),
       ),
       child: Text(
         label,
@@ -505,7 +504,7 @@ class _FlowBadge extends StatelessWidget {
           fontSize: 7.5,
           letterSpacing: 1.0,
           fontWeight: FontWeight.w700,
-          color: AppColors.harmonyCyan,
+          color: TaroColors.cyan,
         ),
       ),
     );

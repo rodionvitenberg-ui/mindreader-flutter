@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 
 /// Subtle diagonal lavender/indigo specular sheen that slides ACROSS the
 /// card as its 3D angle changes — the user feels the card's tilt and weight
@@ -36,9 +36,9 @@ class FoilGlint extends StatelessWidget {
             end: Alignment(u + 0.9, v + 0.8),
             colors: [
               Colors.transparent,
-              AppColors.lavender.withValues(alpha: 0.10 * k),
-              AppColors.indigo.withValues(alpha: 0.22 * k),
-              AppColors.lavender.withValues(alpha: 0.06 * k),
+              TaroColors.lavender.withValues(alpha: 0.10 * k),
+              TaroColors.indigo.withValues(alpha: 0.22 * k),
+              TaroColors.lavender.withValues(alpha: 0.06 * k),
               Colors.transparent,
             ],
             stops: const [0.0, 0.36, 0.50, 0.62, 1.0],

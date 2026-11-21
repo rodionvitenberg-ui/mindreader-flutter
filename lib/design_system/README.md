@@ -1,8 +1,6 @@
-# Tarot Tree — Glass Design System (Phase G1)
+# Tarot Tree — Glass Design System
 
-Изолированная дизайн-система на `liquid_glass_renderer` 1.0.x. Не подменяет
-существующую тему (Dark Obsidian `AppColors`) и основные экраны до визуального
-согласования.
+Единая стеклянная дизайн-система `mindreader.quest` на `liquid_glass_renderer` 1.0.x (фазы G1–G7 завершены, legacy Dark Obsidian удалён).
 
 ## Файлы
 

@@ -7,7 +7,7 @@ import 'package:mindreader/core/services/birth_time_service.dart';
 import 'package:mindreader/core/services/natal_calculator_service.dart';
 import 'package:mindreader/core/services/oracle_synthesis_service.dart';
 import 'package:mindreader/core/services/transit_forecast_service.dart';
-import 'package:mindreader/core/theme/app_theme.dart';
+import 'package:mindreader/design_system/taro.dart';
 import 'package:mindreader/core/theme/app_typography.dart';
 import 'package:mindreader/features/astral/astral_screen.dart';
 import 'package:mindreader/features/astral/widgets/daily_horoscope_card.dart';
@@ -208,7 +208,7 @@ void main() {
           ChangeNotifierProvider(create: (_) => AppSettingsController()),
         ],
         child: MaterialApp(
-          theme: buildAppTheme(),
+          theme: buildTaroTheme(),
           home: AstralScreen(onOpenOracle: onOpenOracle),
         ),
       ),

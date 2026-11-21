@@ -5,7 +5,7 @@ import '../../core/models/dealt_card_slot.dart';
 import '../../core/models/divination_card.dart';
 import '../../core/models/divination_system.dart';
 import '../../core/models/tarot_card_model.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/element_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import '../../state/deck_pack_controller.dart';

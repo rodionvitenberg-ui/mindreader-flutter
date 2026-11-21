@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/services/natal_calculator_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 import '../astral_copy.dart';
 import 'natal_wheel_controls.dart';
@@ -220,9 +220,9 @@ class _NatalWheelWidgetState extends State<NatalWheelWidget>
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: TaroColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.lavender.withValues(alpha: 0.16)),
+        border: Border.all(color: TaroColors.lavender.withValues(alpha: 0.16)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -297,7 +297,7 @@ class _NatalWheelWidgetState extends State<NatalWheelWidget>
         style: AppTypography.label(
           fontSize: 8,
           letterSpacing: 0.8,
-          color: AppColors.textMuted,
+          color: TaroColors.textSecondary,
         ),
       );
     }

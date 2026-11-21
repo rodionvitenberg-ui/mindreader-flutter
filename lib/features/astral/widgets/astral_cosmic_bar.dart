@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 
 /// Top strip of the ASTRAL screen: today's moon phase and the reading
@@ -28,7 +28,7 @@ class AstralCosmicBar extends StatelessWidget {
                 style: AppTypography.label(
                   fontSize: 9,
                   letterSpacing: 1.0,
-                  color: AppColors.textPrimary,
+                  color: TaroColors.textPrimary,
                 ),
               ),
               Text(
@@ -36,14 +36,14 @@ class AstralCosmicBar extends StatelessWidget {
                 style: AppTypography.label(
                   fontSize: 8.5,
                   letterSpacing: 0.8,
-                  color: AppColors.textMuted,
+                  color: TaroColors.textSecondary,
                 ),
               ),
             ],
           ),
         ),
         if (streak > 0) ...[
-          _Pill(label: '🔥 ${streak}D', accent: AppColors.lavender),
+          _Pill(label: '🔥 ${streak}D', accent: TaroColors.lavender),
         ],
       ],
     );
@@ -61,9 +61,9 @@ class _Pill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: TaroColors.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: TaroColors.border),
       ),
       child: Text(
         label,

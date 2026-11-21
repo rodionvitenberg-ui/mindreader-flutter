@@ -4,7 +4,7 @@ import 'dart:ui' show Offset, Size;
 import 'package:flutter/animation.dart' show Curves;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/models/spread_type.dart';
-import 'package:mindreader/core/theme/app_colors.dart';
+import 'package:mindreader/core/theme/card_motion.dart';
 import 'package:mindreader/features/digital_table/widgets/shuffle_physics.dart';
 
 void main() {

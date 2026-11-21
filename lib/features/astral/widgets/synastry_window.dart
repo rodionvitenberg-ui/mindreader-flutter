@@ -6,7 +6,8 @@ import '../../../core/models/oracle_handoff.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/services/natal_calculator_service.dart';
 import '../../../core/services/oracle_synthesis_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
+import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import 'astral_gradient_button.dart';
 import '../astral_copy.dart';
@@ -159,16 +160,16 @@ class SynastryWindow extends StatelessWidget {
         key: const ValueKey('synastry-window'),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.72),
+          color: TaroColors.surface.withValues(alpha: 0.72),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: TaroColors.border),
         ),
         child: Text(
           context.astralText('selectPair'),
           style: AppTypography.body(
             fontSize: 12,
             height: 1.4,
-            color: AppColors.textMuted,
+            color: TaroColors.textSecondary,
           ),
         ),
       );
@@ -191,7 +192,7 @@ class SynastryWindow extends StatelessWidget {
           style: AppTypography.display(
             fontSize: 26,
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: TaroColors.textPrimary,
           ),
         ),
         const SizedBox(height: 14),
@@ -278,7 +279,7 @@ class SynastryWindow extends StatelessWidget {
     style: AppTypography.label(
       fontSize: 9,
       letterSpacing: 1.0,
-      color: AppColors.textMuted,
+      color: TaroColors.textSecondary,
     ),
   );
 }
@@ -292,16 +293,16 @@ class _ResonanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = score >= 66
-        ? AppColors.harmonyCyan
+        ? TaroColors.cyan
         : score >= 40
-        ? AppColors.lavender
-        : AppColors.conflictRose;
+        ? TaroColors.lavender
+        : TaroColors.conflictRose;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: TaroColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: TaroColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,7 +315,7 @@ class _ResonanceCard extends StatelessWidget {
                   fontSize: 9,
                   letterSpacing: 0.9,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textMuted,
+                  color: TaroColors.textSecondary,
                 ),
               ),
               const Spacer(),
@@ -333,7 +334,7 @@ class _ResonanceCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(3),
             child: Container(
               height: 6,
-              color: AppColors.canvas,
+              color: TaroColors.background,
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
                 widthFactor: score / 100,
@@ -356,10 +357,10 @@ class _AxisBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = axis.score >= 66
-        ? AppColors.harmonyCyan
+        ? TaroColors.cyan
         : axis.score >= 40
-        ? AppColors.lavender
-        : AppColors.conflictRose;
+        ? TaroColors.lavender
+        : TaroColors.conflictRose;
     return Padding(
       padding: const EdgeInsets.only(bottom: 9),
       child: Column(
@@ -383,7 +384,7 @@ class _AxisBar extends StatelessWidget {
                     fontSize: 9,
                     letterSpacing: 0.7,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: TaroColors.textPrimary,
                   ),
                 ),
               ),
@@ -402,7 +403,7 @@ class _AxisBar extends StatelessWidget {
             borderRadius: BorderRadius.circular(3),
             child: Container(
               height: 4,
-              color: AppColors.canvas,
+              color: TaroColors.background,
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
                 widthFactor: axis.score / 100,
@@ -424,7 +425,7 @@ class _AxisBar extends StatelessWidget {
             style: AppTypography.body(
               fontSize: 11,
               height: 1.35,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
         ],
@@ -469,7 +470,7 @@ class _ElementBar extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: ratio,
                 minHeight: 6,
-                backgroundColor: AppColors.canvas,
+                backgroundColor: TaroColors.background,
                 valueColor: AlwaysStoppedAnimation<Color>(element.accent),
               ),
             ),
@@ -482,7 +483,7 @@ class _ElementBar extends StatelessWidget {
               textAlign: TextAlign.right,
               style: AppTypography.label(
                 fontSize: 9,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
           ),
@@ -511,9 +512,9 @@ class _CrossAspectRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (aspect.type.harmony) {
-      AspectHarmony.harmonious => AppColors.harmonyCyan,
-      AspectHarmony.tense => AppColors.conflictRose,
-      AspectHarmony.intense => AppColors.lavender,
+      AspectHarmony.harmonious => TaroColors.cyan,
+      AspectHarmony.tense => TaroColors.conflictRose,
+      AspectHarmony.intense => TaroColors.lavender,
     };
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -540,7 +541,7 @@ class _CrossAspectRow extends StatelessWidget {
             Text(
               context.astroAspectAdvice(aspect.type),
               style: AppTypography.body(
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
                 fontSize: 12,
               ),
             ),

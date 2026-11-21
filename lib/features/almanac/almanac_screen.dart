@@ -14,7 +14,7 @@ import '../../core/models/lenormand_card.dart';
 import '../../core/models/natal_chart.dart';
 import '../../core/models/rune_stone.dart';
 import '../../core/models/tarot_card_model.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/element_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
@@ -534,7 +534,7 @@ class _DeckSelector extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: AppColors.textPrimary,
+                    color: TaroColors.textPrimary,
                   ),
                 ),
               ),
@@ -542,7 +542,7 @@ class _DeckSelector extends StatelessWidget {
               const Icon(
                 Icons.expand_more,
                 size: 18,
-                color: AppColors.lavender,
+                color: TaroColors.lavender,
               ),
             ],
           ),
@@ -674,7 +674,7 @@ class _AlmanacTile extends StatelessWidget {
               fontSize: 9,
               letterSpacing: 0.7,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: TaroColors.textPrimary,
             ),
           ),
         ],

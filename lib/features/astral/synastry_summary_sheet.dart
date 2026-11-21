@@ -6,7 +6,7 @@ import '../../core/models/oracle_handoff.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/oracle_synthesis_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/element_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import 'widgets/astral_gradient_button.dart';
@@ -124,7 +124,7 @@ class SynastrySummarySheet extends StatelessWidget {
                 style: AppTypography.label(
                   fontSize: 9,
                   letterSpacing: 1.0,
-                  color: AppColors.lavender,
+                  color: TaroColors.lavender,
                 ),
               ),
               const SizedBox(height: 4),
@@ -133,7 +133,7 @@ class SynastrySummarySheet extends StatelessWidget {
                 style: AppTypography.display(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: TaroColors.textPrimary,
                 ),
               ),
             ],
@@ -141,7 +141,7 @@ class SynastrySummarySheet extends StatelessWidget {
         ),
         IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
+          icon: const Icon(Icons.close_rounded, color: TaroColors.textSecondary),
         ),
       ],
     );
@@ -157,9 +157,9 @@ class SynastrySummarySheet extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: TaroColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: TaroColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,7 +173,7 @@ class SynastrySummarySheet extends StatelessWidget {
             style: AppTypography.body(
               fontSize: 12,
               height: 1.45,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
         ],
@@ -190,7 +190,7 @@ class SynastrySummarySheet extends StatelessWidget {
             style: AppTypography.label(
               fontSize: 9,
               letterSpacing: 0.7,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
         ),
@@ -199,7 +199,7 @@ class SynastrySummarySheet extends StatelessWidget {
           style: AppTypography.body(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: TaroColors.textPrimary,
           ),
         ),
       ],
@@ -211,7 +211,7 @@ class SynastrySummarySheet extends StatelessWidget {
         style: AppTypography.label(
           fontSize: 9,
           letterSpacing: 1.0,
-          color: AppColors.textMuted,
+          color: TaroColors.textSecondary,
         ),
       );
 }
@@ -252,7 +252,7 @@ class _ElementBar extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: ratio,
                 minHeight: 6,
-                backgroundColor: AppColors.canvas,
+                backgroundColor: TaroColors.background,
                 valueColor: AlwaysStoppedAnimation<Color>(element.accent),
               ),
             ),
@@ -265,7 +265,7 @@ class _ElementBar extends StatelessWidget {
               textAlign: TextAlign.right,
               style: AppTypography.label(
                 fontSize: 9,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
           ),
@@ -285,9 +285,9 @@ class _CrossAspectRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (aspect.type.harmony) {
-      AspectHarmony.harmonious => AppColors.harmonyCyan,
-      AspectHarmony.tense => AppColors.conflictRose,
-      AspectHarmony.intense => AppColors.lavender,
+      AspectHarmony.harmonious => TaroColors.cyan,
+      AspectHarmony.tense => TaroColors.conflictRose,
+      AspectHarmony.intense => TaroColors.lavender,
     };
     return Padding(
       key: ValueKey(
@@ -304,7 +304,7 @@ class _CrossAspectRow extends StatelessWidget {
               style: AppTypography.label(
                 fontSize: 11,
                 letterSpacing: 1,
-                color: AppColors.textPrimary,
+                color: TaroColors.textPrimary,
               ),
             ),
           ),
@@ -315,7 +315,7 @@ class _CrossAspectRow extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: AppTypography.body(
                 fontSize: 11.5,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
           ),

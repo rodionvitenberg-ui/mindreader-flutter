@@ -9,7 +9,7 @@ import '../../../core/data/runes_data.dart';
 import '../../../core/models/divination_card.dart';
 import '../../../core/models/rune_pack.dart';
 import '../../../core/models/rune_stone.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/card_motion.dart';
 import '../../../state/deck_pack_controller.dart';
 import '../../../state/spread_controller.dart';
 import 'rune_stone_3d_widget.dart';

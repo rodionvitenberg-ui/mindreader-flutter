@@ -8,7 +8,7 @@ import '../../core/models/divination_system.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/services/oracle_voice_service.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/theme/element_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import '../../state/oracle_session_controller.dart';
@@ -129,7 +129,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
           ..showSnackBar(
             SnackBar(
               duration: const Duration(seconds: 3),
-              backgroundColor: AppColors.surface,
+              backgroundColor: TaroColors.surface,
               content: Text(
                 'Type your question in the input bar first, then tap +1 CARD.',
                 style: AppTypography.body(fontSize: 13.5, color: Colors.white),
@@ -159,7 +159,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
         children: [
           ProfileHeader(
             leading: BackButton(
-              color: AppColors.lavender,
+              color: TaroColors.lavender,
               onPressed: widget.onBackToTable,
             ),
             child: _SpreadHeaderStrip(ctrl: ctrl, onTap: widget.onBackToTable),
@@ -284,18 +284,18 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          AppColors.lavender.withValues(alpha: 0.24),
-                          AppColors.indigo.withValues(alpha: 0.06),
+                          TaroColors.lavender.withValues(alpha: 0.24),
+                          TaroColors.indigo.withValues(alpha: 0.06),
                         ],
                       ),
                       border: Border.all(
-                        color: AppColors.lavender.withValues(alpha: 0.32),
+                        color: TaroColors.lavender.withValues(alpha: 0.32),
                       ),
                     ),
                     child: const Icon(
                       Icons.auto_awesome,
                       size: 26,
-                      color: AppColors.lavender,
+                      color: TaroColors.lavender,
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -306,7 +306,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.2,
-                      color: AppColors.textPrimary,
+                      color: TaroColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -321,7 +321,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                       style: AppTypography.body(
                         fontSize: 14.5,
                         height: 1.5,
-                        color: AppColors.textMuted,
+                        color: TaroColors.textSecondary,
                       ),
                     ),
                   ),
@@ -373,9 +373,9 @@ class _SpreadHeaderStrip extends StatelessWidget {
         height: ProfileHeader.actionSize,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.82),
+          color: TaroColors.surface.withValues(alpha: 0.82),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: TaroColors.border),
         ),
         child: Row(
           children: [
@@ -388,7 +388,7 @@ class _SpreadHeaderStrip extends StatelessWidget {
                   fontSize: 9.5,
                   letterSpacing: 0.9,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textMuted,
+                  color: TaroColors.textSecondary,
                 ),
               ),
             ),
@@ -407,7 +407,7 @@ class _SpreadHeaderStrip extends StatelessWidget {
                           fontSize: 9,
                           letterSpacing: 0.7,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.textMuted.withValues(alpha: 0.75),
+                          color: TaroColors.textSecondary.withValues(alpha: 0.75),
                         ),
                       ),
                     const SizedBox(width: 6),
@@ -514,8 +514,8 @@ class _OracleSpeakerHeader extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppColors.lavender.withValues(alpha: 0.28),
-                AppColors.indigo.withValues(alpha: 0.18),
+                TaroColors.lavender.withValues(alpha: 0.28),
+                TaroColors.indigo.withValues(alpha: 0.18),
               ],
             ),
           ),
@@ -524,7 +524,7 @@ class _OracleSpeakerHeader extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               height: 1,
-              color: AppColors.lavender,
+              color: TaroColors.lavender,
             ),
           ),
         ),
@@ -535,7 +535,7 @@ class _OracleSpeakerHeader extends StatelessWidget {
             fontSize: 11,
             letterSpacing: 1.0,
             fontWeight: FontWeight.w700,
-            color: AppColors.lavender,
+            color: TaroColors.lavender,
           ),
         ),
       ],
@@ -562,7 +562,7 @@ class _UserBubble extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.94),
+            color: TaroColors.surface.withValues(alpha: 0.94),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(22),
               topRight: Radius.circular(22),
@@ -570,7 +570,7 @@ class _UserBubble extends StatelessWidget {
               bottomRight: Radius.circular(6),
             ),
             border: Border.all(
-              color: AppColors.lavender.withValues(alpha: 0.30),
+              color: TaroColors.lavender.withValues(alpha: 0.30),
             ),
           ),
           child: Text(
@@ -578,7 +578,7 @@ class _UserBubble extends StatelessWidget {
             style: AppTypography.chatUser(
               fontSize: 15,
               height: 1.48,
-              color: AppColors.textPrimary,
+              color: TaroColors.textPrimary,
             ),
           ),
         ),
@@ -643,7 +643,7 @@ class _SystemBubble extends StatelessWidget {
             fontSize: 12.5,
             fontStyle: FontStyle.italic,
             height: 1.4,
-            color: AppColors.textMuted.withValues(alpha: 0.85),
+            color: TaroColors.textSecondary.withValues(alpha: 0.85),
           ),
         ),
       ),
@@ -684,7 +684,7 @@ class _ClarifierSuggestions extends StatelessWidget {
               fontSize: 10,
               letterSpacing: 0.8,
               fontWeight: FontWeight.w700,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
         ),
@@ -703,7 +703,7 @@ class _ClarifierSuggestions extends StatelessWidget {
               fontSize: 10.5,
               letterSpacing: 0.8,
               fontWeight: FontWeight.w700,
-              color: AppColors.lavender,
+              color: TaroColors.lavender,
             ),
           ),
           const SizedBox(height: 10),
@@ -735,16 +735,16 @@ class _SuggestionCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.82),
+          color: TaroColors.surface.withValues(alpha: 0.82),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.36)),
+          border: Border.all(color: TaroColors.lavender.withValues(alpha: 0.36)),
         ),
         child: Text(
           label,
           style: AppTypography.chatUser(
             fontSize: 14,
             height: 1.4,
-            color: AppColors.textPrimary,
+            color: TaroColors.textPrimary,
           ),
         ),
       ),
@@ -783,11 +783,11 @@ class _SynthesisResponse extends StatelessWidget {
             margin: const EdgeInsets.only(top: 4),
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
             decoration: BoxDecoration(
-              color: AppColors.lavender.withValues(alpha: 0.07),
+              color: TaroColors.lavender.withValues(alpha: 0.07),
               borderRadius: BorderRadius.circular(12),
               border: Border(
                 left: BorderSide(
-                  color: AppColors.lavender.withValues(alpha: 0.7),
+                  color: TaroColors.lavender.withValues(alpha: 0.7),
                   width: 2.5,
                 ),
               ),
@@ -798,7 +798,7 @@ class _SynthesisResponse extends StatelessWidget {
                 fontSize: 14.5,
                 height: 1.5,
                 fontStyle: FontStyle.italic,
-                color: AppColors.textPrimary.withValues(alpha: 0.88),
+                color: TaroColors.textPrimary.withValues(alpha: 0.88),
               ),
             ),
           ),
@@ -825,7 +825,7 @@ class _SynthesisSection extends StatelessWidget {
             fontSize: 13.5,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
-            color: AppColors.lavender,
+            color: TaroColors.lavender,
           ),
         ),
         const SizedBox(height: 6),
@@ -834,7 +834,7 @@ class _SynthesisSection extends StatelessWidget {
           style: AppTypography.chatOracle(
             fontSize: 15.5,
             height: 1.62,
-            color: AppColors.textPrimary,
+            color: TaroColors.textPrimary,
           ),
         ),
         const SizedBox(height: 16),

@@ -221,16 +221,6 @@ void main() {
       expect(find.text('Choose Spread'), findsOneWidget);
     });
 
-    testWidgets('rollback flag restores legacy dock without TaroGlassDock', (
-      tester,
-    ) async {
-      await tester.pumpWidget(const MindreaderApp(tarotTreeEnabled: false));
-      await tester.pump();
-
-      expect(find.byType(TaroGlassDock), findsNothing);
-      expect(find.text('TABLE'), findsOneWidget);
-    });
-
     testWidgets('AppSettingsSheet uses TaroGlassSheet + segmented language + Pro card', (
       tester,
     ) async {

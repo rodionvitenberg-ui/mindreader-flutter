@@ -11,11 +11,3 @@ library;
 /// True → PRO gates are enforced (free tier caps, paywall; preset spreads stay open).
 /// False → all PRO-gated content is available (pre-launch build).
 const bool kProRestrictionsEnabled = false;
-
-/// Phase G2+: enables the Tarot Tree glass theme ([buildTaroTheme]), the shared
-/// twilight dusk backdrop ([TaroDuskBackground]) and the top-level
-/// [TaroGlassLayer] in `MainNavigationShell`.
-///
-/// Flip to `false` to roll back cleanly to the legacy Dark Obsidian theme
-/// ([buildAppTheme]) without touching individual screens.
-const bool kTarotTreeThemeEnabled = true;

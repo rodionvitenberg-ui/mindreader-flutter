@@ -7,7 +7,8 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/divination_system.dart';
 import '../../../core/models/spread_type.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
+import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/spread_controller.dart';
@@ -230,7 +231,7 @@ class _OverviewSlotState extends State<_OverviewSlot>
       return Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(deckWidth * 0.06),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: TaroColors.border),
         ),
         alignment: Alignment.topCenter,
         padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
@@ -242,7 +243,7 @@ class _OverviewSlotState extends State<_OverviewSlot>
           style: AppTypography.label(
             fontSize: 9,
             letterSpacing: 0.8,
-            color: AppColors.textMuted.withValues(alpha: 0.65),
+            color: TaroColors.textSecondary.withValues(alpha: 0.65),
           ),
         ),
       );

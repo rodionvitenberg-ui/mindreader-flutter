@@ -7,7 +7,8 @@ import 'package:provider/provider.dart';
 
 import '../../../core/models/divination_system.dart';
 import '../../../core/models/tarot_deck_pack.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
+import '../../../core/theme/card_motion.dart';
 import '../../../state/deck_pack_controller.dart';
 import '../../../state/spread_controller.dart';
 import 'deal_lock_prompt.dart';
@@ -365,7 +366,7 @@ class _InteractiveDeckWidgetState extends State<InteractiveDeckWidget>
                       borderRadius: BorderRadius.circular(deckWidth * 0.06),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.lavender.withValues(alpha: 0.35),
+                          color: TaroColors.lavender.withValues(alpha: 0.35),
                           blurRadius: 26,
                           spreadRadius: 2,
                         ),

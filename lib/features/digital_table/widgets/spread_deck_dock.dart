@@ -7,7 +7,7 @@ import '../../../core/data/runes_data.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/models/divination_system.dart';
 import '../../../core/models/tarot_deck_pack.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/deck_pack_controller.dart';
 import '../../../state/spread_controller.dart';
@@ -40,8 +40,8 @@ class SpreadDeckDock extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.72),
-        border: const Border(bottom: BorderSide(color: AppColors.border)),
+        color: TaroColors.surface.withValues(alpha: 0.72),
+        border: const Border(bottom: BorderSide(color: TaroColors.border)),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) => Column(
@@ -199,10 +199,10 @@ class _OverviewDeckState extends State<_OverviewDeck>
                               bottom: inset,
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  color: AppColors.surface,
+                                  color: TaroColors.surface,
                                   borderRadius: BorderRadius.circular(4),
                                   border: Border.all(
-                                    color: AppColors.lavender.withValues(
+                                    color: TaroColors.lavender.withValues(
                                       alpha: 0.45,
                                     ),
                                   ),

@@ -7,7 +7,7 @@ import 'package:mindreader/features/camera_scan/widgets/card_overlay_painter.dar
 
 /// Phase 1 (1.6) — the viewfinder lock-on overlay is painted from the Vision
 /// contract data alone: normalized→viewfinder mapping, per-state styling from
-/// [AppColors], and a hard rule that a candidate without geometry paints
+/// [TaroColors], and a hard rule that a candidate without geometry paints
 /// NOTHING (no invented bounding boxes).
 VisionCardCandidate _candidate({
   String id = 'o1',

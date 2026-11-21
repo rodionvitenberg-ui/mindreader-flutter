@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart' show Curves, Matrix4, Offset, Rect, Size;
 import '../../../core/models/lenormand_spread.dart';
 import '../../../core/models/rune_cast.dart';
 import '../../../core/models/spread_type.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/card_motion.dart';
 
 /// Pure, unit-testable choreography for the true 78-card riffle/weave
 /// shuffle. No widget state here — the deck widget feeds drag travel in and

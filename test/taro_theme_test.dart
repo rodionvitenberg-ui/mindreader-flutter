@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mindreader/core/config/app_flags.dart';
-import 'package:mindreader/core/theme/app_colors.dart';
 import 'package:mindreader/core/theme/app_typography.dart';
 import 'package:mindreader/design_system/taro.dart';
 import 'package:mindreader/main.dart';
 
 void main() {
-  group('buildTaroTheme (Phase G2)', () {
+  group('buildTaroTheme', () {
     test('configures Tarot Tree palette, typography and optics extension', () {
       final theme = buildTaroTheme();
 
@@ -55,13 +53,9 @@ void main() {
       expect(mid.highlight, closeTo(0.7, 0.001));
       expect(a.lerp(null, 0.5), same(a));
     });
-
-    test('kTarotTreeThemeEnabled flag defaults to true in G2', () {
-      expect(kTarotTreeThemeEnabled, isTrue);
-    });
   });
 
-  group('MindreaderApp theme wiring & rollback gate', () {
+  group('MindreaderApp Tarot Tree theme wiring', () {
     testWidgets('boots in Tarot Tree theme with dusk backdrop and glass layer', (
       tester,
     ) async {
@@ -74,20 +68,7 @@ void main() {
 
       expect(find.byType(TaroDuskBackground), findsOneWidget);
       expect(find.byType(TaroGlassLayer), findsOneWidget);
-    });
-
-    testWidgets('tarotTreeEnabled=false rolls back to legacy Dark Obsidian', (
-      tester,
-    ) async {
-      await tester.pumpWidget(const MindreaderApp(tarotTreeEnabled: false));
-      await tester.pump();
-
-      final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      expect(materialApp.theme?.scaffoldBackgroundColor, AppColors.canvas);
-      expect(materialApp.theme?.extension<TaroOpticsTheme>(), isNull);
-
-      expect(find.byType(TaroDuskBackground), findsNothing);
-      expect(find.byType(TaroGlassLayer), findsNothing);
+      expect(find.byType(TaroGlassDock), findsOneWidget);
     });
 
     testWidgets('TaroDuskBackground ignores pointer events', (tester) async {

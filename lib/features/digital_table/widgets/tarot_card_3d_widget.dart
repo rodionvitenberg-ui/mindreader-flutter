@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/models/tarot_deck_pack.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
+import '../../../core/theme/element_colors.dart';
+import '../../../core/theme/card_motion.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/deck_pack_controller.dart';
 import 'foil_glint.dart';
@@ -50,7 +52,7 @@ class CardBackPainter extends CustomPainter {
       Offset.zero & size,
       Radius.circular(size.width * 0.06),
     );
-    canvas.drawRRect(r, Paint()..color = AppColors.surface);
+    canvas.drawRRect(r, Paint()..color = TaroColors.surface);
 
     final frame = Paint()
       ..style = PaintingStyle.stroke
@@ -571,7 +573,7 @@ class _TarotCard3DWidgetState extends State<TarotCard3DWidget>
                             decoration: BoxDecoration(
                               gradient: RadialGradient(
                                 colors: [
-                                  AppColors.lavender.withValues(
+                                  TaroColors.lavender.withValues(
                                     alpha: 0.28 * math.sin(math.pi * v),
                                   ),
                                   Colors.transparent,
@@ -743,7 +745,7 @@ class _CardFace extends StatelessWidget {
         end: Alignment.bottomRight,
         colors: [
           Color.lerp(faceSec, Colors.black, 0.45)!,
-          AppColors.surface,
+          TaroColors.surface,
         ],
       ),
       borderRadius: BorderRadius.circular(width * 0.06),
@@ -802,7 +804,7 @@ class _CardFace extends StatelessWidget {
               style: AppTypography.label(
                 fontSize: width * 0.05,
                 letterSpacing: 0.8,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
           ],
@@ -843,7 +845,7 @@ class _TypographicFace extends StatelessWidget {
               fontSize: width * 0.09,
               fontWeight: FontWeight.w700,
               height: 1.25,
-              color: AppColors.textPrimary,
+              color: TaroColors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
@@ -854,7 +856,7 @@ class _TypographicFace extends StatelessWidget {
               fontSize: width * 0.05,
               letterSpacing: 0.8,
               height: 1.4,
-              color: AppColors.textMuted,
+              color: TaroColors.textSecondary,
             ),
           ),
         ],

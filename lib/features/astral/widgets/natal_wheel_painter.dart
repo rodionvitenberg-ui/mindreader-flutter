@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../core/models/natal_chart.dart';
-import '../../../core/theme/app_colors.dart' show ElementColorX;
+import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
 import 'natal_wheel_geometry.dart';

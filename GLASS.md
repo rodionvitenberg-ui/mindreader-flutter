@@ -1,6 +1,6 @@
 # GLASS.md — План перевода интерфейса на дизайн-систему Tarot Tree
 
-Статус: **G6 завершён** (фундамент G1 + тема/фон G2 + Shell G3 + Digital Table G4 + Almanac/Astral/Profile G5 + Camera HUD и Oracle overlay: контрастные HUD-токены, `CameraModeSelector`, `CameraTopHud`, `GuidedSpreadHud`, `RecognitionReviewSheet`, `CompactOracle`, `OracleVoiceOverlay`, перекрашенные `CardOverlayPainter` и `OraclePresenceIndicator`).
+Статус: **G7 завершён (миграция G1–G7 полностью выполнена)** — весь интерфейс переведён на дизайн-систему Tarot Tree, legacy Dark Obsidian (`AppColors`, `buildAppTheme`, `_GlassNavBar`, флаг отката `kTarotTreeThemeEnabled`) удалён.
 Этот документ — полный план поэтапного перевода всего UI приложения на новый
 «стеклянный» дизайн **без поломки существующей логики**.
 
@@ -66,14 +66,15 @@ lib/design_system/
   components/                  6 базовых + растущий набор (см. §7)
   theme/taro_theme.dart        (G2) ThemeData на Tarot Tree вместо buildAppTheme
 lib/core/theme/
-  app_colors.dart              → со временем становится thin alias на TaroColors
-  app_theme.dart               → buildAppTheme() → buildTaroTheme()
-  app_typography.dart          остаётся (шрифт Allo), цвета из TaroTokens
+  app_typography.dart          типографика Allo 1.0.3 + Inter (цвета из TaroColors)
+  element_colors.dart          ElementColorX (акценты стихий на TaroColors)
+  card_motion.dart             3D-физика и геометрия карт (spring/deckSpring/perspective/tilt)
 ```
 
-**Стратегия темы:** Tarot Tree становится основной палитрой приложения.
-`AppColors` (Dark Obsidian) сохраняется как legacy-алиас на время миграции,
-чтобы не ломать экраны, которые ещё не переведены, затем удаляется.
+**Итог миграции (G7):** Tarot Tree — единственная тема приложения (`buildTaroTheme()`).
+Legacy `app_colors.dart` (Dark Obsidian), `app_theme.dart` (`buildAppTheme()`) и
+флаг отката `kTarotTreeThemeEnabled` удалены; в проекте не осталось ни одного
+упоминания `AppColors` и ни одного сырого `BackdropFilter`.
 
 
 ---
@@ -88,7 +89,7 @@ lib/core/theme/
 | **G4** | Digital Table (главный экран): панели, input, select, сегменты, bottom-sheet | ✅ сделано (530/530 тестов, `flutter analyze` 0 issues, APK установлен на Redmi GLES) |
 | **G5** | Almanac + Astral + Profile | ✅ сделано (535/535 тестов, `flutter analyze` 0 issues, debug APK собран) |
 | **G6** | Camera HUD + Oracle overlay | ✅ сделано (540/540 тестов, `flutter analyze` 0 issues, debug APK собран) |
-| **G7** | Зачистка legacy (`AppColors`/Dark Obsidian), скриншот-ревью, профиль-perf | `flutter analyze` чист, legacy удалён |
+| **G7** | Зачистка legacy (`AppColors`/Dark Obsidian), скриншот-ревью, профиль-perf | ✅ сделано (`AppColors`/`buildAppTheme`/флаг удалены, `flutter analyze` 0 issues, 537/537 тестов, debug APK собран) |
 
 Каждая фаза — отдельный коммит + скриншот + `flutter test`.
 

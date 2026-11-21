@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 
 /// Tarot Tree — централизованные design tokens (SSOT палитры и оптики).
 ///
-/// Отдельная система от [AppColors] (Dark Obsidian). В фазе G2 подключается
-/// как основная тема за флагом `kTarotTreeThemeEnabled`; [AppColors] остаётся
-/// для непереведённых экранов до G7. Каждый параметр меняется в одном месте.
+/// Единая дизайн-система приложения `mindreader.quest`: каждый параметр цвета,
+/// прозрачности, свечения, радиуса и оптики задаётся в одном месте.
 abstract final class TaroColors {
   static const background = Color(0xFF151725);
   static const duskMid = Color(0xFF2A2338);
@@ -12,6 +11,7 @@ abstract final class TaroColors {
   static const surface = Color(0xFF282739);
   static const canvas = Color(0xFF625B75);
   static const mist = Color(0xFFA9A4BE);
+  static const border = Color(0x2EA9A4BE);
   static const rose = Color(0xFFD4A8AC);
   static const dawn = Color(0xFFF0C7A4);
   static const textPrimary = Color(0xFFF2EBE4);
@@ -22,7 +22,9 @@ abstract final class TaroColors {
   static const lavender = Color(0xFFA78BFA);
   static const indigo = Color(0xFF6366F1);
   static const cyan = Color(0xFF38BDF8);
+  static const emerald = Color(0xFF34D399);
   static const amber = Color(0xFFF97316);
+  static const conflictRose = Color(0xFFFB7185);
   static const error = Color(0xFFE9A0A6);
 
   /// Контрастные токены для Camera HUD и Oracle overlay поверх живого видео.
