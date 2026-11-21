@@ -520,6 +520,8 @@ class _OverviewSlotState extends State<_OverviewSlot>
     final slot = widget.slot;
     final card = slot?.card;
     if (card == null || slot == null || widget.inFlight) {
+      final positions = context.watch<AppSettingsController>().enabled(ReadingAid.positions);
+      if (!positions && !widget.highlighted) return const SizedBox.expand();
       final shorts = context.read<SpreadController>().spreadSlotRoleShorts;
       final shortRole = widget.slotIndex < shorts.length
           ? shorts[widget.slotIndex]
@@ -538,7 +540,7 @@ class _OverviewSlotState extends State<_OverviewSlot>
         alignment: Alignment.topCenter,
         padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
         child: Text(
-          '${widget.slotIndex + 1} · $shortRole',
+          positions ? '${widget.slotIndex + 1} · $shortRole' : '',
           textAlign: TextAlign.center,
           maxLines: 5,
           overflow: TextOverflow.ellipsis,

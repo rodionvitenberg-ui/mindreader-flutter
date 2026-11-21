@@ -497,6 +497,13 @@ class AppStrings {
 
     // ---- settings sheet ----
     'settings.title': {AppLanguage.en: 'SETTINGS', AppLanguage.ru: 'НАСТРОЙКИ'},
+    'reading.title': {AppLanguage.en: 'Reading experience', AppLanguage.ru: 'Помощь при раскладе'},
+    'reading.positions': {AppLanguage.en: 'Show spread positions', AppLanguage.ru: 'Показывать позиции'},
+    'reading.guide': {AppLanguage.en: 'Guided reading', AppLanguage.ru: 'Обучение во время расклада'},
+    'reading.relationships': {AppLanguage.en: 'Show card relationships', AppLanguage.ru: 'Показывать связи карт'},
+    'reading.positions.hint': {AppLanguage.en: 'Outline and number empty spaces.', AppLanguage.ru: 'Контуры и номера свободных мест.'},
+    'reading.guide.hint': {AppLanguage.en: 'Get a short tip for the next step.', AppLanguage.ru: 'Краткая подсказка для следующего шага.'},
+    'reading.relationships.hint': {AppLanguage.en: 'Explore connections when inspecting a card.', AppLanguage.ru: 'Связи при просмотре открытой карты.'},
     'settings.language': {AppLanguage.en: 'LANGUAGE', AppLanguage.ru: 'ЯЗЫК'},
     'settings.english': {AppLanguage.en: 'ENGLISH', AppLanguage.ru: 'ENGLISH'},
     'settings.russian': {AppLanguage.en: 'РУССКИЙ', AppLanguage.ru: 'РУССКИЙ'},

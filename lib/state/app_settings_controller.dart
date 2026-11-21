@@ -4,6 +4,8 @@ import '../core/config/app_flags.dart';
 import '../core/l10n/app_strings.dart';
 import '../core/services/local_storage_service.dart';
 
+enum ReadingAid { positions, guide, relationships }
+
 /// Iteration 2 — the single source of truth for the UI language and the
 /// shared PRO subscription state.
 ///
@@ -22,6 +24,19 @@ class AppSettingsController extends ChangeNotifier {
 
   AppLanguage _language = AppLanguage.en;
   bool _isProUnlocked = false;
+
+  final _aids = <ReadingAid, bool>{ReadingAid.positions: true};
+  final _edited = <ReadingAid>{};
+  bool enabled(ReadingAid aid) => _aids[aid] ?? false;
+
+  Future<void> setAid(ReadingAid aid, bool value) async {
+    _edited.add(aid);
+    _aids[aid] = value;
+    notifyListeners();
+    try {
+      await _storage.saveReadingAid(aid.name, value);
+    } catch (_) { /* Keep the in-session preference when storage is unavailable. */ }
+  }
 
   AppLanguage get language => _language;
 
@@ -53,6 +68,12 @@ class AppSettingsController extends ChangeNotifier {
       }
     } catch (_) {
       // Same: best-effort restore.
+    }
+    for (final aid in ReadingAid.values) {
+      try {
+        final saved = await _storage.loadReadingAid(aid.name);
+        if (saved != null && !_edited.contains(aid)) _aids[aid] = saved;
+      } catch (_) { /* Use the default on devices without a preference store. */ }
     }
     notifyListeners();
   }

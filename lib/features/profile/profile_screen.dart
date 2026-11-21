@@ -52,6 +52,19 @@ class ProfileScreen extends StatelessWidget {
                         const ProfileSignInCard(),
                         const ProfileMigrationCard(),
                         ProfileCard(
+                          title: AppStrings.t(lang, 'reading.title'),
+                          child: Column(children: [
+                            for (final aid in ReadingAid.values)
+                              SwitchListTile.adaptive(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(AppStrings.t(lang, 'reading.${aid.name}')),
+                                subtitle: Text(AppStrings.t(lang, 'reading.${aid.name}.hint')),
+                                value: context.watch<AppSettingsController>().enabled(aid),
+                                onChanged: (value) => context.read<AppSettingsController>().setAid(aid, value),
+                              ),
+                          ]),
+                        ),
+                        ProfileCard(
                           title: AppStrings.t(lang, 'profile.card.rituals'),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,

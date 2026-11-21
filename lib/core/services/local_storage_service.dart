@@ -39,6 +39,13 @@ class LocalStorageService {
 
   static const _userProfileKey = 'user_profile_v1';
 
+  Future<bool?> loadReadingAid(String aid) async =>
+      (await SharedPreferences.getInstance()).getBool('reading_aid.$aid');
+
+  Future<void> saveReadingAid(String aid, bool value) async {
+    await (await SharedPreferences.getInstance()).setBool('reading_aid.$aid', value);
+  }
+
   Future<List<Map<String, dynamic>>> loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_historyKey);
