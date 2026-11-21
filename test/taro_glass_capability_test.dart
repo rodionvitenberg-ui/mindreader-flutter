@@ -69,4 +69,29 @@ void main() {
       TaroGlassMode.fake,
     );
   });
+
+  test('render self-test overrides the heuristic', () {
+    // Black frame => fake even though Vulkan is reported.
+    expect(
+      TaroGlassCapability.decide(
+        shaderFiltersSupported: true,
+        isAndroid: true,
+        isApple: false,
+        androidVulkanSupported: true,
+        selfTestGlassWorks: false,
+      ),
+      TaroGlassMode.fake,
+    );
+    // Glass rendered => glass even without Vulkan report.
+    expect(
+      TaroGlassCapability.decide(
+        shaderFiltersSupported: true,
+        isAndroid: true,
+        isApple: false,
+        androidVulkanSupported: false,
+        selfTestGlassWorks: true,
+      ),
+      TaroGlassMode.glass,
+    );
+  });
 }

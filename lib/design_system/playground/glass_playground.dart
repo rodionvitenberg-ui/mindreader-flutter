@@ -16,7 +16,7 @@ class GlassPlayground extends StatefulWidget {
 }
 
 class _GlassPlaygroundState extends State<GlassPlayground> {
-  TaroGlassMode _mode = TaroGlassMode.fake;
+  TaroGlassMode _mode = TaroGlassMode.auto;
   int _segment = 0;
   int _dockIndex = 1;
   String _deck = 'Rider–Waite';

@@ -65,10 +65,12 @@ flutter run -t lib/design_system/playground/playground_main.dart \
 `test/taro_glass_capability_test.dart`. Переопределение — передать `mode`
 в `TaroGlassLayer` явно (`glass`/`fake`/`simple`/`opaque`).
 
-> Ограничение: некоторые устройства (часть MediaTek) рапортуют Vulkan, но
-> Impeller у них на GLES и настоящий glass рисуется чёрным. Для таких — явный
-> `fake`. Полностью автоматически это ловится только render-самопроверкой
-> (следующий шаг).
+**Render-самопроверка.** Некоторые устройства (часть MediaTek) рапортуют Vulkan,
+но Impeller у них на GLES и настоящий glass рисуется чёрным. Чтобы не полагаться
+на эвристику, после первого кадра рисуется крошечный (64×64, практически
+невидимый) настоящий glass над белым фоном в `Overlay`, читаются пиксели через
+`RepaintBoundary.toImage()`; если кадр чёрный — `auto` уходит в `fake`.
+Если `Overlay` недоступен — остаётся эвристика по Vulkan.
 
 
 ## Производительность (profile)
@@ -81,18 +83,19 @@ FPS замеряется на физическом устройстве (DevTool
 
 ## Проверено на устройстве (Android 13, Impeller OpenGLES)
 
-Скриншот: `lib/design_system/playground/screenshot_fake.png`.
+Скриншоты: `screenshot_auto.png` (auto → fake) и `screenshot_fake.png`.
 
 Важный вывод по рендереру:
 
 | Режим | На Impeller GLES (без Flutter GPU/Vulkan) |
 |-------|-------------------------------------------|
+| `auto`  | **работает** — самопроверка выбирает `fake`, чёрного кадра нет |
 | `glass` | **чёрный кадр** — настоящий glass требует Impeller Vulkan + Flutter GPU |
 | `fake`  | **работает** — FakeGlass даёт стеклянный вид (blur + tint + rim) |
 | `simple`| работает |
 | `opaque`| работает |
 
-Поэтому дефолт playground — `fake` (устойчив на любых устройствах). На телефоне с
-Impeller Vulkan + Flutter GPU можно переключить на `glass` для настоящего
-преломления. Режимы `simple`/`opaque` — для слабых GPU и замеров без backdrop
-sampling.
+Дефолт playground — `auto`: на этом Redmi (Impeller GLES) самопроверка
+определила чёрный кадр и выбрала `fake`; на устройстве с Impeller Vulkan/Metal
+она выберет `glass`. Режимы `simple`/`opaque` — для слабых GPU и замеров без
+backdrop sampling.

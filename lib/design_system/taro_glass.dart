@@ -79,9 +79,12 @@ class TaroGlassLayer extends StatelessWidget {
   Widget build(BuildContext context) {
     if (mode != TaroGlassMode.auto) return _buildResolved(context, mode);
     // Резолвим возможности один раз после первого кадра (не блокируя его).
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => TaroGlassCapability.ensureResolved(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
+      TaroGlassCapability.ensureResolved(
+        overlay: Overlay.maybeOf(context, rootOverlay: true),
+      );
+    });
     return ValueListenableBuilder<TaroGlassMode>(
       valueListenable: TaroGlassCapability.mode,
       builder: (context, resolved, _) => _buildResolved(context, resolved),
