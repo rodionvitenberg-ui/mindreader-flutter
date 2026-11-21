@@ -64,6 +64,7 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
   final TextEditingController _composerController = TextEditingController();
   final List<_QuestionEntry> _entries = [];
   int _nextId = 0;
+  bool _compareNeighbors = false;
 
   final SpeechToText _speech = SpeechToText();
   int _speechRequest = 0;
@@ -81,6 +82,7 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
     final existing = context.read<SpreadController>().customSpread;
     _nameController = TextEditingController(text: existing?.name ?? '');
     if (existing != null) {
+      _compareNeighbors = existing.compareNeighbors;
       for (final q in existing.questions) {
         _entries.add(_QuestionEntry(id: _nextId++, text: q));
       }
@@ -310,6 +312,7 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
     final ctrl = context.read<SpreadController>();
     final config = CustomSpreadConfig.fromQuestions(
       questions: questions,
+      compareNeighbors: _compareNeighbors,
       name: _nameController.text,
       defaultName: AppStrings.t(lang, 'spread.custom'),
     );
@@ -410,6 +413,13 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
                 AppStrings.t(lang, 'spread.customTitleLabel'),
               ),
             ),
+            if (context.read<SpreadController>().system == DivinationSystem.tarot &&
+                _collectQuestions().length >= 2 && _collectQuestions().length <= 4)
+              SwitchListTile.adaptive(
+                title: Text(lang == AppLanguage.en ? 'Compare elements of successive positions' : 'Сравнивать стихии последовательных позиций'),
+                value: _compareNeighbors,
+                onChanged: (v) => setState(() => _compareNeighbors = v),
+              ),
             const SizedBox(height: 14),
             Text(
               AppStrings.t(lang, 'spread.customQuestionsLabel'),

@@ -1,3 +1,4 @@
+import '../core/services/reading_relationships.dart';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -97,6 +98,9 @@ class SpreadController extends ChangeNotifier {
 
   CustomSpreadConfig? _customSpread;
   CustomSpreadConfig? get customSpread => _customSpread;
+  List<ReadingRelationship> get relationships => readingRelationships(
+    system: system, type: spreadType, custom: customSpread, slots: slots,
+  );
   bool get isCustomSpread => _customSpread != null;
 
   /// Canonical slot count of the ACTIVE spread (or custom spread count).
@@ -445,6 +449,7 @@ class SpreadController extends ChangeNotifier {
     _customSpread = CustomSpreadConfig.fromQuestions(
       questions: config.questions,
       name: config.name,
+      compareNeighbors: config.compareNeighbors,
       maxCards: maxAllowed,
     );
     _resetSlots();
@@ -821,6 +826,7 @@ class SpreadController extends ChangeNotifier {
     RuneCast? runeCast,
     String? customSpread,
     List<String> customQuestions = const [],
+    bool compareNeighbors = false,
     required List<({int cardId, bool reversed, String role, String? userContext})> cards,
     required List<String> sessionNotes,
     String readingQuestion = '',
@@ -842,6 +848,7 @@ class SpreadController extends ChangeNotifier {
       _customSpread = CustomSpreadConfig.fromQuestions(
         questions: restoredQuestions,
         name: customSpread,
+        compareNeighbors: compareNeighbors,
       );
     } else {
       _customSpread = null;

@@ -3,6 +3,7 @@
 /// Pure Dart — no Flutter imports.
 class CustomSpreadConfig {
   const CustomSpreadConfig({
+    this.compareNeighbors = false,
     required this.name,
     required this.questions,
     required this.slotRoleShorts,
@@ -17,6 +18,7 @@ class CustomSpreadConfig {
   /// Throws [ArgumentError] if no non-empty question remains.
   factory CustomSpreadConfig.fromQuestions({
     required List<String> questions,
+    bool compareNeighbors = false,
     String name = '',
     String defaultName = 'Custom Spread',
     int maxCards = maxPositions,
@@ -39,6 +41,7 @@ class CustomSpreadConfig {
       return '${q.substring(0, 23)}…';
     });
     return CustomSpreadConfig(
+      compareNeighbors: compareNeighbors && cleaned.length >= 2 && cleaned.length <= 4,
       name: resolvedName,
       questions: List.unmodifiable(cleaned),
       slotRoleShorts: List.unmodifiable(shorts),
@@ -47,6 +50,7 @@ class CustomSpreadConfig {
 
   /// Display name of the custom spread (e.g. "Свой расклад" / "Custom Spread").
   final String name;
+  final bool compareNeighbors;
 
   /// Ordered list of user questions — one question per table position (1..12).
   final List<String> questions;

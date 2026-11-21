@@ -43,10 +43,10 @@ void main() {
       );
     });
 
-    test('air + fire → conflict', () {
+    test('air + fire → harmony', () {
       expect(
         dignityBetween(byName('Ace of Swords'), byName('Ace of Wands')),
-        ThreadTone.conflict,
+        ThreadTone.harmony,
       );
     });
 

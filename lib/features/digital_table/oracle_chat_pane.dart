@@ -690,7 +690,7 @@ class _ClarifierSuggestions extends StatelessWidget {
         ),
       );
     }
-    final questions = buildClarifierSuggestions(slots, hardMax: maxCards);
+    final questions = buildClarifierSuggestions(slots, hardMax: maxCards, relationships: context.read<SpreadController>().relationships);
     if (questions.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 6, bottom: 16),

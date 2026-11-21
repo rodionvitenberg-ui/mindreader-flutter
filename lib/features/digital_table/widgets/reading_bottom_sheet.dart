@@ -153,6 +153,7 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
     // Dual AI pipeline: RTX 3080 worker → Gemini Flash → local engine.
     // Never throws — the local synthesis is the guaranteed fallback.
     final text = await OracleSynthesisService().synthesize(
+      relationships: ctrl.relationships,
       slots: ctrl.slots,
       type: ctrl.spreadType,
       contextChip: _contextChip,

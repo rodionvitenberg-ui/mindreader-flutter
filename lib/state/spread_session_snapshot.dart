@@ -85,6 +85,7 @@ class SpreadSessionSnapshot {
     this.voiceUsed,
     this.customSpread,
     this.customQuestions = const [],
+    this.compareNeighbors = false,
     this.pendingGuidedPosition,
   });
 
@@ -179,6 +180,7 @@ class SpreadSessionSnapshot {
   /// Ordered list of questions for a custom spread (1 question = 1 position),
   /// stored alongside the cards so history preserves questions and order.
   final List<String> customQuestions;
+  final bool compareNeighbors;
 
   /// The guided-spread slot position the session was paused at, so a restored
   /// guided reading can resume there (null when not a paused guided session).
@@ -240,6 +242,7 @@ class SpreadSessionSnapshot {
       readingMode: readingMode,
       readingStatus: readingStatus,
       customSpread: ctrl.customSpread?.name,
+      compareNeighbors: ctrl.customSpread?.compareNeighbors ?? false,
       customQuestions: ctrl.customSpread?.questions ?? const [],
     );
   }
@@ -295,6 +298,7 @@ class SpreadSessionSnapshot {
     if (completionStatus != null) 'completionStatus': completionStatus,
     if (voiceUsed != null) 'voiceUsed': voiceUsed,
     if (customSpread != null) 'customSpread': customSpread,
+    if (compareNeighbors) 'compareNeighbors': true,
     if (customQuestions.isNotEmpty) 'customQuestions': customQuestions,
     if (pendingGuidedPosition != null)
       'pendingGuidedPosition': pendingGuidedPosition,
@@ -380,6 +384,7 @@ class SpreadSessionSnapshot {
       ),
       completionStatus: json['completionStatus'] as bool?,
       voiceUsed: json['voiceUsed'] as bool?,
+      compareNeighbors: json['compareNeighbors'] == true,
       customSpread: json['customSpread'] as String?,
       customQuestions:
           (json['customQuestions'] as List? ?? const []).cast<String>(),

@@ -13,6 +13,7 @@ import '../models/spread_type.dart';
 import '../models/tarot_card_model.dart';
 import '../models/zodiac_forecast.dart';
 import 'natal_calculator_service.dart';
+import 'reading_relationships.dart';
 
 /// How two adjacent face-up cards relate, elementally.
 enum ThreadTone { harmony, conflict, neutral }
@@ -24,26 +25,19 @@ class ThreadInfo {
   const ThreadInfo({required this.from, required this.to, required this.tone});
 }
 
-/// Harmony: same element, or Water+Earth synergy.
-/// Conflict: Fire+Water, Air+Fire tension.
-/// NOTE: plain Set equality in Dart is identity-based, so pairs are compared
-/// explicitly instead of via `Set<Set<Element>>.contains()`.
-bool _isPair(Element a, Element b, Element x, Element y) =>
-    (a == x && b == y) || (a == y && b == x);
+ThreadTone _tone(ElementalInfluence influence) => switch (influence) {
+  ElementalInfluence.reinforcing || ElementalInfluence.supportive => ThreadTone.harmony,
+  ElementalInfluence.opposing => ThreadTone.conflict,
+  ElementalInfluence.neutral => ThreadTone.neutral,
+};
 
-/// Pure elemental dignity between two elements — the shared core behind
-/// every system's Fate Threads.
-ThreadTone dignityBetweenElements(Element a, Element b) {
-  if (a == b) return ThreadTone.harmony;
-  if (_isPair(a, b, Element.water, Element.earth)) {
-    return ThreadTone.harmony;
-  }
-  if (_isPair(a, b, Element.fire, Element.water) ||
-      _isPair(a, b, Element.air, Element.fire)) {
-    return ThreadTone.conflict;
-  }
-  return ThreadTone.neutral;
-}
+ThreadTone dignityBetweenElements(Element a, Element b) => _tone(influenceOf(a,b));
+
+List<ThreadInfo> _readingThreads(List<DealtCardSlot> slots, List<ReadingRelationship>? relationships) =>
+  relationships == null ? computeThreads(slots) : [
+    for (final link in relationships)
+      if (link.influence != null) ThreadInfo(from: link.from, to: link.to, tone: _tone(link.influence!)),
+  ];
 
 /// Pure elemental dignity between two tarot cards (compat signature).
 ThreadTone dignityBetween(TarotCard a, TarotCard b) =>
@@ -138,6 +132,7 @@ bool _isShadowRole(String role) =>
 List<String> buildClarifierSuggestions(
   List<DealtCardSlot> slots, {
   int hardMax = 15,
+  List<ReadingRelationship>? relationships,
 }) {
   final faceUp = [for (final s in slots) if (s.card != null) s];
   if (faceUp.isEmpty) return const [];
@@ -160,7 +155,7 @@ List<String> buildClarifierSuggestions(
   // 2. The elemental tension: a conflict thread between two concrete
   // cards, or the dominant element pressing on the reading.
   final conflict = [
-    for (final t in computeThreads(slots))
+    for (final t in _readingThreads(slots, relationships))
       if (t.tone == ThreadTone.conflict) t,
   ];
   if (conflict.isNotEmpty) {
@@ -209,6 +204,7 @@ String _alchemyText(List<DealtCardSlot> slots, List<ThreadInfo> threads) {
   }
   final harmonies = threads.where((t) => t.tone == ThreadTone.harmony).length;
   final tensions = threads.where((t) => t.tone == ThreadTone.conflict).length;
+  if (threads.isEmpty) return b.toString();
   b.writeln('Threads: $harmonies harmonious, $tensions tensed — '
       '${tensions > 0 ? 'the friction marks the growth point of this reading.' : 'the strings hum in cooperation.'}');
   return b.toString();
@@ -281,6 +277,7 @@ String synthesizeSpreadFor(
   Map<int, String>? slotContexts,
   String? profileContext,
   List<String>? positionQuestions,
+    List<ReadingRelationship>? relationships,
 }) {
   final faceUp = slots.where((s) => s.card != null).toList();
   if (faceUp.isEmpty) {
@@ -329,11 +326,15 @@ String synthesizeSpreadFor(
     );
   }
 
-  final threads = computeThreads(slots);
+  final threads = _readingThreads(slots, relationships);
   final harmonies = threads.where((t) => t.tone == ThreadTone.harmony).length;
   final tensions = threads.where((t) => t.tone == ThreadTone.conflict).length;
   b.writeln();
-  if (threads.isEmpty) {
+  if (relationships != null) {
+    for (final link in relationships) {
+      b.writeln('${slots[link.from].role} / ${slots[link.to].role} — ${link.explanation}');
+    }
+  } else if (threads.isEmpty) {
     b.writeln('The cards stand alone for now — a single clear signal rather than a chorus.');
   } else {
     b.writeln(
@@ -417,6 +418,7 @@ class OracleSynthesisService {
     Map<int, String>? slotContexts,
     String? profileContext,
     List<String>? positionQuestions,
+    List<ReadingRelationship>? relationships,
   }) async {
     final resolvedLabel =
         spreadLabel ?? (type ?? SpreadType.three).label;
@@ -431,6 +433,7 @@ class OracleSynthesisService {
       slotContexts: slotContexts,
       profileContext: profileContext,
       positionQuestions: positionQuestions,
+      relationships: relationships,
     );
     final prompt = buildSynthesisPrompt(
       slots: slots,
@@ -441,6 +444,7 @@ class OracleSynthesisService {
       slotContexts: slotContexts,
       profileContext: profileContext,
       positionQuestions: positionQuestions,
+      relationships: relationships,
     );
     if (prompt == null) return fallback;
 
@@ -491,6 +495,7 @@ class OracleSynthesisService {
     Map<int, String>? slotContexts,
     String? profileContext,
     List<String>? positionQuestions,
+    List<ReadingRelationship>? relationships,
   }) async {
     final narrative = await synthesize(
       slots: slots,
@@ -502,9 +507,10 @@ class OracleSynthesisService {
       slotContexts: slotContexts,
       profileContext: profileContext,
       positionQuestions: positionQuestions,
+      relationships: relationships,
     );
     final faceUp = slots.where((s) => s.card != null).toList();
-    final threads = computeThreads(slots);
+    final threads = _readingThreads(slots, relationships);
     final balance = elementalBalance(slots);
     return StructuredSynthesis(
       narrative: narrative,
@@ -615,6 +621,7 @@ class OracleSynthesisService {
     Map<int, String>? slotContexts,
     String? profileContext,
     List<String>? positionQuestions,
+    List<ReadingRelationship>? relationships,
   }) {
     final faceUp = slots.where((s) => s.card != null).toList();
     if (faceUp.isEmpty) return null;
@@ -624,6 +631,9 @@ class OracleSynthesisService {
     b.writeln(oraclePersona);
     b.writeln('Spread: $spreadLabel (${faceUp.length} ${system.unit}s). '
         '$focusLine');
+    if (relationships != null) {
+      b.writeln('Applicable relationships (one-based positions): ${jsonEncode(relationships.map((link) => link.toJson()).toList())}. Use only these position pairs for relationship analysis.');
+    }
     if (profileContext != null && profileContext.isNotEmpty) {
       b.writeln('Who this reading is for (local profile, never stored '
           'server-side): $profileContext.');
@@ -658,7 +668,7 @@ class OracleSynthesisService {
       }
       b.writeln('Answer each question–card pair in order and weave all pairs '
           'together into one cohesive overall reading that highlights how the '
-          'answers connect, names elemental harmonies and tensions, and closes '
+          'answers connect, uses applicable relationships, and closes '
           'with one sharp Socratic question. Plain text only: no markdown, '
           'no lists, no headers.');
     } else {
@@ -676,8 +686,8 @@ class OracleSynthesisService {
       }
       b.writeln('Write a cohesive synthesis of 2-3 short paragraphs that '
           'weaves each card\'s meaning into its slot role AND weaves in what '
-          'the reader held in mind, names the elemental harmonies and '
-          'tensions, and closes with one sharp Socratic question. '
+          'the reader held in mind, uses applicable relationships, and '
+          'closes with one sharp Socratic question. '
           'Plain text only: no markdown, no lists, no headers.');
     }
     return b.toString();

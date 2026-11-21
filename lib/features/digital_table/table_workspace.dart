@@ -293,6 +293,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
       slotContexts: contexts,
       profileContext: _tableSubject,
       positionQuestions: _ctrl.customSpread?.questions,
+      relationships: _ctrl.relationships,
     );
     if (!mounted || !_session.isCurrentSession(epoch)) return;
     _session.markInitial(result);
@@ -500,6 +501,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
           runeCast: snapshot.runeCast,
           customSpread: snapshot.customSpread,
           customQuestions: snapshot.customQuestions,
+          compareNeighbors: snapshot.compareNeighbors,
           cards: snapshot.toRestoreCards(),
           sessionNotes: snapshot.sessionNotes,
           readingQuestion: snapshot.readingQuestion,
