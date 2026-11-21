@@ -8,8 +8,8 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/models/custom_spread.dart';
 import '../../../core/models/divination_system.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/spread_controller.dart';
 import 'shuffle_physics.dart';
@@ -35,12 +35,8 @@ class CustomSpreadSheet extends StatefulWidget {
     SpreadLaunchContext launchContext = SpreadLaunchContext.digitalTable,
     void Function(int cardCount)? onSpreadSelected,
   }) {
-    HapticFeedback.selectionClick();
-    return showModalBottomSheet<void>(
+    return showTaroGlassSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
       builder: (_) => CustomSpreadSheet(
         launchContext: launchContext,
         onSpreadSelected: onSpreadSelected,
@@ -331,7 +327,6 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
     final lang = context.watch<AppSettingsController>().language;
     final system = context.watch<SpreadController>().system;
     final isRune = system == DivinationSystem.runes;
-    final keyboardBottom = MediaQuery.viewInsetsOf(context).bottom;
     final collected = _collectQuestions();
     final effectiveCount = collected.length;
     final atLimit = _entries.length >= CustomSpreadConfig.maxPositions;
@@ -339,280 +334,220 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
       effectiveCount == 0 ? 1 : effectiveCount,
     );
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 160),
-      curve: Curves.easeOut,
-      padding: EdgeInsets.only(bottom: keyboardBottom),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * 0.88,
-        ),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(18, 10, 18, 22),
-          decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.98),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: SafeArea(
-            top: false,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.border,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+      ),
+      child: TaroGlassSheet(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppStrings.t(lang, 'spread.custom'),
-                              style: AppTypography.display(
-                                fontSize: 26,
-                                height: 1.05,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              '$effectiveCount / ${CustomSpreadConfig.maxPositions}',
-                              key: const ValueKey('custom-position-counter'),
-                              style: AppTypography.label(
-                                fontSize: 9.5,
-                                letterSpacing: 0.8,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.lavender,
-                              ),
-                            ),
-                          ],
+                      Text(
+                        AppStrings.t(lang, 'spread.custom'),
+                        style: AppTypography.display(
+                          fontSize: 26,
+                          height: 1.05,
+                          fontWeight: FontWeight.w800,
+                          color: TaroColors.textPrimary,
                         ),
                       ),
-                      Container(
-                        width: 68,
-                        height: 56,
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppColors.canvas.withValues(alpha: 0.55),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: CustomPaint(
-                          painter: SpreadMiniaturePainter(
-                            geometry: geometry,
-                            isRune: isRune,
-                            active: effectiveCount > 0,
-                          ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '$effectiveCount / ${CustomSpreadConfig.maxPositions}',
+                        key: const ValueKey('custom-position-counter'),
+                        style: AppTypography.label(
+                          fontSize: 9.5,
+                          letterSpacing: 0.8,
+                          fontWeight: FontWeight.w700,
+                          color: TaroColors.lavender,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    key: const ValueKey('custom-spread-name-field'),
-                    controller: _nameController,
-                    textInputAction: TextInputAction.next,
+                ),
+                Container(
+                  width: 68,
+                  height: 56,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: TaroColors.background.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: TaroColors.mist.withValues(
+                        alpha: TaroOpacity.border,
+                      ),
+                    ),
+                  ),
+                  child: CustomPaint(
+                    painter: SpreadMiniaturePainter(
+                      geometry: geometry,
+                      isRune: isRune,
+                      active: effectiveCount > 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              key: const ValueKey('custom-spread-name-field'),
+              controller: _nameController,
+              textInputAction: TextInputAction.next,
+              cursorColor: TaroColors.lavender,
+              style: const TextStyle(
+                color: TaroColors.textPrimary,
+                fontSize: 13.5,
+              ),
+              decoration: _fieldDecoration(
+                AppStrings.t(lang, 'spread.customTitleLabel'),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              AppStrings.t(lang, 'spread.customQuestionsLabel'),
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 0.9,
+                color: TaroColors.lavender,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: TextField(
+                    key: const ValueKey('custom-question-input'),
+                    controller: _composerController,
+                    enabled: !atLimit,
+                    textInputAction: TextInputAction.done,
+                    cursorColor: TaroColors.lavender,
+                    onChanged: (_) {
+                      if (_dictating) setState(_cancelDictation);
+                      setState(() {});
+                    },
+                    onSubmitted: (_) => _addFromComposer(),
                     style: const TextStyle(
-                      color: AppColors.textPrimary,
+                      color: TaroColors.textPrimary,
                       fontSize: 13.5,
                     ),
                     decoration: _fieldDecoration(
-                      AppStrings.t(lang, 'spread.customTitleLabel'),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    AppStrings.t(lang, 'spread.customQuestionsLabel'),
-                    style: AppTypography.label(
-                      fontSize: 9,
-                      letterSpacing: 0.9,
-                      color: AppColors.lavender,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          key: const ValueKey('custom-question-input'),
-                          controller: _composerController,
-                          enabled: !atLimit,
-                          textInputAction: TextInputAction.done,
-                          onChanged: (_) {
-                            if (_dictating) setState(_cancelDictation);
-                            setState(() {});
-                          },
-                          onSubmitted: (_) => _addFromComposer(),
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 13.5,
-                          ),
-                          decoration: _fieldDecoration(
-                            atLimit
-                                ? AppStrings.t(
-                                    lang,
-                                    'spread.customLimitReached',
-                                  )
-                                : AppStrings.t(
-                                    lang,
-                                    'spread.customQuestionInput',
-                                  ),
-                            suffixIcon: IconButton(
-                              key: const ValueKey('custom-question-mic'),
-                              tooltip: AppStrings.t(
-                                lang,
-                                _dictating
-                                    ? 'table.stopDictation'
-                                    : 'table.dictate',
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              onPressed: atLimit
-                                  ? null
-                                  : () => _toggleDictation(lang),
-                              icon: Icon(
-                                _dictating
-                                    ? Icons.stop_circle_outlined
-                                    : Icons.mic_none,
-                                size: 19,
-                                color: atLimit
-                                    ? AppColors.textMuted
-                                    : AppColors.lavender,
-                              ),
-                            ),
-                          ),
+                      atLimit
+                          ? AppStrings.t(lang, 'spread.customLimitReached')
+                          : AppStrings.t(lang, 'spread.customQuestionInput'),
+                      suffixIcon: IconButton(
+                        key: const ValueKey('custom-question-mic'),
+                        tooltip: AppStrings.t(
+                          lang,
+                          _dictating ? 'table.stopDictation' : 'table.dictate',
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        key: const ValueKey('custom-question-add'),
-                        tooltip: AppStrings.t(lang, 'spread.customAddQuestion'),
+                        visualDensity: VisualDensity.compact,
                         onPressed:
-                            atLimit || _composerController.text.trim().isEmpty
-                            ? null
-                            : _addFromComposer,
-                        style: IconButton.styleFrom(
-                          backgroundColor:
-                              atLimit || _composerController.text.trim().isEmpty
-                              ? AppColors.canvas.withValues(alpha: 0.4)
-                              : AppColors.lavender.withValues(alpha: 0.18),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color:
-                                  atLimit ||
-                                      _composerController.text.trim().isEmpty
-                                  ? AppColors.border
-                                  : AppColors.lavender.withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ),
+                            atLimit ? null : () => _toggleDictation(lang),
                         icon: Icon(
-                          Icons.add_rounded,
-                          color:
-                              atLimit || _composerController.text.trim().isEmpty
-                              ? AppColors.textMuted
-                              : AppColors.lavender,
+                          _dictating
+                              ? Icons.stop_circle_outlined
+                              : Icons.mic_none,
+                          size: 19,
+                          color: atLimit
+                              ? TaroColors.textSecondary
+                              : (_dictating
+                                  ? TaroColors.rose
+                                  : TaroColors.lavender),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  if (_entries.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        AppStrings.t(lang, 'spread.customEmptyHint'),
-                        style: AppTypography.body(
-                          fontSize: 12,
-                          height: 1.4,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    )
-                  else
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (var i = 0; i < _entries.length; i++) ...[
-                          _QuestionRow(
-                            key: ValueKey('custom-question-item-${_entries[i].id}'),
-                            index: i,
-                            total: _entries.length,
-                            controller: _entries[i].controller,
-                            lang: lang,
-                            decoration: _fieldDecoration(
-                              '${i + 1}',
-                            ),
-                            onChanged: () => setState(() {}),
-                            onMoveUp: i > 0 ? () => _move(i, i - 1) : null,
-                            onMoveDown: i < _entries.length - 1
-                                ? () => _move(i, i + 1)
-                                : null,
-                            onDelete: () => _removeAt(i),
-                          ),
-                          if (i < _entries.length - 1)
-                            const SizedBox(height: 8),
-                        ],
-                      ],
                     ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    key: const ValueKey('custom-spread-open-button'),
-                    behavior: HitTestBehavior.opaque,
-                    onTap: effectiveCount > 0 ? () => _openTable(lang) : null,
-                    child: Container(
-                      width: double.infinity,
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        gradient: effectiveCount > 0
-                            ? const LinearGradient(
-                                colors: [AppColors.lavender, AppColors.indigo],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  key: const ValueKey('custom-question-add'),
+                  tooltip: AppStrings.t(lang, 'spread.customAddQuestion'),
+                  onPressed:
+                      atLimit || _composerController.text.trim().isEmpty
+                      ? null
+                      : _addFromComposer,
+                  style: IconButton.styleFrom(
+                    backgroundColor:
+                        atLimit || _composerController.text.trim().isEmpty
+                        ? TaroColors.background.withValues(alpha: 0.45)
+                        : TaroColors.lavender.withValues(alpha: 0.20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color:
+                            atLimit ||
+                                _composerController.text.trim().isEmpty
+                            ? TaroColors.mist.withValues(
+                                alpha: TaroOpacity.border,
                               )
-                            : null,
-                        color: effectiveCount > 0
-                            ? null
-                            : AppColors.canvas.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: effectiveCount > 0
-                              ? Colors.transparent
-                              : AppColors.border,
-                        ),
-                      ),
-                      child: Text(
-                        effectiveCount > 0
-                            ? '${AppStrings.t(lang, 'spread.customOpenTable')} ($effectiveCount)'
-                            : AppStrings.t(lang, 'spread.customOpenTable'),
-                        style: AppTypography.label(
-                          fontSize: 10.5,
-                          letterSpacing: 1.0,
-                          fontWeight: FontWeight.w800,
-                          color: effectiveCount > 0
-                              ? AppColors.canvas
-                              : AppColors.textMuted,
-                        ),
+                            : TaroColors.lavender.withValues(alpha: 0.6),
                       ),
                     ),
                   ),
+                  icon: Icon(
+                    Icons.add_rounded,
+                    color:
+                        atLimit || _composerController.text.trim().isEmpty
+                        ? TaroColors.textSecondary
+                        : TaroColors.lavender,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            if (_entries.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  AppStrings.t(lang, 'spread.customEmptyHint'),
+                  style: AppTypography.body(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: TaroColors.textSecondary,
+                  ),
+                ),
+              )
+            else
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < _entries.length; i++) ...[
+                    _QuestionRow(
+                      key: ValueKey('custom-question-item-${_entries[i].id}'),
+                      index: i,
+                      total: _entries.length,
+                      controller: _entries[i].controller,
+                      lang: lang,
+                      decoration: _fieldDecoration('${i + 1}'),
+                      onChanged: () => setState(() {}),
+                      onMoveUp: i > 0 ? () => _move(i, i - 1) : null,
+                      onMoveDown:
+                          i < _entries.length - 1 ? () => _move(i, i + 1) : null,
+                      onDelete: () => _removeAt(i),
+                    ),
+                    if (i < _entries.length - 1) const SizedBox(height: 8),
+                  ],
                 ],
               ),
+            const SizedBox(height: 16),
+            TaroGlassButton(
+              key: const ValueKey('custom-spread-open-button'),
+              label: effectiveCount > 0
+                  ? '${AppStrings.t(lang, 'spread.customOpenTable')} ($effectiveCount)'
+                  : AppStrings.t(lang, 'spread.customOpenTable'),
+              variant: TaroGlassButtonVariant.primary,
+              onPressed: effectiveCount > 0 ? () => _openTable(lang) : null,
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -621,19 +556,24 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
   InputDecoration _fieldDecoration(String hint, {Widget? suffixIcon}) {
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.border),
+      borderSide: BorderSide(
+        color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+      ),
     );
     return InputDecoration(
       filled: true,
-      fillColor: AppColors.canvas.withValues(alpha: 0.55),
+      fillColor: TaroColors.surface.withValues(alpha: 0.72),
       isDense: true,
       hintText: hint,
-      hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 12.5),
+      hintStyle: const TextStyle(
+        color: TaroColors.textSecondary,
+        fontSize: 12.5,
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       border: border,
       enabledBorder: border,
       focusedBorder: border.copyWith(
-        borderSide: const BorderSide(color: AppColors.lavender),
+        borderSide: const BorderSide(color: TaroColors.lavender),
       ),
       suffixIcon: suffixIcon,
       suffixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 38),
@@ -675,7 +615,7 @@ class _QuestionRow extends StatelessWidget {
           height: 24,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: AppColors.lavender.withValues(alpha: 0.14),
+            color: TaroColors.lavender.withValues(alpha: 0.16),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
@@ -683,7 +623,7 @@ class _QuestionRow extends StatelessWidget {
             style: AppTypography.label(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: AppColors.lavender,
+              color: TaroColors.lavender,
             ),
           ),
         ),
@@ -693,7 +633,8 @@ class _QuestionRow extends StatelessWidget {
             key: ValueKey('custom-question-edit-$index'),
             controller: controller,
             onChanged: (_) => onChanged(),
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+            cursorColor: TaroColors.lavender,
+            style: const TextStyle(color: TaroColors.textPrimary, fontSize: 13),
             decoration: decoration,
           ),
         ),
@@ -709,8 +650,8 @@ class _QuestionRow extends StatelessWidget {
               Icons.keyboard_arrow_up_rounded,
               size: 18,
               color: onMoveUp != null
-                  ? AppColors.textMuted
-                  : AppColors.border,
+                  ? TaroColors.textSecondary
+                  : TaroColors.mist.withValues(alpha: TaroOpacity.border),
             ),
           ),
           IconButton(
@@ -724,8 +665,8 @@ class _QuestionRow extends StatelessWidget {
               Icons.keyboard_arrow_down_rounded,
               size: 18,
               color: onMoveDown != null
-                  ? AppColors.textMuted
-                  : AppColors.border,
+                  ? TaroColors.textSecondary
+                  : TaroColors.mist.withValues(alpha: TaroOpacity.border),
             ),
           ),
         ],
@@ -739,7 +680,7 @@ class _QuestionRow extends StatelessWidget {
           icon: const Icon(
             Icons.close_rounded,
             size: 17,
-            color: AppColors.textMuted,
+            color: TaroColors.textSecondary,
           ),
         ),
       ],

@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +14,7 @@ import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/oracle_synthesis_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 import '../../../state/spread_controller.dart';
 
 /// Glassmorphic bottom sheet with two faces:
@@ -32,11 +31,8 @@ class ReadingBottomSheet extends StatefulWidget {
   final int? cardIndex; // set when opened from a face-up card tap
 
   static Future<void> show(BuildContext context, {int? cardIndex}) {
-    return showModalBottomSheet(
+    return showTaroGlassSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
       builder: (_) => ReadingBottomSheet(cardIndex: cardIndex),
     );
   }
@@ -213,214 +209,171 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
     final card = slot?.card;
     final canSynthesize = ctrl.faceUpCount > 0;
 
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xEB13131A), // surface @ 0.92
-            border: Border(top: BorderSide(color: AppColors.border)),
-          ),
-          child: SafeArea(
-            top: false,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: AppColors.textMuted.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  if (slot != null && card != null) ...[
-                    // ---- Card Inspector Sheet (tapped face-up card) ----
-                    _CardInspectorHeader(slot: slot, card: card),
-                    const SizedBox(height: 18),
-                    Text(
-                      slot.isReversed && card.reversed != null
-                          ? 'REVERSED MEANING'
-                          : 'UPRIGHT MEANING',
-                      style: AppTypography.label(
-                        fontSize: 9,
-                        letterSpacing: 1.1,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      meaningFor(slot),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        height: 1.6,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      card.keywords.map((k) => k.toUpperCase()).join(' · '),
-                      style: AppTypography.label(
-                        fontSize: 10,
-                        letterSpacing: 0.8,
-                        color: AppColors.lavender,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'RESONANCE',
-                      style: AppTypography.label(
-                        fontSize: 9,
-                        letterSpacing: 1.1,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        for (final pill in _resonancePills)
-                          _SheetChip(
-                            label: pill,
-                            active: _resonance == pill,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              setState(() => _resonance =
-                                  _resonance == pill ? null : pill);
-                            },
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'PERSONAL NOTE',
-                      style: AppTypography.label(
-                        fontSize: 9,
-                        letterSpacing: 1.1,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _CardNoteField(
-                      controller: _note,
-                      micListening: _micListening,
-                      onChanged: _saveNote,
-                      onMicTap: _toggleNoteMic,
-                    ),
-                  ] else ...[
-                    Text(
-                      'Live Reading',
-                      style: Theme.of(context).textTheme.displayMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      ctrl.spreadType.label.toUpperCase(),
-                      style: AppTypography.label(
-                        fontSize: 10,
-                        letterSpacing: 1.1,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'READING CONTEXT',
-                      style: AppTypography.label(
-                        fontSize: 9,
-                        letterSpacing: 1.1,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        for (final chip in _contextChips)
-                          _SheetChip(
-                            label: chip,
-                            active: _contextChip == chip,
-                            onTap: () => _pickContext(chip),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                  if (!canSynthesize)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        'Flip at least one card on the table to synthesize the spread.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textMuted,
-                          height: 1.5,
-                        ),
-                      ),
-                    )
-                  else if (_synthesizing && _revealed.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.lavender,
-                          ),
-                        ),
-                      ),
-                    )
-                  else if (_revealed.isEmpty)
-                    _PrimaryAction(
-                      label: 'SYNTHESIZE SPREAD',
-                      onTap: _startSynthesis,
-                    ),
-                  if (_revealed.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: SelectableText(
-                        '$_revealed${_synthesizing ? '\u258c' : ''}',
-                        style: AppTypography.label(
-                          fontSize: 12,
-                          height: 1.7,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (!_synthesizing)
-                      _PrimaryAction(
-                        label: _saved ? 'SAVED \u2713' : 'SAVE LOCALLY',
-                        active: _saved,
-                        onTap: _saved ? () {} : _save,
-                      ),
-                  ],
-                  ],
-                ],
+    return TaroGlassSheet(
+      padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (slot != null && card != null) ...[
+            // ---- Card Inspector Sheet (tapped face-up card) ----
+            _CardInspectorHeader(slot: slot, card: card),
+            const SizedBox(height: 18),
+            Text(
+              slot.isReversed && card.reversed != null
+                  ? 'REVERSED MEANING'
+                  : 'UPRIGHT MEANING',
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 1.1,
+                color: TaroColors.textSecondary,
               ),
             ),
-          ),
-        ),
+            const SizedBox(height: 6),
+            Text(
+              meaningFor(slot),
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.6,
+                color: TaroColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              card.keywords.map((k) => k.toUpperCase()).join(' · '),
+              style: AppTypography.label(
+                fontSize: 10,
+                letterSpacing: 0.8,
+                color: TaroColors.lavender,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'RESONANCE',
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 1.1,
+                color: TaroColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final pill in _resonancePills)
+                  TaroGlassChip(
+                    label: pill,
+                    selected: _resonance == pill,
+                    onTap: () => setState(
+                      () => _resonance = _resonance == pill ? null : pill,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'PERSONAL NOTE',
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 1.1,
+                color: TaroColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _CardNoteField(
+              controller: _note,
+              micListening: _micListening,
+              onChanged: _saveNote,
+              onMicTap: _toggleNoteMic,
+            ),
+          ] else ...[
+            Text(
+              'Live Reading',
+              style: Theme.of(context).textTheme.displayMedium,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              ctrl.spreadType.label.toUpperCase(),
+              style: AppTypography.label(
+                fontSize: 10,
+                letterSpacing: 1.1,
+                color: TaroColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'READING CONTEXT',
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 1.1,
+                color: TaroColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final chip in _contextChips)
+                  TaroGlassChip(
+                    label: chip,
+                    selected: _contextChip == chip,
+                    onTap: () => _pickContext(chip),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (!canSynthesize)
+              TaroGlassPanel(
+                radius: 16,
+                padding: const EdgeInsets.all(14),
+                child: const Text(
+                  'Flip at least one card on the table to synthesize the spread.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: TaroColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+              )
+            else if (_synthesizing && _revealed.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(child: TaroGlassProgress(linear: false, size: 22)),
+              )
+            else if (_revealed.isEmpty)
+              TaroGlassButton(
+                label: 'SYNTHESIZE SPREAD',
+                variant: TaroGlassButtonVariant.primary,
+                onPressed: _startSynthesis,
+              ),
+            if (_revealed.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              TaroGlassPanel(
+                radius: 16,
+                padding: const EdgeInsets.all(16),
+                child: SelectableText(
+                  '$_revealed${_synthesizing ? '\u258c' : ''}',
+                  style: AppTypography.label(
+                    fontSize: 12,
+                    height: 1.7,
+                    color: TaroColors.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (!_synthesizing)
+                TaroGlassButton(
+                  label: _saved ? 'SAVED \u2713' : 'SAVE LOCALLY',
+                  variant: _saved
+                      ? TaroGlassButtonVariant.secondary
+                      : TaroGlassButtonVariant.primary,
+                  onPressed: _saved ? () {} : _save,
+                ),
+            ],
+          ],
+        ],
       ),
     );
   }
@@ -460,30 +413,16 @@ class _CardInspectorHeader extends StatelessWidget {
                 style: AppTypography.label(
                   fontSize: 10,
                   letterSpacing: 1.1,
-                  color: AppColors.textMuted,
+                  color: TaroColors.textSecondary,
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(width: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: card.element.accent.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
-            border:
-                Border.all(color: card.element.accent.withValues(alpha: 0.6)),
-          ),
-          child: Text(
-            '${card.element.label.toUpperCase()} ${card.element.glyph}',
-            style: AppTypography.label(
-              fontSize: 10,
-              letterSpacing: 0.7,
-              fontWeight: FontWeight.w700,
-              color: card.element.accent,
-            ),
-          ),
+        TaroGlassPill(
+          label: '${card.element.label.toUpperCase()} ${card.element.glyph}',
+          accentColor: card.element.accent,
         ),
       ],
     );
@@ -510,9 +449,11 @@ class _CardNoteField extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.6),
+        color: TaroColors.surface.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+        ),
       ),
       child: Row(
         children: [
@@ -523,11 +464,17 @@ class _CardNoteField extends StatelessWidget {
               onChanged: onChanged,
               minLines: 1,
               maxLines: 2,
-              style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
-              cursorColor: AppColors.lavender,
+              style: const TextStyle(
+                fontSize: 13,
+                color: TaroColors.textPrimary,
+              ),
+              cursorColor: TaroColors.lavender,
               decoration: const InputDecoration(
                 hintText: 'Add a personal note or thought for this card...',
-                hintStyle: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                hintStyle: TextStyle(
+                  fontSize: 13,
+                  color: TaroColors.textSecondary,
+                ),
                 border: InputBorder.none,
               ),
             ),
@@ -536,105 +483,17 @@ class _CardNoteField extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             onTap: onMicTap,
             child: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               child: Icon(
                 micListening ? Icons.mic : Icons.mic_none,
                 size: 20,
                 color: micListening
-                    ? AppColors.lavender
-                    : AppColors.textMuted,
+                    ? TaroColors.rose
+                    : TaroColors.textSecondary,
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SheetChip extends StatelessWidget {
-  const _SheetChip({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-        decoration: BoxDecoration(
-          color: active
-              ? AppColors.lavender.withValues(alpha: 0.18)
-              : AppColors.surface.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: active ? AppColors.lavender : AppColors.border,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            color: active ? AppColors.lavender : AppColors.textMuted,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PrimaryAction extends StatelessWidget {
-  const _PrimaryAction({
-    required this.label,
-    required this.onTap,
-    this.active = false,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: active
-                ? [
-                    AppColors.harmonyEmerald.withValues(alpha: 0.2),
-                    AppColors.harmonyEmerald.withValues(alpha: 0.1),
-                  ]
-                : [
-                    AppColors.lavender.withValues(alpha: 0.22),
-                    AppColors.indigo.withValues(alpha: 0.12),
-                  ],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: active ? AppColors.harmonyEmerald : AppColors.lavender,
-          ),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.label(
-            fontSize: 11,
-            letterSpacing: 1.1,
-            fontWeight: FontWeight.w700,
-            color: active ? AppColors.harmonyEmerald : AppColors.lavender,
-          ),
-        ),
       ),
     );
   }

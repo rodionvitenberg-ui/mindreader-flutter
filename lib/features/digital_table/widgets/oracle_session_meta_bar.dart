@@ -4,8 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../core/models/reading_mode.dart';
 import '../../../core/models/reading_source.dart';
 import '../../../core/services/oracle_voice_service.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 import '../../../state/oracle_session_controller.dart';
 
 /// The label of the physical-flow call-to-action, or null for a plain digital
@@ -57,9 +56,9 @@ class OracleSessionMetaBar extends StatelessWidget {
       child: Row(
         children: [
           if (showBadges) ...[
-            _MetaBadge(label: session.readingSource.label),
+            TaroGlassPill(label: session.readingSource.label),
             const SizedBox(width: 6),
-            _MetaBadge(label: session.readingMode.label, accent: true),
+            TaroGlassPill(label: session.readingMode.label, accent: true),
           ],
           const Spacer(),
           if (voice.isAvailable)
@@ -71,36 +70,6 @@ class OracleSessionMetaBar extends StatelessWidget {
           if (ctaLabel != null)
             _PhysicalCta(label: ctaLabel, onTap: onResumeCamera),
         ],
-      ),
-    );
-  }
-}
-
-class _MetaBadge extends StatelessWidget {
-  const _MetaBadge({required this.label, this.accent = false});
-
-  final String label;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = accent ? AppColors.lavender : AppColors.textMuted;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: (accent ? AppColors.lavender : AppColors.textMuted)
-            .withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.45)),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.label(
-          fontSize: 9,
-          letterSpacing: 0.8,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
       ),
     );
   }
@@ -121,27 +90,32 @@ class _VoiceToggle extends StatelessWidget {
             ? Icons.graphic_eq
             : Icons.volume_up_outlined;
     final color = muted
-        ? AppColors.textMuted
+        ? TaroColors.textSecondary
         : speaking
-            ? AppColors.conflictRose
-            : AppColors.lavender;
-    return Tooltip(
-      message: muted ? 'Unmute the Oracle' : 'Mute the Oracle',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          voice.setMuted(!muted);
-        },
-        child: Container(
-          width: 32,
-          height: 28,
-          decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.8),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withValues(alpha: 0.5)),
+            ? TaroColors.rose
+            : TaroColors.lavender;
+    return Semantics(
+      button: true,
+      toggled: !muted,
+      label: muted ? 'Unmute the Oracle' : 'Mute the Oracle',
+      child: Tooltip(
+        message: muted ? 'Unmute the Oracle' : 'Mute the Oracle',
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            voice.setMuted(!muted);
+          },
+          child: Container(
+            width: 34,
+            height: 28,
+            decoration: BoxDecoration(
+              color: TaroColors.surface.withValues(alpha: 0.78),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: color.withValues(alpha: 0.5)),
+            ),
+            child: Icon(icon, size: 16, color: color),
           ),
-          child: Icon(icon, size: 16, color: color),
         ),
       ),
     );
@@ -156,36 +130,12 @@ class _PhysicalCta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: AppColors.lavender.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.55)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.camera_alt_outlined,
-                size: 13, color: AppColors.lavender),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: AppTypography.label(
-                fontSize: 9,
-                letterSpacing: 0.7,
-                fontWeight: FontWeight.w700,
-                color: AppColors.lavender,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return TaroGlassChip(
+      label: label,
+      icon: Icons.camera_alt_outlined,
+      selected: true,
+      compact: true,
+      onTap: onTap,
     );
   }
 }

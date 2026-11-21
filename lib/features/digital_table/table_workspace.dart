@@ -10,8 +10,8 @@ import '../../core/models/reading_mode.dart';
 import '../../core/models/reading_source.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/oracle_synthesis_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../design_system/taro.dart';
 import '../../state/astral_controller.dart';
 import '../../state/oracle_session_controller.dart';
 import '../../state/session_history_controller.dart';
@@ -575,38 +575,20 @@ class _TableWorkspaceState extends State<TableWorkspace>
   // ---- `+` action sheet (quick context chips / attach camera card) ----
 
   void _openPlusSheet() {
-    showModalBottomSheet<void>(
+    showTaroGlassSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
-      builder: (sheetContext) => Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.97),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(color: AppColors.border),
-        ),
+      builder: (sheetContext) => TaroGlassSheet(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
             Text(
               'ADD TO THE READING',
               style: AppTypography.label(
-                fontSize: 9,
+                fontSize: 9.5,
                 letterSpacing: 1.2,
-                color: AppColors.lavender,
+                color: TaroColors.lavender,
               ),
             ),
             const SizedBox(height: 12),
@@ -615,29 +597,12 @@ class _TableWorkspaceState extends State<TableWorkspace>
               runSpacing: 8,
               children: [
                 for (final chip in tableContextChips)
-                  GestureDetector(
+                  TaroGlassChip(
+                    label: chip,
                     onTap: () {
                       Navigator.of(sheetContext).pop();
                       _sendChipToEther(chip);
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Text(
-                        chip,
-                        style: AppTypography.body(
-                          fontSize: 11.5,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
                   ),
               ],
             ),
@@ -703,37 +668,13 @@ class _TableWorkspaceState extends State<TableWorkspace>
             // Keep the photographed-spread indicator with the table actions.
             if (_pane == tablePane &&
                 ctrl.sourceMode == TableSourceMode.physicalCameraSync)
-              Container(
-                key: const ValueKey('physical-sync-ribbon'),
-                margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.harmonyCyan.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.harmonyCyan),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.photo_camera_front_outlined,
-                      size: 12,
-                      color: AppColors.harmonyCyan,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'PHYSICAL SYNC',
-                      style: AppTypography.label(
-                        fontSize: 9,
-                        letterSpacing: 0.8,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.harmonyCyan,
-                      ),
-                    ),
-                  ],
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
+                child: TaroGlassPill(
+                  key: ValueKey('physical-sync-ribbon'),
+                  label: 'PHYSICAL SYNC',
+                  icon: Icons.photo_camera_front_outlined,
+                  accentColor: TaroColors.dawn,
                 ),
               ),
             if (_pane != historyPane) _buildBottomArea(ctrl),
@@ -838,43 +779,17 @@ class _ChatContextChips extends StatelessWidget {
           for (var i = 0; i < tableContextChips.length; i++) ...[
             if (i > 0) const SizedBox(width: 8),
             Expanded(
-              child: GestureDetector(
-                key: ValueKey('context-chip-$i'),
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onChipTap(tableContextChips[i]),
-                child: Container(
-                  key: selected == tableContextChips[i]
-                      ? ValueKey('context-chip-$i-active')
-                      : null,
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected == tableContextChips[i]
-                        ? AppColors.lavender.withValues(alpha: 0.22)
-                        : AppColors.surface.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(13),
-                    border: Border.all(
-                      color: selected == tableContextChips[i]
-                          ? AppColors.lavender
-                          : AppColors.border,
-                      width: 1.2,
-                    ),
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      tableContextChips[i],
-                      style: AppTypography.body(
-                        fontSize: 10.5,
-                        color: selected == tableContextChips[i]
-                            ? AppColors.lavender
-                            : AppColors.textMuted,
-                      ),
-                    ),
-                  ),
+              child: KeyedSubtree(
+                key: selected == tableContextChips[i]
+                    ? ValueKey('context-chip-$i-active')
+                    : null,
+                child: TaroGlassChip(
+                  key: ValueKey('context-chip-$i'),
+                  label: tableContextChips[i],
+                  selected: selected == tableContextChips[i],
+                  expanded: true,
+                  compact: true,
+                  onTap: () => onChipTap(tableContextChips[i]),
                 ),
               ),
             ),
@@ -901,9 +816,9 @@ class _ClarifierBanner extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.lavender.withValues(alpha: 0.10),
+        color: TaroColors.lavender.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.lavender.withValues(alpha: 0.5)),
+        border: Border.all(color: TaroColors.lavender.withValues(alpha: 0.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -919,14 +834,14 @@ class _ClarifierBanner extends StatelessWidget {
                 fontSize: 9,
                 letterSpacing: 0.7,
                 fontWeight: FontWeight.w700,
-                color: AppColors.lavender,
+                color: TaroColors.lavender,
               ),
             ),
           ),
           IconButton(
             tooltip: 'Cancel clarifier',
             visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.close, size: 16, color: AppColors.lavender),
+            icon: const Icon(Icons.close, size: 16, color: TaroColors.lavender),
             onPressed: onCancel,
           ),
         ],
@@ -948,30 +863,10 @@ class _SheetAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.label(
-            fontSize: 9.5,
-            letterSpacing: 0.7,
-            fontWeight: FontWeight.w700,
-            color: AppColors.lavender,
-          ),
-        ),
-      ),
+    return TaroGlassButton(
+      label: label,
+      variant: TaroGlassButtonVariant.secondary,
+      onPressed: onTap,
     );
   }
 }

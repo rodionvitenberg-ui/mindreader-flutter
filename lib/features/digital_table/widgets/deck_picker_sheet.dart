@@ -13,8 +13,8 @@ import '../../../core/models/divination_system.dart';
 import '../../../core/models/lenormand_pack.dart';
 import '../../../core/models/rune_pack.dart';
 import '../../../core/models/tarot_deck_pack.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 import '../../../state/deck_pack_controller.dart';
 import '../../../state/spread_controller.dart';
 import '../../almanac/deck_cover_picker.dart';
@@ -35,12 +35,8 @@ class DeckPickerSheet extends StatefulWidget {
     BuildContext context, {
     DivinationSystem system = DivinationSystem.tarot,
   }) {
-    HapticFeedback.selectionClick();
-    return showModalBottomSheet(
+    return showTaroGlassSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
       builder: (_) => DeckPickerSheet(system: system),
     );
   }
@@ -78,63 +74,45 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
       language,
       'almanac.picker.${widget.system.name}',
     );
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: Container(
-        color: const Color(0xEB13131A),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.textMuted.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(title, style: Theme.of(context).textTheme.displayMedium),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 230,
-                  child: PageView.builder(
-                    controller: _page,
-                    itemCount: packs.length,
-                    itemBuilder: (context, i) => _PackTile(
-                      pack: packs[i],
-                      selected: active == packs[i],
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        context.read<SpreadController>().setSystem(
-                          widget.system,
-                        );
-                        if (active == packs[i]) {
-                          Navigator.pop(context);
-                          return;
-                        }
-                        switch (widget.system) {
-                          case DivinationSystem.tarot:
-                            ctrl.setActivePack(packs[i].id);
-                          case DivinationSystem.lenormand:
-                            ctrl.setActiveLenormandPack(packs[i].id);
-                          case DivinationSystem.runes:
-                            ctrl.setActiveRunePack(packs[i].id);
-                        }
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                DeckCoverPicker(system: widget.system),
-              ],
+    return TaroGlassSheet(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.displayMedium),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 230,
+            child: PageView.builder(
+              controller: _page,
+              itemCount: packs.length,
+              itemBuilder: (context, i) => _PackTile(
+                pack: packs[i],
+                selected: active == packs[i],
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  context.read<SpreadController>().setSystem(
+                    widget.system,
+                  );
+                  if (active == packs[i]) {
+                    Navigator.pop(context);
+                    return;
+                  }
+                  switch (widget.system) {
+                    case DivinationSystem.tarot:
+                      ctrl.setActivePack(packs[i].id);
+                    case DivinationSystem.lenormand:
+                      ctrl.setActiveLenormandPack(packs[i].id);
+                    case DivinationSystem.runes:
+                      ctrl.setActiveRunePack(packs[i].id);
+                  }
+                },
+              ),
             ),
           ),
-        ),
+          const SizedBox(height: 12),
+          DeckCoverPicker(system: widget.system),
+        ],
       ),
     );
   }
@@ -195,11 +173,13 @@ class _PackTile extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.lavender.withValues(alpha: 0.14)
-              : AppColors.surface.withValues(alpha: 0.7),
+              ? TaroColors.lavender.withValues(alpha: 0.16)
+              : TaroColors.surface.withValues(alpha: 0.72),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? AppColors.lavender : AppColors.border,
+            color: selected
+                ? TaroColors.lavender
+                : TaroColors.mist.withValues(alpha: TaroOpacity.border),
             width: 1.2,
           ),
         ),
@@ -222,8 +202,8 @@ class _PackTile extends StatelessWidget {
                       letterSpacing: 0.9,
                       fontWeight: FontWeight.w700,
                       color: selected
-                          ? AppColors.lavender
-                          : AppColors.textPrimary,
+                          ? TaroColors.lavender
+                          : TaroColors.textPrimary,
                     ),
                   ),
                 ),
@@ -238,7 +218,7 @@ class _PackTile extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 10,
                 height: 1.3,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
             const SizedBox(height: 4),
@@ -250,7 +230,7 @@ class _PackTile extends StatelessWidget {
               style: AppTypography.label(
                 fontSize: 7,
                 letterSpacing: 1,
-                color: AppColors.textMuted.withValues(alpha: 0.7),
+                color: TaroColors.textSecondary.withValues(alpha: 0.7),
               ),
             ),
           ],

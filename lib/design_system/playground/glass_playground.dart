@@ -23,6 +23,7 @@ class _GlassPlaygroundState extends State<GlassPlayground> {
   bool _quietMode = false;
   double _voiceSpeed = 0.5;
   bool _micActive = false;
+  String _selectedChip = 'Love & Relationships';
   final TextEditingController _input = TextEditingController();
 
   static const _decks = <String>[
@@ -203,6 +204,43 @@ class _GlassPlaygroundState extends State<GlassPlayground> {
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 22),
+                          const TaroGlassSectionLabel(
+                            eyebrow: 'G4 Controls · Chips / Pills / Progress',
+                            title: 'TaroGlassChip & TaroGlassProgress',
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final chip in const [
+                                'Love & Relationships',
+                                'Career & Path',
+                                'Inner Crisis',
+                              ])
+                                TaroGlassChip(
+                                  label: chip,
+                                  selected: _selectedChip == chip,
+                                  onTap: () =>
+                                      setState(() => _selectedChip = chip),
+                                ),
+                              const TaroGlassPill(
+                                label: 'PHYSICAL SYNC',
+                                icon: Icons.photo_camera_front_outlined,
+                                accent: true,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          TaroGlassProgress(
+                            label: 'SYNTHESIS PROGRESS',
+                            value: _voiceSpeed,
+                          ),
+                          const SizedBox(height: 10),
+                          const TaroGlassProgress(
+                            label: 'WEAVING THE READING · · ·',
                           ),
                         ],
                       ),

@@ -3,8 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 
 /// The `✦ SYNTHESIZE IN CHAT →` call to action — PERMANENTLY anchored at
 /// the bottom of the Digital Table (Pane 0), right above the bottom
@@ -145,7 +145,7 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
       fontSize: 10,
       letterSpacing: 1.0,
       fontWeight: FontWeight.w700,
-      color: ignited ? AppColors.lavender : Colors.grey.shade500,
+      color: ignited ? TaroColors.textPrimary : TaroColors.textDisabled,
     );
     final refPainter = TextPainter(
       text: TextSpan(text: _sizeReferenceLabel, style: labelStyle),
@@ -154,9 +154,52 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
       textScaler: MediaQuery.textScalerOf(context),
     )..layout();
     final refSize = refPainter.size;
+
+    final labelChild = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+      child: SizedBox(
+        width: refSize.width,
+        height: refSize.height,
+        child: Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              _label,
+              maxLines: 1,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: labelStyle,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final pill = ignited
+        ? TaroGlassSurface(
+            radius: 20,
+            tint: TaroColors.lavender.withValues(alpha: 0.24),
+            fillColor: TaroColors.surface,
+            borderColor: TaroColors.lavender,
+            glow: TaroGlow.soft(TaroColors.lavender, alpha: 0.32, blur: 16),
+            child: labelChild,
+          )
+        : DecoratedBox(
+            decoration: BoxDecoration(
+              color: TaroColors.surface.withValues(alpha: 0.56),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+                width: 1.2,
+              ),
+            ),
+            child: labelChild,
+          );
+
     return Semantics(
       button: true,
       enabled: ignited,
+      label: _label,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: ignited ? _handleTap : null,
@@ -165,81 +208,34 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
           builder: (context, _) {
             return Transform.scale(
               scale: ignited ? _burstScale.evaluate(_burst) : 1.0,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  if (ignited)
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _StarlightBorderPainter(animation: _loop),
-                      ),
-                    ),
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 11,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: ignited
-                          ? LinearGradient(
-                              colors: [
-                                AppColors.lavender.withValues(alpha: 0.24),
-                                AppColors.indigo.withValues(alpha: 0.14),
-                              ],
-                            )
-                          : null,
-                      color: ignited ? null : Colors.grey.shade900,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: ignited
-                            ? AppColors.lavender
-                            : Colors.grey.shade800,
-                        width: 1.2,
-                      ),
-                      boxShadow: ignited
-                          ? [
-                              BoxShadow(
-                                color: AppColors.lavender.withValues(
-                                  alpha: 0.3,
-                                ),
-                                blurRadius: 14,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: SizedBox(
-                      width: refSize.width,
-                      height: refSize.height,
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            _label,
-                            maxLines: 1,
-                            softWrap: false,
-                            textAlign: TextAlign.center,
-                            style: labelStyle,
-                          ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (ignited)
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: _StarlightBorderPainter(animation: _loop),
                         ),
                       ),
-                    ),
-                  ),
-                  // Bright ignition flash — fades right after the burst.
-                  if (ignited && _burst.value < 1.0)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            color: Colors.white.withValues(
-                              alpha: 0.35 * (1.0 - _burst.value),
+                    pill,
+                    // Bright ignition flash — fades right after the burst.
+                    if (ignited && _burst.value < 1.0)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              color: TaroColors.dawn.withValues(
+                                alpha: 0.35 * (1.0 - _burst.value),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -282,23 +278,23 @@ class _StarlightBorderPainter extends CustomPainter {
       const Radius.circular(20),
     );
 
-    // Pulsing aura: lavender breathing in, cyan breathing out of phase.
+    // Pulsing aura: lavender breathing in, warm dawn breathing out of phase.
     final lavenderGlow = 0.10 + 0.06 * math.sin(t * 2 * math.pi);
     canvas.drawRRect(
       rrect,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 6
-        ..color = AppColors.lavender.withValues(alpha: lavenderGlow)
+        ..color = TaroColors.lavender.withValues(alpha: lavenderGlow)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
     );
-    final cyanGlow = 0.10 + 0.06 * math.cos(t * 2 * math.pi + 1.2);
+    final dawnGlow = 0.10 + 0.06 * math.cos(t * 2 * math.pi + 1.2);
     canvas.drawRRect(
       rrect,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 4
-        ..color = AppColors.harmonyCyan.withValues(alpha: cyanGlow)
+        ..color = TaroColors.dawn.withValues(alpha: dawnGlow)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
     );
 
@@ -312,7 +308,7 @@ class _StarlightBorderPainter extends CustomPainter {
         point,
         2.0 + math.sin(t * 6 * math.pi + i),
         Paint()
-          ..color = (i.isEven ? AppColors.lavender : AppColors.harmonyCyan)
+          ..color = (i.isEven ? TaroColors.lavender : TaroColors.dawn)
               .withValues(alpha: twinkle)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
       );

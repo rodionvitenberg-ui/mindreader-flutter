@@ -9,8 +9,8 @@ import '../../../core/models/divination_system.dart';
 import '../../../core/models/lenormand_spread.dart';
 import '../../../core/models/rune_cast.dart';
 import '../../../core/models/spread_type.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/spread_controller.dart';
 import 'shuffle_physics.dart';
@@ -216,11 +216,11 @@ class _SpreadGridTile extends StatelessWidget {
       title: item.title,
     );
     final borderColor = item.active
-        ? AppColors.lavender
-        : AppColors.lavender.withValues(alpha: 0.24);
+        ? TaroColors.lavender
+        : TaroColors.mist.withValues(alpha: TaroOpacity.borderStrong);
     final backgroundColor = item.active
-        ? AppColors.lavender.withValues(alpha: 0.12)
-        : AppColors.surface.withValues(alpha: 0.72);
+        ? TaroColors.lavender.withValues(alpha: 0.16)
+        : TaroColors.surface.withValues(alpha: 0.72);
 
     return GestureDetector(
       key: ValueKey('spread-tile-${item.keyId}'),
@@ -235,6 +235,9 @@ class _SpreadGridTile extends StatelessWidget {
             color: borderColor,
             width: item.active ? 1.2 : 1.0,
           ),
+          boxShadow: item.active
+              ? TaroGlow.soft(TaroColors.lavender, alpha: 0.18, blur: 16)
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,7 +263,7 @@ class _SpreadGridTile extends StatelessWidget {
                 fontSize: titleFontSize,
                 height: 1.12,
                 fontWeight: FontWeight.w700,
-                color: item.active ? AppColors.lavender : AppColors.textPrimary,
+                color: item.active ? TaroColors.lavender : TaroColors.textPrimary,
               ),
             ),
             if (showCount) ...[
@@ -276,7 +279,7 @@ class _SpreadGridTile extends StatelessWidget {
                 style: AppTypography.label(
                   fontSize: 9,
                   letterSpacing: 0.6,
-                  color: AppColors.textMuted,
+                  color: TaroColors.textSecondary,
                 ),
               ),
             ],
@@ -352,11 +355,11 @@ class SpreadMiniaturePainter extends CustomPainter {
     final projected = projectSlotRects(geometry, size);
     if (projected.isEmpty) return;
 
-    final backing = Paint()..color = AppColors.canvas.withValues(alpha: 0.92);
+    final backing = Paint()..color = TaroColors.background.withValues(alpha: 0.92);
     final fill = Paint()
-      ..color = AppColors.lavender.withValues(alpha: active ? 0.24 : 0.14);
+      ..color = TaroColors.lavender.withValues(alpha: active ? 0.26 : 0.14);
     final stroke = Paint()
-      ..color = AppColors.lavender.withValues(alpha: active ? 0.95 : 0.78)
+      ..color = TaroColors.lavender.withValues(alpha: active ? 0.95 : 0.78)
       ..style = PaintingStyle.stroke
       ..strokeWidth = projected.length >= 9 ? 0.9 : 1.05;
 

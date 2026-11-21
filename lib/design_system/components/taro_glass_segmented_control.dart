@@ -121,27 +121,32 @@ class _SegmentTap<T> extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (segment.icon != null) ...[
-                Icon(segment.icon, size: 14, color: color),
-                const SizedBox(width: 6),
-              ],
-              Flexible(
-                child: Text(
-                  segment.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.label(
-                    fontSize: 10.5,
-                    letterSpacing: 0.7,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                    color: color,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (segment.icon != null) ...[
+                  Icon(segment.icon, size: 14, color: color),
+                  const SizedBox(width: 5),
+                ],
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      segment.label,
+                      maxLines: 1,
+                      style: AppTypography.label(
+                        fontSize: 10.5,
+                        letterSpacing: 0.7,
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                        color: color,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

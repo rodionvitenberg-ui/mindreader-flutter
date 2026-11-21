@@ -13,6 +13,7 @@ import '../../core/models/tarot_card_model.dart';
 import '../../core/models/tarot_deck_pack.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/deck_pack_controller.dart';
 import '../../state/spread_controller.dart';
@@ -543,69 +544,69 @@ class _CustomSpreadAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      key: const ValueKey('custom-spread-button'),
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.72),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.32)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: AppColors.lavender.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(10),
+    return Semantics(
+      button: true,
+      label: AppStrings.t(lang, 'spread.custom'),
+      child: GestureDetector(
+        key: const ValueKey('custom-spread-button'),
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: TaroGlassPanel(
+          radius: 16,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          tint: TaroColors.lavender.withValues(alpha: 0.10),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: TaroColors.lavender.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  size: 18,
+                  color: TaroColors.lavender,
+                ),
               ),
-              child: const Icon(
-                Icons.add_rounded,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppStrings.t(lang, 'spread.custom'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.display(
+                        fontSize: 18,
+                        height: 1.1,
+                        fontWeight: FontWeight.w700,
+                        color: TaroColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      AppStrings.t(lang, 'spread.customSubtitle'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body(
+                        fontSize: 11,
+                        color: TaroColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
                 size: 18,
-                color: AppColors.lavender,
+                color: TaroColors.textSecondary,
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppStrings.t(lang, 'spread.custom'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.display(
-                      fontSize: 18,
-                      height: 1.1,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    AppStrings.t(lang, 'spread.customSubtitle'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(
-                      fontSize: 11,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: AppColors.textMuted,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -620,27 +621,26 @@ class _SystemSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final system in DivinationSystem.values)
-            _SystemSegment(
-              key: ValueKey('system-segment-${system.name}'),
-              label: system.label,
-              active: ctrl.system == system,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                context.read<SpreadController>().setSystem(system);
-              },
-            ),
-        ],
+    return TaroGlassSurface(
+      radius: TaroRadii.segment,
+      fillColor: TaroColors.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final system in DivinationSystem.values)
+              _SystemSegment(
+                key: ValueKey('system-segment-${system.name}'),
+                label: system.label,
+                active: ctrl.system == system,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  context.read<SpreadController>().setSystem(system);
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -660,27 +660,26 @@ class _ViewModeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _ModeSegment(
-            label: 'SPREAD VIEW',
-            active: mode == TableViewMode.spread,
-            onTap: () => onChanged(TableViewMode.spread),
-          ),
-          _ModeSegment(
-            label: 'FOCUS VIEW',
-            active: mode == TableViewMode.focus,
-            onTap: () => onChanged(TableViewMode.focus),
-          ),
-        ],
+    return TaroGlassSurface(
+      radius: TaroRadii.segment,
+      fillColor: TaroColors.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ModeSegment(
+              label: 'SPREAD VIEW',
+              active: mode == TableViewMode.spread,
+              onTap: () => onChanged(TableViewMode.spread),
+            ),
+            _ModeSegment(
+              label: 'FOCUS VIEW',
+              active: mode == TableViewMode.focus,
+              onTap: () => onChanged(TableViewMode.focus),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -699,25 +698,30 @@ class _ModeSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: active
-              ? AppColors.lavender.withValues(alpha: 0.16)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.label(
-            fontSize: 8.5,
-            letterSpacing: 1.0,
-            fontWeight: FontWeight.w700,
-            color: active ? AppColors.lavender : AppColors.textMuted,
+    return Semantics(
+      button: true,
+      selected: active,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: active
+                ? TaroColors.lavender.withValues(alpha: 0.22)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Text(
+            label,
+            style: AppTypography.label(
+              fontSize: 8.5,
+              letterSpacing: 1.0,
+              fontWeight: FontWeight.w700,
+              color: active ? TaroColors.textPrimary : TaroColors.textSecondary,
+            ),
           ),
         ),
       ),
@@ -740,25 +744,30 @@ class _SystemSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        decoration: BoxDecoration(
-          color: active
-              ? AppColors.lavender.withValues(alpha: 0.16)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.label(
-            fontSize: 9,
-            letterSpacing: 0.8,
-            fontWeight: FontWeight.w700,
-            color: active ? AppColors.lavender : AppColors.textMuted,
+    return Semantics(
+      button: true,
+      selected: active,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: active
+                ? TaroColors.lavender.withValues(alpha: 0.22)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Text(
+            label,
+            style: AppTypography.label(
+              fontSize: 9,
+              letterSpacing: 0.8,
+              fontWeight: FontWeight.w700,
+              color: active ? TaroColors.textPrimary : TaroColors.textSecondary,
+            ),
           ),
         ),
       ),
@@ -778,20 +787,21 @@ class _ResetTableButton extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: enabled,
+      label: 'TAP TO RESET',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: enabled ? onReset : null,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             color: enabled
-                ? AppColors.lavender.withValues(alpha: 0.12)
-                : Colors.grey.shade900,
+                ? TaroColors.lavender.withValues(alpha: 0.16)
+                : TaroColors.surface.withValues(alpha: 0.52),
             borderRadius: BorderRadius.circular(11),
             border: Border.all(
               color: enabled
-                  ? AppColors.lavender.withValues(alpha: 0.45)
-                  : Colors.grey.shade800,
+                  ? TaroColors.lavender.withValues(alpha: 0.55)
+                  : TaroColors.mist.withValues(alpha: TaroOpacity.border),
             ),
           ),
           child: Text(
@@ -799,7 +809,7 @@ class _ResetTableButton extends StatelessWidget {
             style: AppTypography.label(
               fontSize: 9,
               letterSpacing: 0.9,
-              color: enabled ? AppColors.lavender : Colors.grey.shade500,
+              color: enabled ? TaroColors.lavender : TaroColors.textDisabled,
             ),
           ),
         ),

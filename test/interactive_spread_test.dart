@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/models/dealt_card_slot.dart';
 import 'package:mindreader/core/models/divination_system.dart';
 import 'package:mindreader/core/models/spread_type.dart';
+import 'package:mindreader/design_system/taro.dart';
 import 'package:mindreader/features/digital_table/digital_table_screen.dart';
 import 'package:mindreader/features/digital_table/widgets/reading_bottom_sheet.dart';
 import 'package:mindreader/features/digital_table/widgets/slotted_divination_card.dart';
@@ -215,7 +216,7 @@ void main() {
           of: synthesize,
           matching: find.byType(CustomPaint),
         );
-        final disabledColor = Colors.grey.shade500;
+        final disabledColor = TaroColors.textDisabled;
 
         await tester.tap(deck);
         await tester.pump();

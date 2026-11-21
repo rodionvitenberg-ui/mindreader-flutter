@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/ritual_notification_service.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 
 /// Daily ritual settings: enable/disable local reminders, pick the morning
 /// anchor (09:00) and evening reflection (22:00) times, and see the current
@@ -18,12 +18,8 @@ class RitualSettingsSheet extends StatefulWidget {
   final bool inline;
 
   static Future<void> show(BuildContext context) {
-    HapticFeedback.selectionClick();
-    return showModalBottomSheet(
+    return showTaroGlassSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
       builder: (_) => const RitualSettingsSheet(),
     );
   }
@@ -121,126 +117,102 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final content = Padding(
-      padding: widget.inline
-          ? EdgeInsets.zero
-          : const EdgeInsets.fromLTRB(24, 12, 24, 24),
+    if (widget.inline) return _content(context);
+    return TaroGlassSheet(
+      padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
       child: _content(context),
-    );
-    if (widget.inline) return content;
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: Container(
-        color: const Color(0xEB13131A),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(child: content),
-        ),
-      ),
     );
   }
 
   Widget _content(BuildContext context) {
     return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.inline) const SizedBox(height: 8),
+        Text('DAILY RITUAL', style: Theme.of(context).textTheme.displayMedium),
+        const SizedBox(height: 4),
+        Text(
+          'LOCAL REMINDERS · ZERO SERVER RETENTION · '
+          '$_streak-DAY STREAK',
+          style: AppTypography.label(
+            fontSize: 9,
+            letterSpacing: 1.0,
+            color: TaroColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (!_loaded)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: TaroGlassProgress(linear: false, size: 22),
+            ),
+          )
+        else ...[
+          _RitualSwitch(
+            value: _enabled,
+            onChanged: (v) {
+              setState(() => _enabled = v);
+            },
+          ),
+          const SizedBox(height: 14),
+          _TimeTile(
+            icon: Icons.wb_twilight_outlined,
+            label: 'MORNING ANCHOR · 09:00',
+            hint: 'Draw your Daily Anchor card.',
+            time: _fmt(_morning),
+            enabled: _enabled,
+            onTap: () => _pickTime(morning: true),
+          ),
+          const SizedBox(height: 10),
+          _TimeTile(
+            icon: Icons.nightlight_outlined,
+            label: 'EVENING REFLECTION · 22:00',
+            hint: 'Ground your thoughts before sleep.',
+            time: _fmt(_evening),
+            enabled: _enabled,
+            onTap: () => _pickTime(morning: false),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: TaroColors.surface.withValues(alpha: 0.68),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+              ),
+            ),
+            child: Row(
               children: [
-                if (!widget.inline)
-                  Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.textMuted.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
+                const Icon(
+                  Icons.local_fire_department_outlined,
+                  size: 18,
+                  color: TaroColors.dawn,
                 ),
-                const SizedBox(height: 16),
-                Text('DAILY RITUAL',
-                    style: Theme.of(context).textTheme.displayMedium),
-                const SizedBox(height: 4),
+                const SizedBox(width: 10),
                 Text(
-                  'LOCAL REMINDERS · ZERO SERVER RETENTION · '
-                  '$_streak-DAY STREAK',
+                  '$_streak-DAY READING STREAK',
                   style: AppTypography.label(
-                    fontSize: 9,
-                    letterSpacing: 1.0,
-                    color: AppColors.textMuted,
+                    fontSize: 10,
+                    letterSpacing: 0.9,
+                    color: TaroColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 16),
-                if (!_loaded)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.lavender,
-                        ),
-                      ),
-                    ),
-                  )
-                else ...[
-                  _RitualSwitch(
-                    value: _enabled,
-                    onChanged: (v) {
-                      HapticFeedback.selectionClick();
-                      setState(() => _enabled = v);
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  _TimeTile(
-                    icon: Icons.wb_twilight_outlined,
-                    label: 'MORNING ANCHOR · 09:00',
-                    hint: 'Draw your Daily Anchor card.',
-                    time: _fmt(_morning),
-                    enabled: _enabled,
-                    onTap: () => _pickTime(morning: true),
-                  ),
-                  const SizedBox(height: 10),
-                  _TimeTile(
-                    icon: Icons.nightlight_outlined,
-                    label: 'EVENING REFLECTION · 22:00',
-                    hint: 'Ground your thoughts before sleep.',
-                    time: _fmt(_evening),
-                    enabled: _enabled,
-                    onTap: () => _pickTime(morning: false),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.local_fire_department_outlined,
-                            size: 18, color: AppColors.conflictAmber),
-                        const SizedBox(width: 10),
-                        Text(
-                          '$_streak-DAY READING STREAK',
-                          style: AppTypography.label(
-                            fontSize: 10,
-                            letterSpacing: 0.9,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _ApplyButton(
-                    label: _enabled ? 'SAVE RITUAL TIMES' : 'DISABLE RITUALS',
-                    onTap: _apply,
-                  ),
-                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          TaroGlassButton(
+            label: _enabled ? 'SAVE RITUAL TIMES' : 'DISABLE RITUALS',
+            variant: _enabled
+                ? TaroGlassButtonVariant.primary
+                : TaroGlassButtonVariant.secondary,
+            onPressed: _apply,
+          ),
+        ],
       ],
     );
   }
@@ -255,16 +227,21 @@ class _RitualSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.6),
+        color: TaroColors.surface.withValues(alpha: 0.68),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.notifications_outlined,
-              size: 18, color: AppColors.lavender),
+          const Icon(
+            Icons.notifications_outlined,
+            size: 18,
+            color: TaroColors.lavender,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -272,15 +249,14 @@ class _RitualSwitch extends StatelessWidget {
               style: AppTypography.label(
                 fontSize: 10,
                 letterSpacing: 0.8,
-                color: AppColors.textPrimary,
+                color: TaroColors.textPrimary,
               ),
             ),
           ),
-          Switch(
+          TaroGlassToggle(
             value: value,
+            semanticLabel: 'DAILY RITUAL REMINDERS',
             onChanged: onChanged,
-            activeTrackColor: AppColors.lavender.withValues(alpha: 0.5),
-            activeThumbColor: AppColors.lavender,
           ),
         ],
       ),
@@ -308,85 +284,57 @@ class _TimeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: enabled ? onTap : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: AppColors.textMuted),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: AppTypography.label(
-                      fontSize: 9.5,
-                      letterSpacing: 0.8,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    hint,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ],
-              ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: TaroColors.surface.withValues(alpha: 0.68),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
             ),
-            Text(
-              time,
-              style: AppTypography.label(
-                fontSize: 13,
-                letterSpacing: 0.7,
-                color: enabled ? AppColors.lavender : AppColors.textMuted,
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: TaroColors.textSecondary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: AppTypography.label(
+                        fontSize: 9.5,
+                        letterSpacing: 0.8,
+                        color: TaroColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hint,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: TaroColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ApplyButton extends StatelessWidget {
-  const _ApplyButton({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        width: double.infinity,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 13),
-        decoration: BoxDecoration(
-          color: AppColors.lavender.withValues(alpha: 0.16),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.lavender),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.label(
-            fontSize: 10,
-            letterSpacing: 1.1,
-            fontWeight: FontWeight.w700,
-            color: AppColors.lavender,
+              Text(
+                time,
+                style: AppTypography.label(
+                  fontSize: 13,
+                  letterSpacing: 0.7,
+                  color: enabled
+                      ? TaroColors.lavender
+                      : TaroColors.textSecondary,
+                ),
+              ),
+            ],
           ),
         ),
       ),

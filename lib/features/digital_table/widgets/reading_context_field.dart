@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro.dart';
 
 /// The table and its chat pane can both edit the same draft. Wait for the
 /// active editor's final speech result before starting the first synthesis.
@@ -212,8 +212,10 @@ class _ReadingContextFieldState extends State<ReadingContextField>
       _dictating ? 'table.stopDictation' : 'table.dictate',
     );
     final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: AppColors.border),
+      borderRadius: BorderRadius.circular(TaroRadii.input),
+      borderSide: BorderSide(
+        color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+      ),
     );
     return TapRegion(
       onTapOutside: (_) {
@@ -227,17 +229,21 @@ class _ReadingContextFieldState extends State<ReadingContextField>
           widget.onChanged(value);
         },
         textInputAction: TextInputAction.done,
-        style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+        cursorColor: TaroColors.lavender,
+        style: const TextStyle(color: TaroColors.textPrimary, fontSize: 13),
         decoration: InputDecoration(
           filled: true,
-          fillColor: AppColors.surface.withValues(alpha: 0.70),
+          fillColor: TaroColors.surface.withValues(alpha: 0.72),
           isDense: true,
           hintText: _label('table.question'),
-          hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          hintStyle: const TextStyle(
+            color: TaroColors.textSecondary,
+            fontSize: 12,
+          ),
           border: border,
           enabledBorder: border,
           focusedBorder: border.copyWith(
-            borderSide: const BorderSide(color: AppColors.lavender),
+            borderSide: const BorderSide(color: TaroColors.lavender),
           ),
           contentPadding: const EdgeInsets.symmetric(
             vertical: 8,
@@ -254,7 +260,7 @@ class _ReadingContextFieldState extends State<ReadingContextField>
             icon: Icon(
               _dictating ? Icons.stop_circle_outlined : Icons.mic_none,
               size: 19,
-              color: AppColors.lavender,
+              color: _dictating ? TaroColors.rose : TaroColors.lavender,
             ),
           ),
         ),

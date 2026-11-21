@@ -84,13 +84,19 @@ class _TaroGlassButtonState extends State<TaroGlassButton> {
           Icon(widget.icon, size: 16, color: labelColor),
           const SizedBox(width: 8),
         ],
-        Text(
-          widget.label,
-          style: AppTypography.label(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.8,
-            color: labelColor,
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              widget.label,
+              maxLines: 1,
+              style: AppTypography.label(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+                color: labelColor,
+              ),
+            ),
           ),
         ),
       ],

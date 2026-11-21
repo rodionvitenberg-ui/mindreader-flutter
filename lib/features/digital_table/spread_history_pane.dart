@@ -6,6 +6,7 @@ import '../../core/models/reading_session_badge.dart';
 import '../../core/models/reading_source.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/session_history_controller.dart';
 import '../../state/spread_session_snapshot.dart';
@@ -108,14 +109,7 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
               Expanded(
                 child: !widget.history.loaded
                     ? const Center(
-                        child: SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.lavender,
-                          ),
-                        ),
+                        child: TaroGlassProgress(linear: false, size: 22),
                       )
                     : sessions.isEmpty
                     ? _EmptyArchive(filtered: _notebook != 'All Readings')
@@ -150,7 +144,7 @@ class _ProBadge extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.lavender, AppColors.indigo],
+          colors: [TaroColors.lavender, TaroColors.indigo],
         ),
         borderRadius: BorderRadius.circular(10),
       ),
@@ -160,7 +154,7 @@ class _ProBadge extends StatelessWidget {
           fontSize: 9,
           letterSpacing: 0.9,
           fontWeight: FontWeight.w800,
-          color: AppColors.canvas,
+          color: TaroColors.background,
         ),
       ),
     );
@@ -174,36 +168,13 @@ class _NewSpreadButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.mediumImpact();
-        onTap();
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.lavender.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.lavender),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.add, size: 16, color: AppColors.lavender),
-            const SizedBox(width: 8),
-            Text(
-              'NEW SPREAD · НОВЫЙ РАСКЛАД',
-              style: AppTypography.label(
-                fontSize: 10,
-                letterSpacing: 0.9,
-                fontWeight: FontWeight.w700,
-                color: AppColors.lavender,
-              ),
-            ),
-          ],
-        ),
+    return SizedBox(
+      width: double.infinity,
+      child: TaroGlassButton(
+        label: 'NEW SPREAD · НОВЫЙ РАСКЛАД',
+        icon: Icons.add,
+        variant: TaroGlassButtonVariant.primary,
+        onPressed: onTap,
       ),
     );
   }
@@ -222,35 +193,13 @@ class _NotebookChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return TaroGlassChip(
+      label: label,
+      selected: active,
+      expanded: true,
+      compact: true,
+      uppercase: true,
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: active
-              ? AppColors.lavender.withValues(alpha: 0.16)
-              : AppColors.surface.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: active ? AppColors.lavender : AppColors.border,
-          ),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            label.toUpperCase(),
-            style: AppTypography.label(
-              fontSize: 9,
-              letterSpacing: 0.7,
-              fontWeight: FontWeight.w700,
-              color: active ? AppColors.lavender : AppColors.textMuted,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -327,9 +276,11 @@ class _SessionTile extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.72),
+          color: TaroColors.surface.withValues(alpha: 0.72),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+            color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

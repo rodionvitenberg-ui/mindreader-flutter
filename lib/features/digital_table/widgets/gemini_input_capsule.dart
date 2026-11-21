@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 
 /// The shared Gemini-style floating input capsule docked directly above
 /// the bottom navigation dock — ONE component used by the Digital Table
@@ -129,88 +129,102 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-      padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.42),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          _CapsuleIconButton(
-            icon: Icons.add,
-            tooltip: 'Add context',
-            onTap: () {
-              HapticFeedback.selectionClick();
-              widget.onPlus();
-            },
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: TextField(
-              key: widget.fieldKey,
-              controller: _text,
-              focusNode: widget.focusNode,
-              minLines: 1,
-              maxLines: 3,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _submit(),
-              style: AppTypography.chatUser(
-                fontSize: 15,
-                height: 1.4,
-                color: AppColors.textPrimary,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+      child: TaroGlassSurface(
+        radius: TaroRadii.pill,
+        fillColor: TaroColors.surface,
+        borderColor: TaroColors.mist.withValues(alpha: TaroOpacity.borderStrong),
+        glow: TaroGlow.soft(
+          TaroColors.lavender,
+          alpha: 0.18,
+          blur: 20,
+          offset: const Offset(0, 6),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Row(
+            children: [
+              _CapsuleIconButton(
+                icon: Icons.add,
+                tooltip: 'Add context',
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  widget.onPlus();
+                },
               ),
-              decoration: InputDecoration(
-                hintText: widget.hint,
-                hintStyle: AppTypography.chatUser(
-                  fontSize: 14.5,
-                  height: 1.4,
-                  color: AppColors.textMuted.withValues(alpha: 0.8),
-                ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
-          _CapsuleIconButton(
-            icon: _micListening ? Icons.graphic_eq : Icons.mic_none,
-            tooltip: 'Voice',
-            tint: _micListening ? AppColors.conflictRose : null,
-            onTap: _toggleMic,
-          ),
-          const SizedBox(width: 6),
-          GestureDetector(
-            key: widget.sendKey,
-            onTap: _submit,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.lavender, AppColors.indigo],
+              const SizedBox(width: 6),
+              Expanded(
+                child: TextField(
+                  key: widget.fieldKey,
+                  controller: _text,
+                  focusNode: widget.focusNode,
+                  minLines: 1,
+                  maxLines: 3,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _submit(),
+                  cursorColor: TaroColors.lavender,
+                  style: AppTypography.chatUser(
+                    fontSize: 15,
+                    height: 1.4,
+                    color: TaroColors.textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: widget.hint,
+                    hintStyle: AppTypography.chatUser(
+                      fontSize: 14.5,
+                      height: 1.4,
+                      color: TaroColors.textSecondary.withValues(
+                        alpha: TaroOpacity.textMuted,
+                      ),
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
                 ),
               ),
-              child: const Icon(
-                Icons.arrow_upward,
-                size: 18,
-                color: AppColors.canvas,
+              _CapsuleIconButton(
+                icon: _micListening ? Icons.graphic_eq : Icons.mic_none,
+                tooltip: 'Voice',
+                tint: _micListening ? TaroColors.rose : null,
+                onTap: _toggleMic,
               ),
-            ),
+              const SizedBox(width: 6),
+              Semantics(
+                button: true,
+                label: 'Send',
+                child: GestureDetector(
+                  key: widget.sendKey,
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _submit,
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [TaroColors.lavender, TaroColors.indigo],
+                      ),
+                      boxShadow: TaroGlow.soft(
+                        TaroColors.lavender,
+                        alpha: 0.35,
+                        blur: 10,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_upward,
+                      size: 18,
+                      color: TaroColors.background,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -231,22 +245,29 @@ class _CapsuleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip ?? '',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.surface.withValues(alpha: 0.8),
-          ),
-          child: Icon(
-            icon,
-            size: 17,
-            color: tint ?? AppColors.textMuted,
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Tooltip(
+        message: tooltip ?? '',
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: TaroColors.surface.withValues(alpha: 0.72),
+              border: Border.all(
+                color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: tint ?? TaroColors.textSecondary,
+            ),
           ),
         ),
       ),

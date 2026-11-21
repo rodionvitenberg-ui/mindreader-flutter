@@ -16,6 +16,7 @@ abstract final class TaroColors {
   static const dawn = Color(0xFFF0C7A4);
   static const textPrimary = Color(0xFFF2EBE4);
   static const textSecondary = Color(0xFFC5C0D0);
+  static const textDisabled = Color(0x8CC5C0D0);
 
   /// Акценты подсветки для направления de-press.co + тёплый летний рассвет.
   static const lavender = Color(0xFFA78BFA);

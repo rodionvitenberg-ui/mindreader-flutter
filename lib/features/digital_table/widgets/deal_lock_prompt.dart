@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro.dart';
 import '../../../state/spread_controller.dart';
 
 /// The subtle haptic/visual prompt shown when the reader tries to draw
@@ -21,9 +21,9 @@ void showDealLockPrompt(BuildContext context, SpreadController ctrl) {
           ctrl.isClarifierLimitReached
               ? SpreadController.maxTableCardsPrompt
               : SpreadController.dealLockedPrompt,
-          style: const TextStyle(color: Colors.white, fontSize: 12),
+          style: const TextStyle(color: TaroColors.textPrimary, fontSize: 12),
         ),
-        backgroundColor: AppColors.surface.withValues(alpha: 0.96),
+        backgroundColor: TaroColors.surface.withValues(alpha: 0.96),
       ),
     );
 }

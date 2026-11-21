@@ -10,6 +10,7 @@ import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/services/oracle_voice_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../design_system/taro.dart';
 import '../../state/oracle_session_controller.dart';
 import '../../state/spread_controller.dart';
 import '../../state/synthesis_session.dart';
@@ -331,39 +332,13 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                       child: ReadingSubjectToggle(),
                     ),
                     const SizedBox(height: 14),
-                    GestureDetector(
-                      onTap: () {
+                    TaroGlassButton(
+                      label: '✦ SYNTHESIZE IN CHAT →',
+                      variant: TaroGlassButtonVariant.primary,
+                      onPressed: () {
                         HapticFeedback.mediumImpact();
                         widget.onSynthesize();
                       },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
-                          vertical: 13,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.lavender.withValues(alpha: 0.26),
-                              AppColors.indigo.withValues(alpha: 0.16),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: AppColors.lavender,
-                            width: 1.2,
-                          ),
-                        ),
-                        child: Text(
-                          '✦ SYNTHESIZE IN CHAT →',
-                          style: AppTypography.label(
-                            fontSize: 12.5,
-                            letterSpacing: 0.9,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.lavender,
-                          ),
-                        ),
-                      ),
                     ),
                   ],
                 ],
@@ -634,21 +609,14 @@ class _OracleResponse extends StatelessWidget {
           _OracleSpeakerHeader(label: header ?? 'ORACLE'),
           const SizedBox(height: 10),
           if (typing)
-            Text(
-              '$text · · ·',
-              style: AppTypography.chatOracle(
-                fontSize: 14.5,
-                fontStyle: FontStyle.italic,
-                color: AppColors.textMuted,
-              ),
-            )
+            TaroGlassProgress(label: '$text · · ·')
           else
             Text(
               text,
               style: AppTypography.chatOracle(
                 fontSize: 15.5,
                 height: 1.62,
-                color: AppColors.textPrimary,
+                color: TaroColors.textPrimary,
               ),
             ),
         ],
@@ -883,30 +851,11 @@ class _ChatActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.88),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.45)),
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AppTypography.label(
-            fontSize: 10,
-            letterSpacing: 0.5,
-            fontWeight: FontWeight.w700,
-            color: AppColors.lavender,
-          ),
-        ),
-      ),
+    return TaroGlassChip(
+      label: label,
+      selected: true,
+      compact: true,
+      onTap: onTap,
     );
   }
 }

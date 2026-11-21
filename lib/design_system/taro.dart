@@ -3,10 +3,12 @@ library;
 
 export 'components/taro_dusk_background.dart';
 export 'components/taro_glass_button.dart';
+export 'components/taro_glass_chip.dart';
 export 'components/taro_glass_dock.dart';
 export 'components/taro_glass_icon_button.dart';
 export 'components/taro_glass_input.dart';
 export 'components/taro_glass_panel.dart';
+export 'components/taro_glass_progress.dart';
 export 'components/taro_glass_segmented_control.dart';
 export 'components/taro_glass_select.dart';
 export 'components/taro_glass_sheet.dart';
