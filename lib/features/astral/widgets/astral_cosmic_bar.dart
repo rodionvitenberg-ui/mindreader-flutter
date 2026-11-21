@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -7,11 +8,7 @@ import '../../../core/theme/app_typography.dart';
 /// Top strip of the ASTRAL screen: today's moon phase and the reading
 /// streak. The daily-ritual settings now live in the bottom dock.
 class AstralCosmicBar extends StatelessWidget {
-  const AstralCosmicBar({
-    required this.phase,
-    required this.streak,
-    super.key,
-  });
+  const AstralCosmicBar({required this.phase, required this.streak, super.key});
 
   final MoonPhase phase;
   final int streak;
@@ -27,7 +24,7 @@ class AstralCosmicBar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                phase.name.toUpperCase(),
+                context.astroPhase(phase.name, phase.glyph).toUpperCase(),
                 style: AppTypography.label(
                   fontSize: 9,
                   letterSpacing: 1.0,
@@ -35,7 +32,7 @@ class AstralCosmicBar extends StatelessWidget {
                 ),
               ),
               Text(
-                '${(phase.illumination * 100).round()}% ILLUMINATED',
+                '${(phase.illumination * 100).round()}% ${context.astralRussian ? 'ОСВЕЩЕНО' : 'ILLUMINATED'}',
                 style: AppTypography.label(
                   fontSize: 8.5,
                   letterSpacing: 0.8,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart' hide Element;
 
+import '../astral_copy.dart';
 import '../../../core/data/zodiac_almanac_data.dart';
 import '../../../core/models/natal_chart.dart';
-import '../../../core/models/tarot_card_model.dart';
 import '../../../core/models/zodiac_forecast.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -43,7 +43,7 @@ class ZodiacForecastCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      entry.name.toUpperCase(),
+                      context.astroSign(forecast.sign).toUpperCase(),
                       style: AppTypography.display(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -53,8 +53,7 @@ class ZodiacForecastCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${entry.dateRange} · ${entry.element.label.toUpperCase()} · '
-                      '${entry.modality.name.toUpperCase()}',
+                      entry.dateRange,
                       style: AppTypography.label(
                         fontSize: 8.5,
                         letterSpacing: 0.7,
@@ -75,15 +74,17 @@ class ZodiacForecastCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Text(forecast.moonPhaseGlyph,
-                    style: const TextStyle(fontSize: 14)),
+                Text(
+                  forecast.moonPhaseGlyph,
+                  style: const TextStyle(fontSize: 14),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${forecast.moonPhaseName.toUpperCase()} · '
+                    '${context.astroPhase(forecast.moonPhaseName, forecast.moonPhaseGlyph).toUpperCase()} · '
                     '${(forecast.moonIllumination * 100).round()}% · '
-                    'MOON IN ${forecast.transitingMoonSign.title.toUpperCase()} '
-                    '(SOLAR HOUSE ${forecast.solarMoonHouse})',
+                    '${context.astroPlanet(PlanetId.moon).toUpperCase()} · ${context.astroSign(forecast.transitingMoonSign).toUpperCase()} '
+                    '(${context.astralRussian ? 'СОЛНЕЧНЫЙ ДОМ' : 'SOLAR HOUSE'} ${forecast.solarMoonHouse})',
                     style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 1.0,
@@ -96,7 +97,9 @@ class ZodiacForecastCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            forecast.overallTheme,
+            context.astralRussian
+                ? forecast.overallThemeRu ?? forecast.overallTheme
+                : forecast.overallTheme,
             style: AppTypography.body(
               fontSize: 12,
               height: 1.45,

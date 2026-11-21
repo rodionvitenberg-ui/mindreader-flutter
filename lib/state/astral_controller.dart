@@ -18,7 +18,7 @@ enum AstralGenerateResult { generated, proGateBlocked }
 /// error swallowed — widget tests never block on `SharedPreferences`.
 class AstralController extends ChangeNotifier {
   AstralController({LocalStorageService? storage})
-      : _storage = storage ?? LocalStorageService();
+    : _storage = storage ?? LocalStorageService();
 
   /// Free tier: 2 saved natal profiles (e.g. Self + Partner).
   static const int maxFreeProfiles = 2;
@@ -53,14 +53,11 @@ class AstralController extends ChangeNotifier {
 
   DailyHoroscopeReport? get activeHoroscope => _activeHoroscope;
 
-  /// Free tier allows 2 charts — the saved-profile count AND the lifetime
-  /// generation count must stay under the cap. PRO is unlimited. When
-  /// [kProRestrictionsEnabled] is false (pre-launch) the cap is bypassed.
+  /// Free tier limits saved profiles. Edits and replacements do not use a slot.
   bool canCreateOrGenerateChart() =>
       !kProRestrictionsEnabled ||
       _isProUnlocked ||
-      (_profiles.length < maxFreeProfiles &&
-          _totalChartsGeneratedCount < maxFreeProfiles);
+      _profiles.length < maxFreeProfiles;
 
   /// Adds a freshly computed chart. A 3rd free-tier chart is refused: the
   /// profile list is left untouched and [AstralGenerateResult.proGateBlocked]
@@ -78,6 +75,16 @@ class AstralController extends ChangeNotifier {
     _persistGenerationCount();
     _persistActiveIndex();
     return AstralGenerateResult.generated;
+  }
+
+  /// Recalculates a saved profile in place, retaining its ID and slot.
+  void updateChart(NatalChart chart) {
+    final index = _profiles.indexWhere((p) => p.id == chart.id);
+    if (index < 0) return;
+    _profiles[index] = chart;
+    _refreshHoroscope();
+    notifyListeners();
+    _persistProfiles();
   }
 
   /// Switches the active profile in one tap and re-targets the horoscope.
@@ -117,8 +124,7 @@ class AstralController extends ChangeNotifier {
     _persistPro();
   }
 
-  /// Removes a saved profile. The lifetime generation counter is NOT
-  /// decremented — deleting cannot reset the free-tier cap.
+  /// Removes a profile and frees a slot without changing the generation count.
   void deleteProfile(int index) {
     if (index < 0 || index >= _profiles.length) return;
     _profiles.removeAt(index);
@@ -135,8 +141,9 @@ class AstralController extends ChangeNotifier {
   /// in-memory profiles are never cleared, so a fast first render is safe.
   Future<void> load() async {
     try {
-      final fromDisk =
-          (await _storage.loadAstralProfiles()).map(NatalChart.fromJson).toList();
+      final fromDisk = (await _storage.loadAstralProfiles())
+          .map(NatalChart.fromJson)
+          .toList();
       for (final chart in fromDisk) {
         if (!_profiles.any((p) => p.id == chart.id)) {
           _profiles.add(chart);
@@ -190,8 +197,9 @@ class AstralController extends ChangeNotifier {
 
   void _refreshHoroscope() {
     final profile = activeProfile;
-    _activeHoroscope =
-        profile == null ? null : NatalCalculatorService.computeDailyHoroscope(profile);
+    _activeHoroscope = profile == null
+        ? null
+        : NatalCalculatorService.computeDailyHoroscope(profile);
   }
 
   // ---- background persistence (fire-and-forget, errors swallowed) ----

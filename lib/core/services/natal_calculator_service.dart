@@ -140,12 +140,7 @@ class NatalCalculatorService {
   }) {
     final ramc = localSiderealTime(utc, eastLongitude: eastLongitude);
     final eps = trueObliquity(utc);
-    return _asc1(
-      ramc + 90,
-      latitude,
-      math.sin(_rad(eps)),
-      math.cos(_rad(eps)),
-    );
+    return _asc1(ramc + 90, latitude, math.sin(_rad(eps)), math.cos(_rad(eps)));
   }
 
   // ---------------------------------------------------------------------
@@ -686,15 +681,36 @@ class NatalCalculatorService {
     required double timezoneOffsetHours,
     required HouseSystem houseSystem,
     DateTime? createdAt,
+    String? timezoneId,
+    DateTime? birthDayStartUtc,
+    DateTime? birthDayEndUtc,
   }) {
-    final cusps = computeHouseCusps(
-      latitude: latitude,
-      eastLongitude: longitude,
-      utc: birthDateUtc,
-      system: houseSystem,
-    );
+    final moonSignUncertain =
+        !timeKnown &&
+        ZodiacSignX.fromLongitude(
+              computeEclipticLongitude(
+                PlanetId.moon,
+                birthDayStartUtc ??
+                    birthDateUtc.subtract(const Duration(hours: 12)),
+              ),
+            ) !=
+            ZodiacSignX.fromLongitude(
+              computeEclipticLongitude(
+                PlanetId.moon,
+                birthDayEndUtc ?? birthDateUtc.add(const Duration(hours: 12)),
+              ),
+            );
+    final cusps = !timeKnown
+        ? <double>[]
+        : computeHouseCusps(
+            latitude: latitude,
+            eastLongitude: longitude,
+            utc: birthDateUtc,
+            system: houseSystem,
+          );
     final positions = <NatalPlanetPosition>[];
     for (final planet in PlanetId.values) {
+      if (!timeKnown && planet.isAngle) continue;
       final double lon;
       if (planet == PlanetId.ascendant) {
         lon = ascendant(
@@ -708,7 +724,7 @@ class NatalCalculatorService {
         lon = computeEclipticLongitude(planet, birthDateUtc);
       }
       final sign = ZodiacSignX.fromLongitude(lon);
-      final house = _houseForLongitude(lon, cusps);
+      final house = timeKnown ? _houseForLongitude(lon, cusps) : null;
       positions.add(
         NatalPlanetPosition(
           planet: planet,
@@ -732,6 +748,8 @@ class NatalCalculatorService {
       birthLocalHour: birthLocalHour,
       birthLocalMinute: birthLocalMinute,
       timeKnown: timeKnown,
+      timezoneId: timezoneId,
+      moonSignUncertain: moonSignUncertain,
       cityName: cityName,
       country: country,
       latitude: latitude,
@@ -740,7 +758,10 @@ class NatalCalculatorService {
       houseSystem: houseSystem,
       houseCusps: cusps,
       planets: positions,
-      aspects: computeAspects(positions),
+      aspects: computeAspects([
+        for (final p in positions)
+          if (timeKnown || p.planet != PlanetId.moon) p,
+      ]),
     );
   }
 
@@ -781,7 +802,9 @@ class NatalCalculatorService {
   static List<NatalAspect> computeSynastryAspects(NatalChart a, NatalChart b) {
     final aspects = <NatalAspect>[];
     for (final pa in a.planets) {
+      if (!a.timeKnown && pa.planet == PlanetId.moon) continue;
       for (final pb in b.planets) {
+        if (!b.timeKnown && pb.planet == PlanetId.moon) continue;
         var angle = (pa.longitude - pb.longitude).abs() % 360.0;
         if (angle > 180) angle = 360 - angle;
         for (final type in AspectType.values) {
@@ -810,9 +833,12 @@ class NatalCalculatorService {
   /// of the synastry "compare our charts" elemental reading.
   static Map<Element, int> synastryElementBalance(NatalChart a, NatalChart b) {
     final balance = {for (final e in Element.values) e: 0};
-    for (final p in [...a.planets, ...b.planets]) {
-      if (p.planet.isBody) {
-        balance[p.sign.element] = balance[p.sign.element]! + 1;
+    for (final chart in [a, b]) {
+      for (final p in chart.planets) {
+        if (p.planet.isBody &&
+            (!chart.moonSignUncertain || p.planet != PlanetId.moon)) {
+          balance[p.sign.element] = balance[p.sign.element]! + 1;
+        }
       }
     }
     return balance;
@@ -824,24 +850,28 @@ class NatalCalculatorService {
     NatalChart chart,
     HouseSystem system,
   ) {
-    final cusps = computeHouseCusps(
-      latitude: chart.latitude,
-      eastLongitude: chart.longitude,
-      utc: chart.birthDateUtc,
-      system: system,
-    );
-    final planets = [
-      for (final p in chart.planets)
-        NatalPlanetPosition(
-          planet: p.planet,
-          longitude: p.longitude,
-          sign: p.sign,
-          degreeInSign: p.degreeInSign,
-          house: _houseForLongitude(p.longitude, cusps),
-          isRetrograde: p.isRetrograde,
-          interpretation: p.interpretation,
-        ),
-    ];
+    final cusps = !chart.timeKnown
+        ? <double>[]
+        : computeHouseCusps(
+            latitude: chart.latitude,
+            eastLongitude: chart.longitude,
+            utc: chart.birthDateUtc,
+            system: system,
+          );
+    final planets = chart.planets.map((p) {
+      final house = chart.timeKnown
+          ? _houseForLongitude(p.longitude, cusps)
+          : null;
+      return NatalPlanetPosition(
+        planet: p.planet,
+        longitude: p.longitude,
+        sign: p.sign,
+        degreeInSign: p.degreeInSign,
+        house: house,
+        isRetrograde: p.isRetrograde,
+        interpretation: _positionInterpretation(p.planet, p.sign, house),
+      );
+    }).toList();
     return NatalChart(
       id: chart.id,
       profileName: chart.profileName,
@@ -853,6 +883,8 @@ class NatalCalculatorService {
       birthLocalHour: chart.birthLocalHour,
       birthLocalMinute: chart.birthLocalMinute,
       timeKnown: chart.timeKnown,
+      timezoneId: chart.timezoneId,
+      moonSignUncertain: chart.moonSignUncertain,
       cityName: chart.cityName,
       country: chart.country,
       latitude: chart.latitude,
@@ -875,20 +907,20 @@ class NatalCalculatorService {
   static DailyHoroscopeReport computeDailyHoroscope(
     NatalChart chart, {
     DateTime? forDate,
+    List<DailyTransitItem>? dayTransits,
   }) {
     final date = (forDate ?? DateTime.now()).toUtc();
     final moonPhase = computeMoonPhase(date);
     final moonLon = computeEclipticLongitude(PlanetId.moon, date);
     final moonSign = ZodiacSignX.fromLongitude(moonLon);
-    final moonHouse = _houseForLongitude(moonLon, chart.houseCusps);
+    final moonHouse = chart.timeKnown
+        ? _houseForLongitude(moonLon, chart.houseCusps)
+        : null;
 
-    final candidates = _transitCandidates(chart, date);
-    final top = candidates.take(5).toList();
-    final transits = [for (final c in top) _toTransitItem(c)];
-
-    final dominant = top.isEmpty
-        ? AspectHarmony.harmonious
-        : top.first.type.harmony;
+    final transits =
+        dayTransits ??
+        _transitCandidates(chart, date).take(5).map(_toTransitItem).toList();
+    final dominant = transits.firstOrNull?.harmony ?? AspectHarmony.harmonious;
     final theme = switch (dominant) {
       AspectHarmony.harmonious =>
         'A flowing day: ${moonPhase.name.toLowerCase()} favors gentle '
@@ -904,9 +936,9 @@ class NatalCalculatorService {
     };
 
     var score = 50.0;
-    for (final c in top) {
-      final strength = 1 - c.orb / c.type.maxOrb;
-      switch (c.type.harmony) {
+    for (final c in transits) {
+      final strength = 1 - c.orb / (c.aspectType?.maxOrb ?? 8);
+      switch (c.harmony) {
         case AspectHarmony.harmonious:
           score += strength * 12;
         case AspectHarmony.tense:
@@ -926,6 +958,13 @@ class NatalCalculatorService {
       transitingMoonSign: moonSign,
       transitingMoonHouse: moonHouse,
       overallTheme: theme,
+      overallThemeRu: switch (dominant) {
+        AspectHarmony.harmonious =>
+          'Подходящий день для спокойной работы и небольших шагов.',
+        AspectHarmony.tense => 'Заметьте, что создаёт напряжение, и попробуйте изменить одну конкретную вещь.',
+        AspectHarmony.intense =>
+          'Сосредоточьте внимание на одном деле, которое важнее остальных.',
+      },
       energyScore: energyScore,
       transits: transits,
       focusSpheres: _dailyFocusSpheres(
@@ -951,7 +990,10 @@ class NatalCalculatorService {
     bool anyOf(NatalAspect x, Set<PlanetId> s) =>
         s.contains(x.bodyA) || s.contains(x.bodyB);
 
-    int axis(bool Function(NatalAspect) matches, {required bool tensionPositive}) {
+    int axis(
+      bool Function(NatalAspect) matches, {
+      required bool tensionPositive,
+    }) {
       var score = 50.0;
       for (final x in cross) {
         if (!matches(x)) continue;
@@ -973,31 +1015,50 @@ class NatalCalculatorService {
         title: 'Emotional Bond',
         score: axis(
           (x) =>
-              between(x, <PlanetId>{PlanetId.moon}, <PlanetId>{PlanetId.moon, PlanetId.venus}) ||
-              between(x, <PlanetId>{PlanetId.venus}, <PlanetId>{PlanetId.venus}),
+              between(
+                x,
+                <PlanetId>{PlanetId.moon},
+                <PlanetId>{PlanetId.moon, PlanetId.venus},
+              ) ||
+              between(
+                x,
+                <PlanetId>{PlanetId.venus},
+                <PlanetId>{PlanetId.venus},
+              ),
           tensionPositive: false,
         ),
-        text: 'Moon–Moon and Moon–Venus contact: how needs are felt, held '
+        text:
+            'Moon–Moon and Moon–Venus contact: how needs are felt, held '
             'and mirrored.',
       ),
       SynastryAxis(
         title: 'Attraction & Spark',
         score: axis(
           (x) =>
-              between(x, <PlanetId>{PlanetId.venus, PlanetId.sun}, <PlanetId>{PlanetId.mars}) ||
+              between(
+                x,
+                <PlanetId>{PlanetId.venus, PlanetId.sun},
+                <PlanetId>{PlanetId.mars},
+              ) ||
               between(x, <PlanetId>{PlanetId.sun}, <PlanetId>{PlanetId.venus}),
           tensionPositive: false,
         ),
-        text: 'Venus–Mars and Sun contact: the charge that pulls two people '
+        text:
+            'Venus–Mars and Sun contact: the charge that pulls two people '
             'together.',
       ),
       SynastryAxis(
         title: 'Mental & Communication',
         score: axis(
-          (x) => between(x, <PlanetId>{PlanetId.mercury}, <PlanetId>{PlanetId.mercury, PlanetId.moon, PlanetId.sun}),
+          (x) => between(
+            x,
+            <PlanetId>{PlanetId.mercury},
+            <PlanetId>{PlanetId.mercury, PlanetId.moon, PlanetId.sun},
+          ),
           tensionPositive: false,
         ),
-        text: 'Mercury links: how the two minds trade, question and '
+        text:
+            'Mercury links: how the two minds trade, question and '
             'understand.',
       ),
       SynastryAxis(
@@ -1009,7 +1070,8 @@ class NatalCalculatorService {
               x.type == AspectType.opposition,
           tensionPositive: true,
         ),
-        text: 'Saturn and the squares: where the bond is built through '
+        text:
+            'Saturn and the squares: where the bond is built through '
             'resistance.',
       ),
     ];
@@ -1048,7 +1110,10 @@ class NatalCalculatorService {
       PlanetId.saturn,
     ];
     final natalTargets = chart.planets
-        .where((p) => p.planet.isBody || p.planet == PlanetId.ascendant)
+        .where(
+          (p) =>
+              chart.timeKnown || (p.planet.isBody && p.planet != PlanetId.moon),
+        )
         .toList();
 
     final candidates = <_TransitCandidate>[];
@@ -1070,17 +1135,32 @@ class NatalCalculatorService {
   }
 
   /// Maps one transit candidate to the UI-friendly daily transit item.
-  static DailyTransitItem _toTransitItem(_TransitCandidate c) {
-    return DailyTransitItem(
-      title: '${c.transit.title} stirs your ${c.natal.planet.title}',
-      transitLabel:
-          'Transit ${c.transit.title} ${c.type.glyph} '
-          'Natal ${c.natal.planet.title}',
-      orb: c.orb,
-      advice: _transitAdvice(c),
-      harmony: c.type.harmony,
-    );
-  }
+  static DailyTransitItem _toTransitItem(_TransitCandidate c) =>
+      describeTransit(c.transit, c.natal.planet, c.type, c.orb);
+
+  static DailyTransitItem describeTransit(
+    PlanetId transit,
+    PlanetId natal,
+    AspectType type,
+    double orb, {
+    DateTime? closestAt,
+    DateTime? activeFrom,
+    DateTime? activeUntil,
+  }) => DailyTransitItem(
+    title: '${transit.title} stirs your ${natal.title}',
+    transitLabel: 'Transit ${transit.title} ${type.glyph} Natal ${natal.title}',
+    orb: orb,
+    advice:
+        'Let ${transit.title} touch your natal ${natal.title}: '
+        '${type.dynamicLine}. ${_harmonyAdvice[type.harmony]!}',
+    harmony: type.harmony,
+    transitingBody: transit,
+    natalBody: natal,
+    aspectType: type,
+    closestAt: closestAt,
+    activeFrom: activeFrom,
+    activeUntil: activeUntil,
+  );
 
   static DailyTransitPeak _transitPeakFor(NatalChart chart, DateTime date) {
     final candidates = _transitCandidates(chart, date);
@@ -1123,8 +1203,12 @@ class NatalCalculatorService {
       solarMoonHouse: moonHouse,
       solarSunHouse: sunHouse,
       sunDegreeInSign: sunLon - sunSign.index * 30.0,
-      overallTheme: '${sign.title} weather: the ${moonSign.title} Moon moves '
+      overallTheme:
+          '${sign.title} weather: the ${moonSign.title} Moon moves '
           'through your solar house $moonHouse — ${houseTheme(moonHouse)}.',
+      overallThemeRu:
+          '${sign.titleRu}. Луна в знаке «${moonSign.titleRu}» '
+          'проходит через солнечный дом $moonHouse. Темы дня — ${houseThemeRu(moonHouse)}.',
       energyScore: energyScore,
       focusSpheres: _dailyFocusSpheres(
         moonSign: moonSign,
@@ -1140,32 +1224,51 @@ class NatalCalculatorService {
   /// and the quick-sign forecast.
   static List<FocusSphere> _dailyFocusSpheres({
     required ZodiacSign moonSign,
-    required int moonHouse,
+    required int? moonHouse,
     required MoonPhase moonPhase,
     required List<DailyTransitItem> transits,
     required int energyScore,
   }) {
-    final harmony =
-        transits.where((t) => t.harmony == AspectHarmony.harmonious).length;
-    final tension =
-        transits.where((t) => t.harmony == AspectHarmony.tense).length;
+    final harmony = transits
+        .where((t) => t.harmony == AspectHarmony.harmonious)
+        .length;
+    final tension = transits
+        .where((t) => t.harmony == AspectHarmony.tense)
+        .length;
     final illumination = (moonPhase.illumination * 100).round();
+    final moonContext = moonHouse == null
+        ? 'The ${moonSign.title} Moon highlights'
+        : 'The ${moonSign.title} Moon crosses house $moonHouse '
+              '(${houseTheme(moonHouse)}), so feeling moves through';
     return [
       FocusSphere(
         title: 'Relationships & Feelings',
-        text: 'The ${moonSign.title} Moon crosses house $moonHouse '
-            '(${houseTheme(moonHouse)}), so feeling moves through '
-            '${moonSign.trait}. '
+        titleRu: 'Отношения и чувства',
+        textRu:
+            '${moonHouse == null ? 'Луна в знаке «${moonSign.titleRu}».' : 'Луна в доме $moonHouse. Темы — ${houseThemeRu(moonHouse)}.'} '
+            '${tension > harmony ? 'Скажите прямо, что вам нужно.' : 'Если хочется выразить поддержку, сделайте это сейчас.'}',
+        text:
+            '$moonContext ${moonSign.trait}. '
             '${tension > harmony ? 'Name one need plainly before it leaks out sideways.' : 'Say the warm thing out loud while it is easy to give.'}',
       ),
       FocusSphere(
         title: 'Career & Decisions',
-        text: '${harmony >= tension ? 'A clean decision moves faster than a perfect one today.' : 'Choose the option you can still defend tomorrow; urgency is not a strategy.'} '
+        titleRu: 'Работа и решения',
+        textRu: harmony >= tension
+            ? 'Выберите один конкретный шаг в важном деле.'
+            : 'Примите решение, которое сможете обосновать и завтра. Оставьте себе время подумать.',
+        text:
+            '${harmony >= tension ? 'A clean decision moves faster than a perfect one today.' : 'Choose the option you can still defend tomorrow; urgency is not a strategy.'} '
             'Anchor on one concrete next step in the work that matters.',
       ),
       FocusSphere(
         title: 'Inner State',
-        text: '${moonPhase.name} at $illumination% illumination. '
+        titleRu: 'Внутреннее состояние',
+        textRu:
+            'Луна освещена на $illumination%. '
+            '${energyScore >= 60 ? 'Направьте силы на одно важное для вас дело.' : 'Поберегите внимание и найдите время для отдыха.'}',
+        text:
+            '${moonPhase.name} at $illumination% illumination. '
             '${energyScore >= 60 ? 'There is surplus energy — spend it on one deliberate act, not on proving yourself.' : 'Energy is thin — protect your attention and let recovery count as progress.'}',
       ),
     ];
@@ -1193,12 +1296,27 @@ class NatalCalculatorService {
   /// The grounded theme of a natal house, 1..12 (clamped).
   static String houseTheme(int house) => _houseThemes[house.clamp(1, 12) - 1];
 
+  static String houseThemeRu(int house) => const [
+    'самовыражение и первое впечатление',
+    'деньги и личные ценности',
+    'общение и обучение',
+    'дом и семья',
+    'творчество и радость',
+    'повседневные привычки и забота о себе',
+    'партнёрство',
+    'близость и общие ресурсы',
+    'мировоззрение и путешествия',
+    'работа и репутация',
+    'друзья и долгосрочные цели',
+    'уединение и восстановление',
+  ][house.clamp(1, 12) - 1];
+
   static String _positionInterpretation(
     PlanetId planet,
     ZodiacSign sign,
-    int house,
+    int? house,
   ) {
-    if (planet.isAngle) {
+    if (planet.isAngle || house == null) {
       return '${planet.title} in ${sign.title}: ${planet.archetype}, '
           'colored by ${sign.trait}.';
     }
@@ -1223,11 +1341,6 @@ class NatalCalculatorService {
         'Channel the intensity into one deliberate act instead of '
         'letting it scatter.',
   };
-
-  static String _transitAdvice(_TransitCandidate c) {
-    return 'Let ${c.transit.title} touch your natal ${c.natal.planet.title}: '
-        '${c.type.dynamicLine}. ${_harmonyAdvice[c.type.harmony]!}';
-  }
 }
 
 /// One candidate transit pair (transiting body × natal point × aspect).

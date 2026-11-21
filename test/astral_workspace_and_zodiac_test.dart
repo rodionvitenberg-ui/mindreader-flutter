@@ -111,8 +111,9 @@ void main() {
   });
 
   group('SynastryWindow', () {
-    testWidgets('renders the resonance score, four axes and the Oracle CTA',
-        (tester) async {
+    testWidgets('renders the resonance score, four axes and the Oracle CTA', (
+      tester,
+    ) async {
       final a = _chart('Self', DateTime.utc(1988, 6, 15, 14, 30));
       final b = _chart('Partner', DateTime.utc(1990, 3, 20, 8, 15));
       Object? handoff;
@@ -122,18 +123,17 @@ void main() {
           theme: buildAppTheme(),
           home: Scaffold(
             body: SingleChildScrollView(
-              child: SynastryWindow(
-                a: a,
-                b: b,
-                onDiscuss: (h) => handoff = h,
-              ),
+              child: SynastryWindow(a: a, b: b, onDiscuss: (h) => handoff = h),
             ),
           ),
         ),
       );
       await tester.pump();
 
-      expect(find.text('SYNASTRY · 2 PROFILES'), findsOneWidget);
+      expect(find.text('Self × Partner'), findsOneWidget);
+      expect(find.text('OVERALL RESONANCE'), findsNothing);
+      await tester.tap(find.text('Compatibility details'));
+      await tester.pumpAndSettle();
       expect(find.text('COMPATIBILITY AXES'), findsOneWidget);
       expect(find.text('EMOTIONAL BOND'), findsOneWidget);
       expect(find.text('ATTRACTION & SPARK'), findsOneWidget);
@@ -142,9 +142,7 @@ void main() {
       expect(find.text('✦ DISCUSS SYNASTRY WITH ORACLE →'), findsOneWidget);
       expect(handoff, isNull);
 
-      await tester.ensureVisible(
-        find.text('✦ DISCUSS SYNASTRY WITH ORACLE →'),
-      );
+      await tester.ensureVisible(find.text('✦ DISCUSS SYNASTRY WITH ORACLE →'));
       await tester.pump();
       await tester.tap(find.text('✦ DISCUSS SYNASTRY WITH ORACLE →'));
       await tester.pump();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -44,20 +45,11 @@ class AstralWheelPlaceholder extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'NATAL WHEEL',
+              context.astralText('natalWheel'),
               style: AppTypography.label(
                 fontSize: 10,
                 letterSpacing: 1.0,
                 color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'PHASE 3 · ANIMATED PAINTER',
-              style: AppTypography.label(
-                fontSize: 9,
-                letterSpacing: 0.8,
-                color: AppColors.textMuted,
               ),
             ),
             if (chart != null) ...[

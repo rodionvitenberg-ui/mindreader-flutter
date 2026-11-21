@@ -1,8 +1,11 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../astral_copy.dart';
 
 /// The 0..100 Energy & Resonance bar shared by both Horoscope modes.
 class EnergyResonanceBar extends StatelessWidget {
@@ -15,15 +18,15 @@ class EnergyResonanceBar extends StatelessWidget {
     final color = score >= 66
         ? AppColors.harmonyCyan
         : score >= 40
-            ? AppColors.lavender
-            : AppColors.conflictRose;
+        ? AppColors.lavender
+        : AppColors.conflictRose;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Text(
-              'ENERGY & RESONANCE',
+              context.astralRussian ? 'ЭНЕРГИЯ ДНЯ' : 'ENERGY & RESONANCE',
               style: AppTypography.label(
                 fontSize: 9,
                 letterSpacing: 1.0,
@@ -81,7 +84,10 @@ class FocusSphereCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            sphere.title.toUpperCase(),
+            (context.astralRussian
+                    ? sphere.titleRu ?? sphere.title
+                    : sphere.title)
+                .toUpperCase(),
             style: AppTypography.label(
               fontSize: 9,
               letterSpacing: 0.8,
@@ -91,7 +97,7 @@ class FocusSphereCard extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(
-            sphere.text,
+            context.astralRussian ? sphere.textRu ?? sphere.text : sphere.text,
             style: AppTypography.body(
               fontSize: 12,
               height: 1.4,
@@ -104,104 +110,87 @@ class FocusSphereCard extends StatelessWidget {
   }
 }
 
-/// The 7-day 'Windows of Power & Tension' timeline strip: one compact cell
-/// per day (Today .. +6) tinted by the day's strongest transit harmony.
+/// Selects a local calendar day and leaves the report below it readable.
 class SevenDayForecastCard extends StatelessWidget {
-  const SevenDayForecastCard({required this.peaks, super.key});
+  const SevenDayForecastCard({
+    required this.days,
+    required this.selectedDay,
+    required this.onSelect,
+    super.key,
+  });
 
-  final List<DailyTransitPeak> peaks;
-
-  static const _days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  final List<DateTime> days;
+  final int selectedDay;
+  final ValueChanged<int> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final weekdays = context.astralRussian
+        ? ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
+        : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return SizedBox(
       key: const ValueKey('seven-day-forecast'),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '7-DAY WINDOWS OF POWER & TENSION',
-            style: AppTypography.label(
-              fontSize: 9,
-              letterSpacing: 1.0,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              for (var i = 0; i < peaks.length; i++)
-                Expanded(
-                  child: _DayCell(
-                    peak: peaks[i],
-                    label: i == 0 ? 'TODAY' : _days[peaks[i].date.weekday - 1],
+      height: 56,
+      child: LayoutBuilder(
+        builder: (context, constraints) => ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemExtent: math.max(constraints.maxWidth / days.length, 44),
+          itemCount: days.length,
+          itemBuilder: (context, i) {
+            final day = days[i];
+            final weekday = weekdays[day.weekday - 1];
+            final selected = i == selectedDay;
+            final color = selected ? AppColors.lavender : AppColors.textMuted;
+            return Semantics(
+              selected: selected,
+              button: true,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+                child: InkWell(
+                  key: ValueKey('astral-day-$i'),
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => onSelect(i),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppColors.lavender.withValues(alpha: 0.16)
+                          : AppColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: selected ? AppColors.lavender : AppColors.border,
+                      ),
+                    ),
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              weekday,
+                              style: AppTypography.label(
+                                color: color,
+                                fontSize: 10,
+                              ),
+                            ),
+                            Text(
+                              '${day.day}',
+                              style: AppTypography.label(
+                                color: color,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-            ],
-          ),
-        ],
+              ),
+            );
+          },
+        ),
       ),
-    );
-  }
-}
-
-class _DayCell extends StatelessWidget {
-  const _DayCell({required this.peak, required this.label});
-
-  final DailyTransitPeak peak;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final transit = peak.transit;
-    final color = transit == null
-        ? AppColors.textMuted.withValues(alpha: 0.5)
-        : switch (transit.harmony) {
-            AspectHarmony.harmonious => AppColors.harmonyCyan,
-            AspectHarmony.tense => AppColors.conflictRose,
-            AspectHarmony.intense => AppColors.lavender,
-          };
-    final planet = transit == null
-        ? 'CALM'
-        : transit.title.split(' ').first.toUpperCase();
-    return Column(
-      children: [
-        Text(
-          label,
-          style: AppTypography.label(
-            fontSize: 7.5,
-            letterSpacing: 0.8,
-            color: AppColors.textMuted,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          planet,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AppTypography.label(
-            fontSize: 7,
-            letterSpacing: 0.6,
-            fontWeight: FontWeight.w700,
-            color: color,
-          ),
-        ),
-      ],
     );
   }
 }

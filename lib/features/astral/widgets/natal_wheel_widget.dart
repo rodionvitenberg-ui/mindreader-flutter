@@ -6,6 +6,7 @@ import '../../../core/models/natal_chart.dart';
 import '../../../core/services/natal_calculator_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../astral_copy.dart';
 import 'natal_wheel_controls.dart';
 import 'natal_wheel_geometry.dart';
 import 'natal_wheel_painter.dart';
@@ -75,6 +76,9 @@ class _NatalWheelWidgetState extends State<NatalWheelWidget>
       _morphTo = widget.chart.houseCusps;
       _houseMorph.forward(from: 0);
     }
+    if (_showTransits && oldWidget.now != widget.now) {
+      _transits = _computeTransits();
+    }
     // A different profile replays the whole 2200 ms choreography.
     if (oldWidget.chart.id != widget.chart.id) {
       _selected = null;
@@ -129,8 +133,9 @@ class _NatalWheelWidgetState extends State<NatalWheelWidget>
     if (_morphFrom.length != 12 || _morphTo.length != 12) {
       return widget.chart.houseCusps;
     }
-    final progress =
-        Curves.easeOutCubic.transform(_houseMorph.value.clamp(0.0, 1.0));
+    final progress = Curves.easeOutCubic.transform(
+      _houseMorph.value.clamp(0.0, 1.0),
+    );
     return lerpCusps(_morphFrom, _morphTo, progress);
   }
 
@@ -152,7 +157,9 @@ class _NatalWheelWidgetState extends State<NatalWheelWidget>
     final chart = widget.chart;
     final bodies = [
       for (final position in chart.planets)
-        if (position.planet.isBody) position,
+        if (position.planet.isBody &&
+            (chart.timeKnown || position.planet != PlanetId.moon))
+          position,
     ];
     if (bodies.isEmpty) return;
 
@@ -222,7 +229,8 @@ class _NatalWheelWidgetState extends State<NatalWheelWidget>
         children: [
           NatalWheelHeader(
             subtitle:
-                '${chart.cityName.toUpperCase()} · ${chart.houseSystem.label}',
+                '${chart.cityName.toUpperCase()} · '
+                '${chart.timeKnown ? chart.houseSystem.label : context.astralText('unknownTime')}',
             onReplay: _handleReplay,
             onToggleTransits: _toggleTransits,
             transitsActive: _showTransits,
@@ -231,7 +239,10 @@ class _NatalWheelWidgetState extends State<NatalWheelWidget>
           _buildCanvas(chart),
           const SizedBox(height: 12),
           NatalPlanetChipBar(
-            planets: chart.planets,
+            planets: [
+              for (final p in chart.planets)
+                if (chart.timeKnown || p.planet != PlanetId.moon) p,
+            ],
             selected: _selected,
             onSelect: _selectPlanet,
           ),

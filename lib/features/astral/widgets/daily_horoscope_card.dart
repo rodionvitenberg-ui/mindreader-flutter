@@ -3,11 +3,18 @@ import 'package:flutter/material.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../astral_copy.dart';
 
 /// ASTRAL Phase 4 — today's cosmic weather for the active profile: the
 /// moon house, the day theme and the live transit cards tagged by register.
 class DailyHoroscopeCard extends StatelessWidget {
-  const DailyHoroscopeCard({required this.report, super.key});
+  const DailyHoroscopeCard({
+    required this.report,
+    this.onDiscussTransit,
+    super.key,
+  });
+
+  final ValueChanged<DailyTransitItem>? onDiscussTransit;
 
   final DailyHoroscopeReport report;
 
@@ -36,7 +43,7 @@ class DailyHoroscopeCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'COSMIC WEATHER · $stamp',
+                      stamp,
                       style: AppTypography.label(
                         fontSize: 9,
                         letterSpacing: 1.0,
@@ -45,7 +52,12 @@ class DailyHoroscopeCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      report.moonPhaseName.toUpperCase(),
+                      context
+                          .astroPhase(
+                            report.moonPhaseName,
+                            report.moonPhaseGlyph,
+                          )
+                          .toUpperCase(),
                       style: AppTypography.display(
                         fontSize: 19,
                         fontWeight: FontWeight.w700,
@@ -78,8 +90,9 @@ class DailyHoroscopeCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'MOON IN HOUSE ${report.transitingMoonHouse} · '
-                    '${report.transitingMoonSign.title.toUpperCase()}',
+                    '${context.astroPlanet(PlanetId.moon).toUpperCase()}'
+                    '${report.transitingMoonHouse == null ? '' : ' ${context.astralRussian ? 'В ДОМЕ' : 'IN HOUSE'} ${report.transitingMoonHouse}'} · '
+                    '${context.astroSign(report.transitingMoonSign).toUpperCase()}',
                     style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 0.7,
@@ -92,7 +105,9 @@ class DailyHoroscopeCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            report.overallTheme,
+            context.astralRussian
+                ? report.overallThemeRu ?? report.overallTheme
+                : report.overallTheme,
             style: AppTypography.body(
               fontSize: 13,
               height: 1.45,
@@ -102,7 +117,7 @@ class DailyHoroscopeCard extends StatelessWidget {
           if (report.transits.isNotEmpty) ...[
             const SizedBox(height: 14),
             Text(
-              'LIVE TRANSITS',
+              context.astralRussian ? 'ТРАНЗИТЫ' : 'LIVE TRANSITS',
               style: AppTypography.label(
                 fontSize: 9,
                 letterSpacing: 1.0,
@@ -110,8 +125,13 @@ class DailyHoroscopeCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            for (final transit in report.transits.take(4))
-              _TransitTile(transit: transit),
+            for (final transit in report.transits)
+              _TransitTile(
+                transit: transit,
+                onDiscuss: onDiscussTransit == null
+                    ? null
+                    : () => onDiscussTransit!(transit),
+              ),
           ],
         ],
       ),
@@ -132,8 +152,8 @@ class _EnergyBadge extends StatelessWidget {
     final color = score >= 66
         ? AppColors.harmonyCyan
         : score >= 40
-            ? AppColors.lavender
-            : AppColors.conflictRose;
+        ? AppColors.lavender
+        : AppColors.conflictRose;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -152,7 +172,7 @@ class _EnergyBadge extends StatelessWidget {
             ),
           ),
           Text(
-            'ENERGY',
+            context.astralRussian ? 'ЭНЕРГИЯ' : 'ENERGY',
             style: AppTypography.label(
               fontSize: 7.5,
               letterSpacing: 0.8,
@@ -168,13 +188,32 @@ class _EnergyBadge extends StatelessWidget {
 /// One live transit: the canonical pair label, its register and the orb,
 /// plus the grounded psychological advice for the day.
 class _TransitTile extends StatelessWidget {
-  const _TransitTile({required this.transit});
+  const _TransitTile({required this.transit, this.onDiscuss});
+
+  final VoidCallback? onDiscuss;
 
   final DailyTransitItem transit;
 
   @override
   Widget build(BuildContext context) {
     final color = _harmonyColor(transit.harmony);
+    final material = MaterialLocalizations.of(context);
+    String dateTime(DateTime value) {
+      final local = value.toLocal();
+      final russian = context.astralRussian;
+      final date = russian
+          ? '${local.day.toString().padLeft(2, '0')}.${local.month.toString().padLeft(2, '0')}.${local.year}'
+          : material.formatCompactDate(local);
+      return '$date ${material.formatTimeOfDay(TimeOfDay.fromDateTime(local), alwaysUse24HourFormat: russian)}';
+    }
+
+    final transitBody = transit.transitingBody;
+    final natalBody = transit.natalBody;
+    final label =
+        transitBody == null || natalBody == null || transit.aspectType == null
+        ? transit.transitLabel
+        : '${context.astroPlanet(transitBody)} ${transit.aspectType!.glyph} '
+              '${context.astroPlanet(natalBody)} ${context.astralRussian ? '(натал)' : '(natal)'}';
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Container(
@@ -192,22 +231,12 @@ class _TransitTile extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    transit.transitLabel,
+                    label,
                     style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 0.8,
                       color: AppColors.textPrimary,
                     ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  transit.harmony.name.toUpperCase(),
-                  style: AppTypography.label(
-                    fontSize: 8.5,
-                    letterSpacing: 0.7,
-                    fontWeight: FontWeight.w700,
-                    color: color,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -221,15 +250,39 @@ class _TransitTile extends StatelessWidget {
                 ),
               ],
             ),
+            if (transit.closestAt case final closest?) ...[
+              const SizedBox(height: 6),
+              Text(
+                '${context.astralText(transit.reachesExact ? 'exact' : 'closest')} · ${dateTime(closest)}',
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${context.astralText('activePeriod')} · '
+                '${transit.activeFrom == null ? '…' : dateTime(transit.activeFrom!)} → '
+                '${transit.activeUntil == null ? '…' : dateTime(transit.activeUntil!)}',
+              ),
+            ],
             const SizedBox(height: 5),
             Text(
-              transit.advice,
+              context.astralRussian
+                  ? switch (transit.harmony) {
+                      AspectHarmony.harmonious =>
+                        'Используйте момент для небольшого осознанного шага.',
+                      AspectHarmony.tense => 'Заметьте, где возникло напряжение, и выберите одно посильное изменение.',
+                      AspectHarmony.intense => 'Направьте внимание на одно дело, которое сейчас важно.',
+                    }
+                  : transit.advice,
               style: AppTypography.body(
                 fontSize: 11.5,
                 height: 1.4,
                 color: AppColors.textMuted,
               ),
             ),
+            if (onDiscuss != null)
+              TextButton(
+                onPressed: onDiscuss,
+                child: Text(context.astralText('discussTransit')),
+              ),
           ],
         ),
       ),
@@ -237,8 +290,8 @@ class _TransitTile extends StatelessWidget {
   }
 
   static Color _harmonyColor(AspectHarmony harmony) => switch (harmony) {
-        AspectHarmony.harmonious => AppColors.harmonyCyan,
-        AspectHarmony.tense => AppColors.conflictRose,
-        AspectHarmony.intense => AppColors.lavender,
-      };
+    AspectHarmony.harmonious => AppColors.harmonyCyan,
+    AspectHarmony.tense => AppColors.conflictRose,
+    AspectHarmony.intense => AppColors.lavender,
+  };
 }

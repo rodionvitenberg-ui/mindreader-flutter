@@ -9,6 +9,7 @@ import 'astral_gradient_button.dart';
 import 'daily_horoscope_card.dart';
 import 'horoscope_blocks.dart';
 import 'zodiac_forecast_card.dart';
+import '../astral_copy.dart';
 
 /// ASTRAL window 1 — the Horoscope: the active profile's personal daily
 /// transit report, or a quick whole-sign solar forecast picked at the top.
@@ -21,7 +22,11 @@ class HoroscopeWindow extends StatelessWidget {
     required this.onSelectSign,
     required this.onPersonal,
     required this.onDiscuss,
-    this.sevenDayPeaks,
+    required this.days,
+    required this.showWeek,
+    required this.selectedDay,
+    required this.onToggleWeek,
+    required this.onSelectDay,
     super.key,
   });
 
@@ -33,10 +38,13 @@ class HoroscopeWindow extends StatelessWidget {
   final ZodiacSignForecast? forecast;
   final ValueChanged<ZodiacSign> onSelectSign;
   final VoidCallback onPersonal;
-  final VoidCallback onDiscuss;
+  final ValueChanged<DailyTransitItem?> onDiscuss;
 
-  /// Today..+6 transit peaks for the 7-day timeline (personal mode only).
-  final List<DailyTransitPeak>? sevenDayPeaks;
+  final List<DateTime> days;
+  final bool showWeek;
+  final int selectedDay;
+  final ValueChanged<bool> onToggleWeek;
+  final ValueChanged<int> onSelectDay;
 
   bool get _personal => selectedSign == null && chart != null && report != null;
 
@@ -54,29 +62,50 @@ class HoroscopeWindow extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         if (_personal) ...[
-          DailyHoroscopeCard(report: report!),
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: Text(context.astralText('today')),
+                selected: !showWeek,
+                onSelected: (_) => onToggleWeek(false),
+              ),
+              ChoiceChip(
+                key: const ValueKey('astral-show-week'),
+                label: Text(context.astralText('week')),
+                selected: showWeek,
+                onSelected: (_) => onToggleWeek(true),
+              ),
+            ],
+          ),
+          if (showWeek)
+            SevenDayForecastCard(
+              days: days,
+              selectedDay: selectedDay,
+              onSelect: onSelectDay,
+            ),
           const SizedBox(height: 12),
-          EnergyResonanceBar(score: report!.energyScore),
+          DailyHoroscopeCard(report: report!, onDiscussTransit: onDiscuss),
           const SizedBox(height: 12),
           for (final f in report!.focusSpheres) ...[
             FocusSphereCard(sphere: f),
             const SizedBox(height: 8),
           ],
-          if (sevenDayPeaks != null) ...[
-            const SizedBox(height: 8),
-            SevenDayForecastCard(peaks: sevenDayPeaks!),
-          ],
           const SizedBox(height: 6),
           AstralGradientButton(
-            label: '✦ DISCUSS HOROSCOPE WITH ORACLE',
-            onTap: onDiscuss,
+            label: context.astralRussian
+                ? context.astralText('discuss')
+                : '✦ DISCUSS HOROSCOPE WITH ORACLE',
+            onTap: () => onDiscuss(null),
           ),
         ] else if (forecast != null) ...[
           ZodiacForecastCard(forecast: forecast!),
           const SizedBox(height: 12),
           AstralGradientButton(
-            label: '✦ DISCUSS HOROSCOPE WITH ORACLE',
-            onTap: onDiscuss,
+            label: context.astralRussian
+                ? context.astralText('discuss')
+                : '✦ DISCUSS HOROSCOPE WITH ORACLE',
+            onTap: () => onDiscuss(null),
           ),
         ] else
           const _NoHoroscope(),
@@ -111,7 +140,7 @@ class _SignSelector extends StatelessWidget {
             _SignChip(
               key: const ValueKey('zodiac-sign-personal'),
               glyph: '☉',
-              label: 'MY CHART',
+              label: context.astralText('myChart'),
               active: selectedSign == null,
               onTap: () {
                 HapticFeedback.selectionClick();
@@ -122,7 +151,7 @@ class _SignSelector extends StatelessWidget {
             _SignChip(
               key: ValueKey('zodiac-sign-${s.name}'),
               glyph: s.glyph,
-              label: s.title.toUpperCase(),
+              label: context.astroSign(s).toUpperCase(),
               active: selectedSign == s,
               onTap: () {
                 HapticFeedback.selectionClick();

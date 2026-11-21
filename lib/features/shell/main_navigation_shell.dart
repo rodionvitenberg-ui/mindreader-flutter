@@ -80,6 +80,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           ),
           AlmanacScreen(onOpenZodiacHoroscope: _openZodiacHoroscope),
           AstralScreen(
+            isActive: _index == 3,
             onOpenOracle: _openOracle,
             browseZodiacSign: _browseSign,
           ),

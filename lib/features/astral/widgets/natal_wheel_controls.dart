@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -78,7 +79,7 @@ class NatalWheelHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'NATAL WHEEL',
+                    context.astralText('natalWheel'),
                     style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 1.0,
@@ -102,7 +103,7 @@ class NatalWheelHeader extends StatelessWidget {
             const SizedBox(width: 8),
             NatalWheelPill(
               key: const ValueKey('natal-wheel-replay'),
-              label: '↻ REPLAY',
+              label: context.astralText('replay'),
               onTap: onReplay,
             ),
           ],
@@ -112,7 +113,7 @@ class NatalWheelHeader extends StatelessWidget {
           alignment: Alignment.centerRight,
           child: NatalWheelPill(
             key: const ValueKey('natal-wheel-transits'),
-            label: '✦ LIVE TRANSITS OVERLAY',
+            label: context.astralText('overlay'),
             active: transitsActive,
             onTap: onToggleTransits,
           ),

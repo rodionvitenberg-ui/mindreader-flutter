@@ -15,6 +15,7 @@ class OracleHandoff {
     this.chart,
     this.otherChart,
     this.horoscope,
+    this.transit,
     this.zodiacSign,
     this.zodiacForecast,
   });
@@ -31,10 +32,40 @@ class OracleHandoff {
   final NatalChart? otherChart;
 
   final DailyHoroscopeReport? horoscope;
+  final DailyTransitItem? transit;
 
   /// Quick-sign mode: the chosen sign and its solar forecast (no chart).
   final ZodiacSign? zodiacSign;
   final ZodiacSignForecast? zodiacForecast;
 
   bool get isSynastry => otherChart != null;
+  Map<String, dynamic> toJson() => {
+    'prompt': prompt,
+    'kind': kind.name,
+    if (chart != null) 'chart': chart!.toJson(),
+    if (otherChart != null) 'otherChart': otherChart!.toJson(),
+    if (horoscope != null) 'horoscope': horoscope!.toJson(),
+    if (transit != null) 'transit': transit!.toJson(),
+    if (zodiacSign != null) 'sign': zodiacSign!.name,
+    if (zodiacForecast != null) 'forecast': zodiacForecast!.toJson(),
+  };
+
+  static OracleHandoff fromJson(Map<String, dynamic> json) {
+    T? read<T>(String key, T Function(Map<String, dynamic>) decode) {
+      final value = json[key];
+      return value is Map<String, dynamic> ? decode(value) : null;
+    }
+
+    final sign = json['sign'] as String?;
+    return OracleHandoff(
+      prompt: json['prompt'] as String,
+      kind: OracleHandoffKind.values.byName(json['kind'] as String),
+      chart: read('chart', NatalChart.fromJson),
+      otherChart: read('otherChart', NatalChart.fromJson),
+      horoscope: read('horoscope', DailyHoroscopeReport.fromJson),
+      transit: read('transit', DailyTransitItem.fromJson),
+      zodiacSign: sign == null ? null : ZodiacSign.values.byName(sign),
+      zodiacForecast: read('forecast', ZodiacSignForecast.fromJson),
+    );
+  }
 }

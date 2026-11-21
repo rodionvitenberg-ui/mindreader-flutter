@@ -3,8 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/data/astro_cities_data.dart';
+import '../../../core/l10n/app_strings.dart';
+import '../../../state/app_settings_controller.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/services/natal_calculator_service.dart';
+import '../../../core/services/birth_time_service.dart';
+import '../astral_copy.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/astral_controller.dart';
@@ -16,16 +20,18 @@ import 'astral_house_selector.dart';
 /// [NatalCalculatorService.calculateNatalChart] and hands the result to
 /// [AstralController.generateChart].
 class BirthDataFormSheet extends StatefulWidget {
-  const BirthDataFormSheet({super.key});
+  const BirthDataFormSheet({this.chart, super.key});
 
-  static Future<void> show(BuildContext context) {
+  final NatalChart? chart;
+
+  static Future<NatalChart?> show(BuildContext context, {NatalChart? chart}) {
     HapticFeedback.selectionClick();
-    return showModalBottomSheet<void>(
+    return showModalBottomSheet<NatalChart>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.55),
-      builder: (_) => const BirthDataFormSheet(),
+      builder: (_) => BirthDataFormSheet(chart: chart),
     );
   }
 
@@ -39,7 +45,7 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
 
   late DateTime _date;
   TimeOfDay _time = const TimeOfDay(hour: 12, minute: 0);
-  bool _timeKnown = true;
+  bool _timeKnown = false;
   AstroCity? _city;
   late HouseSystem _house;
 
@@ -48,6 +54,31 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
     super.initState();
     _date = DateTime(DateTime.now().year - 30, 1, 1);
     _house = context.read<AstralController>().activeHouseSystem;
+    final chart = widget.chart;
+    if (chart != null) {
+      _nameCtrl.text = chart.profileName;
+      _date = DateTime(
+        chart.birthLocalYear,
+        chart.birthLocalMonth,
+        chart.birthLocalDay,
+      );
+      _time = TimeOfDay(
+        hour: chart.birthLocalHour,
+        minute: chart.birthLocalMinute,
+      );
+      _timeKnown = chart.timeKnown;
+      _house = chart.houseSystem;
+      _city =
+          _matchingCity(chart.cityName) ??
+          AstroCity(
+            name: chart.cityName,
+            country: chart.country,
+            latitude: chart.latitude,
+            longitude: chart.longitude,
+            timezoneOffsetHours: chart.timezoneOffsetHours,
+            timezoneId: chart.timezoneId,
+          );
+    }
   }
 
   @override
@@ -77,7 +108,7 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
         child: child!,
       ),
     );
-    if (picked != null) setState(() => _date = picked);
+    if (mounted && picked != null) setState(() => _date = picked);
   }
 
   Future<void> _pickTime() async {
@@ -98,7 +129,7 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
         child: child!,
       ),
     );
-    if (picked != null) setState(() => _time = picked);
+    if (mounted && picked != null) setState(() => _time = picked);
   }
 
   /// 1-tap fill from the local profile on the PROFILE tab.
@@ -106,27 +137,27 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
     final profile = context.read<UserProfileController>();
     if (!profile.hasBirthData) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Add your birth date and city in PROFILE first.'),
+        SnackBar(
+          content: Text(
+            context.read<AppSettingsController?>()?.language == AppLanguage.ru
+                ? 'Сначала добавьте дату и город рождения в Профиле.'
+                : 'Add your birth date and city in Profile first.',
+          ),
         ),
       );
       return;
     }
     HapticFeedback.selectionClick();
-    AstroCity? match;
-    for (final city in astroCities) {
-      if (city.name.toLowerCase() == profile.cityName.toLowerCase()) {
-        match = city;
-        break;
-      }
-    }
+    final match = _matchingCity(profile.cityName);
     setState(() {
-      _nameCtrl.text =
-          profile.displayName.trim().isEmpty ? 'My Chart' : profile.displayName;
+      _nameCtrl.text = profile.displayName.trim().isEmpty
+          ? 'My Chart'
+          : profile.displayName;
       _date = profile.birthDate!;
       if (profile.birthTime != null) _time = profile.birthTime!;
-      _timeKnown = profile.birthTimeKnown;
-      _city = match ??
+      _timeKnown = profile.birthTimeKnown && profile.birthTime != null;
+      _city =
+          match ??
           AstroCity(
             name: profile.cityName,
             country: '',
@@ -138,59 +169,125 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
     });
   }
 
-  void _generate() {
+  AstroCity? _matchingCity(String name) => astroCities
+      .where(
+        (city) =>
+            city.name.toLowerCase() == name.trim().toLowerCase() ||
+            city.russianName?.toLowerCase() == name.trim().toLowerCase(),
+      )
+      .firstOrNull;
+
+  bool _saving = false;
+
+  Future<void> _generate() async {
+    if (_saving) return;
     final city = _city;
     if (city == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Choose a birth city first.')),
+        SnackBar(content: Text(context.astralRead('missingCity'))),
       );
       return;
     }
-    final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
+    final name = _nameCtrl.text.trim().isEmpty
+        ? 'My Chart'
+        : _nameCtrl.text.trim();
+    final timeKnown = _timeKnown;
+    final hour = timeKnown ? _time.hour : 12;
+    final minute = timeKnown ? _time.minute : 0;
+    final date = _date;
+    final houseSystem = _house;
+    final wallClock = DateTime.utc(
+      date.year,
+      date.month,
+      date.day,
+      hour,
+      minute,
+    );
+    final choices = BirthTimeService.resolve(city, wallClock);
+    if (choices.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.astralRead('skippedTime'))),
+      );
+      return;
+    }
 
-    final name =
-        _nameCtrl.text.trim().isEmpty ? 'My Chart' : _nameCtrl.text.trim();
-    final hour = _timeKnown ? _time.hour : 12;
-    final minute = _timeKnown ? _time.minute : 0;
-    final utc = DateTime.utc(_date.year, _date.month, _date.day, hour, minute)
-        .subtract(Duration(minutes: (city.timezoneOffsetHours * 60).round()));
+    BirthInstant? chosen = choices.first;
+    if (choices.length > 1 && timeKnown) {
+      _saving = true;
+      final title = context.astralRead('repeatedTime');
+      chosen = await showDialog<BirthInstant>(
+        context: context,
+        builder: (dialogContext) => SimpleDialog(
+          title: Text(title),
+          children: [
+            for (final option in choices)
+              SimpleDialogOption(
+                onPressed: () => Navigator.pop(dialogContext, option),
+                child: Text(BirthTimeService.offsetLabel(option.offset)),
+              ),
+          ],
+        ),
+      );
+      _saving = false;
+    }
+    if (!mounted || chosen == null) return;
 
+    DateTime? dayBoundary(int day) {
+      for (var hour = 0; hour < 24; hour++) {
+        final instants = BirthTimeService.resolve(
+          city,
+          DateTime.utc(date.year, date.month, day, hour),
+        );
+        if (instants.isNotEmpty) return instants.first.utc;
+      }
+      return null;
+    }
+
+    final initial = widget.chart;
     final chart = NatalCalculatorService.calculateNatalChart(
-      id: 'chart-${DateTime.now().microsecondsSinceEpoch}',
+      id: initial?.id ?? 'chart-${DateTime.now().microsecondsSinceEpoch}',
+      createdAt: initial?.createdAt,
       profileName: name,
-      birthDateUtc: utc,
-      birthLocalYear: _date.year,
-      birthLocalMonth: _date.month,
-      birthLocalDay: _date.day,
+      birthDateUtc: chosen.utc,
+      birthLocalYear: date.year,
+      birthLocalMonth: date.month,
+      birthLocalDay: date.day,
       birthLocalHour: hour,
       birthLocalMinute: minute,
-      timeKnown: _timeKnown,
+      timeKnown: timeKnown,
+      birthDayStartUtc: timeKnown ? null : dayBoundary(date.day),
+      birthDayEndUtc: timeKnown ? null : dayBoundary(date.day + 1),
       cityName: city.name,
       country: city.country,
       latitude: city.latitude,
       longitude: city.longitude,
-      timezoneOffsetHours: city.timezoneOffsetHours,
-      houseSystem: _house,
+      timezoneOffsetHours: chosen.offset.inSeconds / 3600,
+      timezoneId: city.timezoneId,
+      houseSystem: houseSystem,
     );
 
-    final result = context.read<AstralController>().generateChart(chart);
-    HapticFeedback.mediumImpact();
-    navigator.pop();
-    if (result == AstralGenerateResult.proGateBlocked) {
-      messenger.showSnackBar(
+    final controller = context.read<AstralController>();
+    if (initial != null) {
+      controller.updateChart(chart);
+    } else if (controller.generateChart(chart) ==
+        AstralGenerateResult.proGateBlocked) {
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('ASTRAL PRO required for a 3rd natal profile.'),
         ),
       );
+      return;
     }
+    HapticFeedback.mediumImpact();
+    Navigator.pop(context, chart);
   }
 
   @override
   Widget build(BuildContext context) {
     final query = _cityCtrl.text.trim();
-    final results =
-        query.isEmpty ? const <AstroCity>[] : searchAstroCities(query, limit: 5);
+    final results = query.isEmpty
+        ? const <AstroCity>[]
+        : searchAstroCities(query, limit: 5);
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -220,29 +317,26 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'NEW NATAL CHART',
-                    style: Theme.of(context).textTheme.displayMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'BIRTH DATA · STAYS ON THIS DEVICE',
-                    style: AppTypography.label(
-                      fontSize: 9,
-                      letterSpacing: 1.0,
-                      color: AppColors.textMuted,
+                    context.astralText(
+                      widget.chart == null ? 'newChart' : 'edit',
                     ),
+                    style: Theme.of(context).textTheme.displayMedium,
                   ),
                   const SizedBox(height: 18),
                   _ProfileFillPill(onFill: _fillFromProfile),
                   const SizedBox(height: 14),
-                  _eyebrow('NAME'),
+                  _eyebrow(context.astralText('name')),
                   TextField(
                     controller: _nameCtrl,
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textPrimary,
                     ),
-                    decoration: _fieldDecoration('How to address this chart'),
+                    decoration: _fieldDecoration(
+                      context.astralRussian
+                          ? 'Как назвать карту'
+                          : 'How to address this chart',
+                    ),
                   ),
                   const SizedBox(height: 14),
                   Row(
@@ -251,7 +345,7 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _eyebrow('DATE'),
+                            _eyebrow(context.astralText('date')),
                             _PickerField(
                               glyph: '◷',
                               value: _dateLabel,
@@ -265,7 +359,7 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _eyebrow('TIME'),
+                            _eyebrow(context.astralText('time')),
                             _PickerField(
                               glyph: '☾',
                               value: _timeKnown ? _timeLabel : '--:--',
@@ -282,7 +376,7 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
                     onChanged: (value) => setState(() => _timeKnown = value),
                   ),
                   const SizedBox(height: 14),
-                  _eyebrow('BIRTH CITY'),
+                  _eyebrow(context.astralText('city')),
                   TextField(
                     controller: _cityCtrl,
                     style: const TextStyle(
@@ -290,7 +384,9 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
                       color: AppColors.textPrimary,
                     ),
                     onChanged: (_) => setState(() {}),
-                    decoration: _fieldDecoration('Search a city'),
+                    decoration: _fieldDecoration(
+                      context.astralText('searchCity'),
+                    ),
                   ),
                   if (_city != null) ...[
                     const SizedBox(height: 8),
@@ -307,15 +403,19 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
                         });
                       },
                     ),
-                  const SizedBox(height: 16),
-                  _eyebrow('HOUSE SYSTEM'),
-                  AstralHouseSelector(
-                    value: _house,
-                    onChanged: (system) => setState(() => _house = system),
-                  ),
+                  if (_timeKnown) ...[
+                    const SizedBox(height: 16),
+                    _eyebrow(context.astralText('house')),
+                    AstralHouseSelector(
+                      value: _house,
+                      onChanged: (system) => setState(() => _house = system),
+                    ),
+                  ],
                   const SizedBox(height: 22),
                   AstralGradientButton(
-                    label: '✦ GENERATE NATAL CHART',
+                    label: context.astralText(
+                      widget.chart == null ? 'generate' : 'save',
+                    ),
                     onTap: _generate,
                   ),
                 ],
@@ -340,33 +440,32 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
   }
 
   Widget _eyebrow(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Text(
-          text,
-          style: AppTypography.label(
-            fontSize: 9,
-            letterSpacing: 1.0,
-            color: AppColors.textMuted,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Text(
+      text,
+      style: AppTypography.label(
+        fontSize: 9,
+        letterSpacing: 1.0,
+        color: AppColors.textMuted,
+      ),
+    ),
+  );
 
   InputDecoration _fieldDecoration(String hint) => InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
-        filled: true,
-        fillColor: AppColors.surface,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.border),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.lavender),
-        ),
-      );
+    hintText: hint,
+    hintStyle: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+    filled: true,
+    fillColor: AppColors.surface,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: AppColors.border),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: AppColors.lavender),
+    ),
+  );
 }
 
 class _PickerField extends StatelessWidget {
@@ -396,11 +495,17 @@ class _PickerField extends StatelessWidget {
           children: [
             Text(glyph, style: const TextStyle(color: AppColors.lavender)),
             const SizedBox(width: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textPrimary,
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
             ),
           ],
@@ -422,7 +527,7 @@ class _TimeKnownSwitch extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            'BIRTH TIME KNOWN',
+            context.astralText('selectTime'),
             style: AppTypography.label(
               fontSize: 9,
               letterSpacing: 1.0,
@@ -486,9 +591,6 @@ class _CityResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final offset = city.timezoneOffsetHours >= 0
-        ? '+${city.timezoneOffsetHours.toStringAsFixed(1)}'
-        : city.timezoneOffsetHours.toStringAsFixed(1);
     return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: onTap,
@@ -498,20 +600,12 @@ class _CityResult extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                '${city.name} · ${city.country}',
+                '${context.astralRussian ? city.russianName ?? city.name : city.name} · ${city.country}',
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 13,
                   color: AppColors.textPrimary,
                 ),
-              ),
-            ),
-            Text(
-              'UTC$offset',
-              style: AppTypography.label(
-                fontSize: 9,
-                letterSpacing: 0.7,
-                color: AppColors.textMuted,
               ),
             ),
           ],
@@ -542,16 +636,21 @@ class _ProfileFillPill extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.person_pin_circle_outlined,
-                size: 14, color: AppColors.lavender),
+            const Icon(
+              Icons.person_pin_circle_outlined,
+              size: 14,
+              color: AppColors.lavender,
+            ),
             const SizedBox(width: 8),
-            Text(
-              'USE BIRTH DATA FROM MY PROFILE',
-              style: AppTypography.label(
-                fontSize: 9,
-                letterSpacing: 0.8,
-                fontWeight: FontWeight.w600,
-                color: AppColors.lavender,
+            Flexible(
+              child: Text(
+                context.astralText('profileFill'),
+                style: AppTypography.label(
+                  fontSize: 9,
+                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.lavender,
+                ),
               ),
             ),
           ],

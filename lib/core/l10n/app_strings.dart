@@ -54,6 +54,161 @@ class AppStrings {
     'nav.settings': {AppLanguage.en: 'SETTINGS', AppLanguage.ru: 'НАСТРОЙКИ'},
     'nav.profile': {AppLanguage.en: 'PROFILE', AppLanguage.ru: 'ПРОФИЛЬ'},
 
+    'astral.edit': {
+      AppLanguage.en: 'Edit birth data',
+      AppLanguage.ru: 'Изменить данные рождения',
+    },
+    'astral.newChart': {
+      AppLanguage.en: 'NEW NATAL CHART',
+      AppLanguage.ru: 'НОВАЯ НАТАЛЬНАЯ КАРТА',
+    },
+    'astral.generate': {
+      AppLanguage.en: '✦ GENERATE NATAL CHART',
+      AppLanguage.ru: '✦ ПОСТРОИТЬ НАТАЛЬНУЮ КАРТУ',
+    },
+    'astral.save': {
+      AppLanguage.en: 'Save changes',
+      AppLanguage.ru: 'Сохранить изменения',
+    },
+    'astral.name': {AppLanguage.en: 'NAME', AppLanguage.ru: 'ИМЯ'},
+    'astral.date': {AppLanguage.en: 'DATE', AppLanguage.ru: 'ДАТА'},
+    'astral.time': {AppLanguage.en: 'TIME', AppLanguage.ru: 'ВРЕМЯ'},
+    'astral.city': {
+      AppLanguage.en: 'BIRTH CITY',
+      AppLanguage.ru: 'ГОРОД РОЖДЕНИЯ',
+    },
+    'astral.searchCity': {
+      AppLanguage.en: 'Search a city',
+      AppLanguage.ru: 'Найти город',
+    },
+    'astral.house': {
+      AppLanguage.en: 'HOUSE SYSTEM',
+      AppLanguage.ru: 'СИСТЕМА ДОМОВ',
+    },
+    'astral.legacyTime': {
+      AppLanguage.en:
+          'Check the birth data so this chart uses historical time zone rules.',
+      AppLanguage.ru: 'Проверьте данные рождения, чтобы карта учитывала исторический часовой пояс.',
+    },
+    'astral.unknownTime': {
+      AppLanguage.en: 'Birth time unknown',
+      AppLanguage.ru: 'Время рождения неизвестно',
+    },
+    'astral.unknownMoon': {
+      AppLanguage.en: 'The Moon changes signs on this date.',
+      AppLanguage.ru: 'В этот день Луна меняет знак.',
+    },
+    'astral.missingCity': {
+      AppLanguage.en: 'Choose a birth city first.',
+      AppLanguage.ru: 'Выберите город рождения.',
+    },
+    'astral.skippedTime': {
+      AppLanguage.en:
+          'This local time did not exist on that date. Check the birth time.',
+      AppLanguage.ru: 'Такого местного времени в эту дату не было. Проверьте время рождения.',
+    },
+    'astral.repeatedTime': {
+      AppLanguage.en: 'Which UTC offset applied at birth?',
+      AppLanguage.ru: 'Какое смещение UTC действовало в момент рождения?',
+    },
+    'astral.today': {AppLanguage.en: 'Today', AppLanguage.ru: 'Сегодня'},
+    'astral.week': {AppLanguage.en: '7 days', AppLanguage.ru: '7 дней'},
+    'astral.transits': {AppLanguage.en: 'Transits', AppLanguage.ru: 'Транзиты'},
+    'astral.orb': {AppLanguage.en: 'Orb', AppLanguage.ru: 'Орбис'},
+    'astral.exact': {
+      AppLanguage.en: 'Exact at',
+      AppLanguage.ru: 'Точный аспект',
+    },
+    'astral.closest': {
+      AppLanguage.en: 'Closest in this period',
+      AppLanguage.ru: 'Минимальный орбис за период',
+    },
+    'astral.activePeriod': {
+      AppLanguage.en: 'Active period',
+      AppLanguage.ru: 'Период действия',
+    },
+    'astral.outsideRange': {
+      AppLanguage.en: 'Beyond calculation range',
+      AppLanguage.ru: 'За пределами расчёта',
+    },
+    'astral.discuss': {
+      AppLanguage.en: 'Discuss with Oracle',
+      AppLanguage.ru: 'Обсудить с Оракулом',
+    },
+    'astral.discussTransit': {
+      AppLanguage.en: 'Discuss this transit',
+      AppLanguage.ru: 'Обсудить этот транзит',
+    },
+    'astral.chooseFirst': {
+      AppLanguage.en: 'First person',
+      AppLanguage.ru: 'Первый человек',
+    },
+    'astral.chooseSecond': {
+      AppLanguage.en: 'Second person',
+      AppLanguage.ru: 'Второй человек',
+    },
+    'astral.addPerson': {
+      AppLanguage.en: 'Add a person',
+      AppLanguage.ru: 'Добавить человека',
+    },
+    'astral.selectPair': {
+      AppLanguage.en: 'Select two different birth charts.',
+      AppLanguage.ru: 'Выберите две разные натальные карты.',
+    },
+    'astral.relationshipThemes': {
+      AppLanguage.en: 'Relationship themes',
+      AppLanguage.ru: 'Темы отношений',
+    },
+    'astral.allAspects': {
+      AppLanguage.en: 'All cross-chart aspects',
+      AppLanguage.ru: 'Все аспекты между картами',
+    },
+    'astral.synastryDetails': {
+      AppLanguage.en: 'Compatibility details',
+      AppLanguage.ru: 'Подробнее о совместимости',
+    },
+    'astral.pickDate': {
+      AppLanguage.en: 'Choose a date',
+      AppLanguage.ru: 'Выбрать дату',
+    },
+    'astral.selectTime': {
+      AppLanguage.en: 'TIME KNOWN',
+      AppLanguage.ru: 'ВРЕМЯ ИЗВЕСТНО',
+    },
+    'astral.placement': {
+      AppLanguage.en: 'FULL PLACEMENTS',
+      AppLanguage.ru: 'ПОЛОЖЕНИЯ',
+    },
+    'astral.matrix': {
+      AppLanguage.en: 'ASPECT MATRIX',
+      AppLanguage.ru: 'АСПЕКТЫ',
+    },
+    'astral.details': {
+      AppLanguage.en: 'OPEN FULL PROFILE',
+      AppLanguage.ru: 'ПОДРОБНОСТИ КАРТЫ',
+    },
+    'astral.close': {AppLanguage.en: 'Close', AppLanguage.ru: 'Закрыть'},
+    'astral.profileFill': {
+      AppLanguage.en: 'FILL FROM PROFILE',
+      AppLanguage.ru: 'ЗАПОЛНИТЬ ИЗ ПРОФИЛЯ',
+    },
+    'astral.natalWheel': {
+      AppLanguage.en: 'NATAL WHEEL',
+      AppLanguage.ru: 'НАТАЛЬНОЕ КОЛЕСО',
+    },
+    'astral.replay': {
+      AppLanguage.en: '↻ REPLAY',
+      AppLanguage.ru: '↻ ПОВТОРИТЬ',
+    },
+    'astral.overlay': {
+      AppLanguage.en: '✦ LIVE TRANSITS OVERLAY',
+      AppLanguage.ru: '✦ ТЕКУЩИЕ ТРАНЗИТЫ',
+    },
+    'astral.myChart': {AppLanguage.en: 'MY CHART', AppLanguage.ru: 'МОЯ КАРТА'},
+    'astral.noTransits': {
+      AppLanguage.en: 'No active transits for this day.',
+      AppLanguage.ru: 'На этот день нет активных транзитов.',
+    },
     'header.almanac': {AppLanguage.en: 'Almanac', AppLanguage.ru: 'Альманах'},
     'header.profile': {AppLanguage.en: 'Profile', AppLanguage.ru: 'Профиль'},
 

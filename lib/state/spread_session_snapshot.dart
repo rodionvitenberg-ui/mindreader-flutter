@@ -1,6 +1,7 @@
 import '../core/models/chat_message.dart';
 import '../core/models/divination_system.dart';
 import '../core/models/lenormand_spread.dart';
+import '../core/models/oracle_handoff.dart';
 import '../core/models/reading_mode.dart';
 import '../core/models/reading_source.dart';
 import '../core/models/reading_status.dart';
@@ -75,6 +76,7 @@ class SpreadSessionSnapshot {
     this.kind = SessionKind.divinationSpread,
     this.astralSessionTitle,
     this.natalChartId,
+    this.astralContext,
     this.sessionId,
     this.readingSource,
     this.readingMode,
@@ -94,6 +96,7 @@ class SpreadSessionSnapshot {
     required String title,
     required List<ChatMessage> messages,
     String? natalChartId,
+    OracleHandoff? astralContext,
   }) => SpreadSessionSnapshot(
     timestamp: timestamp,
     spreadType: SpreadType.three,
@@ -106,6 +109,7 @@ class SpreadSessionSnapshot {
     kind: kind,
     astralSessionTitle: title,
     natalChartId: natalChartId,
+    astralContext: astralContext,
   );
 
   /// Identity + local persistence key (ISO-8601).
@@ -142,6 +146,9 @@ class SpreadSessionSnapshot {
 
   /// The natal profile the Astral session was read from (null if none).
   final String? natalChartId;
+
+  /// Frozen chart and forecast used by the original Oracle reading.
+  final OracleHandoff? astralContext;
 
   /// Stable session id shared across Camera/Table/Oracle for ONE reading.
   /// Optional for backward compatibility: legacy snapshots have none and
@@ -280,6 +287,7 @@ class SpreadSessionSnapshot {
     'kind': kind.name,
     if (astralSessionTitle != null) 'astralSessionTitle': astralSessionTitle,
     if (natalChartId != null) 'natalChartId': natalChartId,
+    if (astralContext != null) 'astralContext': astralContext!.toJson(),
     if (sessionId != null) 'sessionId': sessionId,
     if (readingSource != null) 'readingSource': readingSource!.name,
     if (readingMode != null) 'readingMode': readingMode!.name,
@@ -294,6 +302,15 @@ class SpreadSessionSnapshot {
 
   static SpreadSessionSnapshot fromJson(Map<String, dynamic> json) {
     final synthesisJson = json['synthesis'] as Map<String, dynamic>?;
+    OracleHandoff? astralContext;
+    final rawContext = json['astralContext'];
+    if (rawContext is Map<String, dynamic>) {
+      try {
+        astralContext = OracleHandoff.fromJson(rawContext);
+      } catch (_) {
+        // An invalid calculation snapshot must not hide the saved dialogue.
+      }
+    }
     return SpreadSessionSnapshot(
       timestamp: json['timestamp'] as String,
       system: _enumOr<DivinationSystem>(
@@ -347,6 +364,7 @@ class SpreadSessionSnapshot {
       ),
       astralSessionTitle: json['astralSessionTitle'] as String?,
       natalChartId: json['natalChartId'] as String?,
+      astralContext: astralContext,
       sessionId: json['sessionId'] as String?,
       readingSource: _enumOrNullable<ReadingSource>(
         ReadingSource.values,
