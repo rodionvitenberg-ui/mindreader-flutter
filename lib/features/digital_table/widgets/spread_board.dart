@@ -31,14 +31,12 @@ class SpreadBoard extends StatefulWidget {
   const SpreadBoard({
     super.key,
     required this.inspect,
-    this.selected,
     required this.header,
     required this.badge,
     required this.onDeal,
   });
 
   final ValueChanged<int> inspect;
-  final int? selected;
   final Widget header;
   final Widget badge;
   final int? Function() onDeal;
@@ -99,7 +97,7 @@ class _SpreadBoardState extends State<SpreadBoard>
 
   void _tap() {
     if (!_begin()) return;
-    _land(const Duration(milliseconds: 360));
+    _land(automatic: true);
   }
 
   void _pickUp(LongPressStartDetails details) {
@@ -155,7 +153,7 @@ class _SpreadBoardState extends State<SpreadBoard>
       return;
     }
     _from = _currentPose();
-    _land(const Duration(milliseconds: 210));
+    _land();
   }
 
   bool _overDifferentSlot(Offset finger) {
@@ -170,13 +168,19 @@ class _SpreadBoardState extends State<SpreadBoard>
     return false;
   }
 
-  void _land(Duration duration) {
+  void _land({bool automatic = false}) {
     if (widget.onDeal() != _index) {
       _finish();
       return;
     }
-    setState(() => _phase = _DealPhase.landing);
-    _motion.duration = duration;
+    if (automatic && MediaQuery.disableAnimationsOf(context)) {
+      _finish();
+      return;
+    }
+    setState(() => _phase = automatic ? _DealPhase.flying : _DealPhase.landing);
+    _motion.duration = automatic
+        ? const Duration(milliseconds: 720)
+        : const Duration(milliseconds: 210);
     _motion.forward(from: 0).then((_) {
       if (!mounted) return;
       final slot = _box(_slotKeys[_index]);
@@ -212,6 +216,9 @@ class _SpreadBoardState extends State<SpreadBoard>
     final end = _pose(returning ? _deck : _slotKeys[_index]) ?? _from;
     if (_phase == _DealPhase.dragging) {
       return _from.dragged(_dragDelta.value, end, _motion.value);
+    }
+    if (_phase == _DealPhase.flying) {
+      return _from.carriedTo(end, _motion.value);
     }
     return _DealPose.flight(_from, end, _motion.value, returning: returning);
   }
@@ -418,7 +425,7 @@ class _SpreadBoardState extends State<SpreadBoard>
       height: design.height,
       child: Stack(
         children: [
-          Positioned.fill(child: SpreadThreadsLayer(selected:_phase == null ? widget.selected : null,rects:rects.asMap())),
+          Positioned.fill(child: SpreadThreadsLayer(rects: rects.asMap())),
           for (var i = 0; i < rects.length; i++)
             Positioned.fromRect(
               rect: geometry.crossingSlotIndex == i
@@ -438,7 +445,8 @@ class _SpreadBoardState extends State<SpreadBoard>
                     slot: i < ctrl.slots.length ? ctrl.slots[i] : null,
                     slotIndex: i,
                     highlighted: _index == i && _phase == _DealPhase.dragging,
-                    inFlight: _index == i && _phase == _DealPhase.landing,
+                    inFlight: _index == i &&
+                        (_phase == _DealPhase.flying || _phase == _DealPhase.landing),
                   )),
                 ),
               ),

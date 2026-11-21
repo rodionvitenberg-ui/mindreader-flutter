@@ -1,5 +1,8 @@
 import 'dart:math' as math;
 
+import 'dart:ui' show PathMetric;
+
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart' hide Element;
 
 import '../../../core/models/divination_system.dart';
@@ -65,21 +68,59 @@ class ElementalBranchPainter extends CustomPainter {
         ..strokeWidth = 1.8
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
-      canvas.drawPath(metric.extractPath(0, metric.length * progress), paint);
-      for (final t in [.36, .64]) {
-        if (progress <= t) continue;
-        final joint = metric.getTangentForOffset(metric.length * t)!;
-        final twig = joint.vector * 8 + normal * (t < .5 ? 6 : -6);
-        canvas.drawLine(
-          joint.position,
-          joint.position + twig * ((progress - t) / .2).clamp(0, 1),
-          paint..strokeWidth = 1,
-        );
+      final stem = (progress / .9).clamp(0.0, 1.0);
+      canvas.drawPath(metric.extractPath(0, metric.length * stem), paint);
+      final leafPaint = Paint()..color = color.withValues(alpha: .94);
+      for (final (position, side) in const [
+        (.23, 1.0),
+        (.49, -1.0),
+        (.76, 1.0),
+      ]) {
+        // Each bud starts only after the growing tip reaches its joint.
+        final age = ((progress - position * .9) / .30).clamp(0.0, 1.0);
+        if (age > 0) {
+          _paintLeaf(canvas, metric, position, side, age, paint, leafPaint);
+        }
       }
     }
   }
 
+  void _paintLeaf(
+    Canvas canvas,
+    PathMetric stem,
+    double position,
+    double side,
+    double age,
+    Paint wood,
+    Paint foliage,
+  ) {
+    final joint = stem.getTangentForOffset(stem.length * position)!;
+    final forward = joint.vector;
+    final outward = Offset(-forward.dy, forward.dx) * side;
+    final unit = math.min(15.0, stem.length * .18);
+    final sprout = (age / .4).clamp(0.0, 1.0);
+    final root =
+        joint.position + (forward * .24 + outward * .38) * unit * sprout;
+    canvas.drawLine(joint.position, root, wood);
+    final bloom = Curves.easeOut.transform(((age - .24) / .76).clamp(0.0, 1.0));
+    if (bloom == 0) return;
+    // The bud lengthens first, then its two curved edges unfurl sideways.
+    final axis = (forward * .66 + outward * .75) * unit * bloom;
+    final width = Offset(-axis.dy, axis.dx) * (.36 * bloom);
+    final tip = root + axis;
+    final upper = root + axis * .52 + width;
+    final lower = root + axis * .40 - width;
+    canvas.drawPath(
+      Path()
+        ..moveTo(root.dx, root.dy)
+        ..quadraticBezierTo(upper.dx, upper.dy, tip.dx, tip.dy)
+        ..quadraticBezierTo(lower.dx, lower.dy, root.dx, root.dy)
+        ..close(),
+      foliage,
+    );
+  }
+
   @override
   bool shouldRepaint(ElementalBranchPainter old) =>
-      old.progress != progress || old.segments != segments;
+      old.progress != progress || !listEquals(old.segments, segments);
 }

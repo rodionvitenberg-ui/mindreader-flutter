@@ -1,6 +1,6 @@
 part of 'spread_board.dart';
 
-enum _DealPhase { dragging, landing, returning }
+enum _DealPhase { dragging, flying, landing, returning }
 
 /// All distances are in the common surface above the dock and viewport.
 /// Measuring the portrait card's local x-axis includes RotatedBox and zoom.
@@ -41,6 +41,30 @@ class _DealPose {
       scale + (target.scale - scale) * t,
       angle + (target.angle - angle) * t,
       lift: pickup,
+    );
+  }
+
+  /// Drive the same lifted card as a drag with a virtual pointer. Both the
+  /// target and its rotation are measured in the current viewport each frame.
+  _DealPose carriedTo(_DealPose target, double time) {
+    final travel = const Interval(
+      .08,
+      1,
+      curve: Curves.easeInOut,
+    ).transform(time);
+    final lift =
+        const Interval(0, .16, curve: Curves.easeOut).transform(time) *
+        (1 - const Interval(.76, 1, curve: Curves.easeInOut).transform(time));
+    final distance = target.center - center;
+    final arc =
+        math.min(24.0, distance.distance * .12) * math.sin(math.pi * travel);
+    final pose = dragged(distance * travel - Offset(0, arc), target, lift);
+    return _DealPose(
+      pose.center,
+      pose.scale,
+      pose.angle,
+      lift: lift,
+      tilt: slotTiltRadians * const Interval(.76, 1).transform(time),
     );
   }
 

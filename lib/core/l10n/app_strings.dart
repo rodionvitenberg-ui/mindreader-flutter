@@ -503,7 +503,10 @@ class AppStrings {
     'reading.relationships': {AppLanguage.en: 'Show card relationships', AppLanguage.ru: 'Показывать связи карт'},
     'reading.positions.hint': {AppLanguage.en: 'Outline and number empty spaces.', AppLanguage.ru: 'Контуры и номера свободных мест.'},
     'reading.guide.hint': {AppLanguage.en: 'Get a short tip for the next step.', AppLanguage.ru: 'Краткая подсказка для следующего шага.'},
-    'reading.relationships.hint': {AppLanguage.en: 'Explore connections when inspecting a card.', AppLanguage.ru: 'Связи при просмотре открытой карты.'},
+    'reading.relationships.hint': {
+      AppLanguage.en: 'Reveal neighboring cards to see their connection in supported spreads.',
+      AppLanguage.ru: 'В раскладах со стихийными связями ветви растут между открытыми соседними картами.',
+    },
     'settings.language': {AppLanguage.en: 'LANGUAGE', AppLanguage.ru: 'ЯЗЫК'},
     'settings.english': {AppLanguage.en: 'ENGLISH', AppLanguage.ru: 'ENGLISH'},
     'settings.russian': {AppLanguage.en: 'РУССКИЙ', AppLanguage.ru: 'РУССКИЙ'},

@@ -11,12 +11,17 @@ import 'package:mindreader/core/models/spread_type.dart';
 import 'package:mindreader/features/digital_table/digital_table_screen.dart';
 import 'package:mindreader/features/digital_table/widgets/spread_deck_dock.dart';
 import 'package:mindreader/main.dart';
+import 'package:mindreader/features/digital_table/widgets/elemental_threads_painter.dart';
+import 'package:mindreader/state/app_settings_controller.dart';
 import 'package:mindreader/state/spread_controller.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/table_test_helpers.dart';
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   final deck = find.byKey(const ValueKey('overview-deck'));
   final moving = find.byKey(const ValueKey('spread-moving-card'));
   final viewport = find.byKey(const ValueKey('spread-viewport'));
@@ -76,9 +81,22 @@ void main() {
         matching: find.byType(SpreadCardBack),
       );
       expect(angle(tester, back), closeTo(math.pi / 2, 0.01));
-      await tester.pump(const Duration(milliseconds: 180));
+      final source = tester.getCenter(back);
+      final target = tester.getCenter(slot(0));
+      expect((source - tester.getCenter(deck)).distance, lessThan(5));
+      await tester.pump(const Duration(milliseconds: 360));
+      final midway = tester.getCenter(back);
+      expect(
+        (midway - source).distance,
+        greaterThan((source - target).distance * .25),
+      );
+      expect(
+        (midway - target).distance,
+        greaterThan((source - target).distance * .25),
+      );
+      expect(ctrl.slots.first.state, SlotState.faceDown);
       expect(angle(tester, back), inExclusiveRange(0.1, 1.5));
-      await tester.pump(const Duration(milliseconds: 179));
+      await tester.pump(const Duration(milliseconds: 359));
       expect(
         (tester.getCenter(back) - tester.getCenter(slot(0))).distance,
         lessThan(1),
@@ -107,6 +125,59 @@ void main() {
       }
       expect(ctrl.remainingDeck.map((c) => c.id), orderedEquals(order.skip(2)));
       expect(ctrl.ledgerTotal, ctrl.totalCards);
+    },
+  );
+
+  testWidgets(
+    'revealing neighbors on the board grows a branch that carries over to Focus',
+    (tester) async {
+      final ctrl = await open(tester);
+      await tester
+          .element(deck)
+          .read<AppSettingsController>()
+          .setAid(ReadingAid.relationships, true);
+      final paintings = find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.painter is ElementalBranchPainter,
+      );
+      double progress() =>
+          (tester.widget<CustomPaint>(paintings).painter!
+                  as ElementalBranchPainter)
+              .progress;
+      for (final index in [0, 1]) {
+        await tester.tap(deck);
+        await settle(tester);
+        await tester.tap(slot(index));
+        await settle(tester);
+      }
+      expect(ctrl.faceUpCount, 2);
+      expect(ctrl.allDealt, isFalse);
+      expect(progress(), 0);
+      await tester.pump(const Duration(milliseconds: 750));
+      expect(progress(), .5);
+      await tester.tap(find.text('FOCUS VIEW'));
+      await tester.pump();
+      expect(progress(), 1);
+      await tester.tap(find.text('SPREAD VIEW'));
+      await tester.pump();
+      expect(progress(), 1);
+    },
+  );
+
+  testWidgets(
+    'reduced motion places one card on tap without a flight overlay',
+    (tester) async {
+      final ctrl = await open(tester);
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await tester.pump();
+      await tester.tap(deck);
+      await tester.pump();
+      expect(moving, findsNothing);
+      expect(ctrl.dealtCount, 1);
+      expect(ctrl.slots.first.state, SlotState.faceDown);
     },
   );
 

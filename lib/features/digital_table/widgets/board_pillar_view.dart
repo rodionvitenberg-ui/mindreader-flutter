@@ -19,11 +19,10 @@ import 'slotted_divination_card.dart';
 /// Elemental Fate Threads). No inner scrolling, no placeholders: the
 /// screen's single scroll controller moves deck + pillar as one canvas.
 class BoardPillarView extends StatelessWidget {
-  const BoardPillarView({super.key, this.selected, required this.onTapFaceUp});
+  const BoardPillarView({super.key, required this.onTapFaceUp});
 
   final void Function(int slotIndex) onTapFaceUp;
 
-  final int? selected;
   static const cardWidth = deckWidth;
   static const cardHeight = deckHeight;
   static const slotGap = slotGapPx;
@@ -60,9 +59,11 @@ class BoardPillarView extends StatelessWidget {
         height: totalHeight,
         child: Stack(
           children: [
-            Positioned.fill(child: SpreadThreadsLayer(selected:selected,rects:{
-              for(var i=0;i<dealt.length;i++) dealt[i].index:rects[i],
-            })),
+            Positioned.fill(
+              child: SpreadThreadsLayer(rects: {
+                for (var i = 0; i < dealt.length; i++) dealt[i].index: rects[i],
+              }),
+            ),
             Column(
               children: [
                 for (var i = 0; i < dealt.length; i++) ...[

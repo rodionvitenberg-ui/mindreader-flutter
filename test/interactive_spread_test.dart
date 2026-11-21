@@ -171,7 +171,7 @@ void main() {
         await tester.pump();
         await tester.tap(deck);
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 750));
         final card = find.descendant(
           of: viewport,
           matching: find.byType(SlottedDivinationCard),
@@ -226,7 +226,7 @@ void main() {
         expect(ctrl.dealtCount, 1);
 
         for (var index = 1; index < ctrl.spreadCardCount; index++) {
-          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 750));
           await tester.tap(deck);
           await tester.pump();
         }

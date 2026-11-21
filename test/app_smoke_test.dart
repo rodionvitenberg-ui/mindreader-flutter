@@ -393,7 +393,7 @@ void main() {
     await tester.tap(miniDeck);
     await tester.pump();
     expect(find.byKey(const ValueKey('spread-moving-card')), findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 750));
     await tester.pump();
     expect(find.text('TAP TO RESET'), findsOneWidget);
     final dealt = find.byType(TarotCard3DWidget);
