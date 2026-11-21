@@ -21,7 +21,14 @@ abstract final class TaroColors {
   /// Акценты подсветки для направления de-press.co + тёплый летний рассвет.
   static const lavender = Color(0xFFA78BFA);
   static const indigo = Color(0xFF6366F1);
+  static const cyan = Color(0xFF38BDF8);
+  static const amber = Color(0xFFF97316);
   static const error = Color(0xFFE9A0A6);
+
+  /// Контрастные токены для Camera HUD и Oracle overlay поверх живого видео.
+  static const hudScrim = Color(0xBD151725);
+  static const hudFill = Color(0xD11E1D2D);
+  static const hudBorder = Color(0x52A9A4BE);
 }
 
 /// Прозрачности поверхностей, бордеров и текста.

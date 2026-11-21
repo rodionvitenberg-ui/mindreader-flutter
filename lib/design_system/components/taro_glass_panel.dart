@@ -10,6 +10,9 @@ class TaroGlassPanel extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.tint,
+    this.fillColor,
+    this.borderColor,
+    this.glow,
     this.radius = TaroRadii.panel,
     super.key,
   });
@@ -17,6 +20,9 @@ class TaroGlassPanel extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final Color? tint;
+  final Color? fillColor;
+  final Color? borderColor;
+  final List<BoxShadow>? glow;
   final double radius;
 
   @override
@@ -32,12 +38,14 @@ class TaroGlassPanel extends StatelessWidget {
             child: TaroGlassSurface(
               radius: radius,
               tint: tint,
-              fillColor: TaroColors.surface,
-              glow: TaroGlow.soft(
-                TaroColors.lavender,
-                blur: 28,
-                offset: const Offset(0, 10),
-              ),
+              fillColor: fillColor ?? TaroColors.surface,
+              borderColor: borderColor,
+              glow: glow ??
+                  TaroGlow.soft(
+                    TaroColors.lavender,
+                    blur: 28,
+                    offset: const Offset(0, 10),
+                  ),
               child: const SizedBox.expand(),
             ),
           ),

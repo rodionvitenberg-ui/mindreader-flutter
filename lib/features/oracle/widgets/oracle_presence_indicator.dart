@@ -4,20 +4,20 @@ import 'package:flutter/material.dart';
 
 import '../../../core/models/voice_state.dart';
 import '../../../core/services/oracle_voice_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 
 /// The single palette decision for the Oracle's "aliveness": which accent
 /// color the presence ring, waveform and controls share for a given voice
 /// state. Pure — no widgets, so it is trivially unit-testable.
 Color oraclePresenceColor(VoiceState state, bool muted) {
-  if (muted) return AppColors.textMuted;
+  if (muted) return TaroColors.mist;
   return switch (state) {
-    VoiceState.speaking || VoiceState.paused => AppColors.lavender,
-    VoiceState.listening || VoiceState.transcribing => AppColors.indigo,
-    VoiceState.thinking => AppColors.harmonyCyan,
-    VoiceState.error => AppColors.conflictRose,
+    VoiceState.speaking || VoiceState.paused => TaroColors.lavender,
+    VoiceState.listening || VoiceState.transcribing => TaroColors.indigo,
+    VoiceState.thinking => TaroColors.cyan,
+    VoiceState.error => TaroColors.error,
     VoiceState.idle || VoiceState.unavailable || VoiceState.muted =>
-      AppColors.textMuted,
+      TaroColors.mist,
   };
 }
 

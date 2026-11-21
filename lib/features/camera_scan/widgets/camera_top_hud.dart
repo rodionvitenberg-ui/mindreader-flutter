@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/divination_system.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 
 /// Top overlay row for the Camera: the active divination system (what the
 /// scan will feed), plus flash and gallery actions. The system switch is an
@@ -33,31 +33,63 @@ class CameraTopHud extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            for (final s in DivinationSystem.values) ...[
-              _SystemChip(
-                label: s.label,
-                active: s == system,
-                onTap: () => onSystemChanged(s),
+        Flexible(
+          child: TaroGlassSurface(
+            radius: TaroRadii.pill,
+            tint: TaroColors.hudScrim,
+            fillColor: TaroColors.hudFill,
+            borderColor: TaroColors.hudBorder,
+            child: Padding(
+              padding: const EdgeInsets.all(3),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final s in DivinationSystem.values) ...[
+                    Flexible(
+                      child: _SystemChip(
+                        label: s.label,
+                        active: s == system,
+                        onTap: () => onSystemChanged(s),
+                      ),
+                    ),
+                    if (s != DivinationSystem.values.last)
+                      const SizedBox(width: 2),
+                  ],
+                ],
               ),
-              if (s != DivinationSystem.values.last) const SizedBox(width: 4),
-            ],
-          ],
+            ),
+          ),
         ),
-        if (showActions)
+        if (showActions) ...[
+          const SizedBox(width: 8),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _CircleIconButton(
+              TaroGlassIconButton(
                 icon: flashOn ? Icons.flash_on : Icons.flash_off_outlined,
-                onTap: onToggleFlash,
+                tooltip: flashOn ? 'Turn flash off' : 'Turn flash on',
+                active: flashOn,
+                size: 44,
+                iconSize: 18,
+                tint: flashOn ? null : TaroColors.hudScrim,
+                fillColor: TaroColors.hudFill,
+                borderColor: flashOn ? null : TaroColors.hudBorder,
+                onPressed: onToggleFlash,
               ),
-              _CircleIconButton(
+              const SizedBox(width: 8),
+              TaroGlassIconButton(
                 icon: Icons.photo_library_outlined,
-                onTap: onPickGallery,
+                tooltip: 'Pick from gallery',
+                size: 44,
+                iconSize: 18,
+                tint: TaroColors.hudScrim,
+                fillColor: TaroColors.hudFill,
+                borderColor: TaroColors.hudBorder,
+                onPressed: onPickGallery,
               ),
             ],
           ),
+        ],
       ],
     );
   }
@@ -76,51 +108,44 @@ class _SystemChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-        decoration: BoxDecoration(
-          color: active
-              ? AppColors.lavender.withValues(alpha: 0.2)
-              : AppColors.canvas.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: active ? AppColors.lavender : AppColors.border,
+    return Semantics(
+      button: true,
+      selected: active,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: TaroMotion.fast,
+          constraints: const BoxConstraints(minHeight: 38),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: active
+                ? TaroColors.lavender.withValues(alpha: 0.24)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(TaroRadii.pill - 4),
+            border: active
+                ? Border.all(
+                    color: TaroColors.lavender.withValues(
+                      alpha: TaroOpacity.borderStrong,
+                    ),
+                  )
+                : null,
+          ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: AppTypography.label(
+                fontSize: 10,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                color: active ? TaroColors.textPrimary : TaroColors.textSecondary,
+              ),
+            ),
           ),
         ),
-        child: Text(
-          label,
-          style: AppTypography.label(
-            fontSize: 10,
-            color: active ? AppColors.lavender : AppColors.textMuted,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        margin: const EdgeInsets.only(left: 8),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.canvas.withValues(alpha: 0.55),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Icon(icon, size: 18, color: AppColors.textPrimary),
       ),
     );
   }

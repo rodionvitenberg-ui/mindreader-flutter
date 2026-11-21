@@ -29,12 +29,18 @@ class TaroGlassSegmentedControl<T> extends StatelessWidget {
     required this.segments,
     required this.value,
     required this.onChanged,
+    this.tint,
+    this.fillColor,
+    this.borderColor,
     super.key,
   });
 
   final List<TaroGlassSegment<T>> segments;
   final T value;
   final ValueChanged<T> onChanged;
+  final Color? tint;
+  final Color? fillColor;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +50,9 @@ class TaroGlassSegmentedControl<T> extends StatelessWidget {
 
     return TaroGlassSurface(
       radius: TaroRadii.segment,
-      fillColor: TaroColors.surface,
+      tint: tint,
+      fillColor: fillColor ?? TaroColors.surface,
+      borderColor: borderColor,
       child: LayoutBuilder(
         builder: (context, constraints) {
           const pad = 3.0;

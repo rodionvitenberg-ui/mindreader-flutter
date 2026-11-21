@@ -1,6 +1,6 @@
 # GLASS.md — План перевода интерфейса на дизайн-систему Tarot Tree
 
-Статус: **G5 завершён** (фундамент G1 + тема/фон G2 + Shell G3 + Digital Table G4 + Almanac, Astral и Profile: `TaroGlassSnackbar`, `TaroGlassEmptyState`, detail/paywall/birth-data sheets, segmented controls, перекрашенный `NatalWheelPainter`).
+Статус: **G6 завершён** (фундамент G1 + тема/фон G2 + Shell G3 + Digital Table G4 + Almanac/Astral/Profile G5 + Camera HUD и Oracle overlay: контрастные HUD-токены, `CameraModeSelector`, `CameraTopHud`, `GuidedSpreadHud`, `RecognitionReviewSheet`, `CompactOracle`, `OracleVoiceOverlay`, перекрашенные `CardOverlayPainter` и `OraclePresenceIndicator`).
 Этот документ — полный план поэтапного перевода всего UI приложения на новый
 «стеклянный» дизайн **без поломки существующей логики**.
 
@@ -87,7 +87,7 @@ lib/core/theme/
 | **G3** | Shell + навигация: док `TaroGlassDock`, sheet-обёртки, безопасные области | ✅ сделано (523/523 тестов, `flutter analyze` 0 issues, debug APK собран) |
 | **G4** | Digital Table (главный экран): панели, input, select, сегменты, bottom-sheet | ✅ сделано (530/530 тестов, `flutter analyze` 0 issues, APK установлен на Redmi GLES) |
 | **G5** | Almanac + Astral + Profile | ✅ сделано (535/535 тестов, `flutter analyze` 0 issues, debug APK собран) |
-| **G6** | Camera HUD + Oracle overlay | оверлеи/HUD переведены, читаемость сохранена |
+| **G6** | Camera HUD + Oracle overlay | ✅ сделано (540/540 тестов, `flutter analyze` 0 issues, debug APK собран) |
 | **G7** | Зачистка legacy (`AppColors`/Dark Obsidian), скриншот-ревью, профиль-perf | `flutter analyze` чист, legacy удалён |
 
 Каждая фаза — отдельный коммит + скриншот + `flutter test`.
@@ -140,6 +140,7 @@ lib/core/theme/
 |--------|--------|
 | `CameraModeSelector` (3 режима) | `TaroGlassSegmentedControl` |
 | `CameraTopHud`, `GuidedSpreadHud`, `RecognitionReviewSheet` | стеклянные HUD/sheet (аккуратно: контраст поверх камеры) |
+| `OracleVoiceControls`, `OracleVoiceOverlay`, `CompactOracle` | `TaroGlassPanel`/pill на контрастных HUD-токенах |
 
 ---
 
@@ -211,5 +212,3 @@ lib/core/theme/
 | Потеря контраста на камере/HUD | отдельные токены контраста, ручная проверка |
 | Регрессия при массовой замене виджетов | флаг-гейт темы + поэкранные коммиты + полный тест-сьют |
 | Пробы шейдеров на старте (jank) | самопроверка один раз, не блокирует первый кадр |
-
-| `OracleVoiceControls`, `OracleVoiceOverlay` | `TaroGlassPanel`/pill на токенах |

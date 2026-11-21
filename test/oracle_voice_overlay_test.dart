@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mindreader/core/models/voice_state.dart';
 import 'package:mindreader/core/services/oracle_voice_service.dart';
-import 'package:mindreader/core/theme/app_colors.dart';
+import 'package:mindreader/design_system/taro_tokens.dart';
 import 'package:mindreader/features/oracle/widgets/oracle_presence_indicator.dart';
 import 'package:mindreader/features/oracle/widgets/oracle_subtitles.dart';
 import 'package:mindreader/features/oracle/widgets/oracle_voice_overlay.dart';
@@ -13,16 +13,16 @@ import 'fakes/fake_tts_engine.dart';
 void main() {
   group('oraclePresenceColor / oraclePresenceActive', () {
     test('speaking and paused are lavender and active', () {
-      expect(oraclePresenceColor(VoiceState.speaking, false), AppColors.lavender);
-      expect(oraclePresenceColor(VoiceState.paused, false), AppColors.lavender);
+      expect(oraclePresenceColor(VoiceState.speaking, false), TaroColors.lavender);
+      expect(oraclePresenceColor(VoiceState.paused, false), TaroColors.lavender);
       expect(oraclePresenceActive(VoiceState.speaking), isTrue);
       expect(oraclePresenceActive(VoiceState.paused), isFalse);
     });
 
-    test('muted overrides every color to textMuted', () {
-      expect(oraclePresenceColor(VoiceState.speaking, true), AppColors.textMuted);
-      expect(oraclePresenceColor(VoiceState.idle, false), AppColors.textMuted);
-      expect(oraclePresenceColor(VoiceState.thinking, true), AppColors.textMuted);
+    test('muted overrides every color to mist', () {
+      expect(oraclePresenceColor(VoiceState.speaking, true), TaroColors.mist);
+      expect(oraclePresenceColor(VoiceState.idle, false), TaroColors.mist);
+      expect(oraclePresenceColor(VoiceState.thinking, true), TaroColors.mist);
     });
 
     test('idle and unavailable are never active', () {

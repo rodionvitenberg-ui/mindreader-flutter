@@ -20,6 +20,9 @@ class TaroGlassIconButton extends StatefulWidget {
     this.size = 44.0,
     this.iconSize = 20.0,
     this.iconColor,
+    this.tint,
+    this.fillColor,
+    this.borderColor,
     this.active = false,
     super.key,
   });
@@ -35,6 +38,9 @@ class TaroGlassIconButton extends StatefulWidget {
   final double size;
   final double iconSize;
   final Color? iconColor;
+  final Color? tint;
+  final Color? fillColor;
+  final Color? borderColor;
   final bool active;
 
   @override
@@ -59,15 +65,16 @@ class _TaroGlassIconButtonState extends State<TaroGlassIconButton> {
     final isPrimary =
         widget.active || widget.variant == TaroGlassButtonVariant.primary;
 
-    final tint = isPrimary
-        ? TaroColors.lavender.withValues(alpha: 0.24)
-        : switch (widget.variant) {
-            TaroGlassButtonVariant.primary =>
-              TaroColors.lavender.withValues(alpha: 0.22),
-            TaroGlassButtonVariant.secondary =>
-              TaroColors.mist.withValues(alpha: 0.12),
-            TaroGlassButtonVariant.ghost => null,
-          };
+    final tint = widget.tint ??
+        (isPrimary
+            ? TaroColors.lavender.withValues(alpha: 0.24)
+            : switch (widget.variant) {
+                TaroGlassButtonVariant.primary =>
+                  TaroColors.lavender.withValues(alpha: 0.22),
+                TaroGlassButtonVariant.secondary =>
+                  TaroColors.mist.withValues(alpha: 0.12),
+                TaroGlassButtonVariant.ghost => null,
+              });
 
     final resolvedIconColor = disabled
         ? TaroColors.textSecondary.withValues(alpha: 0.5)
@@ -97,15 +104,17 @@ class _TaroGlassIconButtonState extends State<TaroGlassIconButton> {
                 radius: TaroRadii.pill,
                 tint: tint,
                 visibility: disabled ? 0.45 : (_pressed ? 0.85 : 1.0),
-                fillColor: widget.variant == TaroGlassButtonVariant.ghost &&
-                        !widget.active
-                    ? Colors.transparent
-                    : TaroColors.surface,
-                borderColor: isPrimary
-                    ? TaroColors.lavender.withValues(
-                        alpha: TaroOpacity.borderStrong,
-                      )
-                    : null,
+                fillColor: widget.fillColor ??
+                    (widget.variant == TaroGlassButtonVariant.ghost &&
+                            !widget.active
+                        ? Colors.transparent
+                        : TaroColors.surface),
+                borderColor: widget.borderColor ??
+                    (isPrimary
+                        ? TaroColors.lavender.withValues(
+                            alpha: TaroOpacity.borderStrong,
+                          )
+                        : null),
                 glow: widget.active
                     ? TaroGlow.soft(TaroColors.lavender, alpha: 0.35, blur: 16)
                     : null,

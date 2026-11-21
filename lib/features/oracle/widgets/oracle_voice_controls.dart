@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/models/voice_state.dart';
 import '../../../core/services/oracle_voice_service.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 import 'oracle_presence_indicator.dart';
 
 /// The interactive half of the voice overlay: mic, mute/unmute, pause,
@@ -136,30 +136,39 @@ class _ControlButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
+    return Semantics(
+      button: true,
+      label: tooltip,
+      toggled: active ? true : null,
       child: Tooltip(
         message: tooltip,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
-          child: Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: active
-                  ? color.withValues(alpha: 0.14)
-                  : AppColors.surface.withValues(alpha: 0.8),
-              border: Border.all(
-                color:
-                    (active ? color : AppColors.textMuted).withValues(alpha: 0.5),
+          child: SizedBox(
+            width: 38,
+            height: 44,
+            child: Center(
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: active
+                      ? color.withValues(alpha: 0.20)
+                      : TaroColors.hudFill,
+                  border: Border.all(
+                    color: active
+                        ? color.withValues(alpha: 0.65)
+                        : TaroColors.hudBorder,
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  size: 17,
+                  color: active ? color : TaroColors.textSecondary,
+                ),
               ),
-            ),
-            child: Icon(
-              icon,
-              size: 17,
-              color: active ? color : AppColors.textMuted,
             ),
           ),
         ),

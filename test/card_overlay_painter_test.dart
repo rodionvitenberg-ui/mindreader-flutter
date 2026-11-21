@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/models/divination_system.dart';
 import 'package:mindreader/core/services/vision/vision_engine.dart';
-import 'package:mindreader/core/theme/app_colors.dart';
+import 'package:mindreader/design_system/taro_tokens.dart';
 import 'package:mindreader/features/camera_scan/widgets/card_overlay_painter.dart';
 
 /// Phase 1 (1.6) — the viewfinder lock-on overlay is painted from the Vision
@@ -85,10 +85,10 @@ void main() {
     );
   });
 
-  test('overlayStyleFor maps each recognition state to AppColors', () {
+  test('overlayStyleFor maps each recognition state to TaroColors', () {
     expect(
       overlayStyleFor(_candidate(status: RecognitionStatus.recognized)).color,
-      AppColors.lavender,
+      TaroColors.lavender,
     );
     expect(
       overlayStyleFor(_candidate(status: RecognitionStatus.recognized)).dashed,
@@ -101,7 +101,7 @@ void main() {
     );
     expect(
       overlayStyleFor(_candidate(status: RecognitionStatus.ambiguous)).color,
-      AppColors.conflictAmber,
+      TaroColors.amber,
     );
 
     // A face-down card dims even when recognition says `recognized`.

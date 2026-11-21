@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../core/models/divination_card.dart';
 import '../../../core/services/spread_inference_service.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 
 /// The finalized Recognition Review outcome: the reader-confirmed ORDER of
 /// physical cards + the chosen spread. `spread == null` means Freeform — the
@@ -49,12 +48,8 @@ class RecognitionReviewSheet extends StatefulWidget {
     required List<bool> reversed,
     required SpreadInferenceResult inference,
   }) {
-    HapticFeedback.selectionClick();
-    return showModalBottomSheet<RecognitionReviewResult>(
+    return showTaroGlassSheet<RecognitionReviewResult>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.55),
       builder: (_) => RecognitionReviewSheet(
         cards: cards,
         reversed: reversed,
@@ -122,103 +117,64 @@ class _RecognitionReviewSheetState extends State<RecognitionReviewSheet> {
     final showCandidates = inference.candidates.length > 1;
     final freeform = inference.isFreeform;
 
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: Container(
-        color: const Color(0xF713131A),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.textMuted.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  '${_items.length} RECOGNIZED',
-                  style: AppTypography.display(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  freeform
-                      ? 'FREEFORM — no template matches; every card is kept'
-                      : 'PROPOSED: ${inference.top!.label}',
-                  style: AppTypography.label(
-                    fontSize: 9,
-                    letterSpacing: 0.8,
-                    color: AppColors.lavender,
-                  ),
-                ),
-                if (showCandidates) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    'CHOOSE SPREAD',
-                    style: AppTypography.label(
-                      fontSize: 9,
-                      letterSpacing: 0.9,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  for (var i = 0; i < inference.candidates.length; i++)
-                    _CandidateRow(
-                      label: inference.candidates[i].label,
-                      selected: _selected == i,
-                      onTap: () => setState(() => _selected = i),
-                    ),
-                ],
-                const SizedBox(height: 12),
-                Text(
-                  'CONFIRM ORDER & CARDS',
-                  style: AppTypography.label(
-                    fontSize: 9,
-                    letterSpacing: 0.9,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Flexible(
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: _items.length,
-                    itemBuilder: (context, i) => _CardRow(
-                      index: i,
-                      item: _items[i],
-                      canToggle: _items[i].card.supportsReversal,
-                      onToggle: () => _toggleReversed(i),
-                      onUp: i > 0 ? () => _move(i, -1) : null,
-                      onDown:
-                          i < _items.length - 1 ? () => _move(i, 1) : null,
-                      onRemove: () => _remove(i),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _ConfirmButton(onTap: _confirm),
-              ],
+    return TaroGlassSheet(
+      title: '${_items.length} RECOGNIZED',
+      subtitle: freeform
+          ? 'FREEFORM — no template matches; every card is kept'
+          : 'PROPOSED: ${inference.top!.label}',
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (showCandidates) ...[
+            Text(
+              'CHOOSE SPREAD',
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 0.9,
+                color: TaroColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            for (var i = 0; i < inference.candidates.length; i++)
+              _CandidateRow(
+                label: inference.candidates[i].label,
+                selected: _selected == i,
+                onTap: () => setState(() => _selected = i),
+              ),
+            const SizedBox(height: 10),
+          ],
+          Text(
+            'CONFIRM ORDER & CARDS',
+            style: AppTypography.label(
+              fontSize: 9,
+              letterSpacing: 0.9,
+              color: TaroColors.textSecondary,
             ),
           ),
-        ),
+          const SizedBox(height: 6),
+          for (var i = 0; i < _items.length; i++)
+            _CardRow(
+              index: i,
+              item: _items[i],
+              canToggle: _items[i].card.supportsReversal,
+              onToggle: () => _toggleReversed(i),
+              onUp: i > 0 ? () => _move(i, -1) : null,
+              onDown: i < _items.length - 1 ? () => _move(i, 1) : null,
+              onRemove: () => _remove(i),
+            ),
+          const SizedBox(height: 14),
+          TaroGlassButton(
+            label: 'CONFIRM & PLACE ON TABLE',
+            variant: TaroGlassButtonVariant.primary,
+            onPressed: _confirm,
+          ),
+        ],
       ),
     );
   }
 }
-
 
 class _CandidateRow extends StatelessWidget {
   const _CandidateRow({
@@ -233,27 +189,38 @@ class _CandidateRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.lavender.withValues(alpha: 0.16)
-              : AppColors.surface.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? AppColors.lavender : AppColors.border,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
+          alignment: Alignment.centerLeft,
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: selected
+                ? TaroColors.lavender.withValues(alpha: 0.18)
+                : TaroColors.surface.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected
+                  ? TaroColors.lavender.withValues(
+                      alpha: TaroOpacity.borderStrong,
+                    )
+                  : TaroColors.mist.withValues(alpha: TaroOpacity.border),
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.body(
-            fontSize: 12.5,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            color: selected ? AppColors.lavender : AppColors.textPrimary,
+          child: Text(
+            label,
+            style: AppTypography.body(
+              fontSize: 12.5,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected ? TaroColors.lavender : TaroColors.textPrimary,
+            ),
           ),
         ),
       ),
@@ -287,9 +254,11 @@ class _CardRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.7),
+        color: TaroColors.surface.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+        ),
       ),
       child: Row(
         children: [
@@ -306,7 +275,7 @@ class _CardRow extends StatelessWidget {
                   style: AppTypography.body(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: TaroColors.textPrimary,
                   ),
                 ),
                 if (item.reversed)
@@ -315,7 +284,7 @@ class _CardRow extends StatelessWidget {
                     style: AppTypography.label(
                       fontSize: 8.5,
                       letterSpacing: 0.7,
-                      color: AppColors.conflictAmber,
+                      color: TaroColors.amber,
                     ),
                   ),
               ],
@@ -346,7 +315,6 @@ class _CardRow extends StatelessWidget {
   }
 }
 
-
 class _Thumb extends StatelessWidget {
   const _Thumb({required this.card});
 
@@ -359,9 +327,11 @@ class _Thumb extends StatelessWidget {
       height: 48,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: AppColors.canvas,
+        color: TaroColors.background,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+        ),
       ),
       child: Text(
         card.shortLabel,
@@ -369,7 +339,7 @@ class _Thumb extends StatelessWidget {
         style: AppTypography.display(
           fontSize: 14,
           fontWeight: FontWeight.w700,
-          color: AppColors.lavender,
+          color: TaroColors.lavender,
         ),
       ),
     );
@@ -391,54 +361,23 @@ class _IconBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = enabled
-        ? AppColors.textMuted
-        : AppColors.textMuted.withValues(alpha: 0.3);
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: enabled ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Icon(icon, size: 16, color: color),
-        ),
-      ),
-    );
-  }
-}
-
-class _ConfirmButton extends StatelessWidget {
-  const _ConfirmButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.lavender, AppColors.indigo],
-          ),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Text(
-          'CONFIRM & PLACE ON TABLE',
-          style: AppTypography.label(
-            fontSize: 10,
-            letterSpacing: 1.1,
-            fontWeight: FontWeight.w800,
-            color: AppColors.canvas,
+    final color = enabled ? TaroColors.textSecondary : TaroColors.textDisabled;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: tooltip,
+      child: Tooltip(
+        message: tooltip,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: enabled ? onTap : null,
+          child: SizedBox(
+            width: 34,
+            height: 44,
+            child: Center(child: Icon(icon, size: 17, color: color)),
           ),
         ),
       ),
     );
   }
 }
-

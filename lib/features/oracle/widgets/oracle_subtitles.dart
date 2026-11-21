@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro_tokens.dart';
 
 /// Live captions for the Oracle's spoken answer. Long answers stay inside a
 /// bounded, internally-scrollable box ("длинный ответ — компактные
@@ -24,7 +24,7 @@ class OracleSubtitles extends StatelessWidget {
           style: AppTypography.body(
             fontSize: 12,
             height: 1.4,
-            color: AppColors.textPrimary,
+            color: TaroColors.textPrimary,
           ),
         ),
       ),

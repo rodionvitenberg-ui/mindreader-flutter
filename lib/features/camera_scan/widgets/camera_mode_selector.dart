@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/reading_mode.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 
 /// Segmented physical reading-mode switch shown at the top of the Camera.
 /// Only the three camera-driven modes are offered — [ReadingMode.standard]
@@ -25,69 +24,20 @@ class CameraModeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 38,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: AppColors.canvas.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          for (final mode in modes) ...[
-            Expanded(
-              child: _Segment(
-                mode: mode,
-                active: mode == value,
-                onTap: () => onChanged(mode),
-              ),
-            ),
-            if (mode != modes.last) const SizedBox(width: 3),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _Segment extends StatelessWidget {
-  const _Segment({
-    required this.mode,
-    required this.active,
-    required this.onTap,
-  });
-
-  final ReadingMode mode;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      key: ValueKey('camera-mode-${mode.name}'),
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active
-              ? AppColors.lavender.withValues(alpha: 0.2)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(11),
-        ),
-        child: Text(
-          mode.label,
-          maxLines: 1,
-          overflow: TextOverflow.fade,
-          softWrap: false,
-          style: AppTypography.label(
-            fontSize: 9,
-            letterSpacing: 0.7,
-            color: active ? AppColors.lavender : AppColors.textMuted,
+    return TaroGlassSegmentedControl<ReadingMode>(
+      value: value,
+      onChanged: onChanged,
+      tint: TaroColors.hudScrim,
+      fillColor: TaroColors.hudFill,
+      borderColor: TaroColors.hudBorder,
+      segments: [
+        for (final mode in modes)
+          TaroGlassSegment<ReadingMode>(
+            key: ValueKey('camera-mode-${mode.name}'),
+            value: mode,
+            label: mode.label,
           ),
-        ),
-      ),
+      ],
     );
   }
 }

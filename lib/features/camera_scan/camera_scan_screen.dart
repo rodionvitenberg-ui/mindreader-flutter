@@ -14,8 +14,8 @@ import '../../core/models/reading_status.dart';
 import '../../core/services/local_storage_service.dart';
 import '../../core/services/spread_inference_service.dart';
 import '../../core/services/vision_scanner_service.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../design_system/taro.dart';
 import '../../state/oracle_session_controller.dart';
 import '../../state/spread_controller.dart';
 import 'widgets/camera_mode_selector.dart';
@@ -231,8 +231,10 @@ class _CameraScanScreenState extends State<CameraScanScreen>
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Scan failed, try again')),
+        showTaroGlassSnackbar(
+          context,
+          message: 'Scan failed, try again',
+          tone: TaroGlassSnackbarTone.error,
         );
       }
     } finally {
@@ -274,13 +276,11 @@ class _CameraScanScreenState extends State<CameraScanScreen>
   }
 
   void _showManualFallback(DivinationSystem system) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${system.label} physical scan needs manual card entry — '
+    showTaroGlassSnackbar(
+      context,
+      message: '${system.label} physical scan needs manual card entry — '
           'the camera recognizer reads TAROT only.',
-        ),
-      ),
+      tone: TaroGlassSnackbarTone.warning,
     );
   }
 
@@ -333,11 +333,28 @@ class _CameraScanScreenState extends State<CameraScanScreen>
       context: context,
       builder: (context) => AlertDialog(
         key: const ValueKey('camera-mode-confirm'),
-        backgroundColor: AppColors.surface,
-        title: const Text('Switch reading mode?'),
-        content: const Text(
+        backgroundColor: TaroColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(TaroRadii.panel),
+          side: BorderSide(
+            color: TaroColors.mist.withValues(alpha: TaroOpacity.borderStrong),
+          ),
+        ),
+        title: Text(
+          'Switch reading mode?',
+          style: AppTypography.heading(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: TaroColors.textPrimary,
+          ),
+        ),
+        content: Text(
           'A guided reading is in progress. Switching modes leaves the '
           'current session.',
+          style: AppTypography.body(
+            fontSize: 13.5,
+            color: TaroColors.textSecondary,
+          ),
         ),
         actions: [
           TextButton(
@@ -368,6 +385,7 @@ class _CameraScanScreenState extends State<CameraScanScreen>
           CameraPreview(_camera!)
         else
           const _SimulatedViewfinder(),
+        const _HudContrastScrim(),
         SafeArea(
           child: Column(
             children: [
@@ -394,41 +412,66 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                 ),
               ),
               const SizedBox(height: 14),
-              Text(
-                ctrl.clarifierScanRequested
-                    ? 'PHOTOGRAPH YOUR NEXT PHYSICAL CARD'
-                    : _modeInstruction,
-                style: AppTypography.label(
-                  fontSize: 9.5,
-                  letterSpacing: 1.2,
-                  color: ctrl.clarifierScanRequested
-                      ? AppColors.lavender
-                      : AppColors.textMuted,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: TaroColors.hudScrim,
+                  borderRadius: BorderRadius.circular(TaroRadii.pill),
+                  border: Border.all(
+                    color: ctrl.clarifierScanRequested
+                        ? TaroColors.lavender.withValues(
+                            alpha: TaroOpacity.borderStrong,
+                          )
+                        : TaroColors.hudBorder,
+                  ),
+                ),
+                child: Text(
+                  ctrl.clarifierScanRequested
+                      ? 'PHOTOGRAPH YOUR NEXT PHYSICAL CARD'
+                      : _modeInstruction,
+                  style: AppTypography.label(
+                    fontSize: 9.5,
+                    letterSpacing: 1.2,
+                    color: ctrl.clarifierScanRequested
+                        ? TaroColors.lavender
+                        : TaroColors.textPrimary,
+                  ),
                 ),
               ),
               const Spacer(),
               if (simulated)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 14),
-                  child: Text(
-                    'SIMULATED VIEWFINDER \u00b7 TAP TO RUN THE MOCK SCAN',
-                    style: AppTypography.label(
-                      fontSize: 9,
-                      letterSpacing: 0.9,
-                      color: AppColors.textMuted,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: TaroColors.hudScrim,
+                      borderRadius: BorderRadius.circular(TaroRadii.pill),
+                      border: Border.all(color: TaroColors.hudBorder),
+                    ),
+                    child: Text(
+                      'SIMULATED VIEWFINDER \u00b7 TAP TO RUN THE MOCK SCAN',
+                      style: AppTypography.label(
+                        fontSize: 9,
+                        letterSpacing: 0.9,
+                        color: TaroColors.textSecondary,
+                      ),
                     ),
                   ),
                 ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 28),
                 child: _busy
-                    ? const SizedBox(
-                        width: 26,
-                        height: 26,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.lavender,
-                        ),
+                    ? const TaroGlassProgress(
+                        linear: false,
+                        size: 32,
+                        semanticLabel: 'Scanning spread',
                       )
                     : _ShutterButton(
                         key: const ValueKey('shutter'),
@@ -456,6 +499,47 @@ class _CameraScanScreenState extends State<CameraScanScreen>
   }
 }
 
+class _HudContrastScrim extends StatelessWidget {
+  const _HudContrastScrim();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Column(
+        children: [
+          Container(
+            height: 196,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  TaroColors.background.withValues(alpha: 0.72),
+                  TaroColors.background.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+          const Spacer(),
+          Container(
+            height: 184,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  TaroColors.background.withValues(alpha: 0.76),
+                  TaroColors.background.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SimulatedViewfinder extends StatelessWidget {
   const _SimulatedViewfinder();
 
@@ -466,7 +550,12 @@ class _SimulatedViewfinder extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF12121C), AppColors.canvas],
+          colors: [
+            TaroColors.background,
+            TaroColors.duskMid,
+            TaroColors.duskHorizon,
+          ],
+          stops: [0.0, 0.58, 1.0],
         ),
       ),
       child: Center(
@@ -476,7 +565,7 @@ class _SimulatedViewfinder extends StatelessWidget {
             const Icon(
               Icons.center_focus_strong_outlined,
               size: 44,
-              color: AppColors.textMuted,
+              color: TaroColors.mist,
             ),
             const SizedBox(height: 12),
             Text(
@@ -486,7 +575,7 @@ class _SimulatedViewfinder extends StatelessWidget {
                 fontSize: 10,
                 letterSpacing: 1.1,
                 height: 1.8,
-                color: AppColors.textMuted,
+                color: TaroColors.textSecondary,
               ),
             ),
           ],
@@ -503,22 +592,34 @@ class _ShutterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 76,
-        height: 76,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.lavender, width: 2.5),
-        ),
-        child: Center(
-          child: Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.lavender.withValues(alpha: 0.35),
+    return Semantics(
+      button: true,
+      label: 'Capture spread',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox(
+          width: 76,
+          height: 76,
+          child: TaroGlassSurface(
+            radius: 38,
+            tint: TaroColors.lavender.withValues(alpha: 0.22),
+            fillColor: TaroColors.hudFill,
+            borderColor: TaroColors.lavender,
+            glow: TaroGlow.soft(TaroColors.lavender, alpha: 0.35, blur: 22),
+            child: Center(
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: TaroColors.lavender.withValues(alpha: 0.34),
+                  border: Border.all(
+                    color: TaroColors.textPrimary.withValues(alpha: 0.45),
+                    width: 1.2,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -558,7 +659,7 @@ class _LockOnPainter extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.2
-          ..color = AppColors.lavender.withValues(alpha: fade)
+          ..color = TaroColors.lavender.withValues(alpha: fade)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
       );
       canvas.drawRRect(
@@ -566,7 +667,7 @@ class _LockOnPainter extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.2
-          ..color = AppColors.lavender.withValues(alpha: 0.9 * fade),
+          ..color = TaroColors.lavender.withValues(alpha: 0.9 * fade),
       );
     }
   }

@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import '../../../core/services/vision/vision_engine.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../design_system/taro_tokens.dart';
 
 /// Visual style for one detected/recognized card region.
 class OverlayStyle {
@@ -20,42 +20,42 @@ class OverlayStyle {
 }
 
 /// Maps a candidate's recognition + face state to a viewfinder style. Colors
-/// come only from [AppColors] (lavender / conflictAmber); a card that is
+/// come only from [TaroColors] (lavender / amber / mist); a card that is
 /// face-down or lost dims instead of disappearing. Face-down wins over
 /// recognition — a face-down card cannot be "recognized" by definition.
 OverlayStyle overlayStyleFor(VisionCardCandidate c) {
   if (c.faceState == CardFaceState.faceDown) {
     return OverlayStyle(
-      color: AppColors.lavender.withValues(alpha: 0.35),
+      color: TaroColors.lavender.withValues(alpha: 0.35),
       dashed: true,
       strokeWidth: 1.6,
     );
   }
   return switch (c.recognitionStatus) {
     RecognitionStatus.detected => OverlayStyle(
-      color: AppColors.lavender.withValues(alpha: 0.6),
+      color: TaroColors.lavender.withValues(alpha: 0.6),
       dashed: false,
       strokeWidth: 1.6,
     ),
-    RecognitionStatus.recognizing => OverlayStyle(
-      color: AppColors.lavender,
+    RecognitionStatus.recognizing => const OverlayStyle(
+      color: TaroColors.lavender,
       dashed: true,
     ),
-    RecognitionStatus.recognized => OverlayStyle(
-      color: AppColors.lavender,
+    RecognitionStatus.recognized => const OverlayStyle(
+      color: TaroColors.lavender,
       dashed: false,
     ),
-    RecognitionStatus.ambiguous => OverlayStyle(
-      color: AppColors.conflictAmber,
+    RecognitionStatus.ambiguous => const OverlayStyle(
+      color: TaroColors.amber,
       dashed: false,
     ),
     RecognitionStatus.lost => OverlayStyle(
-      color: AppColors.textMuted.withValues(alpha: 0.4),
+      color: TaroColors.mist.withValues(alpha: 0.4),
       dashed: true,
       strokeWidth: 1.4,
     ),
     RecognitionStatus.unknown => OverlayStyle(
-      color: AppColors.lavender.withValues(alpha: 0.5),
+      color: TaroColors.lavender.withValues(alpha: 0.5),
       dashed: true,
       strokeWidth: 1.6,
     ),
@@ -126,7 +126,7 @@ class CardOverlayPainter extends CustomPainter {
     final detectionPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2
-      ..color = AppColors.lavender.withValues(alpha: 0.4);
+      ..color = TaroColors.lavender.withValues(alpha: 0.4);
     for (final o in observations) {
       canvas.drawRRect(
         RRect.fromRectAndRadius(

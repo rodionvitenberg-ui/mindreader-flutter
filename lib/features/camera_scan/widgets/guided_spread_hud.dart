@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../design_system/taro.dart';
 import '../../../state/live_reading_controller.dart';
 
 /// The viewfinder instruction for each Guided Spread phase, in one place so
@@ -75,10 +75,16 @@ class GuidedSpreadHud extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = guidedPrimaryAction(phase);
+    final isPaused = phase == GuidePhase.paused;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _GlassPanel(
+        TaroGlassPanel(
+          radius: 18,
+          tint: TaroColors.hudScrim,
+          fillColor: TaroColors.hudFill,
+          borderColor: TaroColors.hudBorder,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -93,157 +99,122 @@ class GuidedSpreadHud extends StatelessWidget {
                       style: AppTypography.display(
                         fontSize: 19,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: TaroColors.textPrimary,
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    '$filledCount/$totalSlots',
-                    style: AppTypography.label(
-                      fontSize: 12,
-                      letterSpacing: 0.9,
-                      color: AppColors.lavender,
-                    ),
+                  TaroGlassPill(
+                    label: '$filledCount/$totalSlots',
+                    accent: true,
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                currentSlotRole,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.label(
-                  fontSize: 9,
-                  letterSpacing: 1.0,
-                  color: AppColors.textMuted,
-                ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      currentSlotRole,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.label(
+                        fontSize: 9,
+                        letterSpacing: 1.0,
+                        color: TaroColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      guidedInstruction(phase),
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.label(
+                        fontSize: 9.5,
+                        letterSpacing: 0.8,
+                        fontWeight: FontWeight.w700,
+                        color: TaroColors.lavender,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
         const SizedBox(height: 8),
-        _GlassPanel(
+        TaroGlassPanel(
+          radius: 18,
+          tint: TaroColors.hudScrim,
+          fillColor: TaroColors.hudFill,
+          borderColor: TaroColors.hudBorder,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Row(
             children: [
-              _CircleIconButton(
+              TaroGlassIconButton(
                 icon: flashOn ? Icons.flash_on : Icons.flash_off_outlined,
-                onTap: onToggleFlash,
+                tooltip: flashOn ? 'Turn flash off' : 'Turn flash on',
+                active: flashOn,
+                size: 44,
+                iconSize: 18,
+                tint: flashOn ? null : TaroColors.hudScrim,
+                fillColor: TaroColors.hudFill,
+                borderColor: flashOn ? null : TaroColors.hudBorder,
+                onPressed: onToggleFlash,
               ),
-              const SizedBox(width: 8),
-              _CircleIconButton(
-                icon: phase == GuidePhase.paused
-                    ? Icons.play_arrow
-                    : Icons.pause,
-                onTap: phase == GuidePhase.paused ? onResume : onPause,
+              const SizedBox(width: 6),
+              TaroGlassIconButton(
+                icon: isPaused ? Icons.play_arrow : Icons.pause,
+                tooltip: isPaused ? 'Resume reading' : 'Pause reading',
+                active: isPaused,
+                size: 44,
+                iconSize: 18,
+                tint: isPaused ? null : TaroColors.hudScrim,
+                fillColor: TaroColors.hudFill,
+                borderColor: isPaused ? null : TaroColors.hudBorder,
+                onPressed: isPaused ? onResume : onPause,
               ),
-              const SizedBox(width: 8),
-              _CircleIconButton(icon: Icons.close, onTap: onExit),
+              const SizedBox(width: 6),
+              TaroGlassIconButton(
+                icon: Icons.close,
+                tooltip: 'Exit guided spread',
+                size: 44,
+                iconSize: 18,
+                tint: TaroColors.hudScrim,
+                fillColor: TaroColors.hudFill,
+                borderColor: TaroColors.hudBorder,
+                onPressed: onExit,
+              ),
               const Spacer(),
-              Expanded(
-                child: Text(
-                  guidedInstruction(phase),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.label(
-                    fontSize: 9,
-                    letterSpacing: 0.8,
-                    color: AppColors.textPrimary,
+              if (primary != null) ...[
+                Flexible(
+                  flex: 2,
+                  child: TaroGlassButton(
+                    key: ValueKey('guided-primary-$primary'),
+                    label: primary,
+                    variant: TaroGlassButtonVariant.primary,
+                    onPressed: primary == 'RESUME' ? onResume : onConfirm,
                   ),
                 ),
-              ),
-              const Spacer(),
-              if (primary != null)
-                _PrimaryButton(
-                  label: primary,
-                  onTap: primary == 'RESUME' ? onResume : onConfirm,
-                ),
-              const SizedBox(width: 8),
-              _CircleIconButton(
+                const SizedBox(width: 6),
+              ],
+              TaroGlassIconButton(
                 icon: Icons.chat_bubble_outline,
-                onTap: onOpenChat,
+                tooltip: 'Open full chat',
+                size: 44,
+                iconSize: 18,
+                tint: TaroColors.hudScrim,
+                fillColor: TaroColors.hudFill,
+                borderColor: TaroColors.hudBorder,
+                onPressed: onOpenChat,
               ),
             ],
           ),
         ),
       ],
-    );
-  }
-}
-
-class _GlassPanel extends StatelessWidget {
-  const _GlassPanel({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: child,
-    );
-  }
-}
-
-class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.canvas.withValues(alpha: 0.55),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Icon(icon, size: 18, color: AppColors.textPrimary),
-      ),
-    );
-  }
-}
-
-class _PrimaryButton extends StatelessWidget {
-  const _PrimaryButton({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      key: ValueKey('guided-primary-$label'),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.lavender.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.lavender),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.label(
-            fontSize: 10,
-            letterSpacing: 0.8,
-            fontWeight: FontWeight.w700,
-            color: AppColors.lavender,
-          ),
-        ),
-      ),
     );
   }
 }
