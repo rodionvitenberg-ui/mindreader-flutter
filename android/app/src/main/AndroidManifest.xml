@@ -40,6 +40,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Tarot Tree G1: enable Flutter GPU (Impeller preview) for the
+             liquid_glass_renderer 1.0 line. Without it the renderer falls back
+             to FakeGlass automatically. Remove this flag to disable full glass. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableFlutterGPU"
+            android:value="true" />
         <!-- Re-posts scheduled local notifications after reboot/app update. -->
         <receiver
             android:exported="false"
