@@ -211,7 +211,7 @@
       "5.6 Tests: permission-denied camera fallback test (no hardware -> simulated viewfinder) + FakeCameraPlatform.noCameras",
       "5.7 VISION_ENGINE_CONTRACT.md: interface/capabilities/frame/orientation/recognition/events/lifecycle/cancellation/adapter/checklist"
     ],
-    "current_task": "Run Android profile build + capture FPS/screenshot, then final checkpoint commit.",
+    "current_task": "G1 delivered + device-verified; awaiting visual sign-off before touching main screens.",
     "pending_tasks": []
   },
   "discovered_bugs_or_blockers": [
@@ -249,5 +249,5 @@
     "ITER5 KNOWN: Lenormand pair pills are placed between adjacent dealt cards in the focus pillar only (the spread overview still shows no cords for Lenormand/Runes and no pills).",
     "RESOLVED (PRE-1.5 AUDIT): workspace_swipe_test + phase2_flow_test goToPane swipe-hang -- ROOT CAUSE was the TEST HELPER, not the app: after the two-step refactor the app boots on Step 1 whose horizontal SpreadBlueprintCarousel ListView eats the (200,300) drag, so the workspace PageView never moves and the unbounded `while (current != pane)` loops forever. Both loops are now bounded (capped pump + descriptive TestFailure diagnostics) and the tests enter Step 2 first via activateSpread(). All 21 pre-existing failures were stale pre-refactor assertions (Step-2 UI + 168x275 deck) -- zero real regressions."
   ],
-  "latest_observation_summary": "G1 components implemented and unit-tested in simple mode; Android profile-mode perf run and screenshot pending."
+  "latest_observation_summary": "G1 verified on device (Redmi 2310FPCA4G, Android 13). Impeller runs OpenGLES (no Flutter GPU/Vulkan): real glass renders black, FakeGlass renders correctly. Playground default switched to fake; preview screenshot committed. Full glass remains for Vulkan/Flutter-GPU devices."
 }
