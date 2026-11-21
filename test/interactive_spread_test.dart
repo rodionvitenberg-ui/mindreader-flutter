@@ -226,6 +226,7 @@ void main() {
         expect(ctrl.dealtCount, 1);
 
         for (var index = 1; index < ctrl.spreadCardCount; index++) {
+          await tester.pump(const Duration(milliseconds: 400));
           await tester.tap(deck);
           await tester.pump();
         }

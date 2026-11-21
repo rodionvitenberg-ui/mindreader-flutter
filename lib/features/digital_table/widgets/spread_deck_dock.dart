@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../../core/data/runes_data.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/models/divination_system.dart';
-import '../../../core/models/tarot_deck_pack.dart';
 import '../../../design_system/taro_tokens.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/deck_pack_controller.dart';
@@ -22,14 +21,18 @@ class SpreadDeckDock extends StatelessWidget {
     super.key,
     required this.header,
     required this.badge,
-    required this.onDeal,
+    required this.wrapDeck,
+    required this.topKey,
+    required this.lifted,
     this.deckWidthPx,
     this.deckHeightPx,
   });
 
   final Widget header;
   final Widget badge;
-  final VoidCallback onDeal;
+  final Widget Function(Widget) wrapDeck;
+  final GlobalKey topKey;
+  final bool lifted;
 
   /// Optional explicit outer size of the horizontal deck stack so its top card
   /// matches the rendered size of cards on the table.
@@ -76,12 +79,14 @@ class SpreadDeckDock extends StatelessWidget {
                     alignment: Alignment.center,
                     children: [
                       Center(
-                        child: _OverviewDeck(
-                          system: context.watch<SpreadController>().system,
-                          pack: context.watch<DeckPackController>().activePack,
-                          width: width,
-                          height: height,
-                          onTap: onDeal,
+                        child: wrapDeck(
+                          _OverviewDeck(
+                            system: context.watch<SpreadController>().system,
+                            topKey: topKey,
+                            lifted: lifted,
+                            width: width,
+                            height: height,
+                          ),
                         ),
                       ),
                       if (badgeWidth > 0)
@@ -109,54 +114,26 @@ class SpreadDeckDock extends StatelessWidget {
   }
 }
 
-/// Fixed horizontal mini-deck for the Spread Overview mode: tap to
-/// deal the next card DIRECTLY into the spread. The deck plays a gentle
-/// breathing pulse on every tap while the dealt card materializes in its
-/// slot. It stays within reach while the reader moves the board.
-class _OverviewDeck extends StatefulWidget {
+class _OverviewDeck extends StatelessWidget {
   const _OverviewDeck({
     required this.system,
-    required this.pack,
     required this.width,
     required this.height,
-    required this.onTap,
+    required this.topKey,
+    required this.lifted,
   });
 
   final DivinationSystem system;
-  final TarotDeckPack pack;
   final double width;
   final double height;
-  final VoidCallback onTap;
-
-  @override
-  State<_OverviewDeck> createState() => _OverviewDeckState();
-}
-
-class _OverviewDeckState extends State<_OverviewDeck>
-    with SingleTickerProviderStateMixin {
-  /// 420ms soft breathing pulse (1.0 → 1.12 → 1.0) on each tap.
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 420),
-  );
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  void _onTap() {
-    _pulse.forward(from: 0);
-    widget.onTap();
-  }
+  final GlobalKey topKey;
+  final bool lifted;
 
   @override
   Widget build(BuildContext context) {
-    final w = widget.width;
-    final h = widget.height;
+    final w = width;
+    final h = height;
     if (h <= 4) return const SizedBox.shrink();
-    final lenormand = context.watch<DeckPackController>().activeLenormandPack;
     final label = AppStrings.t(
       context.watch<AppSettingsController>().language,
       'table.deal',
@@ -164,86 +141,97 @@ class _OverviewDeckState extends State<_OverviewDeck>
     return Semantics(
       button: true,
       label: label,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _onTap,
-        child: SizedBox(
-          key: const ValueKey('overview-deck'),
-          width: w + 12,
-          height: double.infinity,
-          child: Center(
-            child: ScaleTransition(
-              scale: TweenSequence<double>([
-                TweenSequenceItem(tween: Tween(begin: 1, end: 1.05), weight: 1),
-                TweenSequenceItem(tween: Tween(begin: 1.05, end: 1), weight: 2),
-              ]).animate(_pulse),
-              child: SizedBox(
-                width: w,
-                height: h,
-                child: widget.system == DivinationSystem.runes
-                    ? const FittedBox(
-                        child: SizedBox(
-                          width: 76,
-                          height: 68,
-                          child: _OverviewStonePile(),
-                        ),
-                      )
-                    : Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          for (final inset in [0.0, 2.0])
-                            Positioned(
-                              left: inset,
-                              top: 4 - inset,
-                              right: 4 - inset,
-                              bottom: inset,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: TaroColors.surface,
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: TaroColors.lavender.withValues(
-                                      alpha: 0.45,
-                                    ),
-                                  ),
+      child: SizedBox(
+        key: const ValueKey('overview-deck'),
+        width: w + 12,
+        height: double.infinity,
+        child: Center(
+          child: SizedBox(
+            width: w,
+            height: h,
+            child: system == DivinationSystem.runes
+                ? const FittedBox(
+                    child: SizedBox(
+                      width: 76,
+                      height: 68,
+                      child: _OverviewStonePile(),
+                    ),
+                  )
+                : Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      for (final inset in [0.0, 2.0])
+                        Positioned(
+                          left: inset,
+                          top: 4 - inset,
+                          right: 4 - inset,
+                          bottom: inset,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: TaroColors.surface,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: TaroColors.lavender.withValues(
+                                  alpha: 0.45,
                                 ),
                               ),
                             ),
-                          Positioned(
-                            left: 4,
-                            top: 0,
-                            bottom: 4,
-                            right: 0,
-                            child: RotatedBox(
-                              quarterTurns: 1,
-                              child: CardBack(
-                                width: h - 4,
-                                height: w - 4,
-                                pack: widget.system == DivinationSystem.tarot
-                                    ? widget.pack
-                                    : null,
-                                styleOverride:
-                                    widget.system == DivinationSystem.lenormand
-                                    ? lenormand.backStyle
-                                    : null,
-                                accentOverride:
-                                    widget.system == DivinationSystem.lenormand
-                                    ? lenormand.backAccentArgb
-                                    : null,
-                                secondaryOverride:
-                                    widget.system == DivinationSystem.lenormand
-                                    ? lenormand.backSecondaryArgb
-                                    : null,
-                              ),
-                            ),
                           ),
-                        ],
+                        ),
+                      if (lifted)
+                        Positioned(
+                          left: 2,
+                          top: 2,
+                          right: 2,
+                          bottom: 2,
+                          child: RotatedBox(
+                            quarterTurns: 1,
+                            child: SpreadCardBack(width: h - 4, height: w - 4),
+                          ),
+                        ),
+                      Positioned(
+                        left: 4,
+                        top: 0,
+                        bottom: 4,
+                        right: 0,
+                        child: RotatedBox(
+                          quarterTurns: 1,
+                          child: Opacity(
+                            key: topKey,
+                            opacity: lifted ? 0 : 1,
+                            child: SpreadCardBack(width: h - 4, height: w - 4),
+                          ),
+                        ),
                       ),
-              ),
-            ),
+                    ],
+                  ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The exact same back is painted on the dock and on the lifted card.
+class SpreadCardBack extends StatelessWidget {
+  const SpreadCardBack({super.key, required this.width, required this.height});
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final packs = context.watch<DeckPackController>();
+    final lenormand =
+        context.watch<SpreadController>().system == DivinationSystem.lenormand
+        ? packs.activeLenormandPack
+        : null;
+    return CardBack(
+      width: width,
+      height: height,
+      pack: lenormand == null ? packs.activePack : null,
+      styleOverride: lenormand?.backStyle,
+      accentOverride: lenormand?.backAccentArgb,
+      secondaryOverride: lenormand?.backSecondaryArgb,
     );
   }
 }

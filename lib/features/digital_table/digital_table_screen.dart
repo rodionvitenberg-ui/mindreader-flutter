@@ -231,20 +231,14 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
         });
   }
 
-  /// Overview mode: tapping the deck deals the next card DIRECTLY into its
-  /// target spread slot — NO 220×360 flight overlay (the old flying card
-  /// clipped off the bottom-right corner). The deck plays a gentle pulse
-  /// while the dealt card materializes inside the slot. Once the initial spread is full, the tap
-  /// appends a Clarifier (+1) — but only while a clarifier question is
-  /// armed (the deck stays locked otherwise).
-  void _onOverviewDeckTap() {
+  int? _dealOverviewPiece() {
     final ctrl = context.read<SpreadController>();
-    final slotIndex = ctrl.dealNextCardOrClarifier();
-    if (slotIndex == null) {
-      showDealLockPrompt(context, ctrl);
-      return;
+    final clarifier = ctrl.nextEmptySlotIndex == null;
+    final index = ctrl.dealNextCardOrClarifier();
+    if (index != null && !clarifier && ctrl.system != DivinationSystem.runes) {
+      _storeIntentionInto(ctrl, index);
     }
-    HapticFeedback.mediumImpact();
+    return index;
   }
 
   void _resetTable() {
@@ -252,7 +246,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     context.read<SpreadController>().resetTable();
   }
 
-  /// The flight card (FOCUS mode only — the overview materializes in-slot),
+  /// The flight card for the Focus pillar,
   /// positioned in the active body Stack's local coordinates: it flies from
   /// the release pose to the exact slot rect, landing pixel-perfectly on the
   /// already-materialized slot card. Runes fly as a face-down carved stone.
@@ -349,8 +343,9 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
       return SafeArea(
         bottom: false,
         child: SpreadBoard(
+          key: ValueKey(ctrl.readingRevision),
           header: header,
-          onDeal: _onOverviewDeckTap,
+          onDeal: _dealOverviewPiece,
           badge: _ResetTableButton(enabled: canReset, onReset: _resetTable),
         ),
       );

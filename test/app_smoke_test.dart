@@ -353,7 +353,7 @@ void main() {
   });
 
   testWidgets('SPREAD ↔ FOCUS toggle: default overview, proportional deck, '
-      'deal materializes in the slot (no flying card)', (tester) async {
+      'dealt card lands in its board slot', (tester) async {
     // Portrait viewport (the default 800×600 logical test view is
     // LANDSCAPE — wider than tall).
     tester.view.physicalSize = const Size(1080, 1920);
@@ -389,11 +389,11 @@ void main() {
     final screenW = tester.view.physicalSize.width / tester.view.devicePixelRatio;
     expect(deckRect.center.dx, closeTo(screenW / 2, 1.5)); // centered
 
-    // Tapping the mini-deck materializes the card DIRECTLY inside its
-    // slot — no flight overlay card anywhere on screen.
+    // A single tap flies one card from the fixed deck into the board.
     await tester.tap(miniDeck);
-    await tester.pump(); // slot materializes
-    await tester.pump(const Duration(milliseconds: 800)); // 750ms mist entrance
+    await tester.pump();
+    expect(find.byKey(const ValueKey('spread-moving-card')), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 400));
     await tester.pump();
     expect(find.text('TAP TO RESET'), findsOneWidget);
     final dealt = find.byType(TarotCard3DWidget);
