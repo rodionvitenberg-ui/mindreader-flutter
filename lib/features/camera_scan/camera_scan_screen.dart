@@ -4,7 +4,6 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -16,6 +15,7 @@ import '../../core/services/local_storage_service.dart';
 import '../../core/services/spread_inference_service.dart';
 import '../../core/services/vision_scanner_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../../state/oracle_session_controller.dart';
 import '../../state/spread_controller.dart';
 import 'widgets/camera_mode_selector.dart';
@@ -398,9 +398,9 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                 ctrl.clarifierScanRequested
                     ? 'PHOTOGRAPH YOUR NEXT PHYSICAL CARD'
                     : _modeInstruction,
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: 9.5,
-                  letterSpacing: 2.2,
+                  letterSpacing: 1.2,
                   color: ctrl.clarifierScanRequested
                       ? AppColors.lavender
                       : AppColors.textMuted,
@@ -412,9 +412,9 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                   padding: const EdgeInsets.only(bottom: 14),
                   child: Text(
                     'SIMULATED VIEWFINDER \u00b7 TAP TO RUN THE MOCK SCAN',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 8.5,
-                      letterSpacing: 1.6,
+                    style: AppTypography.label(
+                      fontSize: 9,
+                      letterSpacing: 0.9,
                       color: AppColors.textMuted,
                     ),
                   ),
@@ -482,9 +482,9 @@ class _SimulatedViewfinder extends StatelessWidget {
             Text(
               'CAMERA UNAVAILABLE\nMOCK MODE',
               textAlign: TextAlign.center,
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 10,
-                letterSpacing: 2,
+                letterSpacing: 1.1,
                 height: 1.8,
                 color: AppColors.textMuted,
               ),

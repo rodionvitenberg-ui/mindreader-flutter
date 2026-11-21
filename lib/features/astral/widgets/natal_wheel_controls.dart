@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Small glass pill for wheel actions (replay, transits overlay).
 class NatalWheelPill extends StatelessWidget {
@@ -39,9 +39,9 @@ class NatalWheelPill extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 8,
-            letterSpacing: 1.3,
+          style: AppTypography.label(
+            fontSize: 8.5,
+            letterSpacing: 0.7,
             color: active ? AppColors.lavender : AppColors.textMuted,
           ),
         ),
@@ -79,9 +79,9 @@ class NatalWheelHeader extends StatelessWidget {
                 children: [
                   Text(
                     'NATAL WHEEL',
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 9,
-                      letterSpacing: 1.8,
+                      letterSpacing: 1.0,
                       color: AppColors.textPrimary,
                     ),
                   ),
@@ -90,9 +90,9 @@ class NatalWheelHeader extends StatelessWidget {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 7.5,
-                      letterSpacing: 1.2,
+                    style: AppTypography.label(
+                      fontSize: 8,
+                      letterSpacing: 0.7,
                       color: AppColors.textMuted,
                     ),
                   ),
@@ -191,7 +191,7 @@ class NatalPlanetChip extends StatelessWidget {
         ),
         child: Text(
           '${position.planet.glyph} ${position.sign.glyph}$retro',
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 9,
             letterSpacing: 0.6,
             color: selected ? AppColors.lavender : AppColors.textMuted,

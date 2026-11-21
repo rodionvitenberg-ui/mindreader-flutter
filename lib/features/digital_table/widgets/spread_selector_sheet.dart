@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/models/divination_system.dart';
@@ -8,14 +7,12 @@ import '../../../core/models/lenormand_spread.dart';
 import '../../../core/models/rune_cast.dart';
 import '../../../core/models/spread_type.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../state/app_settings_controller.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/spread_controller.dart';
-import '../../shell/widgets/pro_subscription_sheet.dart';
 
-/// Compact spread switcher opened from the header's spread picker pill
-/// (`3 · TRIAD FLOW ▾`) — the options are ALWAYS the active system's
-/// canonical spreads: 4 tarot templates, 4 Lenormand spreads or 4 rune
-/// casts. Replaces the old bottom carousel.
+/// Compact spread switcher opened from the spread picker when needed — all
+/// preset schemas across Tarot, Lenormand and Runes are open without
+/// subscription (no locks, no paywall).
 class SpreadSelectorSheet extends StatelessWidget {
   const SpreadSelectorSheet({super.key});
 
@@ -32,7 +29,6 @@ class SpreadSelectorSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
-    final proUnlocked = context.watch<AppSettingsController>().isProUnlocked;
     final title = switch (ctrl.system) {
       DivinationSystem.tarot => 'SPREAD METHOD',
       DivinationSystem.lenormand => 'LENORMAND SPREAD',
@@ -45,107 +41,95 @@ class SpreadSelectorSheet extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 9,
-              letterSpacing: 2.2,
-              color: AppColors.lavender,
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 1.2,
+                color: AppColors.lavender,
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          ...switch (ctrl.system) {
-            DivinationSystem.tarot => [
-                for (var i = 0; i < SpreadType.values.length; i++) ...[
-                  _SpreadOption(
-                    count: SpreadType.values[i].cardCount,
-                    label: SpreadType.values[i].label,
-                    focusLine: SpreadType.values[i].focusLine,
-                    isPro: SpreadType.values[i].isPro,
-                    locked: SpreadType.values[i].isPro && !proUnlocked,
-                    active: SpreadType.values[i] == ctrl.spreadType,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      if (SpreadType.values[i].isPro && !proUnlocked) {
-                        ProSubscriptionSheet.show(context);
-                        return;
-                      }
-                      context
-                          .read<SpreadController>()
-                          .setSpreadType(SpreadType.values[i]);
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  if (i < SpreadType.values.length - 1)
-                    const SizedBox(height: 8),
+            const SizedBox(height: 10),
+            ...switch (ctrl.system) {
+              DivinationSystem.tarot => [
+                  for (var i = 0; i < SpreadType.values.length; i++) ...[
+                    _SpreadOption(
+                      count: SpreadType.values[i].cardCount,
+                      label: SpreadType.values[i].label,
+                      focusLine: SpreadType.values[i].focusLine,
+                      active: !ctrl.isCustomSpread &&
+                          SpreadType.values[i] == ctrl.spreadType,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        context
+                            .read<SpreadController>()
+                            .setSpreadType(SpreadType.values[i]);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    if (i < SpreadType.values.length - 1)
+                      const SizedBox(height: 8),
+                  ],
                 ],
-              ],
-            DivinationSystem.lenormand => [
-                for (var i = 0; i < LenormandSpread.values.length; i++) ...[
-                  _SpreadOption(
-                    count: LenormandSpread.values[i].cardCount,
-                    label: LenormandSpread.values[i].label,
-                    focusLine: LenormandSpread.values[i].focusLine,
-                    isPro: LenormandSpread.values[i].isPro,
-                    locked: LenormandSpread.values[i].isPro && !proUnlocked,
-                    active: LenormandSpread.values[i] == ctrl.lenormandSpread,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      if (LenormandSpread.values[i].isPro && !proUnlocked) {
-                        ProSubscriptionSheet.show(context);
-                        return;
-                      }
-                      context.read<SpreadController>().setLenormandSpread(
-                          LenormandSpread.values[i]);
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  if (i < LenormandSpread.values.length - 1)
-                    const SizedBox(height: 8),
+              DivinationSystem.lenormand => [
+                  for (var i = 0; i < LenormandSpread.values.length; i++) ...[
+                    _SpreadOption(
+                      count: LenormandSpread.values[i].cardCount,
+                      label: LenormandSpread.values[i].label,
+                      focusLine: LenormandSpread.values[i].focusLine,
+                      active: !ctrl.isCustomSpread &&
+                          LenormandSpread.values[i] == ctrl.lenormandSpread,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        context.read<SpreadController>().setLenormandSpread(
+                              LenormandSpread.values[i],
+                            );
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    if (i < LenormandSpread.values.length - 1)
+                      const SizedBox(height: 8),
+                  ],
                 ],
-              ],
-            DivinationSystem.runes => [
-                for (var i = 0; i < RuneCast.values.length; i++) ...[
-                  _SpreadOption(
-                    count: RuneCast.values[i].cardCount,
-                    label: RuneCast.values[i].label,
-                    focusLine: RuneCast.values[i].focusLine,
-                    isPro: RuneCast.values[i].isPro,
-                    locked: RuneCast.values[i].isPro && !proUnlocked,
-                    active: RuneCast.values[i] == ctrl.runeCast,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      if (RuneCast.values[i].isPro && !proUnlocked) {
-                        ProSubscriptionSheet.show(context);
-                        return;
-                      }
-                      context
-                          .read<SpreadController>()
-                          .setRuneCast(RuneCast.values[i]);
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  if (i < RuneCast.values.length - 1)
-                    const SizedBox(height: 8),
+              DivinationSystem.runes => [
+                  for (var i = 0; i < RuneCast.values.length; i++) ...[
+                    _SpreadOption(
+                      count: RuneCast.values[i].cardCount,
+                      label: RuneCast.values[i].label,
+                      focusLine: RuneCast.values[i].focusLine,
+                      active: !ctrl.isCustomSpread &&
+                          RuneCast.values[i] == ctrl.runeCast,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        context
+                            .read<SpreadController>()
+                            .setRuneCast(RuneCast.values[i]);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    if (i < RuneCast.values.length - 1)
+                      const SizedBox(height: 8),
+                  ],
                 ],
-              ],
-          },
-        ],
+            },
+          ],
+        ),
       ),
     );
   }
@@ -156,8 +140,6 @@ class _SpreadOption extends StatelessWidget {
     required this.count,
     required this.label,
     required this.focusLine,
-    required this.isPro,
-    required this.locked,
     required this.active,
     required this.onTap,
   });
@@ -165,8 +147,6 @@ class _SpreadOption extends StatelessWidget {
   final int count;
   final String label;
   final String focusLine;
-  final bool isPro;
-  final bool locked;
   final bool active;
   final VoidCallback onTap;
 
@@ -190,7 +170,7 @@ class _SpreadOption extends StatelessWidget {
           children: [
             Text(
               '$count •',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: AppColors.lavender,
@@ -201,45 +181,23 @@ class _SpreadOption extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          label.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 11,
-                            letterSpacing: 1.4,
-                            fontWeight: FontWeight.w700,
-                            color: active
-                                ? AppColors.lavender
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      if (isPro) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          locked ? '🔒 PRO' : 'PRO',
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 8,
-                            letterSpacing: 1.1,
-                            fontWeight: FontWeight.w700,
-                            color: locked
-                                ? AppColors.textMuted
-                                : AppColors.lavender,
-                          ),
-                        ),
-                      ],
-                    ],
+                  Text(
+                    label.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.label(
+                      fontSize: 11,
+                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w700,
+                      color: active ? AppColors.lavender : AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '$count CARDS · $focusLine',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: AppTypography.body(
                       fontSize: 9.5,
                       color: AppColors.textMuted,
                     ),
@@ -259,4 +217,3 @@ class _SpreadOption extends StatelessWidget {
     );
   }
 }
-

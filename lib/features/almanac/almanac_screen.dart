@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/data/lenormand_data.dart';
@@ -16,6 +15,7 @@ import '../../core/models/natal_chart.dart';
 import '../../core/models/rune_stone.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/deck_pack_controller.dart';
 import '../../state/spread_controller.dart';
@@ -517,9 +517,9 @@ class _AlmanacSystemSwitcher extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       AppStrings.t(language, 'almanac.${t.name}'),
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.label(
                         fontSize: 9,
-                        letterSpacing: 1.2,
+                        letterSpacing: 0.7,
                         fontWeight: FontWeight.w700,
                         color: tab == t
                             ? AppColors.lavender
@@ -703,9 +703,9 @@ class _AlmanacTile extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8.5,
-              letterSpacing: 1.2,
+            style: AppTypography.label(
+              fontSize: 9,
+              letterSpacing: 0.7,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
@@ -827,7 +827,7 @@ class _FilterChip extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: 9.5,
               letterSpacing: 1,
               fontWeight: FontWeight.w700,
@@ -884,9 +884,9 @@ class _ZodiacTile extends StatelessWidget {
               entry.name.toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.cormorantGaramond(
+              style: AppTypography.display(
                 fontSize: 19,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 height: 1.05,
                 color: AppColors.textPrimary,
               ),
@@ -896,8 +896,8 @@ class _ZodiacTile extends StatelessWidget {
               entry.dateRange,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 7.5,
+              style: AppTypography.label(
+                fontSize: 8,
                 letterSpacing: 1.0,
                 color: AppColors.textMuted,
               ),
@@ -907,7 +907,7 @@ class _ZodiacTile extends StatelessWidget {
               entry.keywords.join(' · '),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: AppTypography.body(
                 fontSize: 10,
                 height: 1.3,
                 color: AppColors.textMuted,
@@ -919,8 +919,8 @@ class _ZodiacTile extends StatelessWidget {
               '${entry.rulersLabel.toUpperCase()}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 7,
+              style: AppTypography.label(
+                fontSize: 7.5,
                 letterSpacing: 0.8,
                 fontWeight: FontWeight.w700,
                 color: AppColors.lavender,

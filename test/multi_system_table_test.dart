@@ -42,7 +42,7 @@ void main() {
     expect(find.text('RUNES'), findsOneWidget);
 
     // Enter the Active Table.
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
 
     // Step 2 header: the reordered view toggle + the back button; no old
     // chrome anywhere (title, counter, ritual button).

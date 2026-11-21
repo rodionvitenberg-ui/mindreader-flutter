@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../core/data/lenormand_data.dart';
 import '../core/data/runes_data.dart';
 import '../core/data/tarot_deck_data.dart';
+import '../core/models/custom_spread.dart';
 import '../core/models/dealt_card_slot.dart';
 import '../core/models/divination_card.dart';
 import '../core/models/divination_system.dart';
@@ -40,10 +41,17 @@ class SpreadController extends ChangeNotifier {
   /// [totalCards] only ever shrinks the tarot stack (test/scan setup).
   late int _deckSize;
 
-  /// Hard ceiling: no reading may ever hold more than 10 cards on the
-  /// table (base spread + clarifiers). Beyond it the deck refuses any
-  /// further draw while the Oracle AI Chat stays fully open.
-  static const maxTableCards = 10;
+  /// Maximum base positions supported by any spread on the table (presets and
+  /// the 1..12 Custom Spread builder).
+  static const maxBaseSpreadCards = 12;
+
+  /// Maximum clarifying cards allowed ON TOP of the active base spread.
+  /// Clarifiers are counted separately from the base positions so both 10-card
+  /// Celtic Cross and 12-position custom spreads still allow follow-up draws.
+  static const maxClarifierCards = 3;
+
+  /// Hard safety ceiling on total cards on the table (12 base + 3 clarifiers).
+  static const maxTableCards = maxBaseSpreadCards + maxClarifierCards;
 
   /// Subtle haptic/visual prompt shown when the reader swipes a locked
   /// deck: the base spread is complete and no clarifier question is armed.
@@ -51,9 +59,10 @@ class SpreadController extends ChangeNotifier {
       'Flip all cards face-up and synthesize in Chat before drawing '
       'a clarifier.';
 
-  /// The hard ceiling prompt once 10 cards lie on the table.
+  /// Prompt shown once all clarifying cards above the base spread have been
+  /// used (or the absolute table ceiling is reached).
   static const maxTableCardsPrompt =
-      'Maximum of 10 cards reached for this reading.';
+      'Maximum of $maxClarifierCards clarifier cards reached for this reading.';
 
   late List<int> _cardIds; // shuffled order of the active system's cards
   late List<bool> _isReversed; // parallel orientation flags
@@ -86,31 +95,42 @@ class SpreadController extends ChangeNotifier {
   RuneCast _runeCast = RuneCast.three;
   RuneCast get runeCast => _runeCast;
 
-  /// Canonical slot count of the ACTIVE system's spread (1/3/4/7 tarot,
-  /// 1/3/5/9 lenormand, 1/3/5/7 runes).
-  int get spreadCardCount => switch (_system) {
+  CustomSpreadConfig? _customSpread;
+  CustomSpreadConfig? get customSpread => _customSpread;
+  bool get isCustomSpread => _customSpread != null;
+
+  /// Canonical slot count of the ACTIVE spread (or custom spread count).
+  int get spreadCardCount =>
+      _customSpread?.cardCount ??
+      switch (_system) {
         DivinationSystem.tarot => _spreadType.cardCount,
         DivinationSystem.lenormand => _lenormandSpread.cardCount,
         DivinationSystem.runes => _runeCast.cardCount,
       };
 
-  /// Concise pill label, e.g. '3 · Triad Flow', '9 · 3×3 Portrait Box',
-  /// '7 · Heimdall’s Bridge'.
-  String get spreadLabel => switch (_system) {
+  /// Concise label, e.g. '3 · Three Cards', '9 · 3×3 Portrait Box',
+  /// '7 · Heimdall’s Bridge', or '5 · Custom Spread'.
+  String get spreadLabel =>
+      _customSpread?.label ??
+      switch (_system) {
         DivinationSystem.tarot => _spreadType.label,
         DivinationSystem.lenormand => _lenormandSpread.label,
         DivinationSystem.runes => _runeCast.label,
       };
 
   /// The role each slot plays in the reading, top to bottom.
-  List<String> get spreadSlotRoles => switch (_system) {
+  List<String> get spreadSlotRoles =>
+      _customSpread?.slotRoles ??
+      switch (_system) {
         DivinationSystem.tarot => _spreadType.slotRoles,
         DivinationSystem.lenormand => _lenormandSpread.slotRoles,
         DivinationSystem.runes => _runeCast.slotRoles,
       };
 
   /// What the reading focuses on (used by the oracle synthesis).
-  String get spreadFocusLine => switch (_system) {
+  String get spreadFocusLine =>
+      _customSpread?.focusLine ??
+      switch (_system) {
         DivinationSystem.tarot => _spreadType.focusLine,
         DivinationSystem.lenormand => _lenormandSpread.focusLine,
         DivinationSystem.runes => _runeCast.focusLine,
@@ -118,7 +138,9 @@ class SpreadController extends ChangeNotifier {
 
   /// Compact single-word role per slot (`1 · State`, `2 · Shadow`, ...) for
   /// the overview slot labels.
-  List<String> get spreadSlotRoleShorts => switch (_system) {
+  List<String> get spreadSlotRoleShorts =>
+      _customSpread?.slotRoleShorts ??
+      switch (_system) {
         DivinationSystem.tarot => _spreadType.slotRoleShorts,
         DivinationSystem.lenormand => _lenormandSpread.slotRoleShorts,
         DivinationSystem.runes => _runeCast.slotRoleShorts,
@@ -197,23 +219,36 @@ class SpreadController extends ChangeNotifier {
   /// locks for further dealing as soon as this many cards lie on the table.
   int get baseCardLimit => spreadCardCount;
 
+  /// How many clarifying cards have been drawn above the base spread.
+  int get clarifierCount => _clarifierCount;
+
+  /// Per-reading total card cap: base positions + up to [maxClarifierCards]
+  /// clarifiers, never exceeding [maxTableCards].
+  int get maxCardsForCurrentSpread =>
+      min(maxTableCards, baseCardLimit + maxClarifierCards);
+
+  /// True once the separate clarifier allowance (3 cards above the base
+  /// spread) or the absolute 15-card table ceiling is exhausted.
+  bool get isClarifierLimitReached =>
+      _clarifierCount >= maxClarifierCards ||
+      dealtCount >= maxCardsForCurrentSpread;
+
   /// How many cards this reading may hold right now:
-  /// * base spread filling → the canonical [baseCardLimit];
+  /// * base spread filling → the canonical [baseCardLimit] (up to 12);
   /// * a clarifier question armed → exactly dealtCount + 1 (ONE unlocked
-  ///   card), clamped to [maxTableCards];
-  /// * hard ceiling → [maxTableCards], never less.
+  ///   card), clamped to [maxCardsForCurrentSpread];
+  /// * once the clarifier cap is reached → [maxCardsForCurrentSpread].
   int get allowedCardsLimit {
-    if (dealtCount >= maxTableCards) return maxTableCards;
+    final cap = maxCardsForCurrentSpread;
+    if (dealtCount >= cap) return cap;
     return min(
-      maxTableCards,
-      _pendingClarifierQuestion == null
-          ? baseCardLimit
-          : dealtCount + 1,
+      cap,
+      _pendingClarifierQuestion == null ? baseCardLimit : dealtCount + 1,
     );
   }
 
   /// True when the deck refuses further draws: the base spread is complete
-  /// and no clarifier question is armed, or the 10-card ceiling is reached.
+  /// and no clarifier question is armed, or the clarifier ceiling is reached.
   bool get isDealLocked => dealtCount >= allowedCardsLimit;
 
   late List<DealtCardSlot> _slots;
@@ -375,7 +410,8 @@ class SpreadController extends ChangeNotifier {
   /// lost from the ledger.
   void setSpreadType(SpreadType type) {
     if (_system != DivinationSystem.tarot) return;
-    if (type == _spreadType) return;
+    if (type == _spreadType && _customSpread == null) return;
+    _customSpread = null;
     _spreadType = type;
     _resetSlots();
     _resetDeck();
@@ -384,7 +420,8 @@ class SpreadController extends ChangeNotifier {
 
   void setLenormandSpread(LenormandSpread spread) {
     if (_system != DivinationSystem.lenormand) return;
-    if (spread == _lenormandSpread) return;
+    if (spread == _lenormandSpread && _customSpread == null) return;
+    _customSpread = null;
     _lenormandSpread = spread;
     _resetSlots();
     _resetDeck();
@@ -393,8 +430,23 @@ class SpreadController extends ChangeNotifier {
 
   void setRuneCast(RuneCast cast) {
     if (_system != DivinationSystem.runes) return;
-    if (cast == _runeCast) return;
+    if (cast == _runeCast && _customSpread == null) return;
+    _customSpread = null;
     _runeCast = cast;
+    _resetSlots();
+    _resetDeck();
+    shuffleDeck();
+  }
+
+  /// Activates a user-defined custom spread (1..12 question-driven positions)
+  /// on the active divination system, resetting the table and physical stack.
+  void setCustomSpread(CustomSpreadConfig config) {
+    final maxAllowed = min(maxBaseSpreadCards, _deckSize);
+    _customSpread = CustomSpreadConfig.fromQuestions(
+      questions: config.questions,
+      name: config.name,
+      maxCards: maxAllowed,
+    );
     _resetSlots();
     _resetDeck();
     shuffleDeck();
@@ -406,6 +458,7 @@ class SpreadController extends ChangeNotifier {
   /// a scanned physical spread is tarot by definition.
   void setSystem(DivinationSystem system) {
     if (system == _system) return;
+    _customSpread = null;
     _system = system;
     _deckSize = switch (system) {
       DivinationSystem.tarot => tarotDeck.length,
@@ -488,17 +541,17 @@ class SpreadController extends ChangeNotifier {
     return false;
   }
 
-  // ---- locked clarifier loop (+1 Card, hard 10-card ceiling) ------------
+  // ---- locked clarifier loop (+1 Card, up to 3 clarifiers above base) ----
 
   int _clarifierCount = 0;
 
   /// Arms the deck for EXACTLY ONE +1 Clarifier Card with [question] (an
   /// AI-suggested or the reader's own follow-up). Returns false when the
-  /// base spread is incomplete, the question is blank, or the hard
-  /// 10-card ceiling is reached.
+  /// base spread is incomplete, the question is blank, or the separate
+  /// clarifier cap ([maxClarifierCards]) is reached.
   bool armClarifierQuestion(String question) {
     if (question.trim().isEmpty) return false;
-    if (dealtCount >= maxTableCards) return false;
+    if (isClarifierLimitReached) return false;
     if (dealtCount < baseCardLimit) return false;
     _pendingClarifierQuestion = question;
     notifyListeners();
@@ -511,15 +564,16 @@ class SpreadController extends ChangeNotifier {
   int? dealNextCardOrClarifier() => dealCardAtOrClarifier(0);
 
   /// The single legal digital-deal gate (tactile grab AND overview tap):
-  /// * base slots fill freely up to the canonical limit;
+  /// * base slots fill freely up to [baseCardLimit] (1..12);
   /// * beyond it a card may only be drawn while a clarifier question is
   ///   armed — exactly ONE, then the deck locks again;
-  /// * at [maxTableCards] the deck refuses permanently.
+  /// * once [maxClarifierCards] clarifiers lie above the base spread (or
+  ///   [maxTableCards] is reached) the deck refuses permanently.
   int? dealCardAtOrClarifier(int depthFromTop) {
     if (depthFromTop < 0 || depthFromTop >= remaining) return null;
-    if (dealtCount >= maxTableCards) return null;
     final direct = dealCardAt(depthFromTop);
     if (direct != null) return direct;
+    if (isClarifierLimitReached) return null;
     final question = _pendingClarifierQuestion;
     if (question == null) return null; // deck locked: no question armed
     final idx = _appendClarifierSlot(question);
@@ -554,10 +608,10 @@ class SpreadController extends ChangeNotifier {
   bool get clarifierScanRequested => _pendingClarifierQuestion != null;
 
   /// Arms the clarifier camera scan with the follow-up question and marks
-  /// the session as a physical camera sync. Refuses beyond the hard
-  /// 10-card ceiling.
+  /// the session as a physical camera sync. Refuses once the clarifier limit
+  /// is reached.
   void requestClarifierScan(String question) {
-    if (dealtCount >= maxTableCards) return;
+    if (isClarifierLimitReached) return;
     if (question.trim().isEmpty) return;
     _pendingClarifierQuestion = question;
     _sourceMode = TableSourceMode.physicalCameraSync;
@@ -567,11 +621,11 @@ class SpreadController extends ChangeNotifier {
   /// The camera recognized the photographed physical clarifier: append it
   /// FACE UP as Card N+1. The digital 78-card ledger is untouched — a real
   /// card never decrements [remaining]. Returns the new slot index, or
-  /// null when nothing is armed or the 10-card ceiling is reached.
+  /// null when nothing is armed or the clarifier ceiling is reached.
   int? completeClarifierScan(TarotCard card, bool reversed) {
     final question = _pendingClarifierQuestion;
     if (question == null) return null;
-    if (dealtCount >= maxTableCards) return null;
+    if (isClarifierLimitReached) return null;
     _pendingClarifierQuestion = null;
     final idx = _appendClarifierSlot(question);
     final slot = _slots[idx];
@@ -603,6 +657,7 @@ class SpreadController extends ChangeNotifier {
   }) {
     if (cards.isEmpty) return;
     _startReading();
+    _customSpread = null;
     _system = system;
     _deckSize = switch (system) {
       DivinationSystem.tarot => tarotDeck.length,
@@ -764,6 +819,8 @@ class SpreadController extends ChangeNotifier {
     SpreadType? type,
     LenormandSpread? lenormandSpread,
     RuneCast? runeCast,
+    String? customSpread,
+    List<String> customQuestions = const [],
     required List<({int cardId, bool reversed, String role, String? userContext})> cards,
     required List<String> sessionNotes,
     String readingQuestion = '',
@@ -775,6 +832,20 @@ class SpreadController extends ChangeNotifier {
     _spreadType = type ?? SpreadType.three;
     _lenormandSpread = lenormandSpread ?? LenormandSpread.three;
     _runeCast = runeCast ?? RuneCast.three;
+    final baseCards = cards.where((c) => !c.role.startsWith('Clarifier')).toList();
+    final restoredQuestions = customQuestions.isNotEmpty
+        ? customQuestions
+        : [for (final c in baseCards) c.role];
+    if (customSpread != null &&
+        customSpread.trim().isNotEmpty &&
+        restoredQuestions.isNotEmpty) {
+      _customSpread = CustomSpreadConfig.fromQuestions(
+        questions: restoredQuestions,
+        name: customSpread,
+      );
+    } else {
+      _customSpread = null;
+    }
     _deckSize = switch (system) {
       DivinationSystem.tarot => tarotDeck.length,
       DivinationSystem.lenormand => lenormandDeck.length,

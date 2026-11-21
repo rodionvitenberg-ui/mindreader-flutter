@@ -7,6 +7,7 @@ import 'package:mindreader/core/models/spread_type.dart';
 import 'package:mindreader/features/digital_table/digital_table_screen.dart';
 import 'package:mindreader/features/digital_table/widgets/reading_bottom_sheet.dart';
 import 'package:mindreader/features/digital_table/widgets/slotted_divination_card.dart';
+import 'package:mindreader/features/digital_table/widgets/tarot_card_3d_widget.dart';
 import 'package:mindreader/main.dart';
 import 'package:mindreader/state/oracle_session_controller.dart';
 import 'package:mindreader/state/session_history_controller.dart';
@@ -418,4 +419,104 @@ void main() {
       },
     );
   }
+
+  testWidgets(
+    'SPREAD VIEW at full scale swipes on the board into Oracle Chat, and zooms cleanly',
+    (tester) async {
+      await openTable(tester);
+      final ctrl = table(tester).read<SpreadController>()
+        ..setSpreadType(SpreadType.three);
+      await tester.pump();
+      expect(ctrl.spreadType, SpreadType.three);
+
+      // At full (fit) scale, swiping left directly on the board opens Chat.
+      final boardCenter = tester.getCenter(viewport);
+      await tester.flingFrom(boardCenter, const Offset(-320, 0), 900);
+      await tester.pumpAndSettle();
+      final pageController =
+          tester.widget<PageView>(find.byType(PageView)).controller!;
+      expect(pageController.page!.round(), 1);
+
+      // Swipe back to the Digital Table.
+      await goToPane(tester, 0);
+      expect(pageController.page!.round(), 0);
+    },
+  );
+
+  testWidgets(
+    'SYNTHESIZE CTA keeps the exact same size across dormant, ready, and OPEN ORACLE CHAT states',
+    (tester) async {
+      await openTable(tester);
+      final ctrl = table(tester).read<SpreadController>()
+        ..setSpreadType(SpreadType.three);
+      await tester.pump();
+
+      final cta = find.byKey(const ValueKey('synthesize-cta'));
+      expect(find.text('✦ SYNTHESIZE IN CHAT'), findsOneWidget);
+      expect(find.textContaining('FLIP ALL CARDS'), findsNothing);
+      final dormantSize = tester.getSize(cta);
+
+      // Deal all 3 and flip 1 → still dormant with compact count, identical size.
+      for (var i = 0; i < 3; i++) {
+        ctrl.dealNextCardOrClarifier();
+      }
+      ctrl.flipSlot(0);
+      await tester.pump();
+      expect(find.text('✦ SYNTHESIZE IN CHAT (1/3)'), findsOneWidget);
+      expect(tester.getSize(cta), dormantSize);
+
+      // Flip remaining cards → State 2 (ignited): identical size after settle.
+      ctrl.flipSlot(1);
+      ctrl.flipSlot(2);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 650));
+      expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsOneWidget);
+      final readySize = tester.getSize(cta);
+      expect(readySize.width, closeTo(dormantSize.width, 0.01));
+      expect(readySize.height, closeTo(dormantSize.height, 0.01));
+
+      // Synthesize → State 3 (OPEN ORACLE CHAT) back on Table: identical size.
+      await tester.tap(cta);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
+      await goToPane(tester, 0);
+      await tester.pump(const Duration(milliseconds: 650));
+      expect(find.text('✦ OPEN ORACLE CHAT →'), findsOneWidget);
+      final postSize = tester.getSize(cta);
+      expect(postSize.width, closeTo(readySize.width, 0.01));
+      expect(postSize.height, closeTo(readySize.height, 0.01));
+    },
+  );
+
+  testWidgets(
+    'SPREAD VIEW deck matches the rendered table card size while keeping its centered dock position',
+    (tester) async {
+      await openTable(tester);
+      final ctrl = table(tester).read<SpreadController>()
+        ..setSpreadType(SpreadType.three);
+      await tester.pump();
+      ctrl.dealNextCardOrClarifier();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final deckCard = find.descendant(
+        of: deck,
+        matching: find.byType(CardBack),
+      );
+      final tableCard = find.descendant(
+        of: viewport,
+        matching: find.byType(SlottedDivinationCard),
+      );
+      final deckRect = tester.getRect(deckCard);
+      final tableRect = tester.getRect(tableCard);
+
+      // Horizontal deck in the dock has the exact rotated dimensions of a table card.
+      expect(deckRect.width, closeTo(tableRect.height, 1.0));
+      expect(deckRect.height, closeTo(tableRect.width, 1.0));
+      // Centered horizontally in the dock above the board.
+      expect(deckRect.center.dx, closeTo(tester.getRect(viewport).center.dx, 3.0));
+      expect(deckRect.bottom, lessThanOrEqualTo(tester.getRect(viewport).top));
+    },
+  );
 }

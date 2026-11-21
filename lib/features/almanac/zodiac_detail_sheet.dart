@@ -2,13 +2,13 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/data/zodiac_almanac_data.dart';
 import '../../core/models/natal_chart.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 
 /// The Almanac's rich zodiac inspector: dates, element, modality, polarity,
 /// rulers, house affinity, the core archetype, shadow, love and career, plus
@@ -98,9 +98,9 @@ Widget _details(
               children: [
                 Text(
                   e.name,
-                  style: GoogleFonts.cormorantGaramond(
+                  style: AppTypography.display(
                     fontSize: 28,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w800,
                     height: 1.05,
                     color: AppColors.textPrimary,
                   ),
@@ -108,18 +108,18 @@ Widget _details(
                 const SizedBox(height: 4),
                 Text(
                   e.dateRange,
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: 9,
-                    letterSpacing: 1.6,
+                    letterSpacing: 0.9,
                     color: AppColors.textMuted,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   e.keywords.join(' · ').toUpperCase(),
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 8.5,
-                    letterSpacing: 1.2,
+                  style: AppTypography.label(
+                    fontSize: 9,
+                    letterSpacing: 0.7,
                     fontWeight: FontWeight.w700,
                     color: AppColors.lavender,
                   ),
@@ -190,16 +190,16 @@ class _StatTile extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 7,
-              letterSpacing: 1.4,
+            style: AppTypography.label(
+              fontSize: 7.5,
+              letterSpacing: 0.8,
               color: AppColors.textMuted,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             value,
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 11.5,
               color: AppColors.textPrimary,
             ),
@@ -226,16 +226,16 @@ class _Section extends StatelessWidget {
         children: [
           Text(
             title,
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: 9,
-              letterSpacing: 2,
+              letterSpacing: 1.1,
               color: AppColors.textMuted,
             ),
           ),
           const SizedBox(height: 5),
           Text(
             body,
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 13,
               height: 1.5,
               color: AppColors.textPrimary,
@@ -269,9 +269,9 @@ class _HoroscopeButton extends StatelessWidget {
         ),
         child: Text(
           '✦ VIEW HOROSCOPE IN ASTRAL',
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 9.5,
-            letterSpacing: 1.4,
+            letterSpacing: 0.8,
             fontWeight: FontWeight.w700,
             color: AppColors.lavender,
           ),

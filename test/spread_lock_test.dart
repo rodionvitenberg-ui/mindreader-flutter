@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mindreader/core/models/custom_spread.dart';
 import 'package:mindreader/core/models/dealt_card_slot.dart';
 import 'package:mindreader/core/models/divination_card.dart';
 import 'package:mindreader/core/models/divination_system.dart';
@@ -155,61 +156,82 @@ void main() {
       expect(c.allowedCardsLimit, 4);
     });
 
-  group('hard 10-card table ceiling', () {
-    test('the 8th clarifier is refused: max 10 cards on the table', () {
+  group('12-position base limit & separate 3-clarifier ceiling', () {
+    test('the 4th clarifier is refused: max 3 clarifiers above base spread',
+        () {
       final c = SpreadController(random: Random(7));
       for (var i = 0; i < 3; i++) {
         c.dealNextCard();
       }
-      // Seven armed clarifiers reach the ceiling (3 + 7 = 10).
-      for (var i = 0; i < 7; i++) {
+      // Three armed clarifiers reach the separate clarifier ceiling (3 + 3 = 6).
+      for (var i = 0; i < SpreadController.maxClarifierCards; i++) {
         expect(c.armClarifierQuestion('Clarifier ${i + 1}?'), isTrue);
         final idx = c.dealNextCardOrClarifier();
         expect(idx, 3 + i);
         expect(c.slots[3 + i].role, 'Clarifier ${i + 1}');
       }
-      expect(c.dealtCount, SpreadController.maxTableCards);
+      expect(c.clarifierCount, SpreadController.maxClarifierCards);
+      expect(c.dealtCount, 6);
+      expect(c.isClarifierLimitReached, isTrue);
       expect(c.isDealLocked, isTrue);
-      // Arming fails: the ceiling is permanent for this reading.
+      // Arming fails: the clarifier cap is permanent for this reading.
       expect(c.armClarifierQuestion('One more?'), isFalse);
       expect(c.pendingClarifierQuestion, isNull);
-      // No deal path can add an 11th card.
+      // No deal path can add a 4th clarifier.
       expect(c.dealNextCardOrClarifier(), isNull);
       expect(c.dealCardAtOrClarifier(0), isNull);
-      expect(c.allowedCardsLimit, 10);
+      expect(c.allowedCardsLimit, 6);
     });
 
-    test('allowedCardsLimit clamps to 10 at the ceiling', () {
+    test('12-position custom spread deals all 12 base cards + up to 3 clarifiers',
+        () {
       final c = SpreadController(random: Random(8));
+      c.setCustomSpread(
+        CustomSpreadConfig.fromQuestions(
+          questions: [for (var i = 1; i <= 12; i++) 'Question $i?'],
+          name: 'Year Ahead',
+        ),
+      );
+      expect(c.baseCardLimit, 12);
+      expect(c.maxCardsForCurrentSpread, 15);
+      for (var i = 0; i < 12; i++) {
+        expect(c.dealNextCardOrClarifier(), i);
+        c.flipSlot(i);
+      }
+      expect(c.dealtCount, 12);
+      expect(c.initialSpreadAllFaceUp, isTrue);
+      expect(c.isDealLocked, isTrue);
+
       for (var i = 0; i < 3; i++) {
-        c.dealNextCard();
+        expect(c.armClarifierQuestion('Follow-up ${i + 1}?'), isTrue);
+        expect(c.allowedCardsLimit, 13 + i);
+        expect(c.dealNextCardOrClarifier(), 12 + i);
       }
-      for (var i = 0; i < 6; i++) {
-        c.armClarifierQuestion('Q$i?');
-        c.dealNextCardOrClarifier();
-      }
-      // 9 cards on the table: the next arm unlocks exactly the 10th.
-      expect(c.dealtCount, 9);
-      c.armClarifierQuestion('The last one?');
-      expect(c.allowedCardsLimit, 10);
-      expect(c.dealNextCardOrClarifier(), 9);
-      expect(c.dealtCount, 10);
+      expect(c.dealtCount, SpreadController.maxTableCards); // 15
+      expect(c.isClarifierLimitReached, isTrue);
+      expect(c.armClarifierQuestion('4th clarifier?'), isFalse);
     });
 
-    test('camera clarifier scan is refused at the ceiling', () {
+    test('camera clarifier scan is refused once 3 clarifiers are reached', () {
       final c = SpreadController(random: Random(9));
       for (var i = 0; i < 3; i++) {
         c.dealNextCard();
       }
-      for (var i = 0; i < 7; i++) {
+      for (var i = 0; i < SpreadController.maxClarifierCards; i++) {
         c.armClarifierQuestion('Q$i?');
         c.dealNextCardOrClarifier();
       }
-      expect(c.dealtCount, 10);
+      expect(c.isClarifierLimitReached, isTrue);
       c.requestClarifierScan('Physical one more?');
-      expect(c.pendingClarifierQuestion, isNull); // refused at the ceiling
+      expect(c.pendingClarifierQuestion, isNull); // refused at clarifier cap
       // No armed question → no camera slot can be appended.
-      expect(c.completeClarifierScan((c.slots[0].card! as TarotDivinationCard).card, false), isNull);
+      expect(
+        c.completeClarifierScan(
+          (c.slots[0].card! as TarotDivinationCard).card,
+          false,
+        ),
+        isNull,
+      );
     });
   });
 
@@ -261,17 +283,23 @@ void main() {
       }
     });
 
-    test('suggestions stop at the 10-card ceiling', () {
+    test('suggestions stop at the reading clarifier ceiling', () {
       final c = SpreadController(random: Random(12));
       for (var i = 0; i < 3; i++) {
         c.dealNextCard();
       }
-      for (var i = 0; i < 7; i++) {
+      for (var i = 0; i < SpreadController.maxClarifierCards; i++) {
         c.armClarifierQuestion('Q$i?');
         c.dealNextCardOrClarifier();
       }
-      expect(c.dealtCount, 10);
-      expect(buildClarifierSuggestions(c.slots), isEmpty);
+      expect(c.dealtCount, c.maxCardsForCurrentSpread);
+      expect(
+        buildClarifierSuggestions(
+          c.slots,
+          hardMax: c.maxCardsForCurrentSpread,
+        ),
+        isEmpty,
+      );
     });
 
     test('suggestions are empty on an empty table', () {

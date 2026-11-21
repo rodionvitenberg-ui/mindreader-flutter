@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// The shared Gemini-style floating input capsule docked directly above
 /// the bottom navigation dock — ONE component used by the Digital Table
@@ -164,19 +164,21 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
               maxLines: 3,
               textInputAction: TextInputAction.send,
               onSubmitted: (_) => _submit(),
-              style: GoogleFonts.inter(
-                fontSize: 13,
+              style: AppTypography.chatUser(
+                fontSize: 15,
+                height: 1.4,
                 color: AppColors.textPrimary,
               ),
               decoration: InputDecoration(
                 hintText: widget.hint,
-                hintStyle: GoogleFonts.inter(
-                  fontSize: 12.5,
+                hintStyle: AppTypography.chatUser(
+                  fontSize: 14.5,
+                  height: 1.4,
                   color: AppColors.textMuted.withValues(alpha: 0.8),
                 ),
                 border: InputBorder.none,
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
           ),

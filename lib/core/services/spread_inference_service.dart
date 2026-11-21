@@ -107,7 +107,7 @@ class SpreadInferenceResult {
   bool get isFreeform => candidates.isEmpty;
 
   /// True when more than one template matches the count (e.g. Lenormand 9 =
-  /// the free `nine` AND the PRO `grandPortrait`) — the review must ask.
+  /// `nine` AND `grandPortrait`) — the review must ask.
   bool get needsConfirmation => candidates.length > 1;
 }
 

@@ -21,7 +21,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
 
     // No top 3-pill nav bar anymore ('TABLE' only remains on the bottom
     // navigation dock).
@@ -35,9 +35,10 @@ void main() {
     expect(find.text('🔮 Blind Draw'), findsNothing);
 
     // The Synthesize CTA is permanently present — dormant before any
-    // deal/flip, with the progress hint label.
+    // deal/flip, without the old "(FLIP ALL CARDS)" suffix.
     expect(find.byType(SynthesizeChatCta), findsOneWidget);
-    expect(find.text('✦ SYNTHESIZE IN CHAT (FLIP ALL CARDS)'), findsOneWidget);
+    expect(find.text('✦ SYNTHESIZE IN CHAT'), findsOneWidget);
+    expect(find.textContaining('FLIP ALL CARDS'), findsNothing);
     expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsNothing);
   });
 
@@ -45,7 +46,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
     await goToPane(tester, 1);
 
     expect(find.byType(GeminiInputCapsule), findsOneWidget);
@@ -61,7 +62,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
     await goToPane(tester, 1);
 
     // Tapping a pill activates it with a soft glow — NO ✓ icon is ever

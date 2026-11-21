@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/data/astro_cities_data.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/services/natal_calculator_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/astral_controller.dart';
 import '../../../state/user_profile_controller.dart';
 import 'astral_gradient_button.dart';
@@ -226,9 +226,9 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
                   const SizedBox(height: 4),
                   Text(
                     'BIRTH DATA · STAYS ON THIS DEVICE',
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 9,
-                      letterSpacing: 1.8,
+                      letterSpacing: 1.0,
                       color: AppColors.textMuted,
                     ),
                   ),
@@ -343,9 +343,9 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(
           text,
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 9,
-            letterSpacing: 1.8,
+            letterSpacing: 1.0,
             color: AppColors.textMuted,
           ),
         ),
@@ -423,9 +423,9 @@ class _TimeKnownSwitch extends StatelessWidget {
         Expanded(
           child: Text(
             'BIRTH TIME KNOWN',
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: 9,
-              letterSpacing: 1.8,
+              letterSpacing: 1.0,
               color: AppColors.textMuted,
             ),
           ),
@@ -508,9 +508,9 @@ class _CityResult extends StatelessWidget {
             ),
             Text(
               'UTC$offset',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 9,
-                letterSpacing: 1.2,
+                letterSpacing: 0.7,
                 color: AppColors.textMuted,
               ),
             ),
@@ -547,9 +547,9 @@ class _ProfileFillPill extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'USE BIRTH DATA FROM MY PROFILE',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 9,
-                letterSpacing: 1.4,
+                letterSpacing: 0.8,
                 fontWeight: FontWeight.w600,
                 color: AppColors.lavender,
               ),

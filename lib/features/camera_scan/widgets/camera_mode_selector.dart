@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/reading_mode.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Segmented physical reading-mode switch shown at the top of the Camera.
 /// Only the three camera-driven modes are offered — [ReadingMode.standard]
@@ -81,9 +81,9 @@ class _Segment extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.fade,
           softWrap: false,
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 9,
-            letterSpacing: 1.2,
+            letterSpacing: 0.7,
             color: active ? AppColors.lavender : AppColors.textMuted,
           ),
         ),

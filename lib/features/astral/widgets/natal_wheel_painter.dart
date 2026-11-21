@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import 'natal_wheel_geometry.dart';
 
 /// Harmonious chord gradient (trine 120° / sextile 60°).
@@ -609,11 +610,11 @@ class NatalWheelPainter extends CustomPainter {
       TextPainter(
         text: TextSpan(
           text: text,
-          style: TextStyle(
+          style: AppTypography.label(
             fontSize: size,
+            fontWeight: FontWeight.w500,
             color: color,
             letterSpacing: letterSpacing,
-            fontFamily: 'monospace',
           ),
         ),
         textDirection: TextDirection.ltr,

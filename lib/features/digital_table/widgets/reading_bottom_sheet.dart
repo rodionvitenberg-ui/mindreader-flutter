@@ -5,7 +5,6 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
@@ -16,6 +15,7 @@ import '../../../core/models/tarot_card_model.dart';
 import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/oracle_synthesis_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/spread_controller.dart';
 
 /// Glassmorphic bottom sheet with two faces:
@@ -249,9 +249,9 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
                       slot.isReversed && card.reversed != null
                           ? 'REVERSED MEANING'
                           : 'UPRIGHT MEANING',
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.label(
                         fontSize: 9,
-                        letterSpacing: 2,
+                        letterSpacing: 1.1,
                         color: AppColors.textMuted,
                       ),
                     ),
@@ -267,18 +267,18 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
                     const SizedBox(height: 10),
                     Text(
                       card.keywords.map((k) => k.toUpperCase()).join(' · '),
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.label(
                         fontSize: 10,
-                        letterSpacing: 1.4,
+                        letterSpacing: 0.8,
                         color: AppColors.lavender,
                       ),
                     ),
                     const SizedBox(height: 20),
                     Text(
                       'RESONANCE',
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.label(
                         fontSize: 9,
-                        letterSpacing: 2,
+                        letterSpacing: 1.1,
                         color: AppColors.textMuted,
                       ),
                     ),
@@ -301,9 +301,9 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
                     const SizedBox(height: 20),
                     Text(
                       'PERSONAL NOTE',
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.label(
                         fontSize: 9,
-                        letterSpacing: 2,
+                        letterSpacing: 1.1,
                         color: AppColors.textMuted,
                       ),
                     ),
@@ -322,18 +322,18 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
                     const SizedBox(height: 4),
                     Text(
                       ctrl.spreadType.label.toUpperCase(),
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.label(
                         fontSize: 10,
-                        letterSpacing: 2,
+                        letterSpacing: 1.1,
                         color: AppColors.textMuted,
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'READING CONTEXT',
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.label(
                         fontSize: 9,
-                        letterSpacing: 2,
+                        letterSpacing: 1.1,
                         color: AppColors.textMuted,
                       ),
                     ),
@@ -400,7 +400,7 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
                       ),
                       child: SelectableText(
                         '$_revealed${_synthesizing ? '\u258c' : ''}',
-                        style: GoogleFonts.jetBrainsMono(
+                        style: AppTypography.label(
                           fontSize: 12,
                           height: 1.7,
                           color: AppColors.textPrimary,
@@ -457,9 +457,9 @@ class _CardInspectorHeader extends StatelessWidget {
                 '${card.categoryLabel}',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: 10,
-                  letterSpacing: 2,
+                  letterSpacing: 1.1,
                   color: AppColors.textMuted,
                 ),
               ),
@@ -477,9 +477,9 @@ class _CardInspectorHeader extends StatelessWidget {
           ),
           child: Text(
             '${card.element.label.toUpperCase()} ${card.element.glyph}',
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: 10,
-              letterSpacing: 1.2,
+              letterSpacing: 0.7,
               fontWeight: FontWeight.w700,
               color: card.element.accent,
             ),
@@ -628,9 +628,9 @@ class _PrimaryAction extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 11,
-            letterSpacing: 2,
+            letterSpacing: 1.1,
             fontWeight: FontWeight.w700,
             color: active ? AppColors.harmonyEmerald : AppColors.lavender,
           ),

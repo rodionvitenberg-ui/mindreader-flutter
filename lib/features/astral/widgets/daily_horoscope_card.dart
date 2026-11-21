@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// ASTRAL Phase 4 — today's cosmic weather for the active profile: the
 /// moon house, the day theme and the live transit cards tagged by register.
@@ -37,18 +37,18 @@ class DailyHoroscopeCard extends StatelessWidget {
                   children: [
                     Text(
                       'COSMIC WEATHER · $stamp',
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.label(
                         fontSize: 9,
-                        letterSpacing: 1.8,
+                        letterSpacing: 1.0,
                         color: AppColors.textMuted,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       report.moonPhaseName.toUpperCase(),
-                      style: GoogleFonts.cinzel(
+                      style: AppTypography.display(
                         fontSize: 19,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         height: 1.1,
                         color: AppColors.textPrimary,
                       ),
@@ -80,9 +80,9 @@ class DailyHoroscopeCard extends StatelessWidget {
                   child: Text(
                     'MOON IN HOUSE ${report.transitingMoonHouse} · '
                     '${report.transitingMoonSign.title.toUpperCase()}',
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 9,
-                      letterSpacing: 1.2,
+                      letterSpacing: 0.7,
                       color: AppColors.lavender,
                     ),
                   ),
@@ -93,7 +93,7 @@ class DailyHoroscopeCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             report.overallTheme,
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 13,
               height: 1.45,
               color: AppColors.textPrimary,
@@ -103,9 +103,9 @@ class DailyHoroscopeCard extends StatelessWidget {
             const SizedBox(height: 14),
             Text(
               'LIVE TRANSITS',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 9,
-                letterSpacing: 1.8,
+                letterSpacing: 1.0,
                 color: AppColors.textMuted,
               ),
             ),
@@ -145,7 +145,7 @@ class _EnergyBadge extends StatelessWidget {
         children: [
           Text(
             '$score',
-            style: GoogleFonts.cinzel(
+            style: AppTypography.display(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: color,
@@ -153,9 +153,9 @@ class _EnergyBadge extends StatelessWidget {
           ),
           Text(
             'ENERGY',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 7,
-              letterSpacing: 1.4,
+            style: AppTypography.label(
+              fontSize: 7.5,
+              letterSpacing: 0.8,
               color: color,
             ),
           ),
@@ -193,7 +193,7 @@ class _TransitTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     transit.transitLabel,
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 0.8,
                       color: AppColors.textPrimary,
@@ -203,9 +203,9 @@ class _TransitTile extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   transit.harmony.name.toUpperCase(),
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 8,
-                    letterSpacing: 1.2,
+                  style: AppTypography.label(
+                    fontSize: 8.5,
+                    letterSpacing: 0.7,
                     fontWeight: FontWeight.w700,
                     color: color,
                   ),
@@ -213,7 +213,7 @@ class _TransitTile extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   '${transit.orb.toStringAsFixed(1)}°',
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: 9,
                     letterSpacing: 0.6,
                     color: AppColors.textMuted,
@@ -224,7 +224,7 @@ class _TransitTile extends StatelessWidget {
             const SizedBox(height: 5),
             Text(
               transit.advice,
-              style: GoogleFonts.inter(
+              style: AppTypography.body(
                 fontSize: 11.5,
                 height: 1.4,
                 color: AppColors.textMuted,

@@ -2,13 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/models/tarot_deck_pack.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/deck_pack_controller.dart';
 import 'foil_glint.dart';
 
@@ -776,9 +776,9 @@ class _CardFace extends StatelessWidget {
                   child: Text(
                     card.positionLabel,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: width * 0.07,
-                      letterSpacing: 1.4,
+                      letterSpacing: 0.8,
                       color: faceAccent.withValues(alpha: 0.9),
                     ),
                   ),
@@ -786,9 +786,9 @@ class _CardFace extends StatelessWidget {
                 Text(
                   '${card.element.glyph} ${card.element.label.toUpperCase()}',
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: width * 0.055,
-                    letterSpacing: 1.2,
+                    letterSpacing: 0.7,
                     color: card.element.accent,
                   ),
                 ),
@@ -799,9 +799,9 @@ class _CardFace extends StatelessWidget {
               card.arcana == Arcana.major
                   ? 'MAJOR ARCANA'
                   : '${card.suit!.label.toUpperCase()} · ${card.element.label.toUpperCase()}',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: width * 0.05,
-                letterSpacing: 1.4,
+                letterSpacing: 0.8,
                 color: AppColors.textMuted,
               ),
             ),
@@ -839,9 +839,9 @@ class _TypographicFace extends StatelessWidget {
           Text(
             card.name,
             textAlign: TextAlign.center,
-            style: GoogleFonts.cinzel(
+            style: AppTypography.display(
               fontSize: width * 0.09,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               height: 1.25,
               color: AppColors.textPrimary,
             ),
@@ -850,7 +850,7 @@ class _TypographicFace extends StatelessWidget {
           Text(
             card.keywords.map((k) => k.toLowerCase()).join(' · '),
             textAlign: TextAlign.center,
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: width * 0.05,
               letterSpacing: 0.8,
               height: 1.4,

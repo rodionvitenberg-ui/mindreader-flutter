@@ -12,7 +12,7 @@ void main() {
   /// boot, for the tests that exercise deck drag physics. Also enters the
   /// Active Table (Step 2) from the Step 1 "Choose Spread" picker.
   Future<void> focusMode(WidgetTester tester) async {
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
     await tester.tap(find.text('FOCUS VIEW'));
     await tester.pump();
   }
@@ -29,10 +29,10 @@ void main() {
     expect(find.text('LENORMAND'), findsOneWidget);
     expect(find.text('RUNES'), findsOneWidget);
     expect(find.text('Choose Spread'), findsOneWidget);
-    expect(find.text('Triad Flow'), findsOneWidget);
+    expect(find.text('Three Cards'), findsOneWidget);
 
       // Enter the Active Table — SPREAD VIEW is the default mode.
-      await activateSpread(tester, 'Triad Flow');
+      await activateSpread(tester, 'Three Cards');
       expect(find.text('FOCUS VIEW'), findsOneWidget);
       expect(find.text('SPREAD VIEW'), findsOneWidget);
       // The fixed mini-deck + empty slot placeholders are visible,
@@ -100,7 +100,7 @@ void main() {
     await tester.pump();
 
     // Start on Triad Flow (3 slots).
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
     expect(find.text('1 · State'), findsOneWidget);
 
     // Return to Step 1 via the back button, then choose Horseshoe Synthesis.
@@ -362,7 +362,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
 
     // SPREAD VIEW is the default: fixed mini-deck + empty slot
     // placeholders, NO full-size tactile deck.
@@ -423,7 +423,7 @@ void main() {
 
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
 
     // SPREAD VIEW is the default — no toggle tap needed.
 

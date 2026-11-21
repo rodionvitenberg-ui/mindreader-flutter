@@ -82,6 +82,7 @@ class SpreadSessionSnapshot {
     this.completionStatus,
     this.voiceUsed,
     this.customSpread,
+    this.customQuestions = const [],
     this.pendingGuidedPosition,
   });
 
@@ -168,6 +169,10 @@ class SpreadSessionSnapshot {
   /// used one (null for template spreads and legacy snapshots).
   final String? customSpread;
 
+  /// Ordered list of questions for a custom spread (1 question = 1 position),
+  /// stored alongside the cards so history preserves questions and order.
+  final List<String> customQuestions;
+
   /// The guided-spread slot position the session was paused at, so a restored
   /// guided reading can resume there (null when not a paused guided session).
   final int? pendingGuidedPosition;
@@ -227,6 +232,8 @@ class SpreadSessionSnapshot {
       readingSource: readingSource,
       readingMode: readingMode,
       readingStatus: readingStatus,
+      customSpread: ctrl.customSpread?.name,
+      customQuestions: ctrl.customSpread?.questions ?? const [],
     );
   }
 
@@ -280,6 +287,7 @@ class SpreadSessionSnapshot {
     if (completionStatus != null) 'completionStatus': completionStatus,
     if (voiceUsed != null) 'voiceUsed': voiceUsed,
     if (customSpread != null) 'customSpread': customSpread,
+    if (customQuestions.isNotEmpty) 'customQuestions': customQuestions,
     if (pendingGuidedPosition != null)
       'pendingGuidedPosition': pendingGuidedPosition,
   };
@@ -355,6 +363,8 @@ class SpreadSessionSnapshot {
       completionStatus: json['completionStatus'] as bool?,
       voiceUsed: json['voiceUsed'] as bool?,
       customSpread: json['customSpread'] as String?,
+      customQuestions:
+          (json['customQuestions'] as List? ?? const []).cast<String>(),
       pendingGuidedPosition: json['pendingGuidedPosition'] as int?,
     );
   }

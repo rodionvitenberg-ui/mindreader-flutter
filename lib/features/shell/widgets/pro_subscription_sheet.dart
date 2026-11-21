@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/astral_controller.dart';
 
@@ -68,9 +68,9 @@ class _ProSubscriptionSheetState extends State<ProSubscriptionSheet> {
                 const SizedBox(height: 4),
                 Text(
                   AppStrings.t(lang, 'pro.subtitle'),
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: 9,
-                    letterSpacing: 1.6,
+                    letterSpacing: 0.9,
                     color: AppColors.lavender,
                   ),
                 ),
@@ -157,9 +157,9 @@ class _PlanTile extends StatelessWidget {
           children: [
             Text(
               AppStrings.t(lang, annual ? 'pro.annual' : 'pro.monthly'),
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 9.5,
-                letterSpacing: 1.2,
+                letterSpacing: 0.7,
                 fontWeight: FontWeight.w700,
                 color: selected ? AppColors.lavender : AppColors.textPrimary,
               ),
@@ -176,8 +176,8 @@ class _PlanTile extends StatelessWidget {
                 ),
                 child: Text(
                   AppStrings.t(lang, 'pro.bestValue'),
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 7,
+                  style: AppTypography.label(
+                    fontSize: 7.5,
                     letterSpacing: 1,
                     fontWeight: FontWeight.w800,
                     color: AppColors.canvas,
@@ -218,7 +218,7 @@ class _Benefit extends StatelessWidget {
           Expanded(
             child: Text(
               AppStrings.t(lang, benefitKey),
-              style: GoogleFonts.plusJakartaSans(
+              style: AppTypography.body(
                 fontSize: 12.5,
                 height: 1.35,
                 color: AppColors.textPrimary,
@@ -265,9 +265,9 @@ class _ActivateButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 10,
-            letterSpacing: 2,
+            letterSpacing: 1.1,
             fontWeight: FontWeight.w800,
             color: unlocked ? AppColors.textMuted : AppColors.canvas,
           ),

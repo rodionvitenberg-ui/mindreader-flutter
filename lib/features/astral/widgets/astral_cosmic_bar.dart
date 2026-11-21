@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Top strip of the ASTRAL screen: today's moon phase and the reading
 /// streak. The daily-ritual settings now live in the bottom dock.
@@ -28,17 +28,17 @@ class AstralCosmicBar extends StatelessWidget {
             children: [
               Text(
                 phase.name.toUpperCase(),
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: 9,
-                  letterSpacing: 1.8,
+                  letterSpacing: 1.0,
                   color: AppColors.textPrimary,
                 ),
               ),
               Text(
                 '${(phase.illumination * 100).round()}% ILLUMINATED',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 8,
-                  letterSpacing: 1.4,
+                style: AppTypography.label(
+                  fontSize: 8.5,
+                  letterSpacing: 0.8,
                   color: AppColors.textMuted,
                 ),
               ),
@@ -70,9 +70,9 @@ class _Pill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.jetBrainsMono(
+        style: AppTypography.label(
           fontSize: 9,
-          letterSpacing: 1.2,
+          letterSpacing: 0.7,
           color: accent,
         ),
       ),

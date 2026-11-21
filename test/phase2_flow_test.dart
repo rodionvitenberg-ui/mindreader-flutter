@@ -19,7 +19,7 @@ void main() {
   /// SPREAD VIEW is the default; deal-driven flows opt back into FOCUS VIEW.
   /// Also enters the Active Table (Step 2) from the Step 1 spread picker.
   Future<void> focusMode(WidgetTester tester) async {
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
     await tester.tap(find.text('FOCUS VIEW'));
     await tester.pump();
   }
@@ -77,7 +77,7 @@ void main() {
       'and weaves context into the reading', (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
 
     // Pane 0 is a pure table: no capsule, no context chips.
     expect(find.text('SLOT 1 · BEFORE YOU DRAW'), findsNothing);
@@ -141,11 +141,12 @@ void main() {
     await dealOne(tester);
     await tester.pump();
 
-    // Cards are face-down: the CTA is visible but DORMANT — dim, with the
-    // flip-progress hint, and a tap does nothing (no synthesis, no slide).
-    expect(find.text('✦ SYNTHESIZE IN CHAT (FLIP ALL CARDS)'), findsOneWidget);
+    // Cards are face-down: the CTA is visible but DORMANT — dim, without
+    // "(FLIP ALL CARDS)", and a tap does nothing (no synthesis, no slide).
+    expect(find.text('✦ SYNTHESIZE IN CHAT'), findsOneWidget);
+    expect(find.textContaining('FLIP ALL CARDS'), findsNothing);
     expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsNothing);
-    await tester.tap(find.text('✦ SYNTHESIZE IN CHAT (FLIP ALL CARDS)'));
+    await tester.tap(find.text('✦ SYNTHESIZE IN CHAT'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump();
@@ -155,8 +156,8 @@ void main() {
     await flipCard(tester, 0);
     await tester.pump();
 
-    // The dormant label counts down the remaining flips.
-    expect(find.text('✦ SYNTHESIZE IN CHAT (1 OF 3 FACE-UP)'), findsOneWidget);
+    // The dormant label counts down the remaining flips in compact form.
+    expect(find.text('✦ SYNTHESIZE IN CHAT (1/3)'), findsOneWidget);
 
     await flipCard(tester, 1);
     await flipCard(tester, 2);
@@ -164,7 +165,7 @@ void main() {
 
     // All face-up: the CTA is IGNITED with the live label.
     expect(find.text('✦ SYNTHESIZE IN CHAT →'), findsOneWidget);
-    expect(find.text('✦ SYNTHESIZE IN CHAT (2 OF 3 FACE-UP)'), findsNothing);
+    expect(find.text('✦ SYNTHESIZE IN CHAT (2/3)'), findsNothing);
 
     await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
     await tester.pump();

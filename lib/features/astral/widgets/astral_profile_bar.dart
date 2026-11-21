@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Horizontal profile switcher: saved natal charts as selectable pills plus
 /// the new-chart control (locked behind ASTRAL PRO once the free tier is
@@ -119,9 +119,9 @@ class _AddPill extends StatelessWidget {
         ),
         child: Text(
           locked ? '🔒 + NEW CHART · PRO' : '+ NEW CHART',
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 9,
-            letterSpacing: 1.4,
+            letterSpacing: 0.8,
             color: accent,
           ),
         ),

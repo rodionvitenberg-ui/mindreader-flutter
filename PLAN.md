@@ -37,7 +37,7 @@ AppSettingsController, SessionHistoryController(..load()), UserProfileController
    LenormandSpread/RuneCast, SpreadSessionSnapshot, SessionHistoryController,
    OracleSynthesisService (synthesize/synthesizeStructured/synthesizeClarifier/
    answerChat/...), VisionScannerService.detectSpread(jpeg, cardCount),
-   Step1 "Choose Spread" (digital_table_screen.dart + spread_blueprint_carousel.dart),
+   Step1 "Choose Spread" (digital_table_screen.dart + spread_blueprint_grid.dart),
    AppColors, google_fonts, speech_to_text.
 9. Необходимо: общий контроллер диалога; enums ReadingSource/ReadingMode/ReadingStatus;
    стабильный sessionId; Vision-контракт; spread inference; FSM Guided; voice-сервис.
@@ -54,7 +54,25 @@ AppSettingsController, SessionHistoryController(..load()), UserProfileController
 - TableSourceMode сохраняем (slot/table-level источник); ReadingSource — session-level.
   Маппинг в ОДНОМ месте: digitalDeck→digital, physicalCameraSync→physical.
 - Старые JSON-снимки загружаются без ошибок (паттерн _enumOr + optional keys).
-- Hard cap 10 карт (SpreadController.maxTableCards) НЕ трогаем.
+- Лимиты Стола пересмотрены под конструктор: базовый расклад поддерживает от 1 до
+  12 позиций (`SpreadController.maxBaseSpreadCards = 12`). Уточняющие карты
+  считаются отдельно сверх основного расклада — до 3 уточняющих карт на сессию
+  (`SpreadController.maxClarifierCards = 3`, жёсткий потолок стола
+  `maxTableCards = 15`), чтобы 10-карточный Кельтский крест и 12-позиционный
+  свой расклад работали на всём пути (раздача, раскрытие, синтез, восстановление
+  и уточнения).
+- Конструктор «Свой расклад» (v1 на цифровом Столе): правило 1 вопрос = 1 позиция
+  (от 1 до 12), ввод текстом или голосом, редактирование/перестановка/удаление
+  до старта, автоматическая раскладка по рядам на том же Столе и общем обзоре,
+  передача пар «вопрос — карта» в синтез Оракула и сохранение вопросов, порядка
+  позиций и карт в Истории (`customQuestions`).
+- Новые готовые схемы на 9 или 12 карт добавлять только при наличии собственной
+  логики позиций; произвольное число вопросов покрывает конструктор.
+- Все готовые схемы раскладов (Таро, Ленорман, Руны — включая Кельтский крест,
+  Любовный мост, Перекрёсток пути, Большой портрет, Древо миров) открыты без
+  подписки: без замков и без переходов к оплате. Одна универсальная схема «Три
+  карты» (тему дня/отношений/работы пользователь задаёт перед синтезом), отдельные
+  плитки для схем со своими ролями позиций, плюс действие «Свой расклад» под сеткой.
 - Lenormand без реверсов, симметричные руны без merkstave — уже гарантировано
   dealCardAt; в физических потоках повторно применять те же правила.
 
@@ -388,7 +406,7 @@ dart format && flutter analyze && flutter test && flutter build apk --debug
 
 # НЕОБСУЖДАЕМЫЕ ОГРАНИЧЕНИЯ
 Чистый Flutter/Dart; без JS; сохранить существующую функциональность; физику цифровой
-колоды; определения раскладов; PRO gate; History; Astral; Almanac; EN/RU; один Oracle;
+колоды; определения раскладов (все готовые схемы открыты без подписки PRO); PRO gate (для остальных функций); History; Astral; Almanac; EN/RU; один Oracle;
 одна история; без непрерывного LLM-видео; без фейкового production-распознавания;
 без ML-обучения; без ненужного рефакторинга; без деструктивных миграций; без выдуманного
 confidence; без несанкционированного запуска camera/mic; без пуша в remote; без Academy/

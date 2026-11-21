@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/reading_mode.dart';
 import '../../../core/models/reading_source.dart';
 import '../../../core/services/oracle_voice_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/oracle_session_controller.dart';
 
 /// The label of the physical-flow call-to-action, or null for a plain digital
@@ -95,9 +95,9 @@ class _MetaBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 8,
-          letterSpacing: 1.3,
+        style: AppTypography.label(
+          fontSize: 9,
+          letterSpacing: 0.8,
           fontWeight: FontWeight.w700,
           color: color,
         ),
@@ -176,9 +176,9 @@ class _PhysicalCta extends StatelessWidget {
             const SizedBox(width: 5),
             Text(
               label,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8,
-                letterSpacing: 1.1,
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 0.7,
                 fontWeight: FontWeight.w700,
                 color: AppColors.lavender,
               ),

@@ -8,9 +8,9 @@ The Digital Table, Oracle Chat, Session History and Almanac now host **three aut
 
 | System | Deck size | Pieces | Reversals | Canonical spreads |
 |--------|-----------|--------|-----------|-------------------|
-| `DivinationSystem.tarot` | 78 | `TarotDivinationCard` | reversed allowed | 1 Daily Anchor · 3 Triad Flow · 4 Target & Shadow · 7 Deep Synthesis |
-| `DivinationSystem.lenormand` | 36 | `LenormandDivinationCard` | **never** (tradition) | 1 Daily Sign · 3 Lenormand Line · 5 Cross of 5 · 9 3×3 Portrait Box |
-| `DivinationSystem.runes` | 24 | `RuneDivinationCard` | merkstave only for non-symmetrical runes (Gebo/Isa/Hagalaz/Jera/Eihwaz/Sowilo/Ingwaz/Dagaz stay upright) | 1 Odin's Rune · 3 Three Norns · 5 Thor's Cross · 7 Heimdall's Bridge |
+| `DivinationSystem.tarot` | 78 | `TarotDivinationCard` | reversed allowed | 1 Daily Anchor · 3 Three Cards (universal) · 4 Target & Shadow · 5 Love Bridge · 6 Career Crossroads · 7 Horseshoe Synthesis · 10 Celtic Cross (all open without PRO) + Custom Spread |
+| `DivinationSystem.lenormand` | 36 | `LenormandDivinationCard` | **never** (tradition) | 1 Daily Sign · 3 Lenormand Line · 5 Cross of 5 · 9 3×3 Portrait Box · 9 Grand Portrait (all open without PRO) + Custom Spread |
+| `DivinationSystem.runes` | 24 | `RuneDivinationCard` | merkstave only for non-symmetrical runes (Gebo/Isa/Hagalaz/Jera/Eihwaz/Sowilo/Ingwaz/Dagaz stay upright) | 1 Odin's Rune · 3 Three Norns · 5 Thor's Cross · 7 Heimdall's Bridge · 9 World Tree (all open without PRO) + Custom Spread |
 
 Core pieces:
 
@@ -68,8 +68,8 @@ SpreadController
   confirmed physical card into the current slot via
   `SpreadController.bindGuidedCard`) / `nextCard()` / `isComplete` (an incomplete
   spread is never reported complete).
-- `SpreadLaunchContext` on `SpreadBlueprintCarousel` reuses the Step-1 Choose
-  Spread picker: digital → `activateSpread()`, guided → `onSpreadSelected(count)`.
+- `SpreadLaunchContext` on `SpreadBlueprintGrid` (compact 3-column grid, 2 columns on `< 360 dp` or `>= 1.25x` text scale; miniatures built from real `SpreadBoardGeometry`; all preset schemas open without PRO; question-driven `"Custom Spread"` builder below the grid: write/dictate 1–12 questions, 1 question = 1 position, automatic row layout on the same scrollable Table and Spread View, `Question — Card` synthesis pairs, persisted in History via `customSpread` + `customQuestions`) reuses the Step-1 Choose Spread picker: digital → `activateSpread()`, guided → `onSpreadSelected(count)`.
+- **Table & clarifier limits:** base spreads support 1..12 positions (`SpreadController.maxBaseSpreadCards = 12`). Clarifier cards are counted separately above the base spread — up to 3 clarifiers per reading (`SpreadController.maxClarifierCards = 3`, hard table ceiling `maxTableCards = 15`). New preset 9- or 12-card schemas are added only when they define dedicated position logic; arbitrary question counts are handled by the Custom Spread builder.
 - `GuidedSpreadHud` (`lib/features/camera_scan/widgets/guided_spread_hud.dart`) —
   pure presentation overlay (spread name / progress / slot role / phase
   instruction / flash / pause / exit / Confirm-Next-Resume / open-chat; no AR).

@@ -1,8 +1,7 @@
 import 'dart:ui' show Offset;
 
-/// The canonical Elder Futhark rune casts — Free + PRO. Pure Dart; the
-/// [miniSlots] values are NORMALIZED (0..1) slot coordinates for the
-/// miniature wireframe preview in the blueprint carousel.
+/// The canonical Elder Futhark rune casts — all open without subscription.
+/// Pure Dart; real board geometry lives in `shuffle_physics.dart`.
 enum RuneCast {
   one(
     '1 · Odin’s Rune',
@@ -65,7 +64,7 @@ enum RuneCast {
   worldTree(
     '9 · Yggdrasil’s World Tree',
     9,
-    true,
+    false,
     [
       'Asgard',
       'Midgard',
@@ -105,7 +104,7 @@ enum RuneCast {
   final String label;
   final int cardCount;
 
-  /// True for the PRO-gated casts (locked behind the shared PRO flag).
+  /// Always false: all preset rune casts are open without subscription.
   final bool isPro;
   final List<String> slotRoles;
   final String focusLine;

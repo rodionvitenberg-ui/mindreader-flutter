@@ -48,7 +48,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('3 RECOGNIZED'), findsOneWidget);
-    expect(find.textContaining('Triad Flow'), findsWidgets);
+    expect(find.textContaining('Three Cards'), findsWidgets);
     expect(find.text('1 · ${tarot0.name}'), findsOneWidget);
 
     // Move the first card down — order is confirmed by the reader.

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/spread_controller.dart';
 import 'reading_context_field.dart';
@@ -100,8 +100,8 @@ class ReadingSubjectToggle extends StatelessWidget {
                 child: Text(
                   label,
                   maxLines: 1,
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 8.5,
+                  style: AppTypography.label(
+                    fontSize: 9,
                     letterSpacing: 1.1,
                     fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                     color: color,

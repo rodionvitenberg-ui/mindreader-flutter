@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// The 0..100 Energy & Resonance bar shared by both Horoscope modes.
 class EnergyResonanceBar extends StatelessWidget {
@@ -24,9 +24,9 @@ class EnergyResonanceBar extends StatelessWidget {
           children: [
             Text(
               'ENERGY & RESONANCE',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8.5,
-                letterSpacing: 1.8,
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 1.0,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textMuted,
               ),
@@ -34,7 +34,7 @@ class EnergyResonanceBar extends StatelessWidget {
             const Spacer(),
             Text(
               '$score%',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 10,
                 letterSpacing: 0.8,
                 fontWeight: FontWeight.w800,
@@ -82,9 +82,9 @@ class FocusSphereCard extends StatelessWidget {
         children: [
           Text(
             sphere.title.toUpperCase(),
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8.5,
-              letterSpacing: 1.4,
+            style: AppTypography.label(
+              fontSize: 9,
+              letterSpacing: 0.8,
               fontWeight: FontWeight.w700,
               color: AppColors.lavender,
             ),
@@ -92,7 +92,7 @@ class FocusSphereCard extends StatelessWidget {
           const SizedBox(height: 5),
           Text(
             sphere.text,
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 12,
               height: 1.4,
               color: AppColors.textMuted,
@@ -128,9 +128,9 @@ class SevenDayForecastCard extends StatelessWidget {
         children: [
           Text(
             '7-DAY WINDOWS OF POWER & TENSION',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8.5,
-              letterSpacing: 1.8,
+            style: AppTypography.label(
+              fontSize: 9,
+              letterSpacing: 1.0,
               fontWeight: FontWeight.w700,
               color: AppColors.textMuted,
             ),
@@ -176,8 +176,8 @@ class _DayCell extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 7,
+          style: AppTypography.label(
+            fontSize: 7.5,
             letterSpacing: 0.8,
             color: AppColors.textMuted,
           ),
@@ -194,8 +194,8 @@ class _DayCell extends StatelessWidget {
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 6.5,
+          style: AppTypography.label(
+            fontSize: 7,
             letterSpacing: 0.6,
             fontWeight: FontWeight.w700,
             color: color,

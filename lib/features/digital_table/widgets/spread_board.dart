@@ -1,12 +1,14 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/models/dealt_card_slot.dart';
+import '../../../core/models/divination_system.dart';
+import '../../../core/models/spread_type.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/spread_controller.dart';
 import '../../profile/widgets/profile_header.dart';
@@ -30,29 +32,87 @@ class SpreadBoard extends StatelessWidget {
   final Widget badge;
   final VoidCallback onDeal;
 
+  /// Solves the coupled dock height and viewport fit scale so the horizontal
+  /// deck's top card in [SpreadDeckDock] matches the rendered size of each
+  /// card on the table (`deckHeight * fit` × `deckWidth * fit`) without moving
+  /// the deck out of its centered top-dock position.
+  static ({double dockHeight, double deckWidthPx, double deckHeightPx})
+      _dockSizingFor(Size area, Size boardSize) {
+    const headerH = ProfileHeader.actionSize;
+    const deckPad = 12.0;
+    const stackEdge = 4.0;
+    if (area.height <= headerH + deckPad + stackEdge || area.width <= 0) {
+      return (
+        dockHeight: math.min(area.height, headerH),
+        deckWidthPx: 0,
+        deckHeightPx: 0,
+      );
+    }
+    var inset = 12.0;
+    var fit = 1.0;
+    for (var i = 0; i < 3; i++) {
+      final availW = math.max(1.0, area.width - 2 * inset);
+      final availH = math.max(
+        1.0,
+        area.height - headerH - deckPad - stackEdge - 2 * inset,
+      );
+      final fitW = availW / boardSize.width;
+      final fitH = availH / (boardSize.height + deckWidth);
+      fit = math.min(1.0, math.min(fitW, fitH)).clamp(0.0, 1.0);
+      final dockH = headerH + deckPad + stackEdge + deckWidth * fit;
+      final vpH = math.max(0.0, area.height - dockH);
+      inset = math.min(12.0, math.min(area.width, vpH) / 8);
+    }
+    final cardShort = deckWidth * fit;
+    final cardLong = deckHeight * fit;
+    return (
+      dockHeight: math.min(area.height, headerH + deckPad + stackEdge + cardShort),
+      deckWidthPx: cardLong + stackEdge,
+      deckHeightPx: cardShort + stackEdge,
+    );
+  }
+
+  SpreadBoardGeometry _geometryFor(SpreadController ctrl) {
+    final loveBridge =
+        !ctrl.isCustomSpread &&
+        ctrl.system == DivinationSystem.tarot &&
+        ctrl.spreadType == SpreadType.loveBridge;
+    return ctrl.isCustomSpread
+        ? spreadBoardGeometryForCustom(
+            ctrl.spreadCardCount,
+            totalSlots: ctrl.slots.length,
+          )
+        : spreadBoardGeometryForCount(
+            ctrl.spreadCardCount,
+            totalSlots: ctrl.slots.length,
+            loveBridge: loveBridge,
+          );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
+    final geometry = _geometryFor(ctrl);
     return LayoutBuilder(
       builder: (context, area) {
-        final dockHeight = math.min(
-          math.max(ProfileHeader.actionSize + 26, area.maxHeight * 0.40),
-          area.maxHeight < 300 ? 82.0 : 110.0,
-        );
+        final sizing = _dockSizingFor(area.biggest, geometry.canvasSize);
         return Column(
           children: [
             SizedBox(
-              height: math.min(area.maxHeight, dockHeight),
+              height: sizing.dockHeight,
               width: double.infinity,
               child: SpreadDeckDock(
                 header: header,
                 badge: badge,
                 onDeal: onDeal,
+                deckWidthPx: sizing.deckWidthPx,
+                deckHeightPx: sizing.deckHeightPx,
               ),
             ),
             Expanded(
               child: LayoutBuilder(
-                builder: (context, c) => _canvas(context, ctrl, c.biggest),
+                builder: (context, c) =>
+                    _canvas(context, ctrl, geometry, c.biggest),
               ),
             ),
           ],
@@ -61,26 +121,20 @@ class SpreadBoard extends StatelessWidget {
     );
   }
 
-  Widget _canvas(BuildContext context, SpreadController ctrl, Size viewport) {
+  Widget _canvas(
+    BuildContext context,
+    SpreadController ctrl,
+    SpreadBoardGeometry geometry,
+    Size viewport,
+  ) {
     if (viewport.isEmpty) return const SizedBox.shrink();
-    final design = spreadCanvasDesignSizeForCount(
-      ctrl.spreadCardCount,
-      totalSlots: ctrl.slots.length,
-    );
+    final design = geometry.canvasSize;
     final dealt = [
       for (final s in ctrl.slots)
         if (s.card != null) s,
     ];
 
-    final rects = [
-      for (var i = 0; i < ctrl.slots.length; i++)
-        spreadSlotDesignTopLeftForCount(
-              ctrl.spreadCardCount,
-              i,
-              totalSlots: ctrl.slots.length,
-            ) &
-            const Size(deckWidth, deckHeight),
-    ];
+    final rects = geometry.slotRects;
 
     final designCanvas = SizedBox(
       width: design.width,
@@ -179,13 +233,15 @@ class _OverviewSlotState extends State<_OverviewSlot>
           border: Border.all(color: AppColors.border),
         ),
         alignment: Alignment.topCenter,
-        padding: const EdgeInsets.only(top: 14),
+        padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
         child: Text(
           '${widget.slotIndex + 1} · $shortRole',
           textAlign: TextAlign.center,
-          style: GoogleFonts.jetBrainsMono(
+          maxLines: 5,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.label(
             fontSize: 9,
-            letterSpacing: 1.6,
+            letterSpacing: 0.8,
             color: AppColors.textMuted.withValues(alpha: 0.65),
           ),
         ),

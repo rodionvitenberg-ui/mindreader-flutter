@@ -2,13 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/lenormand_card.dart';
 import '../../../core/models/lenormand_pack.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/deck_pack_controller.dart';
 import 'foil_glint.dart';
 import 'tarot_card_3d_widget.dart' show CardBack;
@@ -214,18 +214,18 @@ class _LenormandCard3DWidgetState extends State<LenormandCard3DWidget>
             children: [
               Text(
                 card.number.toString().padLeft(2, '0'),
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: widget.width * 0.085,
-                  letterSpacing: 1.6,
+                  letterSpacing: 0.9,
                   fontWeight: FontWeight.w700,
                   color: accent,
                 ),
               ),
               Text(
                 card.insetLabel,
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: widget.width * 0.08,
-                  letterSpacing: 1.2,
+                  letterSpacing: 0.7,
                   fontWeight: FontWeight.w700,
                   color: isDark ? accent.withValues(alpha: 0.9) : secondary,
                 ),
@@ -252,10 +252,10 @@ class _LenormandCard3DWidgetState extends State<LenormandCard3DWidget>
           Text(
             card.name.toUpperCase(),
             textAlign: TextAlign.center,
-            style: GoogleFonts.cinzel(
+            style: AppTypography.display(
               fontSize: widget.width * 0.085,
               fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
+              letterSpacing: 0.3,
               color: isDark ? AppColors.textPrimary : AppColors.surface,
             ),
           ),
@@ -263,7 +263,7 @@ class _LenormandCard3DWidgetState extends State<LenormandCard3DWidget>
           Text(
             card.keywords.map((k) => k.toLowerCase()).join(' · '),
             textAlign: TextAlign.center,
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: widget.width * 0.048,
               letterSpacing: 0.6,
               height: 1.35,
@@ -276,9 +276,9 @@ class _LenormandCard3DWidgetState extends State<LenormandCard3DWidget>
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: widget.width * 0.043,
-              letterSpacing: 1.2,
+              letterSpacing: 0.7,
               color: accent.withValues(alpha: 0.85),
             ),
           ),
@@ -331,7 +331,7 @@ class _LenormandEmblem extends StatelessWidget {
         children: [
           Text(
             card.insetLabel,
-            style: GoogleFonts.cinzel(
+            style: AppTypography.display(
               fontSize: width * 0.19,
               fontWeight: FontWeight.w700,
               color: accent,
@@ -342,7 +342,7 @@ class _LenormandEmblem extends StatelessWidget {
             '${card.playingCard.label.toUpperCase()} · '
             '${card.playingCard.domain.toUpperCase()}',
             textAlign: TextAlign.center,
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: width * 0.045,
               letterSpacing: 1.1,
               color: secondary.withValues(alpha: 0.95),

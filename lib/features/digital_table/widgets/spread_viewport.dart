@@ -92,48 +92,54 @@ class _SpreadViewportState extends State<SpreadViewport> {
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     // ScaleGestureRecognizer uses twice the drag slop for one-finger pans.
-    // Match the enclosing horizontal PageView threshold inside the board.
-    final boardSettings = DeviceGestureSettings(
+    // Match the enclosing horizontal PageView threshold only while zoomed in
+    // so a full-scale board lets horizontal swipes reach the Oracle Chat pane.
+    final zoomedBoardSettings = DeviceGestureSettings(
       touchSlop: (media.gestureSettings.touchSlop ?? kTouchSlop) / 2,
     );
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        MediaQuery(
-          data: media.copyWith(gestureSettings: boardSettings),
-          child: InteractiveViewer(
-            key: const ValueKey('spread-viewport'),
-            alignment: Alignment.topLeft,
-            transformationController: _camera,
-            constrained: false,
-            minScale: widget.fit,
-            maxScale: 3,
-            child: SizedBox.fromSize(
-              size: widget.scene,
-              child: Center(child: RepaintBoundary(child: widget.child)),
+    return ValueListenableBuilder<Matrix4>(
+      valueListenable: _camera,
+      builder: (context, matrix, child) {
+        final isZoomed = matrix.getMaxScaleOnAxis() > widget.fit + 0.001;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            MediaQuery(
+              data: isZoomed
+                  ? media.copyWith(gestureSettings: zoomedBoardSettings)
+                  : media,
+              child: InteractiveViewer(
+                key: const ValueKey('spread-viewport'),
+                alignment: Alignment.topLeft,
+                transformationController: _camera,
+                constrained: false,
+                panEnabled: isZoomed,
+                minScale: widget.fit,
+                maxScale: 3,
+                child: child!,
+              ),
             ),
-          ),
-        ),
-        Positioned(
-          top: 2,
-          right: 8,
-          child: ValueListenableBuilder<Matrix4>(
-            valueListenable: _camera,
-            builder: (context, matrix, _) =>
-                matrix.getMaxScaleOnAxis() <= widget.fit + 0.001
-                ? const SizedBox.shrink()
-                : IconButton(
-                    tooltip: widget.fitLabel,
-                    icon: const Icon(
-                      Icons.fit_screen_outlined,
-                      size: 20,
-                      color: AppColors.lavender,
-                    ),
-                    onPressed: () => _camera.value = _fitMatrix(),
+            if (isZoomed)
+              Positioned(
+                top: 2,
+                right: 8,
+                child: IconButton(
+                  tooltip: widget.fitLabel,
+                  icon: const Icon(
+                    Icons.fit_screen_outlined,
+                    size: 20,
+                    color: AppColors.lavender,
                   ),
-          ),
-        ),
-      ],
+                  onPressed: () => _camera.value = _fitMatrix(),
+                ),
+              ),
+          ],
+        );
+      },
+      child: SizedBox.fromSize(
+        size: widget.scene,
+        child: Center(child: RepaintBoundary(child: widget.child)),
+      ),
     );
   }
 }

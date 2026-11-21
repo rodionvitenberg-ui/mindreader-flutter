@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/divination_card.dart';
 import '../../../core/services/spread_inference_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// The finalized Recognition Review outcome: the reader-confirmed ORDER of
 /// physical cards + the chosen spread. `spread == null` means Freeform — the
@@ -147,9 +147,9 @@ class _RecognitionReviewSheetState extends State<RecognitionReviewSheet> {
                 const SizedBox(height: 14),
                 Text(
                   '${_items.length} RECOGNIZED',
-                  style: GoogleFonts.cormorantGaramond(
+                  style: AppTypography.display(
                     fontSize: 24,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -158,9 +158,9 @@ class _RecognitionReviewSheetState extends State<RecognitionReviewSheet> {
                   freeform
                       ? 'FREEFORM — no template matches; every card is kept'
                       : 'PROPOSED: ${inference.top!.label}',
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: 9,
-                    letterSpacing: 1.4,
+                    letterSpacing: 0.8,
                     color: AppColors.lavender,
                   ),
                 ),
@@ -168,9 +168,9 @@ class _RecognitionReviewSheetState extends State<RecognitionReviewSheet> {
                   const SizedBox(height: 12),
                   Text(
                     'CHOOSE SPREAD',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 8.5,
-                      letterSpacing: 1.6,
+                    style: AppTypography.label(
+                      fontSize: 9,
+                      letterSpacing: 0.9,
                       color: AppColors.textMuted,
                     ),
                   ),
@@ -185,9 +185,9 @@ class _RecognitionReviewSheetState extends State<RecognitionReviewSheet> {
                 const SizedBox(height: 12),
                 Text(
                   'CONFIRM ORDER & CARDS',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 8.5,
-                    letterSpacing: 1.6,
+                  style: AppTypography.label(
+                    fontSize: 9,
+                    letterSpacing: 0.9,
                     color: AppColors.textMuted,
                   ),
                 ),
@@ -250,7 +250,7 @@ class _CandidateRow extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypography.body(
             fontSize: 12.5,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             color: selected ? AppColors.lavender : AppColors.textPrimary,
@@ -303,7 +303,7 @@ class _CardRow extends StatelessWidget {
                   '${index + 1} · ${card.name}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypography.body(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
@@ -312,9 +312,9 @@ class _CardRow extends StatelessWidget {
                 if (item.reversed)
                   Text(
                     'REVERSED',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 8,
-                      letterSpacing: 1.2,
+                    style: AppTypography.label(
+                      fontSize: 8.5,
+                      letterSpacing: 0.7,
                       color: AppColors.conflictAmber,
                     ),
                   ),
@@ -366,7 +366,7 @@ class _Thumb extends StatelessWidget {
       child: Text(
         card.shortLabel,
         textAlign: TextAlign.center,
-        style: GoogleFonts.cormorantGaramond(
+        style: AppTypography.display(
           fontSize: 14,
           fontWeight: FontWeight.w700,
           color: AppColors.lavender,
@@ -430,9 +430,9 @@ class _ConfirmButton extends StatelessWidget {
         ),
         child: Text(
           'CONFIRM & PLACE ON TABLE',
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 10,
-            letterSpacing: 2,
+            letterSpacing: 1.1,
             fontWeight: FontWeight.w800,
             color: AppColors.canvas,
           ),

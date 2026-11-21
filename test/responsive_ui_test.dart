@@ -36,7 +36,7 @@ void main() {
   }
 
   Future<void> walkTheApp(WidgetTester tester) async {
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
     expect(find.text('SPREAD VIEW'), findsOneWidget);
     // Dock is always reachable: every tab icon stays on screen.
     expect(find.byIcon(Icons.camera_alt_outlined), findsOneWidget);

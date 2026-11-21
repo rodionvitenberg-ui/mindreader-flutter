@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/live_reading_controller.dart';
 
 /// The viewfinder instruction for each Guided Spread phase, in one place so
@@ -90,9 +90,9 @@ class GuidedSpreadHud extends StatelessWidget {
                       spreadName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.cormorantGaramond(
+                      style: AppTypography.display(
                         fontSize: 19,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
                     ),
@@ -100,9 +100,9 @@ class GuidedSpreadHud extends StatelessWidget {
                   const SizedBox(width: 12),
                   Text(
                     '$filledCount/$totalSlots',
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 12,
-                      letterSpacing: 1.6,
+                      letterSpacing: 0.9,
                       color: AppColors.lavender,
                     ),
                   ),
@@ -113,9 +113,9 @@ class GuidedSpreadHud extends StatelessWidget {
                 currentSlotRole,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: 9,
-                  letterSpacing: 1.8,
+                  letterSpacing: 1.0,
                   color: AppColors.textMuted,
                 ),
               ),
@@ -146,9 +146,9 @@ class GuidedSpreadHud extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: 9,
-                    letterSpacing: 1.4,
+                    letterSpacing: 0.8,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -236,9 +236,9 @@ class _PrimaryButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 10,
-            letterSpacing: 1.4,
+            letterSpacing: 0.8,
             fontWeight: FontWeight.w700,
             color: AppColors.lavender,
           ),

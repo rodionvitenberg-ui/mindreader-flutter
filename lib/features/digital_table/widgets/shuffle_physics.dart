@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/physics.dart' show Simulation;
-import 'package:flutter/widgets.dart' show Curves, Matrix4, Offset, Size;
+import 'package:flutter/widgets.dart' show Curves, Matrix4, Offset, Rect, Size;
 
+import '../../../core/models/lenormand_spread.dart';
+import '../../../core/models/rune_cast.dart';
 import '../../../core/models/spread_type.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -299,13 +301,32 @@ class ShuffleMicroDamp extends Simulation {
 const overviewDeckHeight = 44.0;
 const overviewDeckWidth = overviewDeckHeight * deckHeight / deckWidth;
 
+/// Design-space geometry of a spread: the board's full design size plus the
+/// exact card rectangle of every slot in reading order. Shared by the active
+/// `SpreadBoard` AND the picker miniatures so every thumbnail is built from
+/// the schema's real positions.
+class SpreadBoardGeometry {
+  const SpreadBoardGeometry({
+    required this.canvasSize,
+    required this.slotRects,
+    this.crossingSlotIndex,
+  });
+
+  final Size canvasSize;
+  final List<Rect> slotRects;
+
+  /// Optional index of a card laid across another (slot 1 of Celtic Cross).
+  final int? crossingSlotIndex;
+}
+
 /// Design-space size of the spread canvas for a spread of [count] cards —
 /// [deckWidth] × [deckHeight] cards with [slotGapPx] gaps.
-/// Layout is derived from the canonical count alone: 1 → single, 3 → row,
-/// 4 → 2×2, 5 → cross (3×3 with 5 stones/cards), 7 → 3-1-3, 9 → 3×3.
+/// Layout is derived from the schema / count: 1 → single, 2 → pair row,
+/// 3 → row, 4 → 2×2, 5 → Cross of 5 or Love Bridge (3×3), 6 → 1-2-3 tree,
+/// 7 → 3-1-3, 8 → 3-2-3, 9 → 3×3, 10 → Celtic Cross.
 /// The camera initially fits the complete canvas in the viewport.
 ///
-/// When [totalSlots] exceeds the template's card count (endless clarifiers),
+/// When [totalSlots] exceeds the template's card count (clarifiers),
 /// the extra cards append as additional rows below the base geometry.
 Size spreadCanvasDesignSizeForCount(int count, {int? totalSlots}) {
   final w = deckWidth;
@@ -313,11 +334,13 @@ Size spreadCanvasDesignSizeForCount(int count, {int? totalSlots}) {
   final g = slotGapPx;
   final base = switch (count) {
     1 => Size(w, h),
+    2 => Size(2 * w + g, h),
     3 => Size(3 * w + 2 * g, h),
     4 => Size(2 * w + g, 2 * h + g),
     5 => Size(3 * w + 2 * g, 3 * h + 2 * g),
     6 => Size(3 * w + 2 * g, 3 * h + 2 * g),
     7 => Size(3 * w + 2 * g, 3 * h + 2 * g),
+    8 => Size(3 * w + 2 * g, 3 * h + 2 * g),
     9 => Size(3 * w + 2 * g, 3 * h + 2 * g),
     10 => Size(4 * w + 3 * g, 4 * h + 3 * g),
     _ => Size(3 * w + 2 * g, 3 * h + 2 * g),
@@ -330,11 +353,16 @@ Size spreadCanvasDesignSizeForCount(int count, {int? totalSlots}) {
 }
 
 /// Design-space top-left of slot [index] inside a spread of [count]
-/// canonical cards: Triad row / 2×2 / Cross-of-5 / 3-1-3 / 3×3 portrait
-/// box. Slots beyond the template ([totalSlots] > count) are clarifiers —
-/// they fill a new row below the base spread.
-Offset spreadSlotDesignTopLeftForCount(int count, int index,
-    {int? totalSlots}) {
+/// canonical cards. Set [loveBridge] to `true` for the 5-card Love Bridge
+/// schema (two shores + central bridge + flow + union) rather than the
+/// classic Cross of 5. Slots beyond the template ([totalSlots] > count) are
+/// clarifiers — they fill a new row below the base spread.
+Offset spreadSlotDesignTopLeftForCount(
+  int count,
+  int index, {
+  int? totalSlots,
+  bool loveBridge = false,
+}) {
   final w = deckWidth;
   final h = deckHeight;
   final g = slotGapPx;
@@ -342,22 +370,48 @@ Offset spreadSlotDesignTopLeftForCount(int count, int index,
     switch (count) {
       case 1:
         return Offset.zero;
+      case 2:
+        return Offset(index * (w + g), 0);
       case 3:
         return Offset(index * (w + g), 0);
       case 4:
         return Offset((index % 2) * (w + g), (index ~/ 2) * (h + g));
-      case 5: // Thor's Cross / Cross of 5 — center + 4 arms
-        const order = [4, 5, 6, 7, 8]; // the 3×3 cell index of each arm
-        final cell = order[index];
-        return Offset((cell % 3) * (w + g), (cell ~/ 3) * (h + g));
-      case 6: // Career & Path Crossroads — 1-2-3 branching tree
+      case 5:
+        if (loveBridge) {
+          // Love Bridge: two sides (left/right) and the bridge between them.
+          const cells = [
+            [0, 0], // 0 Your Shore (left top)
+            [2, 0], // 1 Their Shore (right top)
+            [1, 1], // 2 The Bridge (center)
+            [0, 2], // 3 What Flows Between (left bottom)
+            [2, 2], // 4 The Union (right bottom)
+          ];
+          final cell = cells[index];
+          return Offset(cell[0] * (w + g), cell[1] * (h + g));
+        }
+        // Cross of 5 / Thor's Cross — center + 4 cardinal arms.
+        const cells = [
+          [1, 1], // 0 center
+          [1, 0], // 1 top
+          [0, 1], // 2 left
+          [2, 1], // 3 right
+          [1, 2], // 4 bottom
+        ];
+        final cell = cells[index];
+        return Offset(cell[0] * (w + g), cell[1] * (h + g));
+      case 6: // Career Crossroads — 1-2-3 branching tree
         const order = [1, 0, 2, 0, 1, 2];
         const row = [0, 1, 1, 2, 2, 2];
         return Offset(order[index] * (w + g), row[index] * (h + g));
-      case 7: // Heimdall's Bridge / Deep Synthesis — 3-1-3
+      case 7: // Heimdall's Bridge / Horseshoe — 3-1-3
         if (index < 3) return Offset(index * (w + g), 0);
         if (index == 3) return Offset(w + g, h + g);
         return Offset((index - 4) * (w + g), 2 * (h + g));
+      case 8: // Symmetric 3-2-3 (custom 8-card spread)
+        if (index < 3) return Offset(index * (w + g), 0);
+        if (index == 3) return Offset(0.5 * (w + g), h + g);
+        if (index == 4) return Offset(1.5 * (w + g), h + g);
+        return Offset((index - 5) * (w + g), 2 * (h + g));
       case 9: // 3×3 portrait box — reading order left→right, top→bottom
         return Offset((index % 3) * (w + g), (index ~/ 3) * (h + g));
       case 10: // Celtic Cross — 6-card cross + 4-card staff on the right
@@ -390,14 +444,110 @@ Offset spreadSlotDesignTopLeftForCount(int count, int index,
   );
 }
 
+/// Complete real board geometry for a given [count] and optional [loveBridge]
+/// layout variant. Used directly by both `SpreadBoard` and the picker
+/// miniatures.
+SpreadBoardGeometry spreadBoardGeometryForCount(
+  int count, {
+  int? totalSlots,
+  bool loveBridge = false,
+}) {
+  final slots = totalSlots ?? count;
+  final size = spreadCanvasDesignSizeForCount(count, totalSlots: slots);
+  final rects = [
+    for (var i = 0; i < slots; i++)
+      spreadSlotDesignTopLeftForCount(
+            count,
+            i,
+            totalSlots: slots,
+            loveBridge: loveBridge,
+          ) &
+          const Size(deckWidth, deckHeight),
+  ];
+  return SpreadBoardGeometry(
+    canvasSize: size,
+    slotRects: rects,
+    crossingSlotIndex: count == 10 ? 1 : null,
+  );
+}
+
+SpreadBoardGeometry spreadBoardGeometryForTarot(
+  SpreadType type, {
+  int? totalSlots,
+}) =>
+    spreadBoardGeometryForCount(
+      type.cardCount,
+      totalSlots: totalSlots,
+      loveBridge: type == SpreadType.loveBridge,
+    );
+
+SpreadBoardGeometry spreadBoardGeometryForLenormand(
+  LenormandSpread spread, {
+  int? totalSlots,
+}) =>
+    spreadBoardGeometryForCount(spread.cardCount, totalSlots: totalSlots);
+
+SpreadBoardGeometry spreadBoardGeometryForRune(
+  RuneCast cast, {
+  int? totalSlots,
+}) =>
+    spreadBoardGeometryForCount(cast.cardCount, totalSlots: totalSlots);
+
+/// Automatic row-based layout for the Custom Spread builder (1..12 positions):
+/// * 1 → 1×1, 2 → 2×1, 3 → 3×1, 4 → 2×2, 5..12 → 3 columns per row
+///   (e.g. 9 = 3×3, 12 = 3×4), with any partial last row centered.
+/// Clarifier slots beyond [count] append as full-width rows below the base.
+SpreadBoardGeometry spreadBoardGeometryForCustom(
+  int count, {
+  int? totalSlots,
+}) {
+  final baseCount = math.max(1, count);
+  final slots = math.max(baseCount, totalSlots ?? baseCount);
+  final cols = switch (baseCount) {
+    1 => 1,
+    2 => 2,
+    4 => 2,
+    _ => 3,
+  };
+  final w = deckWidth;
+  final h = deckHeight;
+  final g = slotGapPx;
+  final baseRows = (baseCount + cols - 1) ~/ cols;
+  final extra = slots - baseCount;
+  final extraRows = extra <= 0 ? 0 : (extra + cols - 1) ~/ cols;
+  final totalRows = baseRows + extraRows;
+  final canvasSize = Size(
+    cols * w + (cols - 1) * g,
+    totalRows * h + (totalRows - 1) * g,
+  );
+  final rects = <Rect>[];
+  for (var i = 0; i < baseCount; i++) {
+    final row = i ~/ cols;
+    final col = i % cols;
+    final rowLen = math.min(cols, baseCount - row * cols);
+    final rowOffset = ((cols - rowLen) / 2.0) * (w + g);
+    rects.add(
+      Rect.fromLTWH(rowOffset + col * (w + g), row * (h + g), w, h),
+    );
+  }
+  for (var k = 0; k < extra; k++) {
+    final row = baseRows + (k ~/ cols);
+    final col = k % cols;
+    rects.add(Rect.fromLTWH(col * (w + g), row * (h + g), w, h));
+  }
+  return SpreadBoardGeometry(canvasSize: canvasSize, slotRects: rects);
+}
+
 /// Number of card rows in the base spread geometry for [count] cards.
 int _spreadBaseRowsForCount(int count) => switch (count) {
       1 => 1,
+      2 => 1,
       3 => 1,
       4 => 2,
       5 => 3,
       6 => 3,
       7 => 3,
+      8 => 3,
       9 => 3,
       10 => 4,
       _ => 3,
@@ -406,11 +556,13 @@ int _spreadBaseRowsForCount(int count) => switch (count) {
 /// Cards per row in the base spread geometry for [count] cards.
 int _spreadColsForCount(int count) => switch (count) {
       1 => 1,
+      2 => 2,
       3 => 3,
       4 => 2,
       5 => 3,
       6 => 3,
       7 => 3,
+      8 => 3,
       9 => 3,
       10 => 4,
       _ => 3,
@@ -418,23 +570,19 @@ int _spreadColsForCount(int count) => switch (count) {
 
 // ---- SpreadType-based compat wrappers (tarot templates) -------------------
 
-/// Design-space size of the spread canvas for [type] — full 220×360 cards
-/// with [slotGapPx] gaps in their true table geometry. The overview screen
-/// FittedBox-scales this canvas down so the whole spread fits the viewport.
-///
-/// When [totalSlots] exceeds the template's card count (endless clarifiers),
-/// the extra cards append as additional rows below the base geometry.
+/// Design-space size of the spread canvas for [type] — full cards with
+/// [slotGapPx] gaps in their true table geometry.
 Size spreadCanvasDesignSize(SpreadType type, {int? totalSlots}) =>
     spreadCanvasDesignSizeForCount(type.cardCount, totalSlots: totalSlots);
 
-/// Design-space top-left of slot [index] inside its true spread geometry:
-/// Triad = one horizontal row, Target & Shadow = 2×2, Deep Synthesis =
-/// 3-1-3 with the crossing card centered on the middle row. Slots beyond
-/// the template ([totalSlots] > card count) are clarifiers — they fill a
-/// new row below the base spread.
+/// Design-space top-left of slot [index] inside its true spread geometry.
 Offset spreadSlotDesignTopLeft(SpreadType type, int index, {int? totalSlots}) =>
-    spreadSlotDesignTopLeftForCount(type.cardCount, index,
-        totalSlots: totalSlots);
+    spreadSlotDesignTopLeftForCount(
+      type.cardCount,
+      index,
+      totalSlots: totalSlots,
+      loveBridge: type == SpreadType.loveBridge,
+    );
 
 
 

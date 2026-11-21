@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Lavender→indigo primary action shared by ASTRAL CTAs (generate, unlock).
 class AstralGradientButton extends StatelessWidget {
@@ -36,9 +36,9 @@ class AstralGradientButton extends StatelessWidget {
               child: Center(
                 child: Text(
                   label,
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: 11,
-                    letterSpacing: 1.8,
+                    letterSpacing: 1.0,
                     fontWeight: FontWeight.w600,
                     color: AppColors.canvas,
                   ),

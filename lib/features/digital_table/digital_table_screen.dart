@@ -3,19 +3,22 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/models/dealt_card_slot.dart';
 import '../../core/models/divination_system.dart';
 import '../../core/models/rune_stone.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/models/tarot_deck_pack.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
+import '../../state/app_settings_controller.dart';
 import '../../state/deck_pack_controller.dart';
 import '../../state/spread_controller.dart';
 import '../profile/widgets/profile_header.dart';
 import 'widgets/board_pillar_view.dart';
+import 'widgets/custom_spread_sheet.dart';
 import 'widgets/deal_lock_prompt.dart';
 import 'widgets/foil_glint.dart';
 import 'widgets/interactive_deck_widget.dart';
@@ -23,7 +26,7 @@ import 'widgets/interactive_rune_stones_widget.dart';
 import 'widgets/reading_bottom_sheet.dart';
 import 'widgets/rune_stone_3d_widget.dart';
 import 'widgets/shuffle_physics.dart';
-import 'widgets/spread_blueprint_carousel.dart';
+import 'widgets/spread_blueprint_grid.dart';
 import 'widgets/spread_board.dart';
 import 'widgets/tarot_card_3d_widget.dart';
 
@@ -483,6 +486,7 @@ class _SpreadSelectionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<AppSettingsController>().language;
     return SafeArea(
       bottom: false,
       child: Column(
@@ -498,26 +502,111 @@ class _SpreadSelectionView extends StatelessWidget {
           ),
           Expanded(
             child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
                     child: Text(
-                      'Choose Spread',
-                      style: GoogleFonts.cormorantGaramond(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w600,
+                      AppStrings.t(lang, 'spread.choose'),
+                      style: AppTypography.display(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
                       ),
                     ),
                   ),
-                  const SpreadBlueprintCarousel(),
+                  const SpreadBlueprintGrid(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                    child: _CustomSpreadAction(
+                      lang: lang,
+                      onTap: () => CustomSpreadSheet.show(context),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CustomSpreadAction extends StatelessWidget {
+  const _CustomSpreadAction({required this.lang, required this.onTap});
+
+  final AppLanguage lang;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      key: const ValueKey('custom-spread-button'),
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface.withValues(alpha: 0.72),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.32)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.lavender.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.add_rounded,
+                size: 18,
+                color: AppColors.lavender,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppStrings.t(lang, 'spread.custom'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.display(
+                      fontSize: 18,
+                      height: 1.1,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    AppStrings.t(lang, 'spread.customSubtitle'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: AppColors.textMuted,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -624,8 +713,8 @@ class _ModeSegment extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 8,
+          style: AppTypography.label(
+            fontSize: 8.5,
             letterSpacing: 1.0,
             fontWeight: FontWeight.w700,
             color: active ? AppColors.lavender : AppColors.textMuted,
@@ -665,9 +754,9 @@ class _SystemSegment extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 9,
-            letterSpacing: 1.4,
+            letterSpacing: 0.8,
             fontWeight: FontWeight.w700,
             color: active ? AppColors.lavender : AppColors.textMuted,
           ),
@@ -707,9 +796,9 @@ class _ResetTableButton extends StatelessWidget {
           ),
           child: Text(
             'TAP TO RESET',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8.5,
-              letterSpacing: 1.6,
+            style: AppTypography.label(
+              fontSize: 9,
+              letterSpacing: 0.9,
               color: enabled ? AppColors.lavender : Colors.grey.shade500,
             ),
           ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/data/deck_packs_registry.dart';
@@ -15,6 +14,7 @@ import '../../../core/models/lenormand_pack.dart';
 import '../../../core/models/rune_pack.dart';
 import '../../../core/models/tarot_deck_pack.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/deck_pack_controller.dart';
 import '../../../state/spread_controller.dart';
 import '../../almanac/deck_cover_picker.dart';
@@ -217,9 +217,9 @@ class _PackTile extends StatelessWidget {
                   child: Text(
                     pack.name.toUpperCase(),
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 10,
-                      letterSpacing: 1.6,
+                      letterSpacing: 0.9,
                       fontWeight: FontWeight.w700,
                       color: selected
                           ? AppColors.lavender
@@ -247,8 +247,8 @@ class _PackTile extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 6.5,
+              style: AppTypography.label(
+                fontSize: 7,
                 letterSpacing: 1,
                 color: AppColors.textMuted.withValues(alpha: 0.7),
               ),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/astral_controller.dart';
 import 'astral_gradient_button.dart';
 
@@ -55,9 +55,9 @@ class AstralProPaywallSheet extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'FREE TIER · 2 SAVED NATAL PROFILES',
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: 9,
-                    letterSpacing: 1.8,
+                    letterSpacing: 1.0,
                     color: AppColors.lavender,
                   ),
                 ),
@@ -106,7 +106,7 @@ class _ProFeature extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: GoogleFonts.inter(
+              style: AppTypography.body(
                 fontSize: 13,
                 height: 1.4,
                 color: AppColors.textPrimary,

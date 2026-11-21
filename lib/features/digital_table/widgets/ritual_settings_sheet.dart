@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/ritual_notification_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Daily ritual settings: enable/disable local reminders, pick the morning
 /// anchor (09:00) and evening reflection (22:00) times, and see the current
@@ -163,9 +163,9 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
                 Text(
                   'LOCAL REMINDERS · ZERO SERVER RETENTION · '
                   '$_streak-DAY STREAK',
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: 9,
-                    letterSpacing: 1.8,
+                    letterSpacing: 1.0,
                     color: AppColors.textMuted,
                   ),
                 ),
@@ -226,9 +226,9 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
                         const SizedBox(width: 10),
                         Text(
                           '$_streak-DAY READING STREAK',
-                          style: GoogleFonts.jetBrainsMono(
+                          style: AppTypography.label(
                             fontSize: 10,
-                            letterSpacing: 1.6,
+                            letterSpacing: 0.9,
                             color: AppColors.textPrimary,
                           ),
                         ),
@@ -269,9 +269,9 @@ class _RitualSwitch extends StatelessWidget {
           Expanded(
             child: Text(
               'DAILY RITUAL REMINDERS',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 10,
-                letterSpacing: 1.4,
+                letterSpacing: 0.8,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -326,9 +326,9 @@ class _TimeTile extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 9.5,
-                      letterSpacing: 1.4,
+                      letterSpacing: 0.8,
                       color: AppColors.textPrimary,
                     ),
                   ),
@@ -345,9 +345,9 @@ class _TimeTile extends StatelessWidget {
             ),
             Text(
               time,
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 13,
-                letterSpacing: 1.2,
+                letterSpacing: 0.7,
                 color: enabled ? AppColors.lavender : AppColors.textMuted,
               ),
             ),
@@ -382,9 +382,9 @@ class _ApplyButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 10,
-            letterSpacing: 2,
+            letterSpacing: 1.1,
             fontWeight: FontWeight.w700,
             color: AppColors.lavender,
           ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Shared obsidian glass card used by every ProfileScreen section.
 class ProfileCard extends StatelessWidget {
@@ -34,9 +34,9 @@ class ProfileCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: 10,
-                    letterSpacing: 1.8,
+                    letterSpacing: 1.0,
                     fontWeight: FontWeight.w600,
                     color: AppColors.lavender,
                   ),
@@ -65,9 +65,9 @@ class ProfileFieldLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         text,
-        style: GoogleFonts.jetBrainsMono(
+        style: AppTypography.label(
           fontSize: 9,
-          letterSpacing: 1.6,
+          letterSpacing: 0.9,
           color: AppColors.textMuted,
         ),
       ),
@@ -141,9 +141,9 @@ class ProfilePill extends StatelessWidget {
             Flexible(
               child: Text(
                 label,
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: 9,
-                  letterSpacing: 1.2,
+                  letterSpacing: 0.7,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                   color: color,
                 ),

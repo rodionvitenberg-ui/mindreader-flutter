@@ -82,11 +82,13 @@ void main() {
         readingMode: ReadingMode.guidedSpread,
         readingStatus: ReadingStatus.paused,
         customSpread: 'my-3x3',
+        customQuestions: const ['Q1?', 'Q2?', 'Q3?'],
         pendingGuidedPosition: 1,
       );
       final restored = SpreadSessionSnapshot.fromJson(snapshot.toJson());
 
       expect(restored.customSpread, 'my-3x3');
+      expect(restored.customQuestions, ['Q1?', 'Q2?', 'Q3?']);
       expect(restored.pendingGuidedPosition, 1);
       expect(restored.readingStatus, ReadingStatus.paused);
     });
@@ -105,6 +107,7 @@ void main() {
       final restored = SpreadSessionSnapshot.fromJson(legacy);
 
       expect(restored.customSpread, isNull);
+      expect(restored.customQuestions, isEmpty);
       expect(restored.pendingGuidedPosition, isNull);
     });
   });

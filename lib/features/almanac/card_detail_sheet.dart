@@ -2,7 +2,6 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/models/dealt_card_slot.dart';
@@ -10,6 +9,7 @@ import '../../core/models/divination_card.dart';
 import '../../core/models/divination_system.dart';
 import '../../core/models/tarot_card_model.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../../state/deck_pack_controller.dart';
 import '../digital_table/widgets/lenormand_card_3d_widget.dart';
 import '../digital_table/widgets/rune_stone_3d_widget.dart';
@@ -95,9 +95,9 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                               '${card.shortLabel} · ${card.categoryLabel}',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.jetBrainsMono(
+                              style: AppTypography.label(
                                 fontSize: 10,
-                                letterSpacing: 2,
+                                letterSpacing: 1.1,
                                 color: AppColors.textMuted,
                               ),
                             ),
@@ -119,9 +119,9 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                         child: Text(
                           '${card.element.label.toUpperCase()} '
                           '${card.element.glyph}',
-                          style: GoogleFonts.jetBrainsMono(
+                          style: AppTypography.label(
                             fontSize: 10,
-                            letterSpacing: 1.2,
+                            letterSpacing: 0.7,
                             fontWeight: FontWeight.w700,
                             color: card.element.accent,
                           ),
@@ -193,18 +193,18 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                   const SizedBox(height: 18),
                   Text(
                     'KEYWORDS',
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 9,
-                      letterSpacing: 2,
+                      letterSpacing: 1.1,
                       color: AppColors.textMuted,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     card.keywords.map((k) => k.toUpperCase()).join(' · '),
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 10,
-                      letterSpacing: 1.4,
+                      letterSpacing: 0.8,
                       color: AppColors.lavender,
                     ),
                   ),
@@ -212,9 +212,9 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                     const SizedBox(height: 18),
                     Text(
                       'COMBINATIONS',
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.label(
                         fontSize: 9,
-                        letterSpacing: 2,
+                        letterSpacing: 1.1,
                         color: AppColors.textMuted,
                       ),
                     ),
@@ -239,9 +239,9 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                     const SizedBox(height: 18),
                     Text(
                       'LORE',
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.label(
                         fontSize: 9,
-                        letterSpacing: 2,
+                        letterSpacing: 1.1,
                         color: AppColors.textMuted,
                       ),
                     ),
@@ -259,9 +259,9 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                   const SizedBox(height: 18),
                   Text(
                     'THE QUESTION TO SIT WITH',
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 9,
-                      letterSpacing: 2,
+                      letterSpacing: 1.1,
                       color: AppColors.textMuted,
                     ),
                   ),
@@ -359,9 +359,9 @@ class _MeaningToggle extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: 10,
-              letterSpacing: 1.6,
+              letterSpacing: 0.9,
               color: active ? AppColors.lavender : AppColors.textMuted,
             ),
           ),

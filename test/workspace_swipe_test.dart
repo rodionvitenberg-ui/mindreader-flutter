@@ -65,7 +65,7 @@ void main() {
     expect(find.text('NO READING YET'), findsNothing);
 
     // Enter the Active Digital Table (Step 2).
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
     expect(find.byKey(const ValueKey('overview-deck')), findsOneWidget);
     expect(find.text('NO READING YET'), findsNothing);
 
@@ -93,7 +93,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
     await focusMode(tester);
 
     final deck = find.byType(InteractiveDeckWidget);
@@ -120,7 +120,7 @@ void main() {
       '(cards + conversation)', (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
     await focusMode(tester);
     await dealFlipAndSynthesize(tester);
 
@@ -137,7 +137,7 @@ void main() {
     // Open the history pane: the session tile is waiting there.
     await goToPane(tester, 2);
     expect(find.text('SPREAD HISTORY'), findsOneWidget);
-    expect(find.text('3 · TRIAD FLOW'), findsOneWidget);
+    expect(find.text('3 · THREE CARDS'), findsOneWidget);
 
     // Start a fresh table through the archive action. NEW SPREAD exits back
     // to Step 1 (Choose Spread) and clears the table.
@@ -153,12 +153,12 @@ void main() {
 
     // NEW SPREAD lands on Step 1; re-enter the Active Table before swiping
     // to the history pane.
-    await activateSpread(tester, 'Triad Flow');
+    await activateSpread(tester, 'Three Cards');
 
     // 1-tap restore: it lands on the ORACLE CHAT (Pane 1) with the exact
     // conversation restored — no jarring jump back to the raw table.
     await goToPane(tester, 2);
-    await tester.tap(find.text('3 · TRIAD FLOW'));
+    await tester.tap(find.text('3 · THREE CARDS'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pump();

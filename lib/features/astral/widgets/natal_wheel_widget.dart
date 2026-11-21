@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/services/natal_calculator_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import 'natal_wheel_controls.dart';
 import 'natal_wheel_geometry.dart';
 import 'natal_wheel_painter.dart';
@@ -283,9 +283,9 @@ class _NatalWheelWidgetState extends State<NatalWheelWidget>
       return Text(
         'TAP A PLANET TO INSPECT ITS ASPECTS',
         textAlign: TextAlign.center,
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 7.5,
-          letterSpacing: 1.5,
+        style: AppTypography.label(
+          fontSize: 8,
+          letterSpacing: 0.8,
           color: AppColors.textMuted,
         ),
       );

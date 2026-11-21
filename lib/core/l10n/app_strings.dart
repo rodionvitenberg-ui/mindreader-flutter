@@ -16,6 +16,34 @@ class AppStrings {
     return entry[lang] ?? entry[AppLanguage.en] ?? key;
   }
 
+  /// Localized card/stone count caption used on spread tiles where the number
+  /// helps convey the spread's scale (e.g. "5 cards" / "5 карт", "7 stones" /
+  /// "7 рун").
+  static String cardCount(
+    AppLanguage lang,
+    int count, {
+    bool isRune = false,
+  }) {
+    if (lang == AppLanguage.ru) {
+      final mod100 = count % 100;
+      final mod10 = count % 10;
+      if (isRune) {
+        if (mod100 >= 11 && mod100 <= 14) return '$count рун';
+        if (mod10 == 1) return '$count руна';
+        if (mod10 >= 2 && mod10 <= 4) return '$count руны';
+        return '$count рун';
+      }
+      if (mod100 >= 11 && mod100 <= 14) return '$count карт';
+      if (mod10 == 1) return '$count карта';
+      if (mod10 >= 2 && mod10 <= 4) return '$count карты';
+      return '$count карт';
+    }
+    if (isRune) {
+      return '$count ${count == 1 ? 'stone' : 'stones'}';
+    }
+    return '$count ${count == 1 ? 'card' : 'cards'}';
+  }
+
   static const Map<String, Map<AppLanguage, String>> _dict = {
     // ---- bottom dock ----
     'nav.camera': {AppLanguage.en: 'CAMERA', AppLanguage.ru: 'КАМЕРА'},
@@ -139,8 +167,8 @@ class AppStrings {
       AppLanguage.ru: 'НА ДРУГОГО',
     },
     'table.question': {
-      AppLanguage.en: 'Question or details (optional)',
-      AppLanguage.ru: 'Вопрос или детали (необязательно)',
+      AppLanguage.en: 'Topic or question (day, love, work)…',
+      AppLanguage.ru: 'Тема или вопрос (день, отношения, работа)…',
     },
     'table.dictate': {
       AppLanguage.en: 'Dictate question',
@@ -153,6 +181,130 @@ class AppStrings {
     'table.noDictation': {
       AppLanguage.en: 'Voice input is unavailable. You can type your question.',
       AppLanguage.ru: 'Диктовка недоступна. Вопрос можно ввести с клавиатуры.',
+    },
+
+    // ---- spread selection & custom spread ----
+    'spread.choose': {
+      AppLanguage.en: 'Choose Spread',
+      AppLanguage.ru: 'Выбор расклада',
+    },
+    'spread.tarot.one': {
+      AppLanguage.en: 'Daily Anchor',
+      AppLanguage.ru: 'Карта дня',
+    },
+    'spread.tarot.three': {
+      AppLanguage.en: 'Three Cards',
+      AppLanguage.ru: 'Три карты',
+    },
+    'spread.tarot.four': {
+      AppLanguage.en: 'Target & Shadow',
+      AppLanguage.ru: 'Цель и тень',
+    },
+    'spread.tarot.loveBridge': {
+      AppLanguage.en: 'Love Bridge',
+      AppLanguage.ru: 'Любовный мост',
+    },
+    'spread.tarot.careerCrossroads': {
+      AppLanguage.en: 'Career Crossroads',
+      AppLanguage.ru: 'Перекрёсток пути',
+    },
+    'spread.tarot.seven': {
+      AppLanguage.en: 'Horseshoe Synthesis',
+      AppLanguage.ru: 'Подкова',
+    },
+    'spread.tarot.celticCross': {
+      AppLanguage.en: 'Celtic Cross',
+      AppLanguage.ru: 'Кельтский крест',
+    },
+    'spread.lenormand.one': {
+      AppLanguage.en: 'Daily Sign',
+      AppLanguage.ru: 'Знак дня',
+    },
+    'spread.lenormand.three': {
+      AppLanguage.en: 'Lenormand Line',
+      AppLanguage.ru: 'Три карты',
+    },
+    'spread.lenormand.five': {
+      AppLanguage.en: 'Cross of 5',
+      AppLanguage.ru: 'Крест из 5',
+    },
+    'spread.lenormand.nine': {
+      AppLanguage.en: '3×3 Portrait Box',
+      AppLanguage.ru: 'Портрет 3×3',
+    },
+    'spread.lenormand.grandPortrait': {
+      AppLanguage.en: 'Grand Portrait',
+      AppLanguage.ru: 'Большой портрет',
+    },
+    'spread.runes.one': {
+      AppLanguage.en: 'Odin’s Rune',
+      AppLanguage.ru: 'Руна Одина',
+    },
+    'spread.runes.three': {
+      AppLanguage.en: 'The Three Norns',
+      AppLanguage.ru: 'Три норны',
+    },
+    'spread.runes.five': {
+      AppLanguage.en: 'Thor’s Cross',
+      AppLanguage.ru: 'Крест Тора',
+    },
+    'spread.runes.seven': {
+      AppLanguage.en: 'Heimdall’s Bridge',
+      AppLanguage.ru: 'Мост Хеймдалля',
+    },
+    'spread.runes.worldTree': {
+      AppLanguage.en: 'Yggdrasil’s World Tree',
+      AppLanguage.ru: 'Древо миров',
+    },
+    'spread.custom': {
+      AppLanguage.en: 'Custom Spread',
+      AppLanguage.ru: 'Свой расклад',
+    },
+    'spread.customSubtitle': {
+      AppLanguage.en: 'Write or dictate 1–12 questions',
+      AppLanguage.ru: 'Напишите или продиктуйте 1–12 вопросов',
+    },
+    'spread.customTitleLabel': {
+      AppLanguage.en: 'Spread name (optional)',
+      AppLanguage.ru: 'Название расклада (необязательно)',
+    },
+    'spread.customQuestionsLabel': {
+      AppLanguage.en: 'QUESTIONS · 1 QUESTION = 1 POSITION',
+      AppLanguage.ru: 'ВОПРОСЫ · 1 ВОПРОС = 1 ПОЗИЦИЯ',
+    },
+    'spread.customQuestionInput': {
+      AppLanguage.en: 'Write or dictate a question…',
+      AppLanguage.ru: 'Напишите или продиктуйте вопрос…',
+    },
+    'spread.customAddQuestion': {
+      AppLanguage.en: 'Add question',
+      AppLanguage.ru: 'Добавить вопрос',
+    },
+    'spread.customEmptyHint': {
+      AppLanguage.en:
+          'Add 1 to 12 questions — each becomes its own position on the table.',
+      AppLanguage.ru:
+          'Добавьте от 1 до 12 вопросов — каждый станет отдельной позицией на столе.',
+    },
+    'spread.customLimitReached': {
+      AppLanguage.en: 'Maximum of 12 positions reached',
+      AppLanguage.ru: 'Достигнут максимум — 12 позиций',
+    },
+    'spread.customMoveUp': {
+      AppLanguage.en: 'Move up',
+      AppLanguage.ru: 'Поднять выше',
+    },
+    'spread.customMoveDown': {
+      AppLanguage.en: 'Move down',
+      AppLanguage.ru: 'Опустить ниже',
+    },
+    'spread.customDelete': {
+      AppLanguage.en: 'Remove question',
+      AppLanguage.ru: 'Удалить вопрос',
+    },
+    'spread.customOpenTable': {
+      AppLanguage.en: 'OPEN TABLE',
+      AppLanguage.ru: 'ОТКРЫТЬ СТОЛ',
     },
 
     // ---- profile page ----

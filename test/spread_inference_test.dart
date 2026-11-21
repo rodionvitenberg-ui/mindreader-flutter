@@ -19,12 +19,12 @@ void main() {
     expect(r.top?.slotRoles, SpreadType.three.slotRoles);
   });
 
-  test('tarot: PRO spread resolves too (restrictions are handled at UI)', () {
+  test('tarot: Celtic Cross resolves and is open without PRO', () {
     final r = svc.infer(
       const SpreadInferenceInput(system: DivinationSystem.tarot, detectedCount: 10),
     );
     expect(r.top?.tarot, SpreadType.celticCross);
-    expect(r.top?.isPro, isTrue);
+    expect(r.top?.isPro, isFalse);
   });
 
   test('lenormand: count 9 is AMBIGUOUS (nine vs grandPortrait)', () {

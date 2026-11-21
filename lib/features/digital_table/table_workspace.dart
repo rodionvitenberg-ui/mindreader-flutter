@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/data/intention_prompts.dart' show tableContextChips;
@@ -13,6 +12,7 @@ import '../../core/models/zodiac_forecast.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../../state/astral_controller.dart';
 import '../../state/oracle_session_controller.dart';
 import '../../state/session_history_controller.dart';
@@ -305,6 +305,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
       contextChip: lens.isEmpty ? null : lens.join(' · '),
       slotContexts: contexts,
       profileContext: _tableSubject,
+      positionQuestions: _ctrl.customSpread?.questions,
     );
     if (!mounted || !_session.isCurrentSession(epoch)) return;
     _session.markInitial(result);
@@ -517,6 +518,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
           type: snapshot.spreadType,
           lenormandSpread: snapshot.lenormandSpread,
           runeCast: snapshot.runeCast,
+          customSpread: snapshot.customSpread,
+          customQuestions: snapshot.customQuestions,
           cards: snapshot.toRestoreCards(),
           sessionNotes: snapshot.sessionNotes,
           readingQuestion: snapshot.readingQuestion,
@@ -607,9 +610,9 @@ class _TableWorkspaceState extends State<TableWorkspace>
             const SizedBox(height: 12),
             Text(
               'ADD TO THE READING',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 9,
-                letterSpacing: 2.2,
+                letterSpacing: 1.2,
                 color: AppColors.lavender,
               ),
             ),
@@ -636,7 +639,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
                       ),
                       child: Text(
                         chip,
-                        style: GoogleFonts.inter(
+                        style: AppTypography.body(
                           fontSize: 11.5,
                           color: AppColors.textPrimary,
                         ),
@@ -730,9 +733,9 @@ class _TableWorkspaceState extends State<TableWorkspace>
                     const SizedBox(width: 6),
                     Text(
                       'PHYSICAL SYNC',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 8.5,
-                        letterSpacing: 1.4,
+                      style: AppTypography.label(
+                        fontSize: 9,
+                        letterSpacing: 0.8,
                         fontWeight: FontWeight.w700,
                         color: AppColors.harmonyCyan,
                       ),
@@ -871,7 +874,7 @@ class _ChatContextChips extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       tableContextChips[i],
-                      style: GoogleFonts.inter(
+                      style: AppTypography.body(
                         fontSize: 10.5,
                         color: selected == tableContextChips[i]
                             ? AppColors.lavender
@@ -919,9 +922,9 @@ class _ClarifierBanner extends StatelessWidget {
               'CLARIFIER: "$question" — PULL THE UNLOCKED CARD',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8.5,
-                letterSpacing: 1.2,
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 0.7,
                 fontWeight: FontWeight.w700,
                 color: AppColors.lavender,
               ),
@@ -968,9 +971,9 @@ class _SheetAction extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 9.5,
-            letterSpacing: 1.2,
+            letterSpacing: 0.7,
             fontWeight: FontWeight.w700,
             color: AppColors.lavender,
           ),

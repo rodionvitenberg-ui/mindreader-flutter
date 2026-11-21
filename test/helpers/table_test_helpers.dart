@@ -9,15 +9,16 @@ import 'package:flutter_test/flutter_test.dart';
 /// (b) swipe between panes with a CAPPED pump loop so a regression fails
 /// fast with a clear message instead of hanging the whole run.
 
-/// Step 1 → Step 2: taps the free spread card named [cardLabel] (the
-/// picker strips the leading `N · ` prefix, e.g. `3 · Triad Flow` →
-/// `Triad Flow`). Tapping a free card selects it AND activates the table.
+/// Step 1 → Step 2: taps the preset spread tile named [cardLabel] (e.g.
+/// `Three Cards`). Tapping a preset tile selects it AND activates the table.
 ///
 /// Idempotent: if the card is not on screen (already on the Active Table)
 /// it simply returns.
 Future<void> activateSpread(WidgetTester tester, String cardLabel) async {
   final card = find.text(cardLabel);
   if (card.evaluate().isEmpty) return;
+  await tester.ensureVisible(card);
+  await tester.pump();
   await tester.tap(card);
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));

@@ -18,11 +18,12 @@ Aesthetic reference: quiet, grounded, psychological, tactile (de-press.co direct
 | Text Primary | `#E4E4E7` | headings, main copy |
 | Text Muted | `#94A3B8` | secondary copy, metadata |
 
-## Typography (via google_fonts, cached after first fetch)
+## Typography (bundled Allo 1.0.3 + Gemini-style Oracle Chat)
 
-- Arcana titles / headings: **Cinzel** (high-contrast serif).
-- Body & interpretations: **Plus Jakarta Sans**.
-- Card positions & metadata: **JetBrains Mono**, uppercase, `letterSpacing: 1.8`.
+- Display titles & headings: **Allo Variable** (`opsz` 20–32, `wght` 700–800) — large, bold, tight tracking (`-0.2` to `-0.45`).
+- Body & UI copy: **Allo Variable / Allo** (`opsz` 14, `wght` 400–500) — neat, friendly proportions, true Oblique italics.
+- Badges, pills & metadata: **Allo Variable** (`opsz` 9–12, `wght` 600–700, tabular figures `tnum`).
+- Oracle AI Chat copy (`OracleChatPane` & `GeminiInputCapsule`): **Inter** (`15.5 px`, height `1.62` for AI replies; `15 px`, height `1.48` for user prompts) for Gemini-like long-form legibility across Latin and Cyrillic.
 
 ## Motion & game-feel
 

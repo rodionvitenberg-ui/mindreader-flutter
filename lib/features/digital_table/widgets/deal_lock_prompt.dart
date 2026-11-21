@@ -18,7 +18,7 @@ void showDealLockPrompt(BuildContext context, SpreadController ctrl) {
       SnackBar(
         duration: const Duration(seconds: 3),
         content: Text(
-          ctrl.dealtCount >= SpreadController.maxTableCards
+          ctrl.isClarifierLimitReached
               ? SpreadController.maxTableCardsPrompt
               : SpreadController.dealLockedPrompt,
           style: const TextStyle(color: Colors.white, fontSize: 12),

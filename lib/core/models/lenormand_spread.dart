@@ -1,8 +1,7 @@
 import 'dart:ui' show Offset;
 
-/// The canonical Petit Lenormand spread templates — Free + PRO. Pure Dart;
-/// the [miniSlots] values are NORMALIZED (0..1) slot coordinates for the
-/// miniature wireframe preview in the blueprint carousel.
+/// The canonical Petit Lenormand spread templates — all open without
+/// subscription. Pure Dart; real board geometry lives in `shuffle_physics.dart`.
 enum LenormandSpread {
   one(
     '1 · Daily Sign',
@@ -69,7 +68,7 @@ enum LenormandSpread {
   grandPortrait(
     '9 · Grand Portrait',
     9,
-    true,
+    false,
     [
       'The House',
       'The Heart',
@@ -109,7 +108,7 @@ enum LenormandSpread {
   final String label;
   final int cardCount;
 
-  /// True for the PRO-gated spreads (locked behind the shared PRO flag).
+  /// Always false: all preset Lenormand spreads are open without subscription.
   final bool isPro;
   final List<String> slotRoles;
   final String focusLine;

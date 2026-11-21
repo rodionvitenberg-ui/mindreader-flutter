@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/models/natal_chart.dart';
 import '../../core/models/oracle_handoff.dart';
@@ -8,6 +7,7 @@ import '../../core/models/tarot_card_model.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import 'widgets/astral_gradient_button.dart';
 
 /// ASTRAL Phase 4 — 2-profile synastry: Moon compatibility, the combined
@@ -111,7 +111,7 @@ class SynastrySummarySheet extends StatelessWidget {
                     Text(
                       'No tight cross-chart aspects — this bond rests on '
                       'temperament, not friction.',
-                      style: GoogleFonts.inter(
+                      style: AppTypography.body(
                         fontSize: 12,
                         height: 1.4,
                         color: AppColors.textMuted,
@@ -144,18 +144,18 @@ class SynastrySummarySheet extends StatelessWidget {
             children: [
               Text(
                 'SYNASTRY · 2 PROFILES',
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: 9,
-                  letterSpacing: 1.8,
+                  letterSpacing: 1.0,
                   color: AppColors.lavender,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 '${a.profileName} × ${b.profileName}',
-                style: GoogleFonts.cinzel(
+                style: AppTypography.display(
                   fontSize: 24,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -193,7 +193,7 @@ class SynastrySummarySheet extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             line,
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 12,
               height: 1.45,
               color: AppColors.textMuted,
@@ -210,16 +210,16 @@ class SynastrySummarySheet extends StatelessWidget {
         Expanded(
           child: Text(
             'MOON · ${name.toUpperCase()}',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8.5,
-              letterSpacing: 1.2,
+            style: AppTypography.label(
+              fontSize: 9,
+              letterSpacing: 0.7,
               color: AppColors.textMuted,
             ),
           ),
         ),
         Text(
           '${moon.sign.glyph} ${moon.sign.title}',
-          style: GoogleFonts.inter(
+          style: AppTypography.body(
             fontSize: 12,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
@@ -231,9 +231,9 @@ class SynastrySummarySheet extends StatelessWidget {
 
   Widget _label(String text) => Text(
         text,
-        style: GoogleFonts.jetBrainsMono(
+        style: AppTypography.label(
           fontSize: 9,
-          letterSpacing: 1.8,
+          letterSpacing: 1.0,
           color: AppColors.textMuted,
         ),
       );
@@ -262,9 +262,9 @@ class _ElementBar extends StatelessWidget {
             width: 66,
             child: Text(
               '${element.glyph} ${element.label.toUpperCase()}',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8.5,
-                letterSpacing: 1.2,
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 0.7,
                 color: element.accent,
               ),
             ),
@@ -286,7 +286,7 @@ class _ElementBar extends StatelessWidget {
             child: Text(
               '$count',
               textAlign: TextAlign.right,
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 9,
                 color: AppColors.textMuted,
               ),
@@ -324,7 +324,7 @@ class _CrossAspectRow extends StatelessWidget {
             child: Text(
               '${aspect.bodyA.glyph} ${aspect.type.glyph} '
               '${aspect.bodyB.glyph}',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 11,
                 letterSpacing: 1,
                 color: AppColors.textPrimary,
@@ -336,7 +336,7 @@ class _CrossAspectRow extends StatelessWidget {
               aspect.synthesis,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: AppTypography.body(
                 fontSize: 11.5,
                 color: AppColors.textMuted,
               ),
@@ -345,7 +345,7 @@ class _CrossAspectRow extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '${aspect.orb.toStringAsFixed(1)}°',
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: 9,
               color: color,
             ),

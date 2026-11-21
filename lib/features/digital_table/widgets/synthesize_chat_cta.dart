@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// The `✦ SYNTHESIZE IN CHAT →` call to action — PERMANENTLY anchored at
 /// the bottom of the Digital Table (Pane 0), right above the bottom
@@ -124,13 +124,16 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
     widget.onTap();
   }
 
+  /// Reference label whose single-line box defines the fixed size shared by
+  /// all CTA states (dormant, ignited, generating, and OPEN ORACLE CHAT).
+  static const _sizeReferenceLabel = '✦ SYNTHESIZE IN CHAT →';
+
   String get _label {
     if (widget.generating) return 'WEAVING THE READING · · ·';
     if (widget.synthesized) return '✦ OPEN ORACLE CHAT →';
     if (!widget.ignited) {
-      if (widget.faceUp <= 0) return '✦ SYNTHESIZE IN CHAT (FLIP ALL CARDS)';
-      return '✦ SYNTHESIZE IN CHAT '
-          '(${widget.faceUp} OF ${widget.total} FACE-UP)';
+      if (widget.faceUp <= 0) return '✦ SYNTHESIZE IN CHAT';
+      return '✦ SYNTHESIZE IN CHAT (${widget.faceUp}/${widget.total})';
     }
     return '✦ SYNTHESIZE IN CHAT →';
   }
@@ -138,6 +141,19 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
   @override
   Widget build(BuildContext context) {
     final ignited = _enabled;
+    final labelStyle = AppTypography.label(
+      fontSize: 10,
+      letterSpacing: 1.0,
+      fontWeight: FontWeight.w700,
+      color: ignited ? AppColors.lavender : Colors.grey.shade500,
+    );
+    final refPainter = TextPainter(
+      text: TextSpan(text: _sizeReferenceLabel, style: labelStyle),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final refSize = refPainter.size;
     return Semantics(
       button: true,
       enabled: ignited,
@@ -179,7 +195,7 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
                         color: ignited
                             ? AppColors.lavender
                             : Colors.grey.shade800,
-                        width: ignited ? 1.2 : 1.0,
+                        width: 1.2,
                       ),
                       boxShadow: ignited
                           ? [
@@ -192,16 +208,20 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
                             ]
                           : null,
                     ),
-                    child: Text(
-                      _label,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 10,
-                        letterSpacing: 1.8,
-                        fontWeight: FontWeight.w700,
-                        color: ignited
-                            ? AppColors.lavender
-                            : Colors.grey.shade500,
+                    child: SizedBox(
+                      width: refSize.width,
+                      height: refSize.height,
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            _label,
+                            maxLines: 1,
+                            softWrap: false,
+                            textAlign: TextAlign.center,
+                            style: labelStyle,
+                          ),
+                        ),
                       ),
                     ),
                   ),

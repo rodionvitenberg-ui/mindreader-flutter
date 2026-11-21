@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// "Sent to Cosmos" — the submitted thought/chip rises from the input
 /// capsule and dissolves into luminous stardust drifting toward the deck
@@ -67,7 +67,7 @@ class CosmosSendBurst extends StatelessWidget {
                           label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
+                          style: AppTypography.body(
                             fontSize: 11,
                             color: AppColors.lavender,
                           ),

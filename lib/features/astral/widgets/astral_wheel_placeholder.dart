@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Phase 3 slot — the animated CustomPainter natal wheel will live here.
 /// For now it renders the ring silhouette and, once a profile exists, the
@@ -45,18 +45,18 @@ class AstralWheelPlaceholder extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               'NATAL WHEEL',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 10,
-                letterSpacing: 1.8,
+                letterSpacing: 1.0,
                 color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               'PHASE 3 · ANIMATED PAINTER',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 9,
-                letterSpacing: 1.4,
+                letterSpacing: 0.8,
                 color: AppColors.textMuted,
               ),
             ),
@@ -73,9 +73,9 @@ class AstralWheelPlaceholder extends StatelessWidget {
               const SizedBox(height: 14),
               Text(
                 '${chart!.cityName} · ${chart!.houseSystem.label}',
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: 9,
-                  letterSpacing: 1.4,
+                  letterSpacing: 0.8,
                   color: AppColors.textMuted,
                 ),
               ),
@@ -103,9 +103,9 @@ class _Body extends StatelessWidget {
       children: [
         Text(
           '${planet.glyph} ${planet.title}',
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 9,
-            letterSpacing: 1.2,
+            letterSpacing: 0.7,
             color: AppColors.textMuted,
           ),
         ),

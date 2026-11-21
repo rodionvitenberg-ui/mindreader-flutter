@@ -1,10 +1,10 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/services/oracle_voice_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import 'oracle_presence_indicator.dart';
 import 'oracle_subtitles.dart';
 import 'oracle_voice_controls.dart';
@@ -68,9 +68,9 @@ class OracleVoiceOverlay extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'LIVE ORACLE',
-                          style: GoogleFonts.jetBrainsMono(
+                          style: AppTypography.label(
                             fontSize: 9,
-                            letterSpacing: 1.8,
+                            letterSpacing: 1.0,
                             fontWeight: FontWeight.w700,
                             color: AppColors.lavender,
                           ),

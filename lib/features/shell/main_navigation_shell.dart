@@ -6,6 +6,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/models/natal_chart.dart';
 import '../../core/models/oracle_handoff.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../../state/app_settings_controller.dart';
 import '../almanac/almanac_screen.dart';
 import '../astral/astral_screen.dart';
@@ -171,9 +172,9 @@ class _NavItem extends StatelessWidget {
               child: Text(
                 label,
                 maxLines: 1,
-                style: TextStyle(
-                  fontSize: 8,
-                  letterSpacing: 0.6,
+                style: AppTypography.label(
+                  fontSize: 9,
+                  letterSpacing: 0.5,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                   color: color,
                 ),

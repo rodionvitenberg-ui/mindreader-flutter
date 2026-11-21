@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Shared PLACIDUS / KOCH / WHOLE SIGN selector used by both the ASTRAL
 /// screen and the birth-data form. A switch never re-generates a chart.
@@ -67,9 +67,9 @@ class _HousePill extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 9,
-            letterSpacing: 1.4,
+            letterSpacing: 0.8,
             color: selected ? AppColors.lavender : AppColors.textMuted,
           ),
         ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Live captions for the Oracle's spoken answer. Long answers stay inside a
 /// bounded, internally-scrollable box ("длинный ответ — компактные
@@ -21,7 +21,7 @@ class OracleSubtitles extends StatelessWidget {
       child: SingleChildScrollView(
         child: Text(
           text,
-          style: GoogleFonts.inter(
+          style: AppTypography.body(
             fontSize: 12,
             height: 1.4,
             color: AppColors.textPrimary,

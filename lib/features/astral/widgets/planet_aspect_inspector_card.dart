@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import 'natal_wheel_painter.dart';
 
 /// Tap-to-inspect panel: the selected body's sign/house reading plus every
@@ -65,9 +65,9 @@ class PlanetAspectInspectorCard extends StatelessWidget {
                   children: [
                     Text(
                       '${body.title.toUpperCase()} · HOUSE ${position.house}',
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.label(
                         fontSize: 9,
-                        letterSpacing: 1.4,
+                        letterSpacing: 0.8,
                         color: AppColors.lavender,
                       ),
                     ),
@@ -76,9 +76,9 @@ class PlanetAspectInspectorCard extends StatelessWidget {
                       '${position.sign.glyph} '
                       '${position.sign.title.toUpperCase()} · '
                       '${position.formattedDegree}',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 8,
-                        letterSpacing: 1.2,
+                      style: AppTypography.label(
+                        fontSize: 8.5,
+                        letterSpacing: 0.7,
                         color: AppColors.textMuted,
                       ),
                     ),
@@ -106,7 +106,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             position.interpretation,
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 12,
               height: 1.45,
               color: AppColors.textPrimary,
@@ -116,18 +116,18 @@ class PlanetAspectInspectorCard extends StatelessWidget {
           if (aspects.isEmpty)
             Text(
               'NO MAJOR ASPECTS — AN UNASPECTED DEGREE ACTS ALONE',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8,
-                letterSpacing: 1.3,
+              style: AppTypography.label(
+                fontSize: 8.5,
+                letterSpacing: 0.7,
                 color: AppColors.textMuted,
               ),
             )
           else ...[
             Text(
               'ACTIVE ASPECTS · ${aspects.length}',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8,
-                letterSpacing: 1.6,
+              style: AppTypography.label(
+                fontSize: 8.5,
+                letterSpacing: 0.9,
                 color: AppColors.textMuted,
               ),
             ),
@@ -164,8 +164,8 @@ class _AspectRow extends StatelessWidget {
               '${other.glyph} ${other.title.toUpperCase()} · '
               '${aspect.type.baseAngle.round()}° · '
               'ORB ${aspect.orb.toStringAsFixed(1)}°',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8,
+              style: AppTypography.label(
+                fontSize: 8.5,
                 letterSpacing: 1.1,
                 color: AppColors.textMuted,
               ),
@@ -173,8 +173,8 @@ class _AspectRow extends StatelessWidget {
           ),
           Text(
             '${(aspect.strength * 100).round()}%',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8,
+            style: AppTypography.label(
+              fontSize: 8.5,
               letterSpacing: 1.1,
               color: accent,
             ),
@@ -198,8 +198,8 @@ class _RetrogradeBadge extends StatelessWidget {
       ),
       child: Text(
         'Rx',
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 7,
+        style: AppTypography.label(
+          fontSize: 7.5,
           letterSpacing: 1,
           color: AppColors.textMuted,
         ),

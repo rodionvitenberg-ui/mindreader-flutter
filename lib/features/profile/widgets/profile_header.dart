@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/user_profile_controller.dart';
 import '../profile_screen.dart';
@@ -58,9 +58,9 @@ class ProfileHeaderTitle extends StatelessWidget {
       AppStrings.t(language, labelKey),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: GoogleFonts.cormorantGaramond(
-        fontSize: 26,
-        fontWeight: FontWeight.w600,
+      style: AppTypography.display(
+        fontSize: 28,
+        fontWeight: FontWeight.w800,
         color: AppColors.textPrimary,
       ),
     );
@@ -119,9 +119,9 @@ class _ProfileAvatarButton extends StatelessWidget {
             initial,
             maxLines: 1,
             overflow: TextOverflow.clip,
-            style: GoogleFonts.cormorantGaramond(
+            style: AppTypography.display(
               fontSize: 17,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               color: AppColors.lavender,
             ),
           ),

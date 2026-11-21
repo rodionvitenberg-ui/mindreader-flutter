@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/l10n/app_strings.dart';
@@ -11,6 +10,7 @@ import '../../core/services/local_storage_service.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/astral_controller.dart';
 import '../profile/widgets/profile_header.dart';
@@ -273,9 +273,9 @@ class _AstralScreenState extends State<AstralScreen> {
         children: [
           Text(
             'HOUSE SYSTEM',
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: 9,
-              letterSpacing: 1.8,
+              letterSpacing: 1.0,
               color: AppColors.textMuted,
             ),
           ),
@@ -399,9 +399,9 @@ class _AstralWindowSwitcher extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       labels[w]!,
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.label(
                         fontSize: 9,
-                        letterSpacing: 1.4,
+                        letterSpacing: 0.8,
                         fontWeight: FontWeight.w700,
                         color: window == w
                             ? AppColors.lavender

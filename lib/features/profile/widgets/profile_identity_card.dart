@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/data/astro_cities_data.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/user_profile_controller.dart';
 import 'profile_card.dart';
 
@@ -237,16 +237,16 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
                 children: [
                   Text(
                     label,
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 8,
-                      letterSpacing: 1.4,
+                    style: AppTypography.label(
+                      fontSize: 8.5,
+                      letterSpacing: 0.8,
                       color: AppColors.textMuted,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     value,
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 11,
                       color: AppColors.textPrimary,
                     ),

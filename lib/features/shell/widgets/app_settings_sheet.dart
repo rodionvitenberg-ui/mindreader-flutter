@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/app_settings_controller.dart';
 import 'pro_subscription_sheet.dart';
 
@@ -59,9 +59,9 @@ class AppSettingsSheet extends StatelessWidget {
                 const SizedBox(height: 20),
                 Text(
                   AppStrings.t(lang, 'settings.language'),
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: 9,
-                    letterSpacing: 1.8,
+                    letterSpacing: 1.0,
                     color: AppColors.textMuted,
                   ),
                 ),
@@ -86,9 +86,9 @@ class AppSettingsSheet extends StatelessWidget {
                 const SizedBox(height: 22),
                 Text(
                   AppStrings.t(lang, 'settings.proHint'),
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: 9,
-                    letterSpacing: 1.8,
+                    letterSpacing: 1.0,
                     color: AppColors.textMuted,
                   ),
                 ),
@@ -146,9 +146,9 @@ class _LanguageTile extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 10,
-            letterSpacing: 1.4,
+            letterSpacing: 0.8,
             fontWeight: FontWeight.w700,
             color: active ? AppColors.lavender : AppColors.textMuted,
           ),
@@ -197,9 +197,9 @@ class _ProCard extends StatelessWidget {
                 children: [
                   Text(
                     AppStrings.t(lang, 'pro.title'),
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 15,
-                      letterSpacing: 3,
+                      letterSpacing: 1.7,
                       fontWeight: FontWeight.w800,
                       color: AppColors.lavender,
                     ),
@@ -209,7 +209,7 @@ class _ProCard extends StatelessWidget {
                     AppStrings.t(lang, unlocked ? 'pro.active' : 'pro.benefit1'),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: AppTypography.body(
                       fontSize: 11.5,
                       height: 1.35,
                       color: AppColors.textPrimary,

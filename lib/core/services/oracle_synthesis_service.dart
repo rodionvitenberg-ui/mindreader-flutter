@@ -132,11 +132,11 @@ bool _isShadowRole(String role) =>
 
 /// The AI's 2-3 spread-specific follow-up Clarifier Questions shown at the
 /// end of the synthesis (and after every Clarifier Reading until the
-/// 10-card ceiling). Pure and deterministic: each question dynamically
+/// clarifier ceiling). Pure and deterministic: each question dynamically
 /// references the ACTUAL cards and elemental tensions on the table.
 List<String> buildClarifierSuggestions(
   List<DealtCardSlot> slots, {
-  int hardMax = 10,
+  int hardMax = 15,
 }) {
   final faceUp = [for (final s in slots) if (s.card != null) s];
   if (faceUp.isEmpty) return const [];
@@ -279,11 +279,15 @@ String synthesizeSpreadFor(
   String? contextChip,
   Map<int, String>? slotContexts,
   String? profileContext,
+  List<String>? positionQuestions,
 }) {
   final faceUp = slots.where((s) => s.card != null).toList();
   if (faceUp.isEmpty) {
     return 'Flip at least one card to begin the synthesis.';
   }
+
+  final hasQuestionPairs =
+      positionQuestions != null && positionQuestions.isNotEmpty;
 
   final b = StringBuffer();
   if (profileContext != null && profileContext.isNotEmpty) {
@@ -303,7 +307,25 @@ String synthesizeSpreadFor(
     }
     final orientation =
         c.system == DivinationSystem.lenormand ? '' : ' (${orientationWord(s)})';
-    b.writeln('${s.role} — ${c.name}$orientation: ${meaningFor(s)}');
+    if (hasQuestionPairs && s.index < positionQuestions.length) {
+      final q = positionQuestions[s.index];
+      b.writeln(
+        '${s.index + 1}. Question: $q — ${c.name}$orientation: ${meaningFor(s)}',
+      );
+    } else {
+      b.writeln('${s.role} — ${c.name}$orientation: ${meaningFor(s)}');
+    }
+  }
+
+  if (hasQuestionPairs && faceUp.length > 1) {
+    final first = faceUp.first.card!;
+    final last = faceUp.last.card!;
+    b.writeln();
+    b.writeln(
+      'Overall thread: across these ${faceUp.length} question–card pairs, '
+      'the reading moves from ${first.name} toward ${last.name}, linking each '
+      'answer into one connected arc.',
+    );
   }
 
   final threads = computeThreads(slots);
@@ -393,6 +415,7 @@ class OracleSynthesisService {
     String? contextChip,
     Map<int, String>? slotContexts,
     String? profileContext,
+    List<String>? positionQuestions,
   }) async {
     final resolvedLabel =
         spreadLabel ?? (type ?? SpreadType.three).label;
@@ -406,15 +429,17 @@ class OracleSynthesisService {
       contextChip: contextChip,
       slotContexts: slotContexts,
       profileContext: profileContext,
+      positionQuestions: positionQuestions,
     );
-    final prompt = _buildPrompt(
-      slots,
-      system,
-      resolvedLabel,
-      resolvedFocus,
-      contextChip,
-      slotContexts,
-      profileContext,
+    final prompt = buildSynthesisPrompt(
+      slots: slots,
+      system: system,
+      spreadLabel: resolvedLabel,
+      focusLine: resolvedFocus,
+      contextChip: contextChip,
+      slotContexts: slotContexts,
+      profileContext: profileContext,
+      positionQuestions: positionQuestions,
     );
     if (prompt == null) return fallback;
 
@@ -464,6 +489,7 @@ class OracleSynthesisService {
     String? contextChip,
     Map<int, String>? slotContexts,
     String? profileContext,
+    List<String>? positionQuestions,
   }) async {
     final narrative = await synthesize(
       slots: slots,
@@ -474,6 +500,7 @@ class OracleSynthesisService {
       contextChip: contextChip,
       slotContexts: slotContexts,
       profileContext: profileContext,
+      positionQuestions: positionQuestions,
     );
     final faceUp = slots.where((s) => s.card != null).toList();
     final threads = computeThreads(slots);
@@ -574,17 +601,24 @@ class OracleSynthesisService {
     b.writeln('The step to take: ${c.reflection}');
     return b.toString();
   }
-  static String? _buildPrompt(
-    List<DealtCardSlot> slots,
-    DivinationSystem system,
-    String spreadLabel,
-    String focusLine,
+  /// Builds the LLM prompt for a spread synthesis. When [positionQuestions] is
+  /// provided (Custom Spread), every slot is sent as an explicit numbered
+  /// `Question — Card` pair and the Oracle is instructed to connect all pairs
+  /// into one cohesive reading.
+  static String? buildSynthesisPrompt({
+    required List<DealtCardSlot> slots,
+    required DivinationSystem system,
+    required String spreadLabel,
+    required String focusLine,
     String? contextChip,
-    Map<int, String>? slotContexts, [
+    Map<int, String>? slotContexts,
     String? profileContext,
-  ]) {
+    List<String>? positionQuestions,
+  }) {
     final faceUp = slots.where((s) => s.card != null).toList();
     if (faceUp.isEmpty) return null;
+    final hasQuestionPairs =
+        positionQuestions != null && positionQuestions.isNotEmpty;
     final b = StringBuffer();
     b.writeln(oraclePersona);
     b.writeln('Spread: $spreadLabel (${faceUp.length} ${system.unit}s). '
@@ -604,23 +638,47 @@ class OracleSynthesisService {
       b.writeln('Runes land upright or merkstave (reversed); symmetrical '
           'runes stay upright. Read them by their Aett and element.');
     }
-    b.writeln('Cards in reading order:');
-    for (final s in faceUp) {
-      final c = s.card!;
-      final held = slotContexts?[s.index];
-      if (held != null && held.isNotEmpty) {
-        b.writeln('  The reader held in mind before drawing: $held.');
+    if (hasQuestionPairs) {
+      b.writeln('Question–card pairs in position order:');
+      for (final s in faceUp) {
+        final c = s.card!;
+        final held = slotContexts?[s.index];
+        if (held != null && held.isNotEmpty) {
+          b.writeln('  Reader note on position ${s.index + 1}: $held.');
+        }
+        final q = s.index < positionQuestions.length
+            ? positionQuestions[s.index]
+            : s.role;
+        b.writeln(
+          '${s.index + 1}. Question: "$q" — Card: ${c.name} '
+          '(${orientationWord(s)}), element ${c.element.label}. '
+          '${meaningFor(s)}',
+        );
       }
-      b.writeln('- ${s.role}: ${c.name} '
-          '(${orientationWord(s)}), '
-          'element ${c.element.label}. '
-          '${meaningFor(s)}');
+      b.writeln('Answer each question–card pair in order and weave all pairs '
+          'together into one cohesive overall reading that highlights how the '
+          'answers connect, names elemental harmonies and tensions, and closes '
+          'with one sharp Socratic question. Plain text only: no markdown, '
+          'no lists, no headers.');
+    } else {
+      b.writeln('Cards in reading order:');
+      for (final s in faceUp) {
+        final c = s.card!;
+        final held = slotContexts?[s.index];
+        if (held != null && held.isNotEmpty) {
+          b.writeln('  The reader held in mind before drawing: $held.');
+        }
+        b.writeln('- ${s.role}: ${c.name} '
+            '(${orientationWord(s)}), '
+            'element ${c.element.label}. '
+            '${meaningFor(s)}');
+      }
+      b.writeln('Write a cohesive synthesis of 2-3 short paragraphs that '
+          'weaves each card\'s meaning into its slot role AND weaves in what '
+          'the reader held in mind, names the elemental harmonies and '
+          'tensions, and closes with one sharp Socratic question. '
+          'Plain text only: no markdown, no lists, no headers.');
     }
-    b.writeln('Write a cohesive synthesis of 2-3 short paragraphs that '
-        'weaves each card\'s meaning into its slot role AND weaves in what '
-        'the reader held in mind, names the elemental harmonies and '
-        'tensions, and closes with one sharp Socratic question. '
-        'Plain text only: no markdown, no lists, no headers.');
     return b.toString();
   }
 

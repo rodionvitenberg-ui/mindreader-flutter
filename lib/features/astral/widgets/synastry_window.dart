@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/models/oracle_handoff.dart';
@@ -8,6 +7,7 @@ import '../../../core/models/tarot_card_model.dart';
 import '../../../core/services/natal_calculator_service.dart';
 import '../../../core/services/oracle_synthesis_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import 'astral_gradient_button.dart';
 
 /// ASTRAL window 2 — the 2-profile synastry workspace: an overall resonance
@@ -57,7 +57,7 @@ class SynastryWindow extends StatelessWidget {
         child: Text(
           'Synastry needs two saved profiles — create a second natal chart '
           'on the NATAL CHART window first.',
-          style: GoogleFonts.inter(
+          style: AppTypography.body(
             fontSize: 12,
             height: 1.4,
             color: AppColors.textMuted,
@@ -82,9 +82,9 @@ class SynastryWindow extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           '${chartA.profileName} × ${chartB.profileName}',
-          style: GoogleFonts.cinzel(
+          style: AppTypography.display(
             fontSize: 26,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w800,
             color: AppColors.textPrimary,
           ),
         ),
@@ -106,7 +106,7 @@ class SynastryWindow extends StatelessWidget {
           Text(
             'No tight cross-chart aspects — this bond rests on temperament, '
             'not friction.',
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 12,
               height: 1.4,
               color: AppColors.textMuted,
@@ -125,9 +125,9 @@ class SynastryWindow extends StatelessWidget {
 
   Widget _label(String text) => Text(
         text,
-        style: GoogleFonts.jetBrainsMono(
+        style: AppTypography.label(
           fontSize: 9,
-          letterSpacing: 1.8,
+          letterSpacing: 1.0,
           color: AppColors.textMuted,
         ),
       );
@@ -160,9 +160,9 @@ class _ResonanceCard extends StatelessWidget {
             children: [
               Text(
                 'OVERALL RESONANCE',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 8.5,
-                  letterSpacing: 1.6,
+                style: AppTypography.label(
+                  fontSize: 9,
+                  letterSpacing: 0.9,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textMuted,
                 ),
@@ -170,7 +170,7 @@ class _ResonanceCard extends StatelessWidget {
               const Spacer(),
               Text(
                 '$score%',
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: color,
@@ -220,9 +220,9 @@ class _AxisBar extends StatelessWidget {
               Expanded(
                 child: Text(
                   axis.title.toUpperCase(),
-                  style: GoogleFonts.jetBrainsMono(
+                  style: AppTypography.label(
                     fontSize: 9,
-                    letterSpacing: 1.2,
+                    letterSpacing: 0.7,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
@@ -230,7 +230,7 @@ class _AxisBar extends StatelessWidget {
               ),
               Text(
                 '${axis.score}%',
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
                   color: color,
@@ -254,7 +254,7 @@ class _AxisBar extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             axis.text,
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 11,
               height: 1.35,
               color: AppColors.textMuted,
@@ -289,9 +289,9 @@ class _ElementBar extends StatelessWidget {
             width: 66,
             child: Text(
               '${element.glyph} ${element.label.toUpperCase()}',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 8.5,
-                letterSpacing: 1.2,
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 0.7,
                 color: element.accent,
               ),
             ),
@@ -313,7 +313,7 @@ class _ElementBar extends StatelessWidget {
             child: Text(
               '$count',
               textAlign: TextAlign.right,
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 9,
                 color: AppColors.textMuted,
               ),
@@ -348,7 +348,7 @@ class _CrossAspectRow extends StatelessWidget {
             child: Text(
               '${aspect.bodyA.glyph} ${aspect.type.glyph} '
               '${aspect.bodyB.glyph}',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 11,
                 letterSpacing: 1,
                 color: AppColors.textPrimary,
@@ -360,7 +360,7 @@ class _CrossAspectRow extends StatelessWidget {
               aspect.synthesis,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: AppTypography.body(
                 fontSize: 11.5,
                 color: AppColors.textMuted,
               ),
@@ -369,7 +369,7 @@ class _CrossAspectRow extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '${aspect.orb.toStringAsFixed(1)}°',
-            style: GoogleFonts.jetBrainsMono(fontSize: 9, color: color),
+            style: AppTypography.label(fontSize: 9, color: color),
           ),
         ],
       ),

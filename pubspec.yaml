@@ -53,3 +53,32 @@ flutter:
     - assets/runes/obsidian_lavender/
     - assets/runes/nordic_bone/
     - assets/runes/blood_jasper/
+  fonts:
+    - family: Allo
+      fonts:
+        - asset: assets/fonts/allo/Allo-Light.otf
+          weight: 300
+        - asset: assets/fonts/allo/Allo-Regular.otf
+          weight: 400
+        - asset: assets/fonts/allo/Allo-Oblique.otf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/allo/Allo-Medium.otf
+          weight: 500
+        - asset: assets/fonts/allo/Allo-MediumOblique.otf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/allo/Allo-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/allo/Allo-Bold.otf
+          weight: 700
+        - asset: assets/fonts/allo/Allo-BoldOblique.otf
+          weight: 700
+          style: italic
+        - asset: assets/fonts/allo/Allo-ExtraBold.otf
+          weight: 800
+        - asset: assets/fonts/allo/Allo-Black.otf
+          weight: 900
+    - family: AlloVariable
+      fonts:
+        - asset: assets/fonts/allo/AlloVariable.ttf

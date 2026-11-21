@@ -23,11 +23,18 @@ class SpreadDeckDock extends StatelessWidget {
     required this.header,
     required this.badge,
     required this.onDeal,
+    this.deckWidthPx,
+    this.deckHeightPx,
   });
 
   final Widget header;
   final Widget badge;
   final VoidCallback onDeal;
+
+  /// Optional explicit outer size of the horizontal deck stack so its top card
+  /// matches the rendered size of cards on the table.
+  final double? deckWidthPx;
+  final double? deckHeightPx;
 
   @override
   Widget build(BuildContext context) {
@@ -46,12 +53,21 @@ class SpreadDeckDock extends StatelessWidget {
             Expanded(
               child: LayoutBuilder(
                 builder: (context, dock) {
-                  final scale = math.min(
-                    1.0,
-                    dock.maxHeight * 0.84 / overviewDeckHeight,
-                  );
-                  final height = overviewDeckHeight * scale;
-                  final width = overviewDeckWidth * scale;
+                  final targetH = deckHeightPx ?? overviewDeckHeight;
+                  final targetW = deckWidthPx ?? overviewDeckWidth;
+                  final scale = targetH <= 0 || targetW <= 0
+                      ? 0.0
+                      : math.min(
+                          1.0,
+                          math.min(
+                            (dock.maxHeight - 8).clamp(0.0, double.infinity) /
+                                targetH,
+                            (dock.maxWidth - 16).clamp(0.0, double.infinity) /
+                                targetW,
+                          ),
+                        );
+                  final height = targetH * scale;
+                  final width = targetW * scale;
                   final badgeWidth = math.max(
                     0.0,
                     (dock.maxWidth - width) / 2 - 8,
@@ -68,18 +84,19 @@ class SpreadDeckDock extends StatelessWidget {
                           onTap: onDeal,
                         ),
                       ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: SizedBox(
-                          width: badgeWidth,
-                          child: Center(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: badge,
+                      if (badgeWidth > 0)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: SizedBox(
+                            width: badgeWidth,
+                            child: Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: badge,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   );
                 },

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/divination_system.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 
 /// Top overlay row for the Camera: the active divination system (what the
 /// scan will feed), plus flash and gallery actions. The system switch is an
@@ -91,7 +91,7 @@ class _SystemChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
+          style: AppTypography.label(
             fontSize: 10,
             color: active ? AppColors.lavender : AppColors.textMuted,
           ),

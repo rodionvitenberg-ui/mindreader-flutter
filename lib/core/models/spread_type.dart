@@ -2,9 +2,9 @@ import 'dart:ui' show Offset;
 
 import 'tarot_card_model.dart';
 
-/// The canonical Tarot spread templates — Free + PRO. Pure Dart; the
-/// [miniSlots] values are NORMALIZED (0..1) slot coordinates used only by
-/// the miniature wireframe preview in the blueprint carousel.
+/// The canonical Tarot spread templates — all open without subscription.
+/// Pure Dart; real board geometry lives in `shuffle_physics.dart` and drives
+/// both the active Table and the picker miniatures.
 enum SpreadType {
   one(
     '1 · Daily Anchor',
@@ -16,11 +16,11 @@ enum SpreadType {
     [Offset(0.5, 0.5)],
   ),
   three(
-    '3 · Triad Flow',
+    '3 · Three Cards',
     3,
     false,
     ['Current State / Essence', 'Hidden Shadow / Block', 'Vector / Action'],
-    'Where you stand, what quietly blocks you, and the move that unlocks it.',
+    'Universal three-card spread — set your topic of the day, relationships, or work before synthesis.',
     ['State', 'Shadow', 'Vector'],
     [Offset(0.08, 0.5), Offset(0.5, 0.5), Offset(0.92, 0.5)],
   ),
@@ -69,9 +69,9 @@ enum SpreadType {
     ],
   ),
   loveBridge(
-    '5 · Love & Relationship Bridge',
+    '5 · Love Bridge',
     5,
-    true,
+    false,
     [
       'Your Shore',
       'Their Shore',
@@ -90,9 +90,9 @@ enum SpreadType {
     ],
   ),
   careerCrossroads(
-    '6 · Career & Path Crossroads',
+    '6 · Career Crossroads',
     6,
-    true,
+    false,
     [
       'The Root',
       'Present Path',
@@ -115,7 +115,7 @@ enum SpreadType {
   celticCross(
     '10 · Celtic Cross',
     10,
-    true,
+    false,
     [
       'Significator',
       'Crossing',
@@ -154,11 +154,11 @@ enum SpreadType {
     this.miniSlots,
   );
 
-  /// Short pill label, e.g. "3 · Triad Flow".
+  /// Short pill label, e.g. "3 · Three Cards".
   final String label;
   final int cardCount;
 
-  /// True for the PRO-gated spreads (locked behind the shared PRO flag).
+  /// Always false: all preset spread schemas are open without subscription.
   final bool isPro;
 
   /// The role each slot plays in the reading, top to bottom.

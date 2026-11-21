@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/models/zodiac_forecast.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import 'astral_gradient_button.dart';
 import 'daily_horoscope_card.dart';
 import 'horoscope_blocks.dart';
@@ -181,8 +181,8 @@ class _SignChip extends StatelessWidget {
               const SizedBox(width: 5),
               Text(
                 label,
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 8.5,
+                style: AppTypography.label(
+                  fontSize: 9,
                   letterSpacing: 1.0,
                   fontWeight: FontWeight.w700,
                   color: active ? AppColors.lavender : AppColors.textMuted,
@@ -210,7 +210,7 @@ class _NoHoroscope extends StatelessWidget {
       ),
       child: Text(
         'No horoscope yet — create a natal profile or pick a sign above.',
-        style: GoogleFonts.inter(
+        style: AppTypography.body(
           fontSize: 12,
           height: 1.4,
           color: AppColors.textMuted,

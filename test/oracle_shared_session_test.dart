@@ -65,7 +65,7 @@ void main() {
 
       await tester.pumpWidget(const MindreaderApp());
       await tester.pump();
-      await activateSpread(tester, 'Triad Flow'); // Table (Digital Table, pane 0)
+      await activateSpread(tester, 'Three Cards'); // Table (Digital Table, pane 0)
 
       final session = sessionOf(tester);
       session.beginSession(sessionId: 'shared-4-1b');

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/models/natal_chart.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import 'widgets/astral_gradient_button.dart';
 import 'widgets/astral_house_selector.dart';
 
@@ -132,36 +132,36 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
             children: [
               Text(
                 'NATAL PROFILE',
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: 9,
-                  letterSpacing: 1.8,
+                  letterSpacing: 1.0,
                   color: AppColors.lavender,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 chart.profileName,
-                style: GoogleFonts.cinzel(
+                style: AppTypography.display(
                   fontSize: 26,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 '$stamp · $timeLine',
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: 9,
-                  letterSpacing: 1.2,
+                  letterSpacing: 0.7,
                   color: AppColors.textMuted,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 '${chart.cityName} · ${chart.country}',
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.label(
                   fontSize: 9,
-                  letterSpacing: 1.2,
+                  letterSpacing: 0.7,
                   color: AppColors.textMuted,
                 ),
               ),
@@ -209,7 +209,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
         const SizedBox(height: 6),
         Text(
           chart.houseSystem.ruSubtitle,
-          style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted),
+          style: AppTypography.body(fontSize: 11, color: AppColors.textMuted),
         ),
       ],
     );
@@ -253,7 +253,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
         if (filtered.isEmpty)
           Text(
             'No aspects in this register.',
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted),
+            style: AppTypography.body(fontSize: 12, color: AppColors.textMuted),
           )
         else
           for (final aspect in filtered.take(14)) _AspectRow(aspect: aspect),
@@ -276,9 +276,9 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
 
   Widget _sectionLabel(String text) => Text(
         text,
-        style: GoogleFonts.jetBrainsMono(
+        style: AppTypography.label(
           fontSize: 9,
-          letterSpacing: 1.8,
+          letterSpacing: 1.0,
           color: AppColors.textMuted,
         ),
       );
@@ -311,9 +311,9 @@ class _SpotlightTile extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8,
-              letterSpacing: 1.4,
+            style: AppTypography.label(
+              fontSize: 8.5,
+              letterSpacing: 0.8,
               color: AppColors.textMuted,
             ),
           ),
@@ -323,7 +323,7 @@ class _SpotlightTile extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
@@ -332,8 +332,8 @@ class _SpotlightTile extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             '${pos.formattedDegree} · H${pos.house}',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8,
+            style: AppTypography.label(
+              fontSize: 8.5,
               letterSpacing: 0.6,
               color: AppColors.textMuted,
             ),
@@ -370,7 +370,7 @@ class _LedgerRow extends StatelessWidget {
               p.planet.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.inter(
+              style: AppTypography.body(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textPrimary,
@@ -384,7 +384,7 @@ class _LedgerRow extends StatelessWidget {
               textAlign: TextAlign.right,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 10,
                 letterSpacing: 0.3,
                 color: AppColors.textMuted,
@@ -399,7 +399,7 @@ class _LedgerRow extends StatelessWidget {
                 ? Text(
                     'R',
                     textAlign: TextAlign.right,
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
                       color: AppColors.conflictAmber,
@@ -428,8 +428,8 @@ class _HouseChip extends StatelessWidget {
       ),
       child: Text(
         'H$house',
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 8,
+        style: AppTypography.label(
+          fontSize: 8.5,
           letterSpacing: 0.4,
           color: AppColors.lavender,
         ),
@@ -467,9 +467,9 @@ class _FilterPill extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 8.5,
-            letterSpacing: 1.2,
+          style: AppTypography.label(
+            fontSize: 9,
+            letterSpacing: 0.7,
             color: selected ? AppColors.lavender : AppColors.textMuted,
           ),
         ),
@@ -504,7 +504,7 @@ class _AspectRow extends StatelessWidget {
             child: Text(
               '${aspect.bodyA.glyph} ${aspect.type.glyph} '
               '${aspect.bodyB.glyph}',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 11,
                 letterSpacing: 1,
                 color: AppColors.textPrimary,
@@ -528,7 +528,7 @@ class _AspectRow extends StatelessWidget {
             child: Text(
               '${aspect.orb.toStringAsFixed(1)}°',
               textAlign: TextAlign.right,
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 9,
                 color: AppColors.textMuted,
               ),

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/divination_card.dart';
 import '../../../core/models/divination_system.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../state/spread_controller.dart';
 import 'elemental_threads_painter.dart';
 import 'shuffle_physics.dart';
@@ -212,9 +212,9 @@ class _LenormandPairPill extends StatelessWidget {
             '${a.name.toUpperCase()} + ${b.name.toUpperCase()}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 7.5,
-              letterSpacing: 1.2,
+            style: AppTypography.label(
+              fontSize: 8,
+              letterSpacing: 0.7,
               fontWeight: FontWeight.w700,
               color: AppColors.lavender,
             ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/models/dealt_card_slot.dart';
@@ -10,6 +9,7 @@ import '../../core/models/tarot_card_model.dart';
 import '../../core/services/oracle_synthesis_service.dart';
 import '../../core/services/oracle_voice_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../../state/oracle_session_controller.dart';
 import '../../state/spread_controller.dart';
 import '../../state/synthesis_session.dart';
@@ -126,12 +126,12 @@ class _OracleChatPaneState extends State<OracleChatPane> {
         messenger
           ..hideCurrentSnackBar()
           ..showSnackBar(
-            const SnackBar(
-              duration: Duration(seconds: 3),
+            SnackBar(
+              duration: const Duration(seconds: 3),
               backgroundColor: AppColors.surface,
               content: Text(
                 'Type your question in the input bar first, then tap +1 CARD.',
-                style: TextStyle(color: Colors.white, fontSize: 12),
+                style: AppTypography.body(fontSize: 13.5, color: Colors.white),
               ),
             ),
           );
@@ -176,7 +176,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
           // buried inside the lazy stream.
           if (session.hasSynthesis && !session.generatingInitial)
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -187,9 +187,11 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _ChatActionChip(
-                    label: '📷 · CAMERA CLARIFIER',
-                    onTap: widget.onScanClarifier,
+                  Flexible(
+                    child: _ChatActionChip(
+                      label: '📷 · CAMERA CLARIFIER',
+                      onTap: widget.onScanClarifier,
+                    ),
                   ),
                 ],
               ),
@@ -202,10 +204,10 @@ class _OracleChatPaneState extends State<OracleChatPane> {
   Widget _chatStream(SpreadController ctrl, SynthesisSession session) {
     final children = <Widget>[];
     if (session.generatingInitial) {
-      children.add(_OracleBubble.typing('The Oracle is weaving the reading…'));
+      children.add(_OracleResponse.typing('The Oracle is weaving the reading…'));
     }
     if (session.hasSynthesis) {
-      children.add(_SynthesisBubble(synthesis: session.initial!));
+      children.add(_SynthesisResponse(synthesis: session.initial!));
     }
     for (final chapter in session.chapters) {
       children.add(
@@ -216,7 +218,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
         ),
       );
       children.add(
-        _OracleBubble(
+        _OracleResponse(
           text: chapter.text,
           typing: chapter.generating,
           header: chapter.generating ? null : 'CLARIFIER EXPANSION',
@@ -230,6 +232,8 @@ class _OracleChatPaneState extends State<OracleChatPane> {
       children.add(
         _ClarifierSuggestions(
           slots: ctrl.slots,
+          clarifierLimitReached: ctrl.isClarifierLimitReached,
+          maxCards: ctrl.maxCardsForCurrentSpread,
           onSelect: widget.onClarifierQuestion,
         ),
       );
@@ -239,17 +243,17 @@ class _OracleChatPaneState extends State<OracleChatPane> {
         case 'user':
           children.add(_UserBubble(text: message.text));
         case 'oracle':
-          children.add(_OracleBubble(text: message.text));
+          children.add(_OracleResponse(text: message.text));
         default:
           children.add(_SystemBubble(text: message.text));
       }
     }
     if (session.generatingAnswer) {
-      children.add(_OracleBubble.typing('Thinking…'));
+      children.add(_OracleResponse.typing('Thinking…'));
     }
     return SingleChildScrollView(
       controller: _scroll,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: children,
@@ -267,82 +271,103 @@ class _OracleChatPaneState extends State<OracleChatPane> {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.auto_awesome,
-                  size: 34,
-                  color: AppColors.lavender.withValues(alpha: 0.8),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  ready ? 'YOUR SPREAD IS READY' : 'NO READING YET',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 12,
-                    letterSpacing: 2.2,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.lavender,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          AppColors.lavender.withValues(alpha: 0.24),
+                          AppColors.indigo.withValues(alpha: 0.06),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: AppColors.lavender.withValues(alpha: 0.32),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome,
+                      size: 26,
+                      color: AppColors.lavender,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Text(
-                    ready
-                        ? 'Synthesize the spread and the Oracle will speak.'
-                        : 'Deal and flip your spread on the table, then come back — '
-                              'or just swipe left.',
+                  const SizedBox(height: 18),
+                  Text(
+                    ready ? 'YOUR SPREAD IS READY' : 'NO READING YET',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      height: 1.4,
-                      color: AppColors.textMuted,
+                    style: AppTypography.display(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                ),
-                if (ready) ...[
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 10),
-                    child: ReadingSubjectToggle(),
-                  ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.mediumImpact();
-                      widget.onSynthesize();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 11,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.lavender.withValues(alpha: 0.24),
-                            AppColors.indigo.withValues(alpha: 0.14),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppColors.lavender,
-                          width: 1.2,
-                        ),
-                      ),
-                      child: Text(
-                        '✦ SYNTHESIZE IN CHAT →',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 11,
-                          letterSpacing: 1.8,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.lavender,
-                        ),
+                  const SizedBox(height: 10),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 320),
+                    child: Text(
+                      ready
+                          ? 'Synthesize the spread and the Oracle will speak.'
+                          : 'Deal and flip your spread on the table, then come back — '
+                                'or just swipe left.',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.body(
+                        fontSize: 14.5,
+                        height: 1.5,
+                        color: AppColors.textMuted,
                       ),
                     ),
                   ),
+                  if (ready) ...[
+                    const SizedBox(height: 18),
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 10),
+                      child: ReadingSubjectToggle(),
+                    ),
+                    const SizedBox(height: 14),
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        widget.onSynthesize();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 13,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.lavender.withValues(alpha: 0.26),
+                              AppColors.indigo.withValues(alpha: 0.16),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: AppColors.lavender,
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Text(
+                          '✦ SYNTHESIZE IN CHAT →',
+                          style: AppTypography.label(
+                            fontSize: 12.5,
+                            letterSpacing: 0.9,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.lavender,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -384,9 +409,10 @@ class _SpreadHeaderStrip extends StatelessWidget {
                 'CURRENT SPREAD',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 8.5,
-                  letterSpacing: 1.6,
+                style: AppTypography.label(
+                  fontSize: 9.5,
+                  letterSpacing: 0.9,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.textMuted,
                 ),
               ),
@@ -402,10 +428,11 @@ class _SpreadHeaderStrip extends StatelessWidget {
                     if (dealt.isEmpty)
                       Text(
                         'NO CARDS ON THE TABLE',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 8,
-                          letterSpacing: 1.2,
-                          color: AppColors.textMuted.withValues(alpha: 0.7),
+                        style: AppTypography.label(
+                          fontSize: 9,
+                          letterSpacing: 0.7,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textMuted.withValues(alpha: 0.75),
                         ),
                       ),
                     const SizedBox(width: 6),
@@ -480,8 +507,9 @@ class _ElementMiniBadge extends StatelessWidget {
       ),
       child: Text(
         '${element.glyph}×$count',
-        style: TextStyle(
-          fontSize: 8,
+        style: AppTypography.label(
+          fontSize: 8.5,
+          letterSpacing: 0.3,
           fontWeight: FontWeight.w700,
           color: accent,
         ),
@@ -490,36 +518,58 @@ class _ElementMiniBadge extends StatelessWidget {
   }
 }
 
-/// Full-width chat bubbles — no narrow boxed modals.
-class _BubbleShell extends StatelessWidget {
-  const _BubbleShell({required this.child, required this.align});
+/// Gemini-style subtle sparkle header shared by Oracle answers and synthesis.
+class _OracleSpeakerHeader extends StatelessWidget {
+  const _OracleSpeakerHeader({this.label = 'ORACLE'});
 
-  final Widget child;
-  final AlignmentGeometry align;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Align(
-        alignment: align,
-        child: Container(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.sizeOf(context).width * 0.86,
-          ),
-          padding: const EdgeInsets.fromLTRB(13, 10, 13, 10),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.lavender.withValues(alpha: 0.28),
+                AppColors.indigo.withValues(alpha: 0.18),
+              ],
+            ),
           ),
-          child: child,
+          child: const Text(
+            '✦',
+            style: TextStyle(
+              fontSize: 12,
+              height: 1,
+              color: AppColors.lavender,
+            ),
+          ),
         ),
-      ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: AppTypography.label(
+            fontSize: 11,
+            letterSpacing: 1.0,
+            fontWeight: FontWeight.w700,
+            color: AppColors.lavender,
+          ),
+        ),
+      ],
     );
   }
 }
 
+/// Gemini-style user prompt bubble: right-aligned soft pill with asymmetric
+/// bottom-right corner and larger readable copy.
 class _UserBubble extends StatelessWidget {
   const _UserBubble({required this.text});
 
@@ -528,26 +578,31 @@ class _UserBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.only(top: 10, bottom: 14),
       child: Align(
         alignment: Alignment.centerRight,
         child: Container(
           constraints: BoxConstraints(
             maxWidth: MediaQuery.sizeOf(context).width * 0.82,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: AppColors.lavender.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(16),
+            color: AppColors.surface.withValues(alpha: 0.94),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(22),
+              topRight: Radius.circular(22),
+              bottomLeft: Radius.circular(22),
+              bottomRight: Radius.circular(6),
+            ),
             border: Border.all(
-              color: AppColors.lavender.withValues(alpha: 0.6),
+              color: AppColors.lavender.withValues(alpha: 0.30),
             ),
           ),
           child: Text(
             text,
-            style: GoogleFonts.inter(
-              fontSize: 12.5,
-              height: 1.4,
+            style: AppTypography.chatUser(
+              fontSize: 15,
+              height: 1.48,
               color: AppColors.textPrimary,
             ),
           ),
@@ -557,48 +612,32 @@ class _UserBubble extends StatelessWidget {
   }
 }
 
-class _OracleBubble extends StatelessWidget {
-  const _OracleBubble({required this.text, this.typing = false, this.header});
+/// Gemini-style open full-width Oracle response — no enclosing card box,
+/// allowing long-form readings to breathe cleanly across the canvas.
+class _OracleResponse extends StatelessWidget {
+  const _OracleResponse({required this.text, this.typing = false, this.header});
 
   final String text;
   final bool typing;
   final String? header;
 
-  factory _OracleBubble.typing(String label) =>
-      _OracleBubble(text: label, typing: true);
+  factory _OracleResponse.typing(String label) =>
+      _OracleResponse(text: label, typing: true);
 
   @override
   Widget build(BuildContext context) {
-    return _BubbleShell(
-      align: Alignment.centerLeft,
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 18, left: 2, right: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                '✦',
-                style: TextStyle(fontSize: 11, color: AppColors.lavender),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                header ?? 'ORACLE',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 8.5,
-                  letterSpacing: 1.8,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.lavender,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
+          _OracleSpeakerHeader(label: header ?? 'ORACLE'),
+          const SizedBox(height: 10),
           if (typing)
             Text(
               '$text · · ·',
-              style: GoogleFonts.inter(
-                fontSize: 12,
+              style: AppTypography.chatOracle(
+                fontSize: 14.5,
                 fontStyle: FontStyle.italic,
                 color: AppColors.textMuted,
               ),
@@ -606,9 +645,9 @@ class _OracleBubble extends StatelessWidget {
           else
             Text(
               text,
-              style: GoogleFonts.inter(
-                fontSize: 12.5,
-                height: 1.45,
+              style: AppTypography.chatOracle(
+                fontSize: 15.5,
+                height: 1.62,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -626,15 +665,16 @@ class _SystemBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       child: Align(
         alignment: Alignment.center,
         child: Text(
           text,
           textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
-            fontSize: 10.5,
+          style: AppTypography.body(
+            fontSize: 12.5,
             fontStyle: FontStyle.italic,
+            height: 1.4,
             color: AppColors.textMuted.withValues(alpha: 0.85),
           ),
         ),
@@ -649,26 +689,32 @@ class _SystemBubble extends StatelessWidget {
 /// workspace slides back to the Digital Table). At the 10-card ceiling
 /// the block becomes a permanent lock note — the conversation stays open.
 class _ClarifierSuggestions extends StatelessWidget {
-  const _ClarifierSuggestions({required this.slots, required this.onSelect});
+  const _ClarifierSuggestions({
+    required this.slots,
+    required this.clarifierLimitReached,
+    required this.maxCards,
+    required this.onSelect,
+  });
 
   final List<DealtCardSlot> slots;
+  final bool clarifierLimitReached;
+  final int maxCards;
   final ValueChanged<String> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    final dealtCount = slots.where((s) => s.card != null).length;
-    if (dealtCount >= SpreadController.maxTableCards) {
+    if (clarifierLimitReached) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         child: Align(
           alignment: Alignment.center,
           child: Text(
-            'MAXIMUM OF 10 CARDS REACHED FOR THIS READING — '
-            'THE CONVERSATION STAYS OPEN',
+            'MAXIMUM OF ${SpreadController.maxClarifierCards} CLARIFIER CARDS '
+            'REACHED — THE CONVERSATION STAYS OPEN',
             textAlign: TextAlign.center,
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8.5,
-              letterSpacing: 1.4,
+            style: AppTypography.label(
+              fontSize: 10,
+              letterSpacing: 0.8,
               fontWeight: FontWeight.w700,
               color: AppColors.textMuted,
             ),
@@ -676,26 +722,26 @@ class _ClarifierSuggestions extends StatelessWidget {
         ),
       );
     }
-    final questions = buildClarifierSuggestions(slots);
+    final questions = buildClarifierSuggestions(slots, hardMax: maxCards);
     if (questions.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(top: 6, bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'WOULD YOU LIKE TO DRAW A +1 CLARIFIER CARD TO UNCOVER:',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8.5,
-              letterSpacing: 1.4,
+            style: AppTypography.label(
+              fontSize: 10.5,
+              letterSpacing: 0.8,
               fontWeight: FontWeight.w700,
               color: AppColors.lavender,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           for (final q in questions) ...[
             _SuggestionCard(label: '🃏 +1 CARD: $q', onTap: () => onSelect(q)),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
           ],
         ],
       ),
@@ -703,7 +749,7 @@ class _ClarifierSuggestions extends StatelessWidget {
   }
 }
 
-/// One tappable AI clarifier question card (full-width, left-aligned).
+/// One tappable AI clarifier question card (Gemini-style follow-up chip).
 class _SuggestionCard extends StatelessWidget {
   const _SuggestionCard({required this.label, required this.onTap});
 
@@ -719,17 +765,17 @@ class _SuggestionCard extends StatelessWidget {
       },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.55)),
+          color: AppColors.surface.withValues(alpha: 0.82),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.36)),
         ),
         child: Text(
           label,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            height: 1.35,
+          style: AppTypography.chatUser(
+            fontSize: 14,
+            height: 1.4,
             color: AppColors.textPrimary,
           ),
         ),
@@ -738,19 +784,21 @@ class _SuggestionCard extends StatelessWidget {
   }
 }
 
-/// The structured AI synthesis rendered as the first oracle message.
-class _SynthesisBubble extends StatelessWidget {
-  const _SynthesisBubble({required this.synthesis});
+/// The structured AI synthesis rendered as a full-width Gemini-style answer.
+class _SynthesisResponse extends StatelessWidget {
+  const _SynthesisResponse({required this.synthesis});
 
   final StructuredSynthesis synthesis;
 
   @override
   Widget build(BuildContext context) {
-    return _BubbleShell(
-      align: Alignment.centerLeft,
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 18, left: 2, right: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const _OracleSpeakerHeader(label: 'ORACLE'),
+          const SizedBox(height: 14),
           _SynthesisSection(
             title: '1 · CORE NARRATIVE SYNTHESIS',
             body: synthesis.narrative,
@@ -763,13 +811,27 @@ class _SynthesisBubble extends StatelessWidget {
             title: '3 · ACTIONABLE VERDICT',
             body: synthesis.verdict,
           ),
-          const SizedBox(height: 4),
-          Text(
-            'The question to sit with: ${synthesis.followUp}',
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontStyle: FontStyle.italic,
-              color: AppColors.textMuted,
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+            decoration: BoxDecoration(
+              color: AppColors.lavender.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(12),
+              border: Border(
+                left: BorderSide(
+                  color: AppColors.lavender.withValues(alpha: 0.7),
+                  width: 2.5,
+                ),
+              ),
+            ),
+            child: Text(
+              'The question to sit with: ${synthesis.followUp}',
+              style: AppTypography.chatOracle(
+                fontSize: 14.5,
+                height: 1.5,
+                fontStyle: FontStyle.italic,
+                color: AppColors.textPrimary.withValues(alpha: 0.88),
+              ),
             ),
           ),
         ],
@@ -791,23 +853,23 @@ class _SynthesisSection extends StatelessWidget {
       children: [
         Text(
           title,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 8.5,
-            letterSpacing: 1.6,
+          style: AppTypography.heading(
+            fontSize: 13.5,
             fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
             color: AppColors.lavender,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           body,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            height: 1.45,
+          style: AppTypography.chatOracle(
+            fontSize: 15.5,
+            height: 1.62,
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -827,17 +889,19 @@ class _ChatActionChip extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.55)),
+          color: AppColors.surface.withValues(alpha: 0.88),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.lavender.withValues(alpha: 0.45)),
         ),
         child: Text(
           label,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 8.5,
-            letterSpacing: 1.0,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.label(
+            fontSize: 10,
+            letterSpacing: 0.5,
             fontWeight: FontWeight.w700,
             color: AppColors.lavender,
           ),

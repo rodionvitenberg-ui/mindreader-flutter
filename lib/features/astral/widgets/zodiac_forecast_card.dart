@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart' hide Element;
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/data/zodiac_almanac_data.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/models/zodiac_forecast.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import 'horoscope_blocks.dart';
 
 /// The quick-sign Horoscope card: a whole-sign solar forecast with no natal
@@ -44,9 +44,9 @@ class ZodiacForecastCard extends StatelessWidget {
                   children: [
                     Text(
                       entry.name.toUpperCase(),
-                      style: GoogleFonts.cormorantGaramond(
+                      style: AppTypography.display(
                         fontSize: 22,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w800,
                         height: 1.05,
                         color: AppColors.textPrimary,
                       ),
@@ -55,9 +55,9 @@ class ZodiacForecastCard extends StatelessWidget {
                     Text(
                       '${entry.dateRange} · ${entry.element.label.toUpperCase()} · '
                       '${entry.modality.name.toUpperCase()}',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 8,
-                        letterSpacing: 1.2,
+                      style: AppTypography.label(
+                        fontSize: 8.5,
+                        letterSpacing: 0.7,
                         color: AppColors.textMuted,
                       ),
                     ),
@@ -84,8 +84,8 @@ class ZodiacForecastCard extends StatelessWidget {
                     '${(forecast.moonIllumination * 100).round()}% · '
                     'MOON IN ${forecast.transitingMoonSign.title.toUpperCase()} '
                     '(SOLAR HOUSE ${forecast.solarMoonHouse})',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 8.5,
+                    style: AppTypography.label(
+                      fontSize: 9,
                       letterSpacing: 1.0,
                       color: AppColors.lavender,
                     ),
@@ -97,7 +97,7 @@ class ZodiacForecastCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             forecast.overallTheme,
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 12,
               height: 1.45,
               color: AppColors.textPrimary,

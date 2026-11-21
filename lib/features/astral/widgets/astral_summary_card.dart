@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import 'astral_gradient_button.dart';
 
 /// Live summary for the active profile: birth metadata, the Big Three and a
@@ -42,9 +42,9 @@ class AstralSummaryCard extends StatelessWidget {
           Text(
             '$day.$month.${chart.birthLocalYear} · ${chart.cityName} · '
             '${chart.houseSystem.label}',
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: 9,
-              letterSpacing: 1.2,
+              letterSpacing: 0.7,
               color: AppColors.textMuted,
             ),
           ),
@@ -68,9 +68,9 @@ class AstralSummaryCard extends StatelessWidget {
                 children: [
                   Text(
                     'OPEN FULL PROFILE',
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 9,
-                      letterSpacing: 1.6,
+                      letterSpacing: 0.9,
                       color: AppColors.lavender,
                     ),
                   ),
@@ -104,9 +104,9 @@ class _BigThreeChip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8,
-              letterSpacing: 1.4,
+            style: AppTypography.label(
+              fontSize: 8.5,
+              letterSpacing: 0.8,
               color: AppColors.textMuted,
             ),
           ),
@@ -115,7 +115,7 @@ class _BigThreeChip extends StatelessWidget {
             '${pos.sign.glyph} ${pos.sign.title}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
@@ -147,9 +147,9 @@ class AstralEmptyState extends StatelessWidget {
         children: [
           Text(
             'NO NATAL PROFILE YET',
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: 9,
-              letterSpacing: 1.8,
+              letterSpacing: 1.0,
               color: AppColors.textPrimary,
             ),
           ),
@@ -157,7 +157,7 @@ class AstralEmptyState extends StatelessWidget {
           Text(
             'Add your birth date, time and city to compute your chart. '
             'Everything stays on this device.',
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 13,
               height: 1.45,
               color: AppColors.textMuted,

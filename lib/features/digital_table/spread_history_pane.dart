@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/models/reading_session_badge.dart';
 import '../../core/models/reading_source.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/session_history_controller.dart';
 import '../../state/spread_session_snapshot.dart';
@@ -64,9 +64,9 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
                         'SPREAD HISTORY',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.jetBrainsMono(
+                        style: AppTypography.label(
                           fontSize: 13,
-                          letterSpacing: 2.4,
+                          letterSpacing: 1.3,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
@@ -156,9 +156,9 @@ class _ProBadge extends StatelessWidget {
       ),
       child: Text(
         unlocked ? 'PRO ∞' : 'PRO',
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 8.5,
-          letterSpacing: 1.6,
+        style: AppTypography.label(
+          fontSize: 9,
+          letterSpacing: 0.9,
           fontWeight: FontWeight.w800,
           color: AppColors.canvas,
         ),
@@ -195,9 +195,9 @@ class _NewSpreadButton extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'NEW SPREAD · НОВЫЙ РАСКЛАД',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.label(
                 fontSize: 10,
-                letterSpacing: 1.6,
+                letterSpacing: 0.9,
                 fontWeight: FontWeight.w700,
                 color: AppColors.lavender,
               ),
@@ -242,9 +242,9 @@ class _NotebookChip extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(
             label.toUpperCase(),
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 8.5,
-              letterSpacing: 1.2,
+            style: AppTypography.label(
+              fontSize: 9,
+              letterSpacing: 0.7,
               fontWeight: FontWeight.w700,
               color: active ? AppColors.lavender : AppColors.textMuted,
             ),
@@ -274,16 +274,16 @@ class _EmptyArchive extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             filtered ? 'THIS NOTEBOOK IS EMPTY' : 'NO READINGS SAVED YET',
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.label(
               fontSize: 10.5,
-              letterSpacing: 1.8,
+              letterSpacing: 1.0,
               color: AppColors.textMuted,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             'Synthesize your first spread and it will wait here.',
-            style: GoogleFonts.inter(
+            style: AppTypography.body(
               fontSize: 11,
               color: AppColors.textMuted.withValues(alpha: 0.8),
             ),
@@ -310,8 +310,13 @@ class _SessionTile extends StatelessWidget {
                 ? 'No context notes'
                 : session.sessionNotes.join(' · '));
     final isAstral = session.kind != SessionKind.divinationSpread;
+    final customCount = session.customQuestions.isNotEmpty
+        ? session.customQuestions.length
+        : session.cards.length;
     final title = session.astralSessionTitle ??
-        session.spreadType.label.toUpperCase();
+        (session.customSpread != null
+            ? '$customCount · ${session.customSpread}'
+            : session.spreadType.label);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
@@ -342,9 +347,9 @@ class _SessionTile extends StatelessWidget {
                           title.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.jetBrainsMono(
+                          style: AppTypography.label(
                             fontSize: 10,
-                            letterSpacing: 1.2,
+                            letterSpacing: 0.7,
                             fontWeight: FontWeight.w700,
                             color: AppColors.lavender,
                           ),
@@ -369,8 +374,8 @@ class _SessionTile extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     formatSessionTime(session.timestamp),
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 8,
+                    style: AppTypography.label(
+                      fontSize: 8.5,
                       letterSpacing: 1.0,
                       color: AppColors.textMuted,
                     ),
@@ -380,7 +385,7 @@ class _SessionTile extends StatelessWidget {
                     snippet,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: AppTypography.body(
                       fontSize: 10.5,
                       height: 1.35,
                       color: AppColors.textMuted,
@@ -450,7 +455,7 @@ class _CardGlyphStack extends StatelessWidget {
                 child: Center(
                   child: Text(
                     '${i + 1}',
-                    style: GoogleFonts.jetBrainsMono(
+                    style: AppTypography.label(
                       fontSize: 9,
                       color: AppColors.lavender,
                     ),
@@ -480,8 +485,8 @@ class _NotebookTag extends StatelessWidget {
       ),
       child: Text(
         label.toUpperCase(),
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 7,
+        style: AppTypography.label(
+          fontSize: 7.5,
           letterSpacing: 1.0,
           fontWeight: FontWeight.w700,
           color: AppColors.harmonyCyan,
@@ -515,8 +520,8 @@ class _AstralBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 7,
+        style: AppTypography.label(
+          fontSize: 7.5,
           letterSpacing: 1.0,
           fontWeight: FontWeight.w700,
           color: AppColors.lavender,
@@ -545,8 +550,8 @@ class _FlowBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.jetBrainsMono(
-          fontSize: 7,
+        style: AppTypography.label(
+          fontSize: 7.5,
           letterSpacing: 1.0,
           fontWeight: FontWeight.w700,
           color: AppColors.harmonyCyan,
