@@ -73,7 +73,11 @@ abstract final class TaroGlassCapability {
     }
 
     bool? selfTest;
-    if (overlay != null) {
+    final canRunSelfTest =
+        overlay != null &&
+        WidgetsBinding.instance is WidgetsFlutterBinding &&
+        (isAndroid || isApple);
+    if (canRunSelfTest) {
       selfTest = await _selfTestGlass(overlay);
     }
 
@@ -84,6 +88,13 @@ abstract final class TaroGlassCapability {
       androidVulkanSupported: vulkan,
       selfTestGlassWorks: selfTest,
     );
+  }
+
+  /// Сбрасывает кеш пробы (только для тестов).
+  @visibleForTesting
+  static void resetForTest() {
+    _resolved = false;
+    mode.value = TaroGlassMode.fake;
   }
 
   /// Рисует крошечное настоящее стекло над ярким фоном и проверяет пиксели.

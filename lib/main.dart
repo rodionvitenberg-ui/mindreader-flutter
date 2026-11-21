@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:provider/provider.dart';
 
+import 'core/config/app_flags.dart';
 import 'core/services/oracle_voice_service.dart';
 import 'core/theme/app_theme.dart';
+import 'design_system/taro.dart';
 import 'features/shell/main_navigation_shell.dart';
 import 'state/app_settings_controller.dart';
 import 'state/astral_controller.dart';
@@ -17,10 +22,21 @@ import 'state/user_profile_controller.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MindreaderApp());
+  // Прогрев шейдеров liquid glass в фоне, не блокируя первый кадр.
+  if (kTarotTreeThemeEnabled) {
+    unawaited(LiquidGlass.precache());
+  }
 }
 
 class MindreaderApp extends StatelessWidget {
-  const MindreaderApp({super.key});
+  const MindreaderApp({
+    super.key,
+    this.tarotTreeEnabled = kTarotTreeThemeEnabled,
+  });
+
+  /// Feature-flag gate for Tarot Tree (Phase G2+). Defaults to
+  /// [kTarotTreeThemeEnabled]; overridable in tests to verify rollback.
+  final bool tarotTreeEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -59,8 +75,8 @@ class MindreaderApp extends StatelessWidget {
       child: MaterialApp(
         title: 'mindreader.quest',
         debugShowCheckedModeBanner: false,
-        theme: buildAppTheme(),
-        home: const MainNavigationShell(),
+        theme: tarotTreeEnabled ? buildTaroTheme() : buildAppTheme(),
+        home: MainNavigationShell(tarotTreeEnabled: tarotTreeEnabled),
       ),
     );
   }

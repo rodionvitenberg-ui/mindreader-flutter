@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/config/app_flags.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/models/natal_chart.dart';
 import '../../core/models/oracle_handoff.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
 import '../almanac/almanac_screen.dart';
 import '../astral/astral_screen.dart';
@@ -20,7 +22,13 @@ import '../digital_table/table_workspace.dart';
 /// that sprint lands). Rituals and Settings live on the full-page
 /// ProfileScreen.
 class MainNavigationShell extends StatefulWidget {
-  const MainNavigationShell({super.key});
+  const MainNavigationShell({
+    super.key,
+    this.tarotTreeEnabled = kTarotTreeThemeEnabled,
+  });
+
+  /// Enables the shared twilight dusk backdrop and top-level [TaroGlassLayer].
+  final bool tarotTreeEnabled;
 
   @override
   State<MainNavigationShell> createState() => _MainNavigationShellState();
@@ -65,28 +73,51 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: [
-          CameraScanScreen(
-            isActiveTab: _index == 0,
-            onHandoff: () => _switchTo(1),
+    final stack = IndexedStack(
+      index: _index,
+      children: [
+        CameraScanScreen(
+          isActiveTab: _index == 0,
+          onHandoff: () => _switchTo(1),
+        ),
+        TableWorkspace(
+          onOpenCameraClarifier: () => _switchTo(0),
+          onResumeCamera: () => _switchTo(0),
+          astralHandoff: _handoff,
+        ),
+        AlmanacScreen(onOpenZodiacHoroscope: _openZodiacHoroscope),
+        AstralScreen(
+          isActive: _index == 3,
+          onOpenOracle: _openOracle,
+          browseZodiacSign: _browseSign,
+        ),
+      ],
+    );
+
+    if (!widget.tarotTreeEnabled) {
+      return Scaffold(
+        body: stack,
+        bottomNavigationBar: _GlassNavBar(index: _index, onTap: _switchTo),
+      );
+    }
+
+    // Один общий TaroGlassLayer на уровне shell: все стеклянные поверхности
+    // (включая док в G3 и экраны в G4–G6) делят один backdrop sample поверх
+    // градиента сумерек TaroDuskBackground (сам фон в стекло не оборачивается).
+    return Stack(
+      children: [
+        const Positioned.fill(child: TaroDuskBackground()),
+        TaroGlassLayer(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: stack,
+            bottomNavigationBar: _GlassNavBar(
+              index: _index,
+              onTap: _switchTo,
+            ),
           ),
-          TableWorkspace(
-            onOpenCameraClarifier: () => _switchTo(0),
-            onResumeCamera: () => _switchTo(0),
-            astralHandoff: _handoff,
-          ),
-          AlmanacScreen(onOpenZodiacHoroscope: _openZodiacHoroscope),
-          AstralScreen(
-            isActive: _index == 3,
-            onOpenOracle: _openOracle,
-            browseZodiacSign: _browseSign,
-          ),
-        ],
-      ),
-      bottomNavigationBar: _GlassNavBar(index: _index, onTap: _switchTo),
+        ),
+      ],
     );
   }
 }

@@ -48,7 +48,7 @@ class _GlassPlaygroundState extends State<GlassPlayground> {
     return Scaffold(
       body: Stack(
         children: [
-          const _DuskBackground(),
+          const Positioned.fill(child: TaroDuskBackground()),
           SafeArea(
             child: TaroGlassLayer(
               mode: _mode,
@@ -284,64 +284,6 @@ class _GlassPlaygroundState extends State<GlassPlayground> {
           errorText: 'Please enter a valid email',
         ),
       ],
-    );
-  }
-}
-
-
-/// Фон «мягкие сумерки»: градиент + рассветное свечение + атмосферная глубина.
-///
-/// Обычный [Container] / [Positioned] с радиальными градиентами — без дорогих
-/// эффектов стекла на весь фон (фон не сэмплится бэкдропом).
-class _DuskBackground extends StatelessWidget {
-  const _DuskBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF151725),
-            Color(0xFF2A2338),
-            Color(0xFF3A2E3E),
-          ],
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -120,
-            right: -80,
-            child: _glow(const Color(0xFFA78BFA), 0.30, 240),
-          ),
-          Positioned(
-            top: 120,
-            left: -100,
-            child: _glow(const Color(0xFFD4A8AC), 0.22, 220),
-          ),
-          Positioned(
-            bottom: -140,
-            left: 40,
-            child: _glow(const Color(0xFFF0C7A4), 0.18, 300),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _glow(Color color, double alpha, double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color.withValues(alpha: alpha), color.withValues(alpha: 0)],
-        ),
-      ),
     );
   }
 }

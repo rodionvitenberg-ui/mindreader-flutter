@@ -1,6 +1,6 @@
 # GLASS.md — План перевода интерфейса на дизайн-систему Tarot Tree
 
-Статус: **G1 завершён** (фундамент дизайн-системы + playground + capability).
+Статус: **G2 завершён** (фундамент G1 + тема `buildTaroTheme()`, флаг `kTarotTreeThemeEnabled`, фон `TaroDuskBackground` и `TaroGlassLayer` в `MainNavigationShell`).
 Этот документ — полный план поэтапного перевода всего UI приложения на новый
 «стеклянный» дизайн **без поломки существующей логики**.
 
@@ -64,7 +64,7 @@ lib/design_system/
   taro_glass_mode.dart         режимы рендера
   taro_glass_capability.dart   автовыбор режима + self-test
   components/                  6 базовых + растущий набор (см. §7)
-  theme/taro_theme.dart        (G3) ThemeData на Tarot Tree вместо buildAppTheme
+  theme/taro_theme.dart        (G2) ThemeData на Tarot Tree вместо buildAppTheme
 lib/core/theme/
   app_colors.dart              → со временем становится thin alias на TaroColors
   app_theme.dart               → buildAppTheme() → buildTaroTheme()
@@ -83,7 +83,7 @@ lib/core/theme/
 | Фаза | Содержание | Критерий готовности |
 |------|-----------|---------------------|
 | **G1** | Фундамент: токены + 6 компонентов + playground + capability | ✅ сделано |
-| **G2** | Тема: `buildTaroTheme()`, подключение в `main.dart`, фон-подложка, шрифт | приложение стартует в новой теме, все экраны визуально целы |
+| **G2** | Тема: `buildTaroTheme()`, подключение в `main.dart`, фон-подложка, шрифт | ✅ сделано (513/513 тестов, проверено на Redmi Impeller GLES) |
 | **G3** | Shell + навигация: док `TaroGlassDock`, sheet-обёртки, безопасные области | 4 вкладки переключаются, стиль дока новый |
 | **G4** | Digital Table (главный экран): панели, input, select, сегменты, bottom-sheet | рабочий стол полностью в Tarot Tree |
 | **G5** | Almanac + Astral + Profile | три раздела переведены |

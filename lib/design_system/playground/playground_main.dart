@@ -3,14 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 
-import '../../core/theme/app_typography.dart';
 import '../taro.dart';
 import 'glass_playground.dart';
 
 /// Отдельная точка входа для изолированного playground:
 /// `flutter run -t lib/design_system/playground/playground_main.dart`
 ///
-/// Основной `lib/main.dart` НЕ затрагивается до визуального согласования.
+/// Использует общую тему [buildTaroTheme] дизайн-системы Tarot Tree.
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const _PlaygroundApp());
@@ -25,23 +24,10 @@ class _PlaygroundApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final base = ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: TaroColors.background,
-      fontFamily: AppTypography.familyStatic,
-      colorScheme: const ColorScheme.dark(
-        primary: TaroColors.lavender,
-        secondary: TaroColors.indigo,
-        surface: TaroColors.surface,
-        onPrimary: TaroColors.background,
-        onSurface: TaroColors.textPrimary,
-      ),
-    );
     return MaterialApp(
       title: 'Tarot Tree — Glass Playground',
       debugShowCheckedModeBanner: false,
-      theme: base,
+      theme: buildTaroTheme(),
       home: const GlassPlayground(),
     );
   }

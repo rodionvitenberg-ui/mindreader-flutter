@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
-/// Tarot Tree — централизованные design tokens (Phase G1).
+/// Tarot Tree — централизованные design tokens (SSOT палитры и оптики).
 ///
-/// Отдельная система от [AppColors] (Dark Obsidian). Значения палитры задачи
-/// живут здесь и НЕ подменяют существующую тему до визуального согласования.
-/// Каждый параметр меняется в одном месте.
+/// Отдельная система от [AppColors] (Dark Obsidian). В фазе G2 подключается
+/// как основная тема за флагом `kTarotTreeThemeEnabled`; [AppColors] остаётся
+/// для непереведённых экранов до G7. Каждый параметр меняется в одном месте.
 abstract final class TaroColors {
   static const background = Color(0xFF151725);
+  static const duskMid = Color(0xFF2A2338);
+  static const duskHorizon = Color(0xFF3A2E3E);
   static const surface = Color(0xFF282739);
   static const canvas = Color(0xFF625B75);
   static const mist = Color(0xFFA9A4BE);
