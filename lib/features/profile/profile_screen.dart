@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
-import '../digital_table/widgets/ritual_settings_sheet.dart';
 import 'widgets/profile_card.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_identity_card.dart';
@@ -19,7 +18,8 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lang = context.watch<AppSettingsController>().language;
+    final settings = context.watch<AppSettingsController>();
+    final lang = settings.language;
     return Stack(
       children: [
         const Positioned.fill(child: TaroDuskBackground()),
@@ -49,31 +49,43 @@ class ProfileScreen extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                       children: [
                         const ProfileIdentityCard(),
+                        ProfileCard(
+                          section: SettingsSection.readingExperience,
+                          title: AppStrings.t(
+                            lang,
+                            'reading.title',
+                          ).toUpperCase(),
+                          child: Column(
+                            children: [
+                              for (final aid in ReadingAid.values)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                  ),
+                                  child: TaroGlassToggle(
+                                    key: ValueKey(aid),
+                                    label: AppStrings.t(
+                                      lang,
+                                      'reading.${aid.name}',
+                                    ),
+                                    subtitle: AppStrings.t(
+                                      lang,
+                                      'reading.${aid.name}.hint',
+                                    ),
+                                    value: settings.enabled(aid),
+                                    onChanged: (value) =>
+                                        settings.setAid(aid, value),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
                         const ProfileSignInCard(),
                         const ProfileMigrationCard(),
                         ProfileCard(
-                          title: AppStrings.t(lang, 'reading.title'),
-                          child: Column(children: [
-                            for (final aid in ReadingAid.values)
-                              SwitchListTile.adaptive(
-                                contentPadding: EdgeInsets.zero,
-                                title: Text(AppStrings.t(lang, 'reading.${aid.name}')),
-                                subtitle: Text(AppStrings.t(lang, 'reading.${aid.name}.hint')),
-                                value: context.watch<AppSettingsController>().enabled(aid),
-                                onChanged: (value) => context.read<AppSettingsController>().setAid(aid, value),
-                              ),
-                          ]),
-                        ),
-                        ProfileCard(
-                          title: AppStrings.t(lang, 'profile.card.rituals'),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _LanguageSelector(lang: lang),
-                              const SizedBox(height: 16),
-                              const RitualSettingsSheet(inline: true),
-                            ],
-                          ),
+                          section: SettingsSection.language,
+                          title: AppStrings.t(lang, 'settings.language'),
+                          child: _LanguageSelector(lang: lang),
                         ),
                       ],
                     ),

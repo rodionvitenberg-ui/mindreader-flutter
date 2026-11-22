@@ -6,6 +6,14 @@ import '../core/services/local_storage_service.dart';
 
 enum ReadingAid { positions, guide, relationships }
 
+enum SettingsSection {
+  personalContext,
+  readingExperience,
+  subscription,
+  deviceMigration,
+  language,
+}
+
 /// Iteration 2 — the single source of truth for the UI language and the
 /// shared PRO subscription state.
 ///
@@ -39,6 +47,24 @@ class AppSettingsController extends ChangeNotifier {
     try {
       await _storage.saveReadingAid(aid.name, value);
     } catch (_) { /* Keep the in-session preference when storage is unavailable. */ }
+  }
+
+  final _sectionExpansion = <SettingsSection, bool>{};
+  final _editedSections = <SettingsSection>{};
+
+  bool sectionExpanded(SettingsSection section) =>
+      _sectionExpansion[section] ?? true;
+
+  Future<void> setSectionExpanded(SettingsSection section, bool expanded) async {
+    if (sectionExpanded(section) == expanded) return;
+    _editedSections.add(section);
+    _sectionExpansion[section] = expanded;
+    notifyListeners();
+    try {
+      await _storage.saveSettingsSection(section.name, expanded);
+    } catch (_) {
+      // Retain the current layout if local preferences are unavailable.
+    }
   }
 
   AppLanguage get language => _language;
@@ -77,6 +103,17 @@ class AppSettingsController extends ChangeNotifier {
         final saved = await _storage.loadReadingAid(aid.name);
         if (saved != null && !_edited.contains(aid)) _aids[aid] = saved;
       } catch (_) { /* Use the default on devices without a preference store. */ }
+    }
+    try {
+      final sections = await _storage.loadSettingsSections();
+      for (final section in SettingsSection.values) {
+        final expanded = sections[section.name];
+        if (expanded != null && !_editedSections.contains(section)) {
+          _sectionExpansion[section] = expanded;
+        }
+      }
+    } catch (_) {
+      // Start with expanded sections on devices without a preference store.
     }
     notifyListeners();
   }

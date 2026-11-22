@@ -11,13 +11,9 @@ import '../almanac/almanac_screen.dart';
 import '../astral/astral_screen.dart';
 import '../camera_scan/camera_scan_screen.dart';
 import '../digital_table/table_workspace.dart';
+import '../rituals/daily_rituals_screen.dart';
 
-/// Bottom dock: Camera (0) | Table (1, default) | Almanac (2) | Astral (3).
-/// Profile moved OUT of the dock — it is now pushed full-page from the
-/// profile action in the top-right corner of each non-camera page. Index 4 is RESERVED
-/// for the upcoming ACADEMY learning tab (append a child + a tab entry when
-/// that sprint lands). Rituals and Settings live on the full-page
-/// ProfileScreen.
+/// Bottom dock and independent navigation state for each tab.
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key});
 
@@ -26,7 +22,9 @@ class MainNavigationShell extends StatefulWidget {
 }
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
+  static const _ritualsIndex = 4;
   int _index = 1; // Digital Table is the core tab
+  bool _ritualsOpened = false;
 
   /// Cross-tab ASTRAL to Table handoff: ASTRAL publishes a reading request
   /// here; the Oracle Chat pane consumes it and streams the answer.
@@ -54,7 +52,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   void _switchTo(int index) {
     if (index == _index) return;
     HapticFeedback.selectionClick();
-    setState(() => _index = index);
+    setState(() {
+      _index = index;
+      if (index == _ritualsIndex) _ritualsOpened = true;
+    });
   }
 
   void _openOracle(OracleHandoff handoff) {
@@ -100,6 +101,14 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                     browseZodiacSign: _browseSign,
                   ),
                 ),
+                if (_ritualsOpened)
+                  TaroGlassLayer(
+                    child: DailyRitualsScreen(
+                      isActive: _index == _ritualsIndex,
+                    ),
+                  )
+                else
+                  const SizedBox.shrink(),
               ],
             ),
             bottomNavigationBar: TaroGlassLayer(
@@ -119,14 +128,12 @@ class _TaroNavDock extends StatelessWidget {
   final int index;
   final ValueChanged<int> onTap;
 
-  /// The 4 core tabs, in IndexedStack order. The 5th slot (Academy) is
-  /// reserved for the upcoming learning sprint — add `Icons.school_outlined,
-  /// 'nav.academy'` here and a matching IndexedStack child.
   static const _tabs = [
     (Icons.camera_alt_outlined, 'nav.camera'),
     (Icons.style_outlined, 'nav.table'),
     (Icons.menu_book_outlined, 'nav.almanac'),
     (Icons.auto_awesome_outlined, 'nav.astral'),
+    (Icons.notifications_outlined, 'nav.rituals'),
   ];
 
   @override
@@ -138,10 +145,7 @@ class _TaroNavDock extends StatelessWidget {
       child: TaroGlassDock(
         items: [
           for (final tab in _tabs)
-            TaroDockItem(
-              icon: tab.$1,
-              label: AppStrings.t(lang, tab.$2),
-            ),
+            TaroDockItem(icon: tab.$1, label: AppStrings.t(lang, tab.$2)),
         ],
         index: index,
         onTap: onTap,

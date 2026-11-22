@@ -1,49 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
+import '../../../state/app_settings_controller.dart';
 
 /// Shared Tarot Tree glass card used by every ProfileScreen section (Phase G5).
 class ProfileCard extends StatelessWidget {
   const ProfileCard({
     super.key,
+    required this.section,
     required this.title,
     required this.child,
     this.trailing,
   });
 
+  final SettingsSection section;
   final String title;
   final Widget child;
   final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
+    final expanded = context.select<AppSettingsController, bool>(
+      (settings) => settings.sectionExpanded(section),
+    );
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: TaroGlassPanel(
         radius: 20,
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(16, 0, 16, expanded ? 16 : 0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: AppTypography.label(
-                      fontSize: 10,
-                      letterSpacing: 1.0,
-                      fontWeight: FontWeight.w600,
-                      color: TaroColors.lavender,
-                    ),
+            Semantics(
+              button: true,
+              expanded: expanded,
+              child: InkWell(
+                key: ValueKey(section),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  context.read<AppSettingsController>().setSectionExpanded(
+                    section,
+                    !expanded,
+                  );
+                },
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: AppTypography.label(
+                            fontSize: 10,
+                            letterSpacing: 1.0,
+                            fontWeight: FontWeight.w600,
+                            color: TaroColors.lavender,
+                          ),
+                        ),
+                      ),
+                      ?trailing,
+                      const SizedBox(width: 8),
+                      Icon(
+                        expanded ? Icons.expand_less : Icons.expand_more,
+                        size: 20,
+                        color: TaroColors.textSecondary,
+                      ),
+                    ],
                   ),
                 ),
-                ?trailing,
-              ],
+              ),
             ),
-            const SizedBox(height: 12),
-            child,
+            if (expanded) child,
           ],
         ),
       ),
@@ -113,11 +143,7 @@ class ProfilePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (onTap == null) {
-      return TaroGlassPill(
-        label: label,
-        icon: icon,
-        accent: active,
-      );
+      return TaroGlassPill(label: label, icon: icon, accent: active);
     }
     return TaroGlassChip(
       label: label,

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme/app_typography.dart';
-import '../taro_glass.dart';
 import '../taro_tokens.dart';
 
 /// Стеклянный переключатель (Phase G3): настройки, тихий режим, уведомления.
@@ -37,36 +36,39 @@ class TaroGlassToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final track = SizedBox(
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : TaroMotion.fast;
+    final track = AnimatedContainer(
+      duration: duration,
       width: 54,
       height: 32,
-      child: TaroGlassSurface(
-        radius: TaroRadii.pill,
-        visibility: _disabled ? 0.45 : 1.0,
-        tint: value
-            ? TaroColors.lavender.withValues(alpha: 0.34)
-            : TaroColors.mist.withValues(alpha: 0.10),
-        fillColor: value
-            ? TaroColors.lavender.withValues(alpha: 0.35)
-            : TaroColors.surface,
-        borderColor: value
-            ? TaroColors.lavender.withValues(alpha: TaroOpacity.borderStrong)
-            : TaroColors.mist.withValues(alpha: TaroOpacity.border),
-        child: Padding(
-          padding: const EdgeInsets.all(3),
-          child: AnimatedAlign(
-            duration: TaroMotion.fast,
-            curve: Curves.easeOutCubic,
-            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-            child: Container(
-              width: 24,
-              height: 24,
+      decoration: BoxDecoration(
+        color: value
+            ? Color.alphaBlend(
+                TaroColors.lavender.withValues(alpha: .38),
+                TaroColors.surface,
+              )
+            : const Color(0xFF3B3B43),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: value
+              ? TaroColors.lavender.withValues(alpha: .65)
+              : TaroColors.mist.withValues(alpha: .34),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: AnimatedAlign(
+          duration: duration,
+          curve: Curves.easeOutCubic,
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: SizedBox.square(
+            dimension: 24,
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: value ? TaroColors.textPrimary : TaroColors.mist,
-                boxShadow: value
-                    ? TaroGlow.soft(TaroColors.lavender, alpha: 0.45, blur: 10)
-                    : null,
+                color: _disabled ? TaroColors.mist : TaroColors.textPrimary,
               ),
             ),
           ),
@@ -123,7 +125,7 @@ class TaroGlassToggle extends StatelessWidget {
       label: semanticLabel ?? label,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: _toggle,
+        onTap: _disabled ? null : _toggle,
         child: control,
       ),
     );

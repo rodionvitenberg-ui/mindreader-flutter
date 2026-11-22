@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../design_system/taro.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/user_profile_controller.dart';
 import '../../shell/widgets/pro_subscription_sheet.dart';
@@ -15,9 +16,11 @@ class ProfileSignInCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final profile = context.watch<UserProfileController>();
-    final pro = context.watch<AppSettingsController>().isProUnlocked;
+    final settings = context.watch<AppSettingsController>();
+    final pro = settings.isProUnlocked;
     return ProfileCard(
-      title: '1-CLICK SIGN-IN & PRO',
+      section: SettingsSection.subscription,
+      title: AppStrings.t(settings.language, 'profile.card.signIn'),
       trailing: ProfilePill(
         label: pro ? 'PRO ACTIVE' : 'FREE TIER',
         active: pro,

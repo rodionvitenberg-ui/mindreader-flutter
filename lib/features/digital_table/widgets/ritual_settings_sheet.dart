@@ -10,12 +10,16 @@ import '../../../design_system/taro.dart';
 /// anchor (09:00) and evening reflection (22:00) times, and see the current
 /// reading streak. Zero server retention — everything stays on the device.
 class RitualSettingsSheet extends StatefulWidget {
-  const RitualSettingsSheet({super.key, this.inline = false});
+  const RitualSettingsSheet({
+    super.key,
+    this.inline = false,
+    this.isActive = true,
+  });
 
   /// When true the same controls render as plain page content (no sheet
-  /// chrome, no drag handle, no auto-close) — used by ProfileScreen so the
-  /// ritual toggles live on the full page instead of a second modal.
+  /// chrome, no drag handle or auto-close).
   final bool inline;
+  final bool isActive;
 
   static Future<void> show(BuildContext context) {
     return showTaroGlassSheet<void>(
@@ -40,6 +44,21 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
   void initState() {
     super.initState();
     _restore();
+  }
+
+  @override
+  void didUpdateWidget(RitualSettingsSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_loaded && widget.isActive && !oldWidget.isActive) _refreshStreak();
+  }
+
+  Future<void> _refreshStreak() async {
+    try {
+      final days = await _storage.loadReadingDays();
+      if (mounted) setState(() => _streak = computeStreak(days));
+    } catch (_) {
+      // Keep the last visible streak if the local store is unavailable.
+    }
   }
 
   Future<void> _restore() async {
@@ -77,7 +96,7 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
       initialTime: current,
       initialEntryMode: TimePickerEntryMode.input,
     );
-    if (picked == null) return;
+    if (!mounted || picked == null) return;
     setState(() {
       if (morning) {
         _morning = picked.hour * 60 + picked.minute;
@@ -129,9 +148,10 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (widget.inline) const SizedBox(height: 8),
-        Text('DAILY RITUAL', style: Theme.of(context).textTheme.displayMedium),
-        const SizedBox(height: 4),
+        if (!widget.inline) ...[
+          Text('DAILY RITUAL', style: Theme.of(context).textTheme.displayMedium),
+          const SizedBox(height: 4),
+        ],
         Text(
           'LOCAL REMINDERS · ZERO SERVER RETENTION · '
           '$_streak-DAY STREAK',
@@ -193,12 +213,14 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
                   color: TaroColors.dawn,
                 ),
                 const SizedBox(width: 10),
-                Text(
-                  '$_streak-DAY READING STREAK',
-                  style: AppTypography.label(
-                    fontSize: 10,
-                    letterSpacing: 0.9,
-                    color: TaroColors.textPrimary,
+                Expanded(
+                  child: Text(
+                    '$_streak-DAY READING STREAK',
+                    style: AppTypography.label(
+                      fontSize: 10,
+                      letterSpacing: 0.9,
+                      color: TaroColors.textPrimary,
+                    ),
                   ),
                 ),
               ],

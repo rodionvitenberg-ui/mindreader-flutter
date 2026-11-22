@@ -481,9 +481,9 @@ class AppStrings {
       AppLanguage.en: 'DEVICE MIGRATION',
       AppLanguage.ru: 'ПЕРЕНОС НА НОВОЕ УСТРОЙСТВО',
     },
-    'profile.card.rituals': {
-      AppLanguage.en: 'DAILY RITUALS & LANGUAGE',
-      AppLanguage.ru: 'РИТУАЛЫ И ЯЗЫК',
+    'rituals.title': {
+      AppLanguage.en: 'DAILY RITUALS',
+      AppLanguage.ru: 'ЕЖЕДНЕВНЫЕ РИТУАЛЫ',
     },
 
     // ---- ASTRAL windows ----

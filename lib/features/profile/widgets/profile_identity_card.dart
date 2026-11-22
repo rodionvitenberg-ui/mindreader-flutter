@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../../core/data/astro_cities_data.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
+import '../../../core/l10n/app_strings.dart';
+import '../../../state/app_settings_controller.dart';
 import '../../../state/user_profile_controller.dart';
 import 'profile_card.dart';
 
@@ -91,7 +93,8 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
   Widget build(BuildContext context) {
     final profile = context.watch<UserProfileController>();
     return ProfileCard(
-      title: 'PERSONAL CONTEXT & BIRTH DATA',
+      section: SettingsSection.personalContext,
+      title: AppStrings.t(context.watch<AppSettingsController>().language, 'profile.card.identity'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

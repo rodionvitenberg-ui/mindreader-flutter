@@ -13,7 +13,7 @@ import 'package:mindreader/state/astral_controller.dart';
 import 'package:mindreader/state/user_profile_controller.dart';
 
 void main() {
-  testWidgets('bottom dock exposes exactly 4 tabs + header avatar',
+  testWidgets('bottom dock exposes the four reading tabs and notifications',
       (tester) async {
     await tester.pumpWidget(const MindreaderApp());
     await tester.pump();
@@ -22,12 +22,10 @@ void main() {
     expect(find.text('TABLE'), findsOneWidget);
     expect(find.text('ALMANAC'), findsOneWidget);
     expect(find.text('ASTRAL'), findsOneWidget);
-    // Profile moved OUT of the dock into the top-left header avatar; the
-    // 5th dock slot is reserved for the upcoming ACADEMY tab.
     expect(find.text('PROFILE'), findsNothing);
     expect(find.byKey(const ValueKey('profile-avatar-button')), findsOneWidget);
-    // Rituals / Settings are page content now, not dock actions.
-    expect(find.text('RITUALS'), findsNothing);
+    expect(find.text('RITUALS'), findsOneWidget);
+    expect(find.byIcon(Icons.notifications_outlined), findsOneWidget);
     expect(find.text('SETTINGS'), findsNothing);
   });
 

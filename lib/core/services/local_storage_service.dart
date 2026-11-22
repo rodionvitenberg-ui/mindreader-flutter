@@ -29,6 +29,7 @@ class LocalStorageService {
 
   // App settings (Iteration 2): UI language + the shared PRO flag.
   static const _appLanguageKey = 'app_language';
+  static const _settingsSectionPrefix = 'settings_section.';
   static const _proUnlockedKey = 'is_pro_unlocked';
 
   // Digital Table view mode (Iteration 4): SPREAD VIEW is the default.
@@ -44,6 +45,20 @@ class LocalStorageService {
 
   Future<void> saveReadingAid(String aid, bool value) async {
     await (await SharedPreferences.getInstance()).setBool('reading_aid.$aid', value);
+  }
+
+  Future<Map<String, bool>> loadSettingsSections() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      for (final key in prefs.getKeys())
+        if (key.startsWith(_settingsSectionPrefix) && prefs.get(key) is bool)
+          key.substring(_settingsSectionPrefix.length): prefs.getBool(key)!,
+    };
+  }
+
+  Future<void> saveSettingsSection(String section, bool expanded) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('$_settingsSectionPrefix$section', expanded);
   }
 
   Future<List<Map<String, dynamic>>> loadHistory() async {

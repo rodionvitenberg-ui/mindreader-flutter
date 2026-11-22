@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../../design_system/taro.dart';
+import '../../../core/l10n/app_strings.dart';
+import '../../../state/app_settings_controller.dart';
 import '../../../state/user_profile_controller.dart';
 import 'profile_card.dart';
 
@@ -142,7 +144,8 @@ class ProfileMigrationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ProfileCard(
-      title: 'DEVICE MIGRATION',
+      section: SettingsSection.deviceMigration,
+      title: AppStrings.t(context.watch<AppSettingsController>().language, 'profile.card.migration'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
