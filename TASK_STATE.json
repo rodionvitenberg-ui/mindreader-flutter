@@ -1,7 +1,7 @@
 {
   "$schema_version": "1.0",
   "project": "mindreader.quest (Flutter mobile)",
-  "active_feature_or_sprint": "G4 COMPLETE (G4.0-G4.4) - Guided Reading content polish closed; next and only open block: G2.2 mascot image/poses/glass bubble",
+  "active_feature_or_sprint": "G2.2 WISP MASCOT (done) - authored sprite assets/images/wisp_body.png + procedural face, 5 moods, bar/onboarding/Oracle sheet; next: animated sprite frames, glass bubble, corner placement",
   "status": "IN_PROGRESS",
   "context": {
     "stack": [
@@ -193,7 +193,15 @@
       "lib/features/digital_table/widgets/reading_guide.dart (UPDATED - stateful guide sheet, Ask the Oracle block)",
       "lib/core/data/guide_copy.dart (UPDATED - askOracle/oracleThinking/oracleLabel)",
       "l10n/{en,ru,es,pt,de,fr}.tsv (UPDATED - 8 guide.oracle.* keys, 2494 keys each)",
-      "test/guide_oracle_option_test.dart (NEW - 7 G4.4 tests)"
+      "test/guide_oracle_option_test.dart (NEW - 7 G4.4 tests)",
+      "assets/images/wisp_body.png (NEW - authored mascot sprite; moved from the repo root maskot.png)",
+      "pubspec.yaml (UPDATED - assets/images/ registered)",
+      "lib/features/digital_table/widgets/wisp_mascot.dart (NEW - sprite + float/blink/gaze, reduce-motion, haptics)",
+      "lib/features/digital_table/widgets/wisp_face_painter.dart (NEW - 5 procedural expressions)",
+      "lib/features/digital_table/widgets/wisp_mood.dart (NEW - WispMood + wispMoodFor)",
+      "lib/features/digital_table/widgets/reading_guide.dart (UPDATED - wisp in the bar and in the Oracle block)",
+      "lib/features/onboarding/{onboarding_flow,widgets/onboarding_step_body}.dart (UPDATED - wisp moods)",
+      "test/wisp_mascot_test.dart (NEW - 8 tests); test/guide_mascot_test.dart + guide_mascot.dart (REMOVED - placeholder)"
     ],
     "hard_constraints": [
       "Strict Zero-Knowledge: do NOT log raw PII/secrets to console or logs",
@@ -302,11 +310,16 @@
       "L10N 6 LANGUAGES: keyed every user-visible string (UI + tarot/lenormand/runes/zodiac/spreads/lessons/cities/decks/astral generated copy), generated en/ru/es/pt/de/fr dictionaries, added language picker + coverage test. flutter analyze 0 issues; full suite 617 passed / 4 pre-existing WIP failures (astral_horoscope_and_zodiac x2, workspace_swipe, interactive_spread).",
       "G4.2 GUIDED LINK LESSONS: ReadingRelationship.isContradictory (elementalDignity+opposing only); guideConflictLesson/guideSchoolLesson behind guide_content; GuidedReadingController._freshLessonLine shares the once-only thorough gate, conflict:<system> then school:<system> lessons ride the completed hint and explicit relationship hints, memory in guided_seen_v1 (resetLearned); keys content.lesson.tarot.conflict/school in all 6 dictionaries (2485 keys each); tests guide_link_lessons 12 + reading_relationships +1; flutter analyze 0; full suite 630 passed / 4 known WIP failures",
       "G4.3 GUIDED LINK TAP: _RelationshipRow in reading_bottom_sheet (GestureDetector, opaque, key relationship-row-<from>-<to>, lavender menu_book glyph only while ReadingAid.guide is on) -> HapticFeedback.selectionClick + GuidedReadingController.explainRelationship + pop; the mentor sheet for relationshipTapped gains \"Back to the spread\" (guide.backToSpread, 6 languages) -> clearRelationship so the link never hijacks the mentor; guided_reading_test +1 full-chain widget test; analyze 0; full suite 631 passed / 4 known WIP failures",
-      "G4.4 ORACLE OPTION: OracleSynthesisService.explainGuideMoment(moment, focus, slots, link, focusSlot) - same worker->cloud pipeline, prompt is model-facing only; offline it answers from l10n keys (guide.oracle.fallback/card/link/question/empty) with the spread focus, face-up cards with roles, the touched ReadingRelationship and the focus card DivinationCard.reflection. Guide sheet is now stateful: Ask-the-Oracle button only when a card is face up, disabled after the answer, thinking label while awaiting, mounted guard; sheet never asks by itself. l10n 2494 keys x 6. Tests guide_oracle_option 7; analyze 0; full suite 638 passed / 4 known WIP failures. G4 closed."
+      "G4.4 ORACLE OPTION: OracleSynthesisService.explainGuideMoment(moment, focus, slots, link, focusSlot) - same worker->cloud pipeline, prompt is model-facing only; offline it answers from l10n keys (guide.oracle.fallback/card/link/question/empty) with the spread focus, face-up cards with roles, the touched ReadingRelationship and the focus card DivinationCard.reflection. Guide sheet is now stateful: Ask-the-Oracle button only when a card is face up, disabled after the answer, thinking label while awaiting, mounted guard; sheet never asks by itself. l10n 2494 keys x 6. Tests guide_oracle_option 7; analyze 0; full suite 638 passed / 4 known WIP failures. G4 closed.",
+      "G2.2 WISP MASCOT: assets/images/wisp_body.png (2048 RGBA, pubspec assets/images/, cacheWidth>=256) + features/digital_table/widgets/wisp_mascot.dart (RepaintBoundary, screen-blend sprite, float 2.8s, blink schedule with orCancel guard, gaze tween, reduce-motion stops all frames, mediumImpact on greeting) + wisp_face_painter.dart (procedural face, 5 expressions) + wisp_mood.dart (WispMood + pure wispMoodFor(hint, tension)); GuidedReadingController.hasTension; bar 30px, onboarding 72px (greeting/curious/greeting), Oracle sheet 40px (curious->thinking->greeting). Star placeholder guide_mascot.dart and its test removed (backup in /tmp/tarottree_mascot_placeholder_backup). Tests wisp_mascot 8 + hasTension 2; analyze 0; full suite 647 passed / 4 known WIP + 1 known rune flake (green in isolation).",
+      "DEVICE UPDATE (G2.2): flutter build apk --release -> 112.0MB app-release.apk with flutter_assets/assets/images/wisp_body.png (verified via unzip -l); adb install -r on 2310FPCA4G (Android 13, arm64) succeeded at 23:20:48, versionName 0.1.0, data preserved; app launched (quest.mindreader.mindreader/.MainActivity, PID alive). Screenshot blocked: device asleep/locked and INJECT_EVENTS is denied to the adb shell on this device, so on-screen mimicry review is by the owner."
     ],
-    "current_task": "G2.2 mascot: final image, poses/emotions, glass bubble and corner placement once the art direction is chosen (the star placeholder keeps working meanwhile)",
+    "current_task": "G2.3 mascot polish: animated sprite frames, guide_bubble glass bubble, corner placement per mocks, name/personality copy",
     "pending_tasks": [
-      "G2.2 mascot: final image/poses/glass bubble once the art direction is chosen"
+      "G2.3 animated sprite frames for the wisp (the face already animates)",
+      "G2.3 guide_bubble glass bubble with show-more/close",
+      "G2.3 corner/floating placement per mocks",
+      "Name, personality and the reply vocabulary of the companion"
     ]
   },
   "discovered_bugs_or_blockers": [
@@ -344,5 +357,5 @@
     "ITER5 KNOWN: Lenormand pair pills are placed between adjacent dealt cards in the focus pillar only (the spread overview still shows no cords for Lenormand/Runes and no pills).",
     "RESOLVED (PRE-1.5 AUDIT): workspace_swipe_test + phase2_flow_test goToPane swipe-hang -- ROOT CAUSE was the TEST HELPER, not the app: after the two-step refactor the app boots on Step 1 whose horizontal SpreadBlueprintCarousel ListView eats the (200,300) drag, so the workspace PageView never moves and the unbounded `while (current != pane)` loops forever. Both loops are now bounded (capped pump + descriptive TestFailure diagnostics) and the tests enter Step 2 first via activateSpread(). All 21 pre-existing failures were stale pre-refactor assertions (Step-2 UI + 168x275 deck) -- zero real regressions."
   ],
-  "latest_observation_summary": "2026-11-22 (G4.4): Guided Reading G4 is closed. The guide sheet offers Ask the Oracle only when at least one card is face up; opening the sheet never calls the model. OracleSynthesisService.explainGuideMoment reuses the worker->cloud pipeline with a model-facing prompt (moment, spread focus, face-up cards with roles, touched link) and a deterministic localized fallback built from l10n keys (focus line + role/card/orientation list + link explanation + the focus card reflection question); an empty table answers with guide.oracle.empty instead of inventing cards. The sheet is stateful (asking label, single answer per moment, mounted guard) and renders the answer under a monospace lavender label. l10n now 2494 keys per language. Verification: flutter analyze 0 issues; guide_oracle_option 7 + guided_reading 3 + guide_link_lessons 12 + reading_relationships 12 + guided suites green; full suite 638 passed / 4 pre-existing WIP failures only (astral x2, workspace_swipe, interactive_spread). GUIDED_READING.md bumped to v0.5. Only G2.2 (mascot art) remains open."
+  "latest_observation_summary": "2026-11-22 (G2.2): the companion is the authored wisp. assets/images/wisp_body.png (transparent 2048 RGBA) is drawn with BlendMode.screen tint and decoded at cacheWidth>=256, and the face is painted procedurally on top (greeting ^ ^, curious o o, empathetic tilted arcs, thinking uneven arches, sleeping closed lines) so mimicry stays crisp from 30px to 72px. WispMood + pure wispMoodFor(hint, tension) map the mentor moment: no hint -> sleeping, completed -> greeting (single celebration + one mediumImpact), opposing pair via GuidedReadingController.hasTension -> empathetic, otherwise curious. The wisp floats, blinks on its own 2.6-5s schedule and follows gazeTarget; reduce-motion stops float, blinking and gaze tweens so no frames are scheduled. It lives in the guide bar (30px), onboarding (72px: greeting/curious/greeting) and the Oracle block of the guide sheet (40px: curious -> thinking while composing -> greeting when the answer lands). The star placeholder and its test were removed (backup in /tmp/tarottree_mascot_placeholder_backup). Verification: flutter analyze 0; wisp_mascot 8 + hasTension 2 + guided suites green; full suite 647 passed / 5 failed = 4 known WIP + known rune volumetric flake (green in isolation). GUIDED_READING.md bumped to v0.6. On-device screenshot check of the sprite still pending. Device update: release APK rebuilt with the wisp sprite (verified inside the package via unzip) and installed over the existing app with adb install -r on 2310FPCA4G (versionName 0.1.0, data kept); the app was started. A screenshot could not be captured because the device was asleep and adb input injection is blocked by device policy (INJECT_EVENTS)."
 }

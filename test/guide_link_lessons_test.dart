@@ -96,6 +96,16 @@ void main() {
     expect(guide.currentHint!.lessonId, isNull);
   });
 
+  test('hasTension is true for an opposing pair', () {
+    laySpread([Element.fire, Element.water, Element.air]);
+    expect(guide.hasTension, isTrue);
+  });
+
+  test('hasTension stays false for a harmonious table', () {
+    laySpread([Element.fire, Element.air, Element.fire]);
+    expect(guide.hasTension, isFalse);
+  });
+
   test('concise guidance teaches no link lessons', () async {
     await settings.setGuideDetail(GuideDetail.concise);
     laySpread([Element.fire, Element.water, Element.air]);

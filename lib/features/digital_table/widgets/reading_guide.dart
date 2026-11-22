@@ -14,7 +14,8 @@ import '../../../design_system/taro.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/guided_reading_controller.dart';
 import '../../../state/spread_controller.dart';
-import 'guide_mascot.dart';
+import 'wisp_mascot.dart';
+import 'wisp_mood.dart';
 
 /// A lavender outline on the slot (or deck) the mentor currently recommends.
 /// Purely advisory — the reader may always act out of order.
@@ -56,18 +57,22 @@ class ReadingGuide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hint = context.watch<GuidedReadingController>().currentHint;
+    final guide = context.watch<GuidedReadingController>();
+    final hint = guide.currentHint;
     if (hint == null) return const SizedBox.shrink();
 
     return TextButton.icon(
       key: const ValueKey('reading-guide'),
-      icon: GuideMascot(mood: guideMascotMoodFor(hint)),
+      icon: WispMascot(
+        size: 30,
+        mood: wispMoodFor(hint, tension: guide.hasTension),
+      ),
       label: Text(hint.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       onPressed: () {
         // Opening the sheet IS reading the lesson: record it so the mentor
         // never repeats what this reader already knows. The captured hint
         // keeps its lesson for the sheet being opened right now.
-        context.read<GuidedReadingController>().learnCurrentLesson();
+        guide.learnCurrentLesson();
         showTaroGlassSheet<void>(
           context: context,
           builder: (sheet) => _GuideDetailSheet(
@@ -178,14 +183,32 @@ class _GuideDetailSheetState extends State<_GuideDetailSheet> {
             ),
           if (ctrl.faceUpCount > 0) ...[
             const SizedBox(height: 8),
-            TextButton(
-              key: const ValueKey('guide-ask-oracle'),
-              onPressed: _asking || _answer != null ? null : _askOracle,
-              child: Text(
-                _asking
-                    ? GuideCopy.oracleThinking(lang)
-                    : GuideCopy.askOracle(lang),
-              ),
+            Row(
+              children: [
+                // Mimicry where it is visible: thinking while the answer is
+                // composed, the smile once it arrives.
+                WispMascot(
+                  key: const ValueKey('guide-oracle-mascot'),
+                  size: 40,
+                  mood: _asking
+                      ? WispMood.thinking
+                      : (_answer != null
+                            ? WispMood.greeting
+                            : WispMood.curious),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextButton(
+                    key: const ValueKey('guide-ask-oracle'),
+                    onPressed: _asking || _answer != null ? null : _askOracle,
+                    child: Text(
+                      _asking
+                          ? GuideCopy.oracleThinking(lang)
+                          : GuideCopy.askOracle(lang),
+                    ),
+                  ),
+                ),
+              ],
             ),
             if (_answer != null) ...[
               Text(

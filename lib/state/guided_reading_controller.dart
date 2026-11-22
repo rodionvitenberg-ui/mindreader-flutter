@@ -57,6 +57,11 @@ class GuidedReadingController extends ChangeNotifier {
 
   int _lastRevision = -1;
 
+  /// True when two face-up cards pull against each other (opposing elemental
+  /// dignities) — the companion's empathetic moment (G2.2). Read-only: it
+  /// never changes the table.
+  bool get hasTension => spread.relationships.any((r) => r.isContradictory);
+
   bool get _enabled =>
       spread.isSpreadActive && settings.enabled(ReadingAid.guide);
 

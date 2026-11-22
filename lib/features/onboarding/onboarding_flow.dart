@@ -6,7 +6,7 @@ import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/onboarding_controller.dart';
-import '../digital_table/widgets/guide_mascot.dart';
+import '../digital_table/widgets/wisp_mood.dart';
 import 'widgets/onboarding_step_body.dart';
 
 /// G3 — the one-time "guided reading" intro.
@@ -88,7 +88,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   }) =>
       OnboardingStepBody(
         key: key,
-        mood: GuideMascotMood.hint,
+        mood: WispMood.greeting,
         title: AppStrings.t(lang, 'onboarding.intro.title'),
         body: AppStrings.t(lang, 'onboarding.intro.body'),
         lang: lang,
@@ -109,7 +109,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   }) =>
       OnboardingStepBody(
         key: key,
-        mood: GuideMascotMood.hint,
+        mood: WispMood.curious,
         title: AppStrings.t(lang, 'onboarding.experience.title'),
         lang: lang,
         step: _step,
@@ -159,7 +159,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   }) =>
       OnboardingStepBody(
         key: key,
-        mood: GuideMascotMood.celebrate,
+        mood: WispMood.greeting,
         title: AppStrings.t(lang, 'onboarding.ready.title'),
         body: AppStrings.t(lang, 'onboarding.ready.body'),
         lang: lang,

@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
-import '../../digital_table/widgets/guide_mascot.dart';
+import '../../digital_table/widgets/wisp_mascot.dart';
+import '../../digital_table/widgets/wisp_mood.dart';
 
 /// The shared skeleton of one onboarding step: companion, eyebrow, title,
 /// optional body, progress dots and the action stack.
@@ -23,7 +24,7 @@ class OnboardingStepBody extends StatelessWidget {
   });
 
   final AppLanguage lang;
-  final GuideMascotMood mood;
+  final WispMood mood;
   final String title;
   final String? body;
   final int step;
@@ -35,7 +36,7 @@ class OnboardingStepBody extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Center(child: GuideMascot(size: 56, mood: mood)),
+        Center(child: WispMascot(size: 72, mood: mood)),
         const SizedBox(height: 18),
         Text(
           AppStrings.t(lang, 'onboarding.eyebrow'),
