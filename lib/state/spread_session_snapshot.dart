@@ -3,6 +3,7 @@ import '../core/models/dealt_card_slot.dart';
 import '../core/models/divination_system.dart';
 import '../core/models/lenormand_spread.dart';
 import '../core/models/oracle_handoff.dart';
+import '../core/models/oracle_personality.dart';
 import '../core/models/reading_mode.dart';
 import '../core/models/reading_source.dart';
 import '../core/models/reading_status.dart';
@@ -91,6 +92,7 @@ class SpreadSessionSnapshot {
     this.natalChartId,
     this.astralContext,
     this.sessionId,
+    this.remoteOracle,
     this.readingSource,
     this.readingMode,
     this.readingStatus,
@@ -111,6 +113,7 @@ class SpreadSessionSnapshot {
     required List<ChatMessage> messages,
     String? natalChartId,
     OracleHandoff? astralContext,
+    RemoteOracleReading? remoteOracle,
   }) => SpreadSessionSnapshot(
     timestamp: timestamp,
     spreadType: SpreadType.three,
@@ -124,6 +127,7 @@ class SpreadSessionSnapshot {
     astralSessionTitle: title,
     natalChartId: natalChartId,
     astralContext: astralContext,
+    remoteOracle: remoteOracle,
   );
 
   /// Identity + local persistence key (ISO-8601).
@@ -169,6 +173,7 @@ class SpreadSessionSnapshot {
   /// fall back to [timestamp] (see [effectiveSessionId]); the archive key
   /// stays [timestamp] regardless.
   final String? sessionId;
+  final RemoteOracleReading? remoteOracle;
 
   /// Session-level origin of the reading (null for legacy snapshots).
   final ReadingSource? readingSource;
@@ -214,6 +219,7 @@ class SpreadSessionSnapshot {
     required String notebook,
     bool? readingForSelf,
     String? sessionId,
+    RemoteOracleReading? remoteOracle,
     ReadingSource? readingSource,
     ReadingMode? readingMode,
     ReadingStatus? readingStatus,
@@ -254,6 +260,7 @@ class SpreadSessionSnapshot {
       ],
       messages: [...session.messages],
       sessionId: sessionId,
+      remoteOracle: remoteOracle,
       readingSource: readingSource,
       readingMode: readingMode,
       readingStatus: readingStatus,
@@ -324,6 +331,7 @@ class SpreadSessionSnapshot {
     if (natalChartId != null) 'natalChartId': natalChartId,
     if (astralContext != null) 'astralContext': astralContext!.toJson(),
     if (sessionId != null) 'sessionId': sessionId,
+    if (remoteOracle != null) 'remoteOracle': remoteOracle!.toJson(),
     if (readingSource != null) 'readingSource': readingSource!.name,
     if (readingMode != null) 'readingMode': readingMode!.name,
     if (readingStatus != null) 'readingStatus': readingStatus!.name,
@@ -345,6 +353,15 @@ class SpreadSessionSnapshot {
         astralContext = OracleHandoff.fromJson(rawContext);
       } catch (_) {
         // An invalid calculation snapshot must not hide the saved dialogue.
+      }
+    }
+    final remoteJson = json['remoteOracle'];
+    RemoteOracleReading? remoteOracle;
+    if (remoteJson is Map<String, dynamic>) {
+      try {
+        remoteOracle = RemoteOracleReading.fromJson(remoteJson);
+      } catch (_) {
+        // A damaged reference must not hide the archived reading.
       }
     }
     return SpreadSessionSnapshot(
@@ -402,6 +419,7 @@ class SpreadSessionSnapshot {
       natalChartId: json['natalChartId'] as String?,
       astralContext: astralContext,
       sessionId: json['sessionId'] as String?,
+      remoteOracle: remoteOracle,
       readingSource: _enumOrNullable<ReadingSource>(
         ReadingSource.values,
         json['readingSource'] as String?,

@@ -84,10 +84,9 @@ def place(reading, data, *, source, track=""):
             raise Problem("position_unavailable", 409, "Use the next available position.")
         clarifier = data.get("clarifier", False)
         if clarifier:
-            if reading.synthesis is None and reading.mode != "liveOracle":
-                raise Problem("synthesis_required", 409, "Synthesize the base reading first.")
-            if reading.positions.filter(clarifier=True).count() >= 3:
-                raise Problem("clarifier_limit", 409, "The reading already has three clarifiers.")
+            base = reading.positions.filter(clarifier=False)
+            if reading.mode != "liveOracle" and (not base.exists() or base.filter(card_id="").exists()):
+                raise Problem("reading_incomplete", 409, "Reveal or confirm every base position first.")
         elif reading.mode != "liveOracle" or index >= 12 or reading.positions.filter(clarifier=True).exists():
             raise Problem("position_unavailable", 409, "Declare this base position when starting the reading.")
         role = data.get("role", f"Clarifier {reading.positions.filter(clarifier=True).count() + 1}" if clarifier else "")
@@ -176,6 +175,8 @@ def run_turn(request, session_id, turn, payload, index=None):
             if reading.kind == "divinationSpread" and (not base.exists() or base.filter(card_id="").exists()):
                 raise Problem("reading_incomplete", 409, "Reveal or confirm every base position first.")
         if turn == "clarify":
+            if reading.synthesis is None and reading.mode != "liveOracle":
+                raise Problem("synthesis_required", 409, "Synthesize the base reading first.")
             position = get_object_or_404(reading.positions, index=index, clarifier=True)
             if not position.card_id or position.clarification:
                 raise Problem("clarifier_unavailable", 409, "This clarifier is empty or already interpreted.")

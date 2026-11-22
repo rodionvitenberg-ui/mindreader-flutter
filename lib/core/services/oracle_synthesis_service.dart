@@ -360,7 +360,7 @@ String synthesizeSpreadFor(
 /// 3. OFFLINE SAFETY NET — the deterministic local [synthesizeSpread]
 ///    engine, so the reading sheet never fails without network.
 class OracleSynthesisService {
-  OracleSynthesisService({http.Client? client})
+  OracleSynthesisService({http.Client? client, this.localOnly = false})
       : _client = client ?? http.Client();
 
   static const primaryWorkerUrl = String.fromEnvironment('PRIMARY_WORKER_URL');
@@ -390,8 +390,10 @@ class OracleSynthesisService {
 
   final http.Client _client;
 
-  bool get hasPrimary => primaryWorkerUrl.isNotEmpty;
-  bool get hasCloud => cloudUrl.isNotEmpty && cloudKey.isNotEmpty;
+  final bool localOnly;
+
+  bool get hasPrimary => !localOnly && primaryWorkerUrl.isNotEmpty;
+  bool get hasCloud => !localOnly && cloudUrl.isNotEmpty && cloudKey.isNotEmpty;
 
   /// The Oracle's voice (4.8): calm, restrained, contextual and symbolic —
   /// grounded psychology, never kitsch or mysticism, and NEVER categorical

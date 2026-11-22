@@ -23,6 +23,7 @@ class OracleChatPane extends StatefulWidget {
     required this.showReadingCards,
     required this.readingKey,
     required this.composer,
+    this.oracleHeading,
     required this.capsuleText,
     required this.onBackToTable,
     required this.onSynthesize,
@@ -37,6 +38,7 @@ class OracleChatPane extends StatefulWidget {
   final bool showReadingCards;
   final Object readingKey;
   final Widget? composer;
+  final Widget? oracleHeading;
 
   /// The shared input capsule's text — the `+1 CARD FOR MY QUESTION` chip
   /// reads the reader's own typed follow-up from it.
@@ -142,7 +144,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
               color: TaroColors.lavender,
               onPressed: widget.onBackToTable,
             ),
-            child: const ProfileHeaderTitle('header.oracle'),
+            child: widget.oracleHeading ?? const ProfileHeaderTitle('header.oracle'),
           ),
           OracleSessionMetaBar(
             session: session,

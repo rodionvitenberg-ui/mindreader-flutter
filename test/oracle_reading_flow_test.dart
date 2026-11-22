@@ -1,11 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:mindreader/core/models/custom_spread.dart';
 import 'package:mindreader/core/models/dealt_card_slot.dart';
 import 'package:mindreader/core/models/divination_system.dart';
 import 'package:mindreader/core/models/spread_type.dart';
+import 'package:mindreader/core/services/oracle_backend_service.dart';
 import 'package:mindreader/core/services/oracle_synthesis_service.dart';
 import 'package:mindreader/core/services/oracle_voice_service.dart';
 import 'package:mindreader/core/services/reading_relationships.dart';
@@ -20,6 +25,7 @@ import 'package:mindreader/state/deck_pack_controller.dart';
 import 'package:mindreader/state/oracle_session_controller.dart';
 import 'package:mindreader/state/session_history_controller.dart';
 import 'package:mindreader/state/spread_controller.dart';
+import 'package:mindreader/state/spread_session_snapshot.dart';
 import 'package:mindreader/state/user_profile_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -71,7 +77,10 @@ class _DeferredOracle extends OracleSynthesisService {
 }
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+  });
   final start = find.text('✦ SYNTHESIZE IN CHAT →');
   final prepField = find.descendant(
     of: find.byType(OracleChatPane),
@@ -94,8 +103,9 @@ void main() {
   Future<void> open(
     WidgetTester tester,
     SpreadController spread,
-    _DeferredOracle service,
-  ) async {
+    OracleSynthesisService service, {
+    OracleBackendService? backend,
+  }) async {
     tester.view.physicalSize = const Size(320, 700);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -112,13 +122,20 @@ void main() {
           ChangeNotifierProvider(create: (_) => OracleSessionController()),
           ChangeNotifierProvider(create: (_) => OracleVoiceService()),
           ChangeNotifierProvider(create: (_) => DeckPackController()),
-          ChangeNotifierProvider(create: (_) => SessionHistoryController()),
+          ChangeNotifierProvider(
+            create: (_) => SessionHistoryController()..load(),
+          ),
           ChangeNotifierProvider(create: (_) => AppSettingsController()),
           ChangeNotifierProvider(create: (_) => UserProfileController()),
         ],
         child: MaterialApp(
           theme: buildTaroTheme(),
-          home: Scaffold(body: TableWorkspace(oracleService: service)),
+          home: Scaffold(
+            body: TableWorkspace(
+              oracleService: service,
+              oracleBackend: backend,
+            ),
+          ),
         ),
       ),
     );
@@ -190,6 +207,191 @@ void main() {
     await openPane(tester, chatPane);
     expect(find.text(_reading.narrative), findsOneWidget);
     expect(service.requests, hasLength(2));
+  });
+
+  testWidgets('the chosen interpreter handles each turn and survives history', (
+    tester,
+  ) async {
+    const root = '/api/v1';
+    const sessionPath = '$root/oracle/sessions/reading-1';
+    final positions = <Map<String, Object?>>[];
+    final capturedTurns = <(String, Object?)>[];
+    var guestRequests = 0;
+    final backend = OracleBackendService(
+      baseUrl: 'https://oracle.example',
+      client: MockClient((request) async {
+        http.Response respond(Object value) => http.Response(
+          jsonEncode(value),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+        final path = request.url.path;
+        if (path == '$root/auth/guest/') {
+          guestRequests++;
+          return respond({
+            'token': 'test-token',
+            'expiresAt': DateTime.now()
+                .add(const Duration(days: 1))
+                .toIso8601String(),
+          });
+        }
+        expect(request.headers['authorization'], 'Bearer test-token');
+        if (path == '$root/oracle/personalities/') {
+          return respond([
+            {'id': 'default', 'name': 'Oracle', 'description': 'Default'},
+            {'id': 'sage', 'name': 'Sage', 'description': 'A different voice'},
+          ]);
+        }
+        final post = request.method == 'POST';
+        if (post) expect(request.headers['idempotency-key'], isNotEmpty);
+        final body = request.body.isEmpty
+            ? null
+            : jsonDecode(request.body) as Map;
+        if (path == '$root/oracle/sessions/') {
+          expect(body?['personality'], 'sage');
+          expect(body?['question'], 'What matters today?');
+          return respond({'sessionId': 'reading-1', 'personality': 'sage'});
+        }
+        if (path == '$sessionPath/') {
+          return respond({'personality': 'sage', 'positions': positions});
+        }
+        if (path == '$sessionPath/cards/') {
+          expect(body?['clarifier'], positions.isNotEmpty);
+          positions.add({'position': body?['position'], 'card': body});
+          return respond({});
+        }
+        capturedTurns.add((path, body?['text']));
+        if (path == '$sessionPath/synthesize/') {
+          expect(positions, hasLength(2));
+          return respond({
+            'narrative': 'A remote reading by Sage',
+            'elementalAlchemy': _reading.elementalAlchemy,
+            'verdict': _reading.verdict,
+            'followUp': _reading.followUp,
+          });
+        }
+        return respond({'text': 'Sage answer ${capturedTurns.length}'});
+      }),
+    );
+    addTearDown(backend.dispose);
+    final local = _DeferredOracle();
+    final spread = SpreadController()..setSpreadType(SpreadType.one);
+    await open(tester, spread, local, backend: backend);
+
+    final title = find.byKey(const ValueKey('oracle-personality-selector'));
+    await tester.tap(title);
+    await pumpTransition(tester);
+    await tester.tap(find.byKey(const ValueKey('oracle-personality-sage')));
+    await pumpTransition(tester);
+    expect(
+      find.descendant(of: title, matching: find.text('Sage')),
+      findsOneWidget,
+    );
+
+    const question = 'What matters today?';
+    await tester.enterText(prepField, question);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    spread.dealNextCardOrClarifier();
+    spread.flipSlot(1);
+    await tester.pump();
+    await tester.tap(start);
+    await pumpTransition(tester);
+    expect(find.text('A remote reading by Sage'), findsOneWidget);
+
+    final history = tester.element(title).read<SessionHistoryController>();
+    final input = find.byKey(const ValueKey('oracle-input'));
+    await tester.enterText(input, 'Can you expand?');
+    await tester.tap(find.byKey(const ValueKey('oracle-send')));
+    await pumpTransition(tester);
+    expect(find.text('Sage answer 2'), findsOneWidget);
+    await tester.enterText(input, 'What does an extra card add?');
+    await tester.tap(find.text('🃏 +1 CARD FOR MY QUESTION'));
+    await pumpTransition(tester);
+    expect(spread.slots[2].state, SlotState.faceUp);
+    expect(find.text('Sage answer 3'), findsOneWidget);
+    expect(positions, hasLength(3));
+    expect(capturedTurns, [
+      ('$sessionPath/synthesize/', null),
+      ('$sessionPath/messages/', 'Can you expand?'),
+      ('$sessionPath/clarifiers/2/', 'What does an extra card add?'),
+    ]);
+    expect(local.requests, isEmpty);
+    expect(local.clarifiers, isEmpty);
+    expect(guestRequests, 1);
+    final saved = SpreadSessionSnapshot.fromJson(
+      history.sessions.single.toJson(),
+    );
+    expect(saved.remoteOracle?.sessionId, 'reading-1');
+    expect(saved.remoteOracle?.personalityId, 'sage');
+    expect(saved.remoteOracle?.personalityName, 'Sage');
+
+    await tester.tap(title);
+    await pumpTransition(tester);
+    await tester.tap(find.byKey(const ValueKey('oracle-personality-default')));
+    await pumpTransition(tester);
+    final dialog = find.byType(AlertDialog);
+    final newReading = find.descendant(
+      of: dialog,
+      matching: find.widgetWithText(TextButton, 'Start a new interpretation'),
+    );
+    await tester.tap(newReading);
+    await pumpTransition(tester);
+    expect(
+      find.descendant(of: title, matching: find.text('Oracle')),
+      findsOneWidget,
+    );
+    expect(find.text('YOUR SPREAD IS READY'), findsOneWidget);
+    expect(history.sessions.single.remoteOracle?.personalityId, 'sage');
+
+    await openPane(tester, historyPane);
+    await tester.tap(find.text('1 · DAILY ANCHOR'));
+    await pumpTransition(tester);
+    expect(
+      find.descendant(of: title, matching: find.text('Sage')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(OracleChatPane),
+        matching: find.text('A remote reading by Sage'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the local interpreter stays available without the catalogue', (
+    tester,
+  ) async {
+    final backend = OracleBackendService(
+      baseUrl: 'https://oracle.example',
+      client: MockClient((request) async {
+        expect(request.url.path, '/api/v1/auth/guest/');
+        return http.Response('{}', 503);
+      }),
+    );
+    addTearDown(backend.dispose);
+    final local = _DeferredOracle();
+    final spread = SpreadController()..setSpreadType(SpreadType.one);
+    await open(tester, spread, local, backend: backend);
+
+    final title = find.byKey(const ValueKey('oracle-personality-selector'));
+    await tester.tap(title);
+    await pumpTransition(tester);
+    expect(
+      find.text('Online interpreters are currently unavailable.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('oracle-personality-')));
+    await pumpTransition(tester);
+    expect(
+      find.descendant(of: title, matching: find.text('Local Oracle')),
+      findsOneWidget,
+    );
+    await tester.tap(start);
+    await tester.pump();
+    local.requests.single.complete(_reading);
+    await pumpTransition(tester);
+    expect(find.text(_reading.narrative), findsOneWidget);
   });
 
   testWidgets('a late answer cannot open chat for a reset spread', (

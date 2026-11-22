@@ -32,7 +32,7 @@ Token responses include `id`, `verified`, `token`, and `expiresAt`. A guest toke
 
 | Method and path | Contract |
 | --- | --- |
-| GET `oracle/personalities/` | Enabled public names and descriptions |
+| GET `oracle/personalities/` | Bearer-authenticated list of enabled interpreters with `id`, `name` and `description` |
 | GET, POST `oracle/sessions/` | List owned sessions or create a session **key** |
 | GET, PATCH, DELETE `oracle/sessions/{id}/` | Restore, update pre-reading context or delete an owned session |
 | POST `oracle/sessions/{id}/cards/` | Submit one revealed digital card **key** |
@@ -58,6 +58,8 @@ Create a reading before the initial generation or first physical recognition. Fo
 }
 ```
 
+Flutter uses the same `TAROT_BACKEND_URL` build definition as the deck catalogue. Use an HTTPS origin for a deployed backend. The selected catalogue ID goes in the create request as `personality` and is fixed for the life of that server session.
+
 The response includes the server-issued `sessionId`. Use it in API paths. The preceding request can be exercised as follows after issuing a guest token:
 
 ```sh
@@ -75,7 +77,7 @@ curl -sS -X POST "http://127.0.0.1:8000/api/v1/oracle/sessions/$TAROT_SESSION/sy
   -H "Authorization: Bearer $TAROT_TOKEN" -H 'Idempotency-Key: synthesis-1'
 ```
 
-On success, synthesis returns `narrative`, `elementalAlchemy`, `verdict` and `followUp`. Conversation turns return `text`, `action` and an optional zero-based `position`. Live Oracle actions such as `requestClarifier` are suggestions. The server persists user and oracle messages in order, with an optional `slotIndex`. For clarifiers, set `clarifier:true` when placing the card and then submit its question to the clarifier path. The position's `note` and `clarifierQuestion` are separate. Late pre-reading question, notes or subject changes can be made with PATCH until synthesis or conversation begins. A subject change clears the previous subject's context unless the matching new context is supplied.
+On success, synthesis returns `narrative`, `elementalAlchemy`, `verdict` and `followUp`. Conversation turns return `text`, `action` and an optional zero-based `position`. Live Oracle actions such as `requestClarifier` are suggestions. The server persists user and oracle messages in order, with an optional `slotIndex`. For additional cards, set `clarifier:true` when placing the card. After the base positions are filled, up to 15 total cards can be registered, including before the initial synthesis. A separate clarification question can be submitted to the clarifier path after the initial synthesis. The position's `note` and `clarifierQuestion` are separate. Late pre-reading question, notes or subject changes can be made with PATCH until synthesis or conversation begins. A subject change clears the previous subject's context unless the matching new context is supplied.
 
 For an Astral session, supply `kind` as `natalChartReading`, `synastryReading`, `horoscopeReading` or `zodiacReading` and `astralContext` as `{"schemaVersion":1,"summary":"…"}`. A future client constructs the minimized summary from `OracleHandoff` and keeps the richer calculation and profile data on device. This API stores the supplied summary for continuity. All readings use the same ownership checks.
 

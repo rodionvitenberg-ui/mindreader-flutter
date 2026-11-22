@@ -209,6 +209,51 @@ class AppStrings {
       AppLanguage.en: 'No active transits for this day.',
       AppLanguage.ru: 'На этот день нет активных транзитов.',
     },
+    'oracle.personality.title': {
+      AppLanguage.en: 'Choose an interpreter',
+      AppLanguage.ru: 'Выбрать толкователя',
+    },
+    'oracle.personality.local': {
+      AppLanguage.en: 'Local Oracle',
+      AppLanguage.ru: 'Локальный Оракул',
+    },
+    'oracle.personality.localHint': {
+      AppLanguage.en: 'An on-device interpretation available offline.',
+      AppLanguage.ru: 'Толкование на устройстве доступно без интернета.',
+    },
+    'oracle.personality.unavailable': {
+      AppLanguage.en: 'Online interpreters are currently unavailable.',
+      AppLanguage.ru: 'Серверные толкователи сейчас недоступны.',
+    },
+    'oracle.personality.newReading': {
+      AppLanguage.en: 'Start a new interpretation',
+      AppLanguage.ru: 'Начать новое толкование',
+    },
+    'oracle.personality.keepHistory': {
+      AppLanguage.en: 'Your current conversation will stay in history.',
+      AppLanguage.ru: 'Текущий разговор останется в истории.',
+    },
+    'oracle.personality.guestExpired': {
+      AppLanguage.en: 'The guest login for this conversation has expired.',
+      AppLanguage.ru: 'Гостевой доступ к этому разговору истёк.',
+    },
+    'oracle.personality.removed': {
+      AppLanguage.en: 'This interpreter is no longer available.',
+      AppLanguage.ru: 'Этот толкователь больше недоступен.',
+    },
+    'oracle.personality.openAstral': {
+      AppLanguage.en: 'Open the chart in Astral to start a new interpretation.',
+      AppLanguage.ru:
+          'Откройте карту в Астрале, чтобы начать новое толкование.',
+    },
+    'oracle.personality.failed': {
+      AppLanguage.en: 'The Oracle could not respond. Try again.',
+      AppLanguage.ru: 'Оракул не смог ответить. Попробуйте ещё раз.',
+    },
+    'oracle.personality.cancel': {
+      AppLanguage.en: 'Cancel',
+      AppLanguage.ru: 'Отмена',
+    },
     'header.oracle': {AppLanguage.en: 'Oracle', AppLanguage.ru: 'Оракул'},
     'header.almanac': {AppLanguage.en: 'Almanac', AppLanguage.ru: 'Альманах'},
     'header.profile': {AppLanguage.en: 'Profile', AppLanguage.ru: 'Профиль'},

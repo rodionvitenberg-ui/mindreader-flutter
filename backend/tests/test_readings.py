@@ -9,7 +9,7 @@ from PIL import Image
 from rest_framework.test import APIClient
 
 from apps.core.cards import CARDS
-from apps.oracle.models import Message, Position
+from apps.oracle.models import Message, Personality, Position
 
 SYNTHESIS = {"narrative": "Story", "elementalAlchemy": "Elements", "verdict": "Consider it", "followUp": "Why?"}
 
@@ -70,6 +70,29 @@ class ReadingTests(TestCase):
         self.assertEqual(guest().get(prefix).status_code, 404)
         self.assertEqual(self.client.delete(prefix).status_code, 204)
         self.assertEqual(Message.objects.count(), 0)
+
+    @patch("apps.oracle.service.generate")
+    def test_selected_personality_and_extras_before_initial_synthesis(self, generate):
+        Personality.objects.create(slug="storyteller", name="Storyteller", system_prompt="Storyteller seed")
+        catalogue = self.client.get("/api/v1/oracle/personalities/").json()
+        self.assertIn("storyteller", [item["id"] for item in catalogue])
+        prefix = f"/api/v1/oracle/sessions/{self.reading(personality='storyteller')}/"
+        extra = {"position": 1, "cardId": "tarot:1", "orientation": "upright", "clarifier": True}
+        self.assertEqual(self.post(prefix + "cards/", extra, key="early").json()["code"], "reading_incomplete")
+        for i in range(15):
+            result = self.post(prefix + "cards/", {
+                "position": i, "cardId": f"tarot:{i}", "orientation": "upright", "clarifier": i > 0,
+            }, key=f"card-{i}")
+            self.assertEqual(result.status_code, 200, result.data)
+        self.assertEqual(self.post(prefix + "cards/", {**extra, "position": 15}, key="too-many").status_code, 400)
+        self.assertEqual(self.post(prefix + "clarifiers/1/", {"text": "Why?"}).json()["code"], "synthesis_required")
+        generate.return_value = (json.dumps(SYNTHESIS), "test")
+        self.assertEqual(self.post(prefix + "synthesize/").json(), SYNTHESIS)
+        self.assertIn("Storyteller seed", str(generate.call_args))
+        self.assertIn("tarot:14", str(generate.call_args))
+        generate.return_value = ("Another angle", "test")
+        self.assertEqual(self.post(prefix + "clarifiers/1/", {"text": "Why?"}).json()["text"], "Another angle")
+        self.assertEqual(self.client.get(prefix).json()["personality"], "storyteller")
 
     def test_astral_and_live_payload_contract(self):
         result = self.post("/api/v1/oracle/sessions/", {

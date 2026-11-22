@@ -40,6 +40,15 @@ class LocalStorageService {
 
   static const _userProfileKey = 'user_profile_v1';
 
+  static const _oraclePersonalityKey = 'oracle_personality_id';
+
+  Future<String?> loadOraclePersonality() async =>
+      (await SharedPreferences.getInstance()).getString(_oraclePersonalityKey);
+
+  Future<void> saveOraclePersonality(String id) async {
+    await (await SharedPreferences.getInstance()).setString(_oraclePersonalityKey, id);
+  }
+
   Future<bool?> loadReadingAid(String aid) async =>
       (await SharedPreferences.getInstance()).getBool('reading_aid.$aid');
 
