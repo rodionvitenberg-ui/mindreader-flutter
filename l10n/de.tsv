@@ -91,6 +91,10 @@ almanac.searchCards	Suchkarte, Schlüsselwort oder Glyphe
 almanac.searchSigns	Suchen Sie nach Zeichen, Schlüsselwort oder Archetyp
 almanac.noCards	Keine Karten stimmen überein
 almanac.noSigns	Es stimmen keine Vorzeichen überein
+almanac.sky.date	{day}. {month}
+almanac.sky.sun	Sonne · {start} – {end}, {year}
+almanac.sky.explore	ZEICHEN & MYTHOS ERKUNDEN
+almanac.sky.brightest	Hellster Stern · {star}
 table.fit	Den ganzen Aufstrich einlegen
 table.deal	Geben Sie die nächste Karte aus
 table.analyzeReading	Analysieren Sie das Lesen

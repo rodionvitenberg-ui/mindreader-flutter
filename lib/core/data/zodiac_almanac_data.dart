@@ -283,3 +283,14 @@ List<ZodiacSignEntry> zodiacEntriesForModality(ZodiacModality modality) => [
 /// The Almanac entry for a sign.
 ZodiacSignEntry zodiacEntryFor(ZodiacSign sign) =>
     zodiacAlmanac.firstWhere((e) => e.sign == sign);
+
+/// Civil birth-date ranges used by the twelve entries in this almanac.
+ZodiacSign almanacBirthSign(DateTime date) {
+  const firstDay = [20, 19, 21, 20, 21, 21, 23, 23, 23, 23, 22, 22];
+  // January's late-month sign is Aquarius, at index 10 in Aries-first order.
+  final lateSign = (date.month + 9) % 12;
+  final index = date.day >= firstDay[date.month - 1]
+      ? lateSign
+      : (lateSign + 11) % 12;
+  return zodiacAlmanac[index].sign;
+}

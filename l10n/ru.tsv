@@ -91,6 +91,10 @@ almanac.searchCards	Найти карту, руну или слово
 almanac.searchSigns	Найти знак, слово или архетип
 almanac.noCards	Ничего не найдено
 almanac.noSigns	Знаки не найдены
+almanac.sky.date	{day} {month}
+almanac.sky.sun	Солнце · {start} – {end}, {year}
+almanac.sky.explore	О ЗНАКЕ И ЕГО МИФАХ
+almanac.sky.brightest	Ярчайшая звезда · {star}
 table.fit	Показать весь расклад
 table.deal	Выложить следующую карту
 table.analyzeReading	Анализ расклада

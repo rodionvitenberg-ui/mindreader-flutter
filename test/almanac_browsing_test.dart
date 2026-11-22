@@ -308,10 +308,13 @@ void main() {
         expect(shopLink.hitTestable(), findsOneWidget);
       }
       await tester.tap(byKey('almanac-system-zodiac'));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(banner, findsNothing);
       expect(selector, findsNothing);
-      expect(byKey('zodiac-tile-aries').hitTestable(), findsOneWidget);
+      // The zodiac tab is the interactive sky atlas: the birth sign (Aries
+      // without a saved birth date) plus its Explore CTA replace the old grid.
+      expect(byKey('zodiac-sign-aries'), findsOneWidget);
+      expect(byKey('zodiac-explore'), findsOneWidget);
     },
   );
 

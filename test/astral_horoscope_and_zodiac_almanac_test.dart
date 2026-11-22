@@ -24,6 +24,7 @@ import 'package:mindreader/state/spread_controller.dart';
 import 'package:mindreader/state/spread_session_snapshot.dart';
 import 'package:mindreader/state/user_profile_controller.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/table_test_helpers.dart';
 
@@ -318,9 +319,10 @@ void main() {
   });
 
   group('Almanac ZODIAC tab', () {
-    testWidgets('4th tab filters by element + modality and opens the sheet', (
+    testWidgets('4th tab opens the sky atlas and hands the sign to ASTRAL', (
       tester,
     ) async {
+      SharedPreferences.setMockInitialValues({});
       tester.view.physicalSize = const Size(400, 2000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -333,29 +335,20 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       await tester.tap(find.byKey(const ValueKey('almanac-system-zodiac')));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
+      // The interactive atlas replaces the old grid + modality filters.
       expect(find.text('ZODIAC'), findsOneWidget);
-      expect(find.text('ARIES'), findsOneWidget);
-      expect(find.text('PISCES'), findsOneWidget);
-      expect(find.text('All (12)'), findsOneWidget);
+      expect(find.byKey(const ValueKey('zodiac-sign-aries')), findsOneWidget);
+      expect(find.text('All (12)'), findsNothing);
 
-      // Element: WATER → the three water signs remain.
-      await tester.tap(find.byKey(const ValueKey('element-filter-water')));
+      // Choose Scorpio on the strip, then open its lore sheet.
+      final scorpio = find.byKey(const ValueKey('zodiac-sign-scorpio'));
+      await tester.ensureVisible(scorpio);
       await tester.pump();
-      expect(find.text('CANCER'), findsOneWidget);
-      expect(find.text('SCORPIO'), findsOneWidget);
-      expect(find.text('PISCES'), findsOneWidget);
-      expect(find.text('ARIES'), findsNothing);
-
-      // Modality: FIXED → Scorpio only.
-      await tester.tap(find.byKey(const ValueKey('zodiac-modality-fixed')));
-      await tester.pump();
-      expect(find.text('SCORPIO'), findsOneWidget);
-      expect(find.text('CANCER'), findsNothing);
-
-      // Open the rich detail sheet.
-      await tester.tap(find.byKey(const ValueKey('zodiac-tile-scorpio')));
+      await tester.tap(scorpio);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('zodiac-explore')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.byKey(const ValueKey('zodiac-detail-sheet')), findsOneWidget);

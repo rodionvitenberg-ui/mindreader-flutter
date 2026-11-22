@@ -91,6 +91,10 @@ almanac.searchCards	Tarjeta de búsqueda, palabra clave o glifo
 almanac.searchSigns	Signo de búsqueda, palabra clave o arquetipo
 almanac.noCards	Ninguna tarjeta coincide
 almanac.noSigns	No hay signos que coincidan
+almanac.sky.date	{day} {month}
+almanac.sky.sun	Sol · {start} – {end}, {year}
+almanac.sky.explore	EXPLORA EL SIGNO Y SU MITO
+almanac.sky.brightest	Estrella más brillante · {star}
 table.fit	Ajustar toda la extensión
 table.deal	Repartir la siguiente carta
 table.analyzeReading	Analizar la lectura
