@@ -20,6 +20,7 @@ import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/deck_pack_controller.dart';
 import '../../state/spread_controller.dart';
+import '../../state/user_profile_controller.dart';
 import '../digital_table/widgets/deck_picker_sheet.dart';
 import '../digital_table/widgets/lenormand_card_3d_widget.dart';
 import '../digital_table/widgets/rune_stone_3d_widget.dart';
@@ -28,6 +29,7 @@ import '../profile/widgets/profile_header.dart';
 import 'card_detail_sheet.dart';
 import 'deck_cover.dart';
 import 'deck_shop_screen.dart';
+import 'widgets/zodiac_sky_planetarium.dart';
 import 'zodiac_detail_sheet.dart';
 
 /// The four Almanac tabs: three divination systems + the zodiac signs.
@@ -69,8 +71,8 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
   // Rune filters: element + aett.
   RuneAett? _runeAettFilter;
 
-  // Zodiac filters: element + modality.
-  ZodiacModality? _zodiacModalityFilter;
+  ZodiacSign? _selectedSign;
+  Future<void>? _profileReady;
 
   /// The divination system of the current tab (null on the ZODIAC tab).
   DivinationSystem? get _system => switch (_tab) {
@@ -79,33 +81,6 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
     AlmanacTab.runes => DivinationSystem.runes,
     AlmanacTab.zodiac => null,
   };
-
-  List<ZodiacSignEntry> get _visibleZodiac {
-    final query = _query.toLowerCase().trim();
-    var entries = zodiacAlmanac;
-    if (_elements[AlmanacTab.zodiac] != null) {
-      entries = [
-        for (final e in entries)
-          if (e.element == _elements[AlmanacTab.zodiac]) e,
-      ];
-    }
-    if (_zodiacModalityFilter != null) {
-      entries = [
-        for (final e in entries)
-          if (e.modality == _zodiacModalityFilter) e,
-      ];
-    }
-    if (query.isNotEmpty) {
-      entries = [
-        for (final e in entries)
-          if (e.name.toLowerCase().contains(query) ||
-              e.keywords.any((k) => k.toLowerCase().contains(query)) ||
-              e.archetype.toLowerCase().contains(query))
-            e,
-      ];
-    }
-    return entries;
-  }
 
   List<DivinationCard> get _visible {
     final query = _query.toLowerCase().trim();
@@ -188,7 +163,10 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
   void _selectTab(AlmanacTab tab) {
     if (tab == _tab) return;
     HapticFeedback.selectionClick();
-    _scroll.jumpTo(0);
+    if (_scroll.hasClients) _scroll.jumpTo(0);
+    if (tab == AlmanacTab.zodiac && _selectedSign == null) {
+      _profileReady = context.read<UserProfileController?>()?.initialLoad;
+    }
     _search.clear();
     setState(() => _tab = tab);
     final system = _system;
@@ -209,6 +187,34 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
             onChanged: _selectTab,
             language: language,
           );
+          if (_tab == AlmanacTab.zodiac) {
+            final header = ProfileHeader(child: tabs);
+            return FutureBuilder<void>(
+              future: _profileReady,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Align(alignment: Alignment.topCenter, child: header);
+                }
+                final birthDate = context
+                    .read<UserProfileController?>()
+                    ?.birthDate;
+                final sign = _selectedSign ??= birthDate == null
+                    ? ZodiacSign.aries
+                    : almanacBirthSign(birthDate);
+                return ZodiacSkyPlanetarium(
+                  sign: sign,
+                  header: header,
+                  language: language,
+                  onChanged: (next) => setState(() => _selectedSign = next),
+                  onExplore: () => ZodiacDetailSheet.show(
+                    context,
+                    zodiacEntryFor(sign),
+                    onOpenHoroscope: widget.onOpenZodiacHoroscope,
+                  ),
+                );
+              },
+            );
+          }
           final navigation = ColoredBox(
             color: TaroColors.background.withValues(alpha: 0.92),
             child: Column(
@@ -277,7 +283,9 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
                             ),
                             isDense: true,
                             filled: true,
-                            fillColor: TaroColors.surface.withValues(alpha: 0.78),
+                            fillColor: TaroColors.surface.withValues(
+                              alpha: 0.78,
+                            ),
                             prefixIconConstraints: const BoxConstraints(
                               minWidth: 40,
                               minHeight: 40,
@@ -330,24 +338,17 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
   }
 
   Widget _catalog(AppLanguage language, double width) {
-    final zodiac = _tab == AlmanacTab.zodiac;
-    final signs = zodiac ? _visibleZodiac : const <ZodiacSignEntry>[];
-    final cards = zodiac ? const <DivinationCard>[] : _visible;
-    final count = zodiac ? signs.length : cards.length;
+    final cards = _visible;
+    final count = cards.length;
     if (count == 0) {
       return SliverToBoxAdapter(
         child: TaroGlassEmptyState(
           icon: Icons.search_off_outlined,
-          title: AppStrings.t(
-            language,
-            zodiac ? 'almanac.noSigns' : 'almanac.noCards',
-          ),
+          title: AppStrings.t(language, 'almanac.noCards'),
         ),
       );
     }
-    final columns = zodiac
-        ? (width ~/ 170).clamp(2, 6)
-        : ((width - 24) ~/ 112).clamp(2, 8);
+    final columns = ((width - 24) ~/ 112).clamp(2, 8);
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       sliver: SliverGrid.builder(
@@ -355,22 +356,10 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
           crossAxisCount: columns,
           mainAxisSpacing: 12,
           crossAxisSpacing: 10,
-          childAspectRatio: zodiac ? 0.8 : 0.54,
+          childAspectRatio: 0.54,
         ),
         itemCount: count,
-        itemBuilder: (context, i) {
-          if (!zodiac) return _AlmanacTile(card: cards[i]);
-          final entry = signs[i];
-          return _ZodiacTile(
-            key: ValueKey('zodiac-tile-${entry.sign.name}'),
-            entry: entry,
-            onOpen: () => ZodiacDetailSheet.show(
-              context,
-              entry,
-              onOpenHoroscope: widget.onOpenZodiacHoroscope,
-            ),
-          );
-        },
+        itemBuilder: (context, i) => _AlmanacTile(card: cards[i]),
       ),
     );
   }
@@ -378,22 +367,7 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
   List<Widget> _filterBars(AppLanguage language, {required bool compact}) {
     String label(String key) => AppStrings.t(language, 'almanac.$key');
     final groups = switch (_tab) {
-      AlmanacTab.zodiac => [
-        _FilterChip(
-          label: '${label('all')} (12)',
-          active: _zodiacModalityFilter == null,
-          onTap: () => setState(() => _zodiacModalityFilter = null),
-        ),
-        for (final m in ZodiacModality.values)
-          _FilterChip(
-            key: ValueKey('zodiac-modality-${m.name}'),
-            label:
-                '${label(m.name)} '
-                '(${zodiacEntriesForModality(m).length})',
-            active: _zodiacModalityFilter == m,
-            onTap: () => setState(() => _zodiacModalityFilter = m),
-          ),
-      ],
+      AlmanacTab.zodiac => <Widget>[],
       AlmanacTab.tarot => [
         _FilterChip(
           label: '${label('all')} (78)',
@@ -793,7 +767,6 @@ class _FilterChip extends StatelessWidget {
     required this.label,
     required this.active,
     required this.onTap,
-    super.key,
   });
 
   final String label;
@@ -809,99 +782,6 @@ class _FilterChip extends StatelessWidget {
         selected: active,
         compact: true,
         onTap: onTap,
-      ),
-    );
-  }
-}
-
-/// One Tarot Tree zodiac card.
-class _ZodiacTile extends StatelessWidget {
-  const _ZodiacTile({required this.entry, required this.onOpen, super.key});
-
-  final ZodiacSignEntry entry;
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final element = entry.element;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onOpen();
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: TaroColors.surface.withValues(alpha: 0.78),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: element.accent.withValues(alpha: 0.45)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  entry.glyph,
-                  style: TextStyle(fontSize: 26, color: element.accent),
-                ),
-                const Spacer(),
-                Text(
-                  element.glyph,
-                  style: TextStyle(fontSize: 12, color: element.accent),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              entry.name.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.display(
-                fontSize: 19,
-                fontWeight: FontWeight.w700,
-                height: 1.05,
-                color: TaroColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              entry.dateRange,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.label(
-                fontSize: 8,
-                letterSpacing: 1.0,
-                color: TaroColors.textSecondary,
-              ),
-            ),
-            const Spacer(),
-            Text(
-              entry.keywords.join(' · '),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.body(
-                fontSize: 10,
-                height: 1.3,
-                color: TaroColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '${entry.modality.name.toUpperCase()} · '
-              '${entry.rulersLabel.toUpperCase()}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.label(
-                fontSize: 7.5,
-                letterSpacing: 0.8,
-                fontWeight: FontWeight.w700,
-                color: TaroColors.lavender,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

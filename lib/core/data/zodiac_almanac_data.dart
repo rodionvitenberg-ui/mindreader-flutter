@@ -63,7 +63,8 @@ class ZodiacSignEntry {
   PlanetId get ruler => sign.ruler;
 
   /// Human-readable house affinity, e.g. '1st House'.
-  String get houseLabel => '$houseAffinity${_ordinalSuffix(houseAffinity)} House';
+  String get houseLabel =>
+      '$houseAffinity${_ordinalSuffix(houseAffinity)} House';
 
   /// Rulers line, e.g. 'Mars' or 'Pluto · trad. Mars'.
   String get rulersLabel => coRuler == null
@@ -220,8 +221,7 @@ const List<ZodiacSignEntry> zodiacAlmanac = [
     archetype:
         'The Alchemist — the part of you that goes all the way down and '
         'returns with something worth keeping.',
-    shadow:
-        'Control, secrecy and resentment held long past its usefulness.',
+    shadow: 'Control, secrecy and resentment held long past its usefulness.',
     loveStyle:
         'All-in and private; tests trust before it gives it, then protects '
         'the bond with fierce loyalty.',
@@ -239,8 +239,7 @@ const List<ZodiacSignEntry> zodiacAlmanac = [
     archetype:
         'The Seeker — the part of you that needs the bigger story and will '
         'travel to find the sentence that fits.',
-    shadow:
-        'Dogma, escape and promising more adventure than can be delivered.',
+    shadow: 'Dogma, escape and promising more adventure than can be delivered.',
     loveStyle:
         'Adventurous and honest; needs room to roam and a partner who is also '
         'a fellow traveller.',
@@ -324,3 +323,14 @@ List<ZodiacSignEntry> zodiacEntriesForModality(ZodiacModality modality) => [
 /// The Almanac entry for a sign.
 ZodiacSignEntry zodiacEntryFor(ZodiacSign sign) =>
     zodiacAlmanac.firstWhere((e) => e.sign == sign);
+
+/// Civil birth-date ranges used by the twelve entries in this almanac.
+ZodiacSign almanacBirthSign(DateTime date) {
+  const firstDay = [20, 19, 21, 20, 21, 21, 23, 23, 23, 23, 22, 22];
+  // January's late-month sign is Aquarius, at index 10 in Aries-first order.
+  final lateSign = (date.month + 9) % 12;
+  final index = date.day >= firstDay[date.month - 1]
+      ? lateSign
+      : (lateSign + 11) % 12;
+  return zodiacAlmanac[index].sign;
+}
