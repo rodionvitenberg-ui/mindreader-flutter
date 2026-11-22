@@ -102,7 +102,11 @@ class _SpreadBoardState extends State<SpreadBoard>
   }
 
   void _tap() {
-    if (!_begin()) return;
+    if (!_begin()) {
+      final ctrl = context.read<SpreadController>();
+      if (_phase == null && ctrl.isDealLocked) showDealLockPrompt(context, ctrl);
+      return;
+    }
     _land(automatic: true);
   }
 
@@ -293,60 +297,27 @@ class _SpreadBoardState extends State<SpreadBoard>
     super.dispose();
   }
 
-  /// Solves the coupled dock height and viewport fit scale so the horizontal
-  /// deck's top card in [SpreadDeckDock] matches the rendered size of each
-  /// card on the table (`deckHeight * fit` × `deckWidth * fit`) without moving
-  /// the deck out of its centered top-dock position.
+  // Size the dock once for the viewport, independently of the spread.
   static ({double dockHeight, double deckWidthPx, double deckHeightPx})
-  _dockSizingFor(Size area, Size boardSize) {
-    const headerH = ProfileHeader.actionSize;
-    const deckPad = 12.0;
-    const stackEdge = 4.0;
-    if (area.height <= headerH + deckPad + stackEdge || area.width <= 0) {
-      return (
-        dockHeight: math.min(area.height, headerH),
-        deckWidthPx: 0,
-        deckHeightPx: 0,
-      );
-    }
-    var inset = 12.0;
-    var fit = 1.0;
-    for (var i = 0; i < 3; i++) {
-      final availW = math.max(1.0, area.width - 2 * inset);
-      final availH = math.max(
-        1.0,
-        area.height - headerH - deckPad - stackEdge - 2 * inset,
-      );
-      final fitW = availW / boardSize.width;
-      final fitH = availH / (boardSize.height + deckWidth);
-      fit = math.min(1.0, math.min(fitW, fitH)).clamp(0.0, 1.0);
-      final dockH = headerH + deckPad + stackEdge + deckWidth * fit;
-      final vpH = math.max(0.0, area.height - dockH);
-      inset = math.min(12.0, math.min(area.width, vpH) / 8);
-    }
-    final cardShort = deckWidth * fit;
-    final cardLong = deckHeight * fit;
+  _dockSizingFor(Size area) {
+    const edge = overviewStackExtent;
+    final width = math.min(deckHeight, area.width * .61);
+    final height = math.min(width * deckWidth / deckHeight,
+        math.max(0.0, area.height - ProfileHeader.actionSize) * .33);
     return (
-      dockHeight: math.min(
-        area.height,
-        headerH + deckPad + stackEdge + cardShort,
-      ),
-      deckWidthPx: cardLong + stackEdge,
-      deckHeightPx: cardShort + stackEdge,
+      dockHeight: math.min(area.height, ProfileHeader.actionSize + height + edge + 8),
+      deckWidthPx: height * deckHeight / deckWidth + edge,
+      deckHeightPx: height + edge,
     );
   }
 
-  SpreadBoardGeometry _geometryFor(SpreadController ctrl) {
+  SpreadBoardGeometry _geometryFor(SpreadController ctrl, {bool baseOnly = false}) {
     final loveBridge =
         !ctrl.isCustomSpread &&
         ctrl.system == DivinationSystem.tarot &&
         ctrl.spreadType == SpreadType.loveBridge;
-    final count =
-        ctrl.slots.length +
-        (ctrl.system != DivinationSystem.runes &&
-                _next(ctrl) == ctrl.slots.length
-            ? 1
-            : 0);
+    final count = baseOnly ? ctrl.spreadCardCount :
+        ctrl.slots.length + (_next(ctrl) == ctrl.slots.length ? 1 : 0);
     return ctrl.isCustomSpread
         ? spreadBoardGeometryForCustom(ctrl.spreadCardCount, totalSlots: count, fiveCardLine: ctrl.customSpread!.isFiveCardLine)
         : spreadBoardGeometryForCount(
@@ -360,9 +331,10 @@ class _SpreadBoardState extends State<SpreadBoard>
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
     final geometry = _geometryFor(ctrl);
+    final baseSize = _geometryFor(ctrl, baseOnly: true).canvasSize;
     return LayoutBuilder(
       builder: (context, area) {
-        final sizing = _dockSizingFor(area.biggest, geometry.canvasSize);
+        final sizing = _dockSizingFor(area.biggest);
         return Stack(
           key: _surface,
           fit: StackFit.expand,
@@ -377,7 +349,7 @@ class _SpreadBoardState extends State<SpreadBoard>
                     badge: widget.badge,
                     wrapDeck: _gestures,
                     topKey: _deck,
-                    lifted: _phase != null,
+                    held: _phase == _DealPhase.dragging || _phase == _DealPhase.returning,
                     deckWidthPx: sizing.deckWidthPx,
                     deckHeightPx: sizing.deckHeightPx,
                   ),
@@ -385,7 +357,7 @@ class _SpreadBoardState extends State<SpreadBoard>
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, c) =>
-                        _canvas(context, ctrl, geometry, c.biggest),
+                        _canvas(context, ctrl, geometry, baseSize, c.biggest),
                   ),
                 ),
               ],
@@ -416,6 +388,7 @@ class _SpreadBoardState extends State<SpreadBoard>
     BuildContext context,
     SpreadController ctrl,
     SpreadBoardGeometry geometry,
+    Size baseSize,
     Size viewport,
   ) {
     if (viewport.isEmpty) return const SizedBox.shrink();
@@ -441,15 +414,20 @@ class _SpreadBoardState extends State<SpreadBoard>
                 quarterTurns: geometry.crossingSlotIndex == i ? 1 : 0,
                 child: SizedBox.expand(
                   key: _slotKeys.putIfAbsent(i, GlobalKey.new),
-                  child: GuideHighlight(slot:i, child: _OverviewSlot(
-                    key: ValueKey('spread-slot-$i'),
-                    inspect: widget.inspect,
-                    slot: i < ctrl.slots.length ? ctrl.slots[i] : null,
-                    slotIndex: i,
-                    highlighted: _index == i && _phase == _DealPhase.dragging,
-                    inFlight: _index == i &&
-                        (_phase == _DealPhase.flying || _phase == _DealPhase.landing),
-                  )),
+                  child: GuideHighlight(
+                    slot: i,
+                    child: _OverviewSlot(
+                      key: ValueKey('spread-slot-$i'),
+                      inspect: widget.inspect,
+                      slot: i < ctrl.slots.length ? ctrl.slots[i] : null,
+                      slotIndex: i,
+                      basePosition: i < ctrl.spreadCardCount,
+                      highlighted: _index == i && _phase == _DealPhase.dragging,
+                      inFlight: _index == i &&
+                          (_phase == _DealPhase.flying ||
+                              _phase == _DealPhase.landing),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -461,6 +439,8 @@ class _SpreadBoardState extends State<SpreadBoard>
       key: _viewport,
       viewport: viewport,
       boardSize: design,
+      baseBoardSize: baseSize,
+      readingRevision: ctrl.readingRevision,
       fitLabel: AppStrings.t(
         context.watch<AppSettingsController>().language,
         'table.fit',
@@ -475,6 +455,7 @@ class _OverviewSlot extends StatefulWidget {
     super.key,
     required this.slot,
     required this.slotIndex,
+    required this.basePosition,
     required this.inspect,
     required this.highlighted,
     required this.inFlight,
@@ -482,6 +463,7 @@ class _OverviewSlot extends StatefulWidget {
 
   final DealtCardSlot? slot;
   final int slotIndex;
+  final bool basePosition;
   final ValueChanged<int> inspect;
   final bool highlighted;
   final bool inFlight;
@@ -528,6 +510,7 @@ class _OverviewSlotState extends State<_OverviewSlot>
     final slot = widget.slot;
     final card = slot?.card;
     if (card == null || slot == null || widget.inFlight) {
+      if (!widget.basePosition) return const SizedBox.expand();
       final positions = context.watch<AppSettingsController>().enabled(ReadingAid.positions);
       if (!positions && !widget.highlighted) return const SizedBox.expand();
       final shorts = context.read<SpreadController>().spreadSlotRoleShorts;

@@ -13,8 +13,8 @@ import '../../../state/spread_controller.dart';
 /// An advisory sequence derived from confirmed slots. Never advances the deck.
 int? recommendedPosition(SpreadController ctrl) {
   final empty = ctrl.nextEmptySlotIndex;
-  if (empty != null) return empty;
-  final slots = ctrl.slots;
+  if (empty != null && empty < ctrl.spreadCardCount) return empty;
+  final slots = ctrl.slots.take(ctrl.spreadCardCount).toList();
   final centerFirst =
       !ctrl.isCustomSpread &&
       ctrl.system == DivinationSystem.tarot &&

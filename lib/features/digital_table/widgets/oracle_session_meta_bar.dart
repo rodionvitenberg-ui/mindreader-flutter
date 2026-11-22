@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../core/models/reading_mode.dart';
 import '../../../core/models/reading_source.dart';
-import '../../../core/services/oracle_voice_service.dart';
 import '../../../design_system/taro.dart';
 import '../../../state/oracle_session_controller.dart';
 
@@ -21,21 +19,15 @@ String? oraclePhysicalCtaLabel(ReadingSource source, ReadingMode mode) {
   };
 }
 
-/// The thin session bar under the chat header: the DIGITAL/PHYSICAL source
-/// badge, the mode badge (QUICK SCAN / GUIDED SPREAD / LIVE ORACLE), the
-/// Oracle voice toggle, and — for physical flows — the resume/return
-/// call-to-action. Collapses to nothing for a plain digital STANDARD reading
-/// with no TTS, so the chat stays uncluttered.
+/// Source and resume action for physical readings.
 class OracleSessionMetaBar extends StatelessWidget {
   const OracleSessionMetaBar({
     super.key,
     required this.session,
-    required this.voice,
     required this.onResumeCamera,
   });
 
   final OracleSessionController session;
-  final OracleVoiceService voice;
   final VoidCallback onResumeCamera;
 
   @override
@@ -44,10 +36,11 @@ class OracleSessionMetaBar extends StatelessWidget {
       session.readingSource,
       session.readingMode,
     );
-    final showBadges = session.readingSource == ReadingSource.physical ||
+    final showBadges =
+        session.readingSource == ReadingSource.physical ||
         session.readingMode != ReadingMode.standard;
 
-    if (!showBadges && ctaLabel == null && !voice.isAvailable) {
+    if (!showBadges && ctaLabel == null) {
       return const SizedBox.shrink();
     }
 
@@ -61,62 +54,9 @@ class OracleSessionMetaBar extends StatelessWidget {
             TaroGlassPill(label: session.readingMode.label, accent: true),
           ],
           const Spacer(),
-          if (voice.isAvailable)
-            ListenableBuilder(
-              listenable: voice,
-              builder: (context, _) => _VoiceToggle(voice: voice),
-            ),
-          if (voice.isAvailable && ctaLabel != null) const SizedBox(width: 6),
           if (ctaLabel != null)
             _PhysicalCta(label: ctaLabel, onTap: onResumeCamera),
         ],
-      ),
-    );
-  }
-}
-
-class _VoiceToggle extends StatelessWidget {
-  const _VoiceToggle({required this.voice});
-
-  final OracleVoiceService voice;
-
-  @override
-  Widget build(BuildContext context) {
-    final muted = voice.isMuted;
-    final speaking = voice.isSpeaking;
-    final IconData icon = muted
-        ? Icons.volume_off_outlined
-        : speaking
-            ? Icons.graphic_eq
-            : Icons.volume_up_outlined;
-    final color = muted
-        ? TaroColors.textSecondary
-        : speaking
-            ? TaroColors.rose
-            : TaroColors.lavender;
-    return Semantics(
-      button: true,
-      toggled: !muted,
-      label: muted ? 'Unmute the Oracle' : 'Mute the Oracle',
-      child: Tooltip(
-        message: muted ? 'Unmute the Oracle' : 'Mute the Oracle',
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            HapticFeedback.selectionClick();
-            voice.setMuted(!muted);
-          },
-          child: Container(
-            width: 34,
-            height: 28,
-            decoration: BoxDecoration(
-              color: TaroColors.surface.withValues(alpha: 0.78),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: color.withValues(alpha: 0.5)),
-            ),
-            child: Icon(icon, size: 16, color: color),
-          ),
-        ),
       ),
     );
   }
@@ -139,4 +79,3 @@ class _PhysicalCta extends StatelessWidget {
     );
   }
 }
-

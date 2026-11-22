@@ -83,12 +83,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                     onHandoff: () => _switchTo(1),
                   ),
                 ),
-                TaroGlassLayer(
-                  child: TableWorkspace(
-                    onOpenCameraClarifier: () => _switchTo(0),
-                    onResumeCamera: () => _switchTo(0),
-                    astralHandoff: _handoff,
-                  ),
+                TableWorkspace(
+                  onOpenCameraClarifier: () => _switchTo(0),
+                  onResumeCamera: () => _switchTo(0),
+                  astralHandoff: _handoff,
                 ),
                 TaroGlassLayer(
                   child: AlmanacScreen(

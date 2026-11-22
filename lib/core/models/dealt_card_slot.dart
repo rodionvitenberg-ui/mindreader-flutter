@@ -24,6 +24,9 @@ class DealtCardSlot {
   /// note for THIS card, composed into one string.
   String? userContext;
 
+  /// Present only for clarifiers requested from the Oracle or camera.
+  String? oracleQuestion;
+
   /// True when this card was photographed from a real physical deck —
   /// it never left the digital ledger.
   bool fromPhysicalCard;
@@ -65,6 +68,7 @@ class DealtCardSlot {
     isReversed = false;
     state = SlotState.empty;
     userContext = null;
+    oracleQuestion = null;
     fromPhysicalCard = false;
   }
 }

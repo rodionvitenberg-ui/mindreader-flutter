@@ -1,4 +1,5 @@
 import '../core/models/chat_message.dart';
+import '../core/models/dealt_card_slot.dart';
 import '../core/models/divination_system.dart';
 import '../core/models/lenormand_spread.dart';
 import '../core/models/oracle_handoff.dart';
@@ -30,18 +31,27 @@ class RestoredSpreadCard {
     required this.reversed,
     required this.role,
     this.userContext,
+    this.oracleQuestion,
+    this.fromPhysicalCard,
+    this.faceDown = false,
   });
 
   final int cardId;
   final bool reversed;
   final String role;
   final String? userContext;
+  final String? oracleQuestion;
+  final bool? fromPhysicalCard;
+  final bool faceDown;
 
   Map<String, dynamic> toJson() => {
     'cardId': cardId,
     'reversed': reversed,
     'role': role,
     if (userContext != null) 'userContext': userContext,
+    if (oracleQuestion != null) 'oracleQuestion': oracleQuestion,
+    if (fromPhysicalCard != null) 'fromPhysicalCard': fromPhysicalCard,
+    if (faceDown) 'faceDown': true,
   };
 
   static RestoredSpreadCard fromJson(Map<String, dynamic> json) =>
@@ -50,6 +60,9 @@ class RestoredSpreadCard {
         reversed: json['reversed'] as bool,
         role: json['role'] as String,
         userContext: json['userContext'] as String?,
+        oracleQuestion: json['oracleQuestion'] as String?,
+        fromPhysicalCard: json['fromPhysicalCard'] as bool?,
+        faceDown: json['faceDown'] == true,
       );
 }
 
@@ -220,6 +233,9 @@ class SpreadSessionSnapshot {
               reversed: s.isReversed,
               role: s.role,
               userContext: s.userContext,
+              oracleQuestion: s.oracleQuestion,
+              fromPhysicalCard: s.fromPhysicalCard,
+              faceDown: s.state == SlotState.faceDown,
             ),
       ],
       sessionNotes: [...ctrl.sessionContextNotes],
@@ -246,6 +262,22 @@ class SpreadSessionSnapshot {
       customQuestions: ctrl.customSpread?.questions ?? const [],
     );
   }
+
+  Map<int, String> get oracleQuestions => {
+    for (final (index, card) in cards.indexed)
+      if (card.oracleQuestion != null) index: card.oracleQuestion!,
+  };
+
+  Set<int> get faceDownCards => {
+    for (final (index, card) in cards.indexed)
+      if (card.faceDown) index,
+  };
+
+  Set<int> get physicalCards => {
+    for (final (index, card) in cards.indexed)
+      if (card.fromPhysicalCard ?? readingSource != ReadingSource.digital)
+        index,
+  };
 
   List<({int cardId, bool reversed, String role, String? userContext})>
   toRestoreCards() => [

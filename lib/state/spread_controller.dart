@@ -42,28 +42,19 @@ class SpreadController extends ChangeNotifier {
   /// [totalCards] only ever shrinks the tarot stack (test/scan setup).
   late int _deckSize;
 
-  /// Maximum base positions supported by any spread on the table (presets and
-  /// the 1..12 Custom Spread builder).
+  static const maxTableCards = 15;
   static const maxBaseSpreadCards = 12;
 
-  /// Maximum clarifying cards allowed ON TOP of the active base spread.
-  /// Clarifiers are counted separately from the base positions so both 10-card
-  /// Celtic Cross and 12-position custom spreads still allow follow-up draws.
-  static const maxClarifierCards = 3;
-
-  /// Hard safety ceiling on total cards on the table (12 base + 3 clarifiers).
-  static const maxTableCards = maxBaseSpreadCards + maxClarifierCards;
-
-  /// Subtle haptic/visual prompt shown when the reader swipes a locked
-  /// deck: the base spread is complete and no clarifier question is armed.
-  static const dealLockedPrompt =
-      'Flip all cards face-up and synthesize in Chat before drawing '
-      'a clarifier.';
-
-  /// Prompt shown once all clarifying cards above the base spread have been
-  /// used (or the absolute table ceiling is reached).
-  static const maxTableCardsPrompt =
-      'Maximum of $maxClarifierCards clarifier cards reached for this reading.';
+  String get dealLockMessage {
+    if (isClarifierLimitReached) {
+      return 'Maximum of $maxTableCards cards reached for this reading.';
+    }
+    if (remaining == 0) return 'The deck is empty.';
+    if (clarifierScanRequested) {
+      return 'Finish or cancel the camera scan before drawing another card.';
+    }
+    return 'Flip all cards face-up before drawing another card.';
+  }
 
   late List<int> _cardIds; // shuffled order of the active system's cards
   late List<bool> _isReversed; // parallel orientation flags
@@ -220,40 +211,25 @@ class SpreadController extends ChangeNotifier {
   int get initialSpreadCardCount => spreadCardCount;
 
   /// The authentic canonical slot count of the active spread — the deck
-  /// locks for further dealing as soon as this many cards lie on the table.
+  /// waits for all base cards to be revealed before allowing a further draw.
   int get baseCardLimit => spreadCardCount;
 
   /// How many clarifying cards have been drawn above the base spread.
   int get clarifierCount => _clarifierCount;
 
-  /// Per-reading total card cap: base positions + up to [maxClarifierCards]
-  /// clarifiers, never exceeding [maxTableCards].
-  int get maxCardsForCurrentSpread =>
-      min(maxTableCards, baseCardLimit + maxClarifierCards);
+  int get maxCardsForCurrentSpread => maxTableCards;
 
-  /// True once the separate clarifier allowance (3 cards above the base
-  /// spread) or the absolute 15-card table ceiling is exhausted.
-  bool get isClarifierLimitReached =>
-      _clarifierCount >= maxClarifierCards ||
-      dealtCount >= maxCardsForCurrentSpread;
+  bool get isClarifierLimitReached => dealtCount >= maxTableCards;
 
-  /// How many cards this reading may hold right now:
-  /// * base spread filling → the canonical [baseCardLimit] (up to 12);
-  /// * a clarifier question armed → exactly dealtCount + 1 (ONE unlocked
-  ///   card), clamped to [maxCardsForCurrentSpread];
-  /// * once the clarifier cap is reached → [maxCardsForCurrentSpread].
-  int get allowedCardsLimit {
-    final cap = maxCardsForCurrentSpread;
-    if (dealtCount >= cap) return cap;
-    return min(
-      cap,
-      _pendingClarifierQuestion == null ? baseCardLimit : dealtCount + 1,
-    );
-  }
+  bool get _canAppendCard => initialSpreadAllFaceUp &&
+      allFaceUp && !isClarifierLimitReached;
 
-  /// True when the deck refuses further draws: the base spread is complete
-  /// and no clarifier question is armed, or the clarifier ceiling is reached.
-  bool get isDealLocked => dealtCount >= allowedCardsLimit;
+  bool get canDrawExtraCard =>
+      _canAppendCard && remaining > 0 && !clarifierScanRequested;
+
+  bool get isDealLocked => remaining == 0 ||
+      isClarifierLimitReached ||
+      (nextEmptySlotIndex == null && !canDrawExtraCard);
 
   late List<DealtCardSlot> _slots;
   List<DealtCardSlot> get slots => List.unmodifiable(_slots);
@@ -384,7 +360,7 @@ class SpreadController extends ChangeNotifier {
       _cardIds[j] = tmpId;
       _isReversed[i] = _rng.nextBool();
     }
-    _isReversed[0] = _rng.nextBool();
+    if (_isReversed.isNotEmpty) _isReversed[0] = _rng.nextBool();
     _topIndex = 0;
     notifyListeners();
   }
@@ -488,10 +464,17 @@ class SpreadController extends ChangeNotifier {
   /// the 8 symmetrical runes always land upright — the parallel
   /// `_isReversed` flag is only advisory for those systems.
   int? dealCardAt(int depthFromTop) {
-    final idx = nextEmptySlotIndex;
-    if (idx == null) return null;
+    final index = nextEmptySlotIndex;
+    if (index == null || isClarifierLimitReached ||
+        depthFromTop < 0 || depthFromTop >= remaining) {
+      return null;
+    }
+    _dealInto(_slots[index], depthFromTop);
+    return index;
+  }
+
+  void _dealInto(DealtCardSlot slot, int depthFromTop, {bool reveal = false}) {
     final pos = _topIndex + depthFromTop;
-    if (depthFromTop < 0 || pos >= _cardIds.length) return null;
     final card = activeSystemCards[_cardIds[pos]];
     var reversed = _isReversed[pos];
     if (_system == DivinationSystem.lenormand) reversed = false;
@@ -500,9 +483,12 @@ class SpreadController extends ChangeNotifier {
     }
     _cardIds.removeAt(pos);
     _isReversed.removeAt(pos);
-    _slots[idx].placeCardFaceDown(card, reversed);
+    if (reveal) {
+      slot.placeCardFaceUp(card, reversed);
+    } else {
+      slot.placeCardFaceDown(card, reversed);
+    }
     notifyListeners();
-    return idx;
   }
 
   void flipSlot(int index) {
@@ -546,98 +532,69 @@ class SpreadController extends ChangeNotifier {
     return false;
   }
 
-  // ---- locked clarifier loop (+1 Card, up to 3 clarifiers above base) ----
+  // ---- Additional cards ----
 
   int _clarifierCount = 0;
 
-  /// Arms the deck for EXACTLY ONE +1 Clarifier Card with [question] (an
-  /// AI-suggested or the reader's own follow-up). Returns false when the
-  /// base spread is incomplete, the question is blank, or the separate
-  /// clarifier cap ([maxClarifierCards]) is reached.
-  bool armClarifierQuestion(String question) {
-    if (question.trim().isEmpty) return false;
-    if (isClarifierLimitReached) return false;
-    if (dealtCount < baseCardLimit) return false;
-    _pendingClarifierQuestion = question;
-    notifyListeners();
-    return true;
-  }
-
-  /// Deals the next card; when the initial spread is already full this
-  /// consumes an armed clarifier question and appends Clarifier N+1
-  /// instead of refusing. Refuses (null) while the deck is locked.
   int? dealNextCardOrClarifier() => dealCardAtOrClarifier(0);
 
-  /// The single legal digital-deal gate (tactile grab AND overview tap):
-  /// * base slots fill freely up to [baseCardLimit] (1..12);
-  /// * beyond it a card may only be drawn while a clarifier question is
-  ///   armed — exactly ONE, then the deck locks again;
-  /// * once [maxClarifierCards] clarifiers lie above the base spread (or
-  ///   [maxTableCards] is reached) the deck refuses permanently.
+  /// Manual draws use the same deck order and leave the new card face down.
   int? dealCardAtOrClarifier(int depthFromTop) {
     if (depthFromTop < 0 || depthFromTop >= remaining) return null;
-    final direct = dealCardAt(depthFromTop);
-    if (direct != null) return direct;
-    if (isClarifierLimitReached) return null;
-    final question = _pendingClarifierQuestion;
-    if (question == null) return null; // deck locked: no question armed
-    final idx = _appendClarifierSlot(question);
-    _pendingClarifierQuestion = null; // ONE card, then the deck locks again
-    dealCardAt(depthFromTop);
-    notifyListeners();
-    return idx;
+    final base = dealCardAt(depthFromTop);
+    if (base != null) return base;
+    if (!canDrawExtraCard) return null;
+    final slot = _appendClarifierSlot();
+    _dealInto(slot, depthFromTop);
+    return slot.index;
   }
 
-  int _appendClarifierSlot(String question) {
-    _clarifierCount++;
+  /// The conversation draws and reveals the actual top card in one update.
+  int? drawOracleClarifier(String question) {
+    if (!canDrawExtraCard || question.trim().isEmpty) return null;
+    final slot = _appendClarifierSlot(oracleQuestion: question.trim());
+    _dealInto(slot, 0, reveal: true);
+    return slot.index;
+  }
+
+  DealtCardSlot _appendClarifierSlot({String? oracleQuestion}) {
     final slot = DealtCardSlot(
       index: _slots.length,
-      role: 'Clarifier $_clarifierCount',
-    );
-    slot.setUserContext(text: question);
+      role: 'Clarifier ${++_clarifierCount}',
+    )..oracleQuestion = oracleQuestion;
+    slot.setUserContext(text: oracleQuestion);
     _slots.add(slot);
-    return slot.index;
+    return slot;
   }
 
   // ---- phygital camera-to-table sync ------------------------------------
 
   String? _pendingClarifierQuestion;
 
-  /// The armed clarifier question (AI-suggested or the reader's own) —
-  /// drives the unlocked +1 card AND the camera handoff. Null while the
-  /// deck is locked or no follow-up is requested.
   String? get pendingClarifierQuestion => _pendingClarifierQuestion;
 
-  /// True while the camera is expected to photograph ONE physical clarifier
-  /// card that extends the current spread.
   bool get clarifierScanRequested => _pendingClarifierQuestion != null;
 
-  /// Arms the clarifier camera scan with the follow-up question and marks
-  /// the session as a physical camera sync. Refuses once the clarifier limit
-  /// is reached.
-  void requestClarifierScan(String question) {
-    if (isClarifierLimitReached) return;
-    if (question.trim().isEmpty) return;
-    _pendingClarifierQuestion = question;
+  bool requestClarifierScan(String question) {
+    if (!_canAppendCard || clarifierScanRequested || question.trim().isEmpty) {
+      return false;
+    }
+    _pendingClarifierQuestion = question.trim();
     _sourceMode = TableSourceMode.physicalCameraSync;
     notifyListeners();
+    return true;
   }
 
-  /// The camera recognized the photographed physical clarifier: append it
-  /// FACE UP as Card N+1. The digital 78-card ledger is untouched — a real
-  /// card never decrements [remaining]. Returns the new slot index, or
-  /// null when nothing is armed or the clarifier ceiling is reached.
+  /// Physical clarifiers extend the same spread without touching the deck.
   int? completeClarifierScan(TarotCard card, bool reversed) {
     final question = _pendingClarifierQuestion;
-    if (question == null) return null;
-    if (isClarifierLimitReached) return null;
+    if (question == null || !_canAppendCard) return null;
     _pendingClarifierQuestion = null;
-    final idx = _appendClarifierSlot(question);
-    final slot = _slots[idx];
+    final slot = _appendClarifierSlot(oracleQuestion: question);
     slot.fromPhysicalCard = true;
     slot.placeCardFaceUp(TarotDivinationCard(card), reversed);
     notifyListeners();
-    return idx;
+    return slot.index;
   }
 
   void cancelClarifierScan() {
@@ -660,7 +617,7 @@ class SpreadController extends ChangeNotifier {
     LenormandSpread? lenormandSpread,
     RuneCast? runeCast,
   }) {
-    if (cards.isEmpty) return;
+    if (cards.isEmpty || cards.length > maxTableCards) return;
     _startReading();
     _customSpread = null;
     _system = system;
@@ -814,11 +771,8 @@ class SpreadController extends ChangeNotifier {
     return true;
   }
 
-  /// 1-tap session restore (Pane 2): rebuilds the table with the exact
-  /// saved cards, orientations, roles and intentions — all FACE UP with
-  /// threads ready. The physical stack refreshes to a full shuffle of the
-  /// saved system: restored cards are a snapshot (camera-sync semantics)
-  /// that never touches the digital ledger.
+  /// Restore the exact reading and shuffle the remaining digital cards.
+  /// Older callers without source information use physical snapshot semantics.
   void restoreSpread({
     required DivinationSystem system,
     SpreadType? type,
@@ -831,6 +785,10 @@ class SpreadController extends ChangeNotifier {
     required List<String> sessionNotes,
     String readingQuestion = '',
     bool? readingForSelf,
+    Map<int, String> oracleQuestions = const {},
+    Set<int> faceDownCards = const {},
+    Set<int>? physicalCards,
+    TableSourceMode sourceMode = TableSourceMode.physicalCameraSync,
   }) {
     _startReading(question: readingQuestion, forSelf: readingForSelf);
     _system = system;
@@ -863,14 +821,19 @@ class SpreadController extends ChangeNotifier {
     _pendingClarifierQuestion = null;
     _pendingChip = null;
     _pendingNote = null;
-    _sourceMode = TableSourceMode.physicalCameraSync;
+    _sourceMode = sourceMode;
     _slots = List.generate(cards.length, (i) {
-      final slot = DealtCardSlot(index: i, role: cards[i].role);
-      slot.fromPhysicalCard = true;
-      slot.userContext = cards[i].userContext;
+      final slot = DealtCardSlot(index: i, role: cards[i].role)
+        ..fromPhysicalCard = physicalCards?.contains(i) ?? true
+        ..userContext = cards[i].userContext
+        ..oracleQuestion = oracleQuestions[i];
       final card = _cardById(cards[i].cardId);
       if (card != null) {
-        slot.placeCardFaceUp(card, cards[i].reversed);
+        if (faceDownCards.contains(i)) {
+          slot.placeCardFaceDown(card, cards[i].reversed);
+        } else {
+          slot.placeCardFaceUp(card, cards[i].reversed);
+        }
       }
       return slot;
     });
@@ -878,6 +841,13 @@ class SpreadController extends ChangeNotifier {
       ..clear()
       ..addAll(sessionNotes);
     _resetDeck();
+    for (final slot in _slots) {
+      if (slot.fromPhysicalCard || slot.card == null) continue;
+      final index = _cardIds.indexOf(slot.card!.id);
+      if (index < 0) continue;
+      _cardIds.removeAt(index);
+      _isReversed.removeAt(index);
+    }
     shuffleDeck();
   }
 

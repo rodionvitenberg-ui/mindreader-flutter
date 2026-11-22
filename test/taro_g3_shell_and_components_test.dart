@@ -206,9 +206,12 @@ void main() {
       final tableState = tester.state(table);
       final cameraState = tester.state(camera);
 
+      final tableLayer = find.descendant(
+        of: table,
+        matching: find.byType(TaroGlassLayer, skipOffstage: false),
+      );
       final layers = [
         camera,
-        table,
         find.byType(AlmanacScreen, skipOffstage: false),
         find.byType(AstralScreen, skipOffstage: false),
         find.byType(TaroGlassDock),
@@ -219,6 +222,7 @@ void main() {
         );
         return tester.element(layer);
       }).toSet();
+      layers.add(tester.element(tableLayer));
       expect(layers, hasLength(5));
 
       const shutter = ValueKey('shutter');

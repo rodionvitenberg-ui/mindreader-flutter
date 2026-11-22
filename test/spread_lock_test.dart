@@ -9,9 +9,6 @@ import 'package:mindreader/core/models/spread_type.dart';
 import 'package:mindreader/core/services/oracle_synthesis_service.dart';
 import 'package:mindreader/state/spread_controller.dart';
 
-/// Sprint 3/3: authentic spread caps, the Deal Lock after the base cards,
-/// the question-driven +1 Clarifier unlock loop and the hard 10-card
-/// table ceiling.
 void main() {
   group('authentic base card limits & canonical roles', () {
     test('every spread type carries its canonical slot count', () {
@@ -59,14 +56,12 @@ void main() {
     test('Triad locks exactly at 3 cards', () {
       final c = SpreadController(random: Random(2));
       expect(c.isDealLocked, isFalse);
-      expect(c.allowedCardsLimit, 3);
       c.dealNextCard();
       c.dealNextCard();
       expect(c.isDealLocked, isFalse);
       c.dealNextCard();
       expect(c.dealtCount, 3);
       expect(c.isDealLocked, isTrue);
-      expect(c.allowedCardsLimit, 3);
       // No further deals: neither the plain deal nor the clarifier gate.
       expect(c.dealNextCard(), isNull);
       expect(c.dealNextCardOrClarifier(), isNull);
@@ -87,157 +82,140 @@ void main() {
     });
   });
 
-  group('+1 clarifier unlock loop', () {
-    test('allowedCardsLimit = dealtCount + 1 while armed', () {
+  group('additional cards', () {
+    test('manual draws wait for the previous card to be revealed', () {
       final c = SpreadController(random: Random(3));
       for (var i = 0; i < 3; i++) {
         c.dealNextCard();
+        c.flipSlot(i);
       }
-      expect(c.allowedCardsLimit, 3);
-      c.armClarifierQuestion('What is hidden?');
-      expect(c.allowedCardsLimit, 4);
-      c.dealNextCardOrClarifier();
-      expect(c.allowedCardsLimit, 3); // relocked
+      final first = c.deckTop.first.id;
+      expect(c.dealNextCardOrClarifier(), 3);
+      expect(c.slots[3].card!.id, first);
+      expect(c.slots[3].state, SlotState.faceDown);
+      expect(c.slots[3].oracleQuestion, isNull);
       expect(c.isDealLocked, isTrue);
+      expect(c.drawOracleClarifier('Too soon?'), isNull);
+      expect(c.dealNextCardOrClarifier(), isNull);
+      c.flipSlot(3);
+      expect(c.dealNextCardOrClarifier(), 4);
     });
 
-    test('the armed question lands on the clarifier slot', () {
+    test('Oracle draws and reveals the top card in one notification', () {
       final c = SpreadController(random: Random(4));
       for (var i = 0; i < 3; i++) {
         c.dealNextCard();
-      }
-      c.armClarifierQuestion('What concrete step should I take?');
-      final idx = c.dealNextCardOrClarifier();
-      expect(idx, 3);
-      expect(c.slots[3].role, 'Clarifier 1');
-      expect(
-        c.slots[3].userContext,
-        '"What concrete step should I take?"',
-      );
-    });
-
-    test('cancelling an armed question relocks the deck', () {
-      final c = SpreadController(random: Random(5));
-      for (var i = 0; i < 3; i++) {
-        c.dealNextCard();
-      }
-      c.armClarifierQuestion('What is hidden?');
-      expect(c.isDealLocked, isFalse);
-      c.cancelClarifierScan();
-      expect(c.pendingClarifierQuestion, isNull);
-      expect(c.isDealLocked, isTrue);
-      expect(c.dealNextCardOrClarifier(), isNull);
-    });
-
-    test('restored sessions are locked until a new question is armed', () {
-      final c = SpreadController(random: Random(6));
-      for (var i = 0; i < 3; i++) {
-        c.dealNextCard();
-      }
-      final cards = [
-        for (final s in c.slots)
-          (
-            cardId: s.card!.id,
-            reversed: s.isReversed,
-            role: s.role,
-            userContext: s.userContext,
-          ),
-      ];
-      c.restoreSpread(
-        system: DivinationSystem.tarot,
-        type: SpreadType.three,
-        cards: cards,
-        sessionNotes: const [],
-      );
-      expect(c.dealtCount, 3);
-      expect(c.isDealLocked, isTrue);
-      c.armClarifierQuestion('Deepen the outcome?');
-      expect(c.isDealLocked, isFalse);
-      expect(c.allowedCardsLimit, 4);
-    });
-
-  group('12-position base limit & separate 3-clarifier ceiling', () {
-    test('the 4th clarifier is refused: max 3 clarifiers above base spread',
-        () {
-      final c = SpreadController(random: Random(7));
-      for (var i = 0; i < 3; i++) {
-        c.dealNextCard();
-      }
-      // Three armed clarifiers reach the separate clarifier ceiling (3 + 3 = 6).
-      for (var i = 0; i < SpreadController.maxClarifierCards; i++) {
-        expect(c.armClarifierQuestion('Clarifier ${i + 1}?'), isTrue);
-        final idx = c.dealNextCardOrClarifier();
-        expect(idx, 3 + i);
-        expect(c.slots[3 + i].role, 'Clarifier ${i + 1}');
-      }
-      expect(c.clarifierCount, SpreadController.maxClarifierCards);
-      expect(c.dealtCount, 6);
-      expect(c.isClarifierLimitReached, isTrue);
-      expect(c.isDealLocked, isTrue);
-      // Arming fails: the clarifier cap is permanent for this reading.
-      expect(c.armClarifierQuestion('One more?'), isFalse);
-      expect(c.pendingClarifierQuestion, isNull);
-      // No deal path can add a 4th clarifier.
-      expect(c.dealNextCardOrClarifier(), isNull);
-      expect(c.dealCardAtOrClarifier(0), isNull);
-      expect(c.allowedCardsLimit, 6);
-    });
-
-    test('12-position custom spread deals all 12 base cards + up to 3 clarifiers',
-        () {
-      final c = SpreadController(random: Random(8));
-      c.setCustomSpread(
-        CustomSpreadConfig.fromQuestions(
-          questions: [for (var i = 1; i <= 12; i++) 'Question $i?'],
-          name: 'Year Ahead',
-        ),
-      );
-      expect(c.baseCardLimit, 12);
-      expect(c.maxCardsForCurrentSpread, 15);
-      for (var i = 0; i < 12; i++) {
-        expect(c.dealNextCardOrClarifier(), i);
         c.flipSlot(i);
       }
-      expect(c.dealtCount, 12);
-      expect(c.initialSpreadAllFaceUp, isTrue);
-      expect(c.isDealLocked, isTrue);
-
-      for (var i = 0; i < 3; i++) {
-        expect(c.armClarifierQuestion('Follow-up ${i + 1}?'), isTrue);
-        expect(c.allowedCardsLimit, 13 + i);
-        expect(c.dealNextCardOrClarifier(), 12 + i);
-      }
-      expect(c.dealtCount, SpreadController.maxTableCards); // 15
-      expect(c.isClarifierLimitReached, isTrue);
-      expect(c.armClarifierQuestion('4th clarifier?'), isFalse);
+      final top = c.deckTop.first.id;
+      var notifications = 0;
+      c.addListener(() {
+        notifications++;
+        expect(c.slots[3].state, SlotState.faceUp);
+        expect(c.slots[3].oracleQuestion, 'Next step?');
+        expect(c.remaining, 74);
+      });
+      expect(c.drawOracleClarifier('Next step?'), 3);
+      expect(notifications, 1);
+      expect(c.slots[3].card!.id, top);
+      expect(c.ledgerTotal, 78);
     });
 
-    test('camera clarifier scan is refused once 3 clarifiers are reached', () {
-      final c = SpreadController(random: Random(9));
-      for (var i = 0; i < 3; i++) {
-        c.dealNextCard();
-      }
-      for (var i = 0; i < SpreadController.maxClarifierCards; i++) {
-        c.armClarifierQuestion('Q$i?');
+    for (final baseCount in [3, 12]) {
+      test('$baseCount base cards can extend to 15 and no further', () {
+        final c = SpreadController(random: Random(baseCount));
+        if (baseCount == 12) {
+          c.setCustomSpread(
+            CustomSpreadConfig.fromQuestions(
+              questions: [for (var i = 1; i <= baseCount; i++) 'Question $i?'],
+            ),
+          );
+        }
+        expect(c.baseCardLimit, baseCount);
+        expect(c.maxCardsForCurrentSpread, 15);
+        for (var i = 0; i < 15; i++) {
+          if (i > baseCount && i.isOdd) {
+            expect(c.drawOracleClarifier('Follow-up $i?'), i);
+          } else {
+            expect(c.dealNextCardOrClarifier(), i);
+            c.flipSlot(i);
+          }
+        }
+        expect(c.clarifierCount, 15 - baseCount);
+        expect(c.isDealLocked, isTrue);
+        expect(c.dealNextCardOrClarifier(), isNull);
+        expect(c.drawOracleClarifier('One more?'), isNull);
+        expect(c.requestClarifierScan('Physical one more?'), isFalse);
+        expect(c.ledgerTotal, 78);
+      });
+    }
+
+    test(
+      'restoring a digital table preserves its unrevealed card and deck ledger',
+      () {
+        final c = SpreadController(random: Random(15));
+        for (var i = 0; i < 3; i++) {
+          c.dealNextCard();
+          c.flipSlot(i);
+        }
         c.dealNextCardOrClarifier();
-      }
-      expect(c.isClarifierLimitReached, isTrue);
-      c.requestClarifierScan('Physical one more?');
-      expect(c.pendingClarifierQuestion, isNull); // refused at clarifier cap
-      // No armed question → no camera slot can be appended.
-      expect(
-        c.completeClarifierScan(
-          (c.slots[0].card! as TarotDivinationCard).card,
-          false,
-        ),
-        isNull,
-      );
-    });
+        final cards = [
+          for (final s in c.slots)
+            (
+              cardId: s.card!.id,
+              reversed: s.isReversed,
+              role: s.role,
+              userContext: s.userContext,
+            ),
+        ];
+        c.restoreSpread(
+          system: DivinationSystem.tarot,
+          type: SpreadType.three,
+          cards: cards,
+          sessionNotes: const [],
+          physicalCards: const {},
+          faceDownCards: const {3},
+          sourceMode: TableSourceMode.digitalDeck,
+        );
+        expect(c.remaining, 74);
+        expect(c.ledgerTotal, 78);
+        expect(c.slots[3].state, SlotState.faceDown);
+        expect(c.isDealLocked, isTrue);
+        expect(
+          c.remainingDeck.map((card) => card.id),
+          isNot(contains(cards[3].cardId)),
+        );
+        c.flipSlot(3);
+        expect(c.dealNextCardOrClarifier(), 4);
+      },
+    );
+
+    test(
+      'a camera reservation at 14 cards consumes the same final position',
+      () {
+        final c = SpreadController(random: Random(9));
+        for (var i = 0; i < 14; i++) {
+          c.dealNextCardOrClarifier();
+          c.flipSlot(i);
+        }
+        final remaining = c.remaining;
+        expect(c.requestClarifierScan('Camera?'), isTrue);
+        expect(c.dealNextCardOrClarifier(), isNull);
+        expect(c.drawOracleClarifier('Digital?'), isNull);
+        final card = (c.slots[0].card! as TarotDivinationCard).card;
+        expect(c.completeClarifierScan(card, false), 14);
+        expect(c.completeClarifierScan(card, false), isNull);
+        expect(c.remaining, remaining);
+        expect(c.dealtCount, 15);
+      },
+    );
   });
 
   group('AI-generated clarifier suggestions', () {
-    List<DealtCardSlot> slotsOf(SpreadController c) =>
-        [for (final s in c.slots) if (s.card != null) s];
+    List<DealtCardSlot> slotsOf(SpreadController c) => [
+      for (final s in c.slots)
+        if (s.card != null) s,
+    ];
 
     test('2-3 questions dynamically reference the actual cards', () {
       final c = SpreadController(random: Random(10));
@@ -277,27 +255,23 @@ void main() {
         final b = c.slots[t.to].card!.name;
         expect(
           suggestions,
-          contains('What concrete action resolves the elemental tension '
-              'between $a and $b?'),
+          contains(
+            'What concrete action resolves the elemental tension '
+            'between $a and $b?',
+          ),
         );
       }
     });
 
-    test('suggestions stop at the reading clarifier ceiling', () {
+    test('suggestions stop at the total table ceiling', () {
       final c = SpreadController(random: Random(12));
-      for (var i = 0; i < 3; i++) {
-        c.dealNextCard();
-      }
-      for (var i = 0; i < SpreadController.maxClarifierCards; i++) {
-        c.armClarifierQuestion('Q$i?');
+      for (var i = 0; i < 15; i++) {
         c.dealNextCardOrClarifier();
+        c.flipSlot(i);
       }
       expect(c.dealtCount, c.maxCardsForCurrentSpread);
       expect(
-        buildClarifierSuggestions(
-          c.slots,
-          hardMax: c.maxCardsForCurrentSpread,
-        ),
+        buildClarifierSuggestions(c.slots, hardMax: c.maxCardsForCurrentSpread),
         isEmpty,
       );
     });
@@ -306,7 +280,5 @@ void main() {
       final c = SpreadController(random: Random(13));
       expect(buildClarifierSuggestions(c.slots), isEmpty);
     });
-  });
-
   });
 }

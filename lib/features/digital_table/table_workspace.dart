@@ -78,6 +78,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
   // started or restored by this table belongs to its current spread.
   int? _tableSessionEpoch;
   bool _restoringSpread = false;
+  (int, int)? _archivedCardCounts;
   final _dictation = ReadingDictation();
   bool _finishingDraft = false;
 
@@ -152,6 +153,10 @@ class _TableWorkspaceState extends State<TableWorkspace>
     }
     setState(() {});
     _maybeExpandClarifiers();
+    if (_session.hasSynthesis && _session.epoch == _tableSessionEpoch &&
+        _archivedCardCounts != (_ctrl.dealtCount, _ctrl.faceUpCount)) {
+      _captureSession();
+    }
   }
 
   // ---- ASTRAL cross-tab handoff (natal / synastry to Oracle Chat) ----
@@ -214,14 +219,15 @@ class _TableWorkspaceState extends State<TableWorkspace>
   // ---- clarifier expansion (moved from the old synthesis panel) ----
 
   void _maybeExpandClarifiers() {
-    if (!_session.hasSynthesis) return;
+    if (!_session.hasSynthesis || _session.epoch != _tableSessionEpoch) return;
     for (final s in _ctrl.slots) {
-      if (s.index < _ctrl.initialSpreadCardCount) continue;
+      final question = s.oracleQuestion;
+      if (question == null) continue;
       if (s.state != SlotState.faceUp || s.card == null) continue;
       if (_session.chapterForSlot(s.index) != null) continue;
       final chapter = ClarifierChapter(
         slotIndex: s.index,
-        question: s.userContext ?? 'Clarifier',
+        question: question,
         cardName: s.card!.name,
         isReversed: s.isReversed,
       );
@@ -244,12 +250,18 @@ class _TableWorkspaceState extends State<TableWorkspace>
         .where((s) => s.index < chapter.slotIndex)
         .toList();
     final epoch = _session.epoch;
-    final text = await OracleSynthesisService().synthesizeClarifier(
-      question: chapter.question,
-      newSlot: slot,
-      previous: previous,
-      profileContext: _tableSubject,
-    );
+    final oracle = widget.oracleService ?? OracleSynthesisService();
+    String text;
+    try {
+      text = await oracle.synthesizeClarifier(
+        question: chapter.question,
+        newSlot: slot,
+        previous: previous,
+        profileContext: _tableSubject,
+      );
+    } catch (_) {
+      text = 'The Oracle could not answer. Your card is still in the spread.';
+    }
     if (!mounted || !_session.isCurrentSession(epoch)) return;
     _session.completeChapter(chapter.slotIndex, text);
     await _captureSession();
@@ -356,6 +368,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
       return;
     }
     if (!_session.hasSynthesis) return;
+    _archivedCardCounts = (_ctrl.dealtCount, _ctrl.faceUpCount);
     final timestamp = _sessionTimestamp ?? DateTime.now().toIso8601String();
     _sessionTimestamp = timestamp;
     await _history.upsert(
@@ -434,36 +447,32 @@ class _TableWorkspaceState extends State<TableWorkspace>
     HapticFeedback.mediumImpact();
   }
 
-  // ---- clarifiers (question-driven +1 unlock loop) ----
+  // ---- Additional cards from the Oracle ----
 
-  /// Arms the deck for EXACTLY ONE +1 Clarifier Card with [question] (an
-  /// AI-suggested follow-up or the reader's own question) and slides back
-  /// to the Digital Table, where a subtle banner shows the armed question.
-  /// In physical-camera-sync mode the draw routes through the camera.
-  void _requestClarifierForQuestion(String question) {
-    if (!_ctrl.armClarifierQuestion(question)) {
+  bool _requestClarifierForQuestion(String question) {
+    if (!_session.hasSynthesis || _tableSessionEpoch != _session.epoch) {
+      return false;
+    }
+    if (_session.chapters.any((chapter) =>
+        chapter.generating && chapter.question == question.trim())) {
+      return false;
+    }
+    if (_ctrl.drawOracleClarifier(question) == null) {
       showDealLockPrompt(context, _ctrl);
-      return;
+      return false;
     }
-    if (_ctrl.sourceMode == TableSourceMode.physicalCameraSync) {
-      _ctrl.requestClarifierScan(question);
-      widget.onOpenCameraClarifier?.call();
-      return;
-    }
-    _session.addSystemMessage(
-      'Clarifier armed: "$question" — the deck unlocked exactly one card. '
-      'Pull it and flip it face-up to hear the answer.',
-    );
     HapticFeedback.mediumImpact();
-    _goToPane(tablePane);
+    return true;
   }
 
   void _scanClarifier() {
-    _ctrl.requestClarifierScan(
-      _ctrl.pendingClarifierQuestion ??
-          'What else does the table want to show?',
-    );
-    widget.onOpenCameraClarifier?.call();
+    if (widget.onOpenCameraClarifier == null) return;
+    if (_ctrl.clarifierScanRequested ||
+        _ctrl.requestClarifierScan('What else does the table want to show?')) {
+      widget.onOpenCameraClarifier!();
+    } else {
+      showDealLockPrompt(context, _ctrl);
+    }
   }
 
   // ---- history (Pane 2) ----
@@ -509,6 +518,11 @@ class _TableWorkspaceState extends State<TableWorkspace>
           sessionNotes: snapshot.sessionNotes,
           readingQuestion: snapshot.readingQuestion,
           readingForSelf: snapshot.readingForSelf,
+          oracleQuestions: snapshot.oracleQuestions,
+          faceDownCards: snapshot.faceDownCards,
+          physicalCards: snapshot.physicalCards,
+          sourceMode: snapshot.readingSource?.tableSourceMode ??
+              TableSourceMode.physicalCameraSync,
         );
       } finally {
         _restoringSpread = false;
@@ -523,6 +537,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
         readingStatus: snapshot.readingStatus,
       );
       _tableSessionEpoch = _session.epoch;
+      _archivedCardCounts = (_ctrl.dealtCount, _ctrl.faceUpCount);
+      _maybeExpandClarifiers();
     } else {
       _clearAstralContext();
       _astralTitle = snapshot.astralSessionTitle;
@@ -650,69 +666,61 @@ class _TableWorkspaceState extends State<TableWorkspace>
       value: _dictation,
       child: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView(
-                controller: _paneController,
-                onPageChanged: (index) {
-                  HapticFeedback.selectionClick();
-                  setState(() => _pane = index);
-                },
-                children: [
-                  const Column(children: [Expanded(child: DigitalTableScreen()), ReadingGuide()]),
-                  OracleChatPane(
-                    session: session,
-                    inConversation: inConversation,
-                    showReadingCards: isSpread,
-                    capsuleText: _capsuleText,
-                    onBackToTable: () => _goToPane(tablePane),
-                    onSynthesize: _runSynthesis,
-                    onClarifierQuestion: _requestClarifierForQuestion,
-                    onFocusInput: () => _capsuleFocus.requestFocus(),
-                    onScanClarifier: _scanClarifier,
-                    onResumeCamera: () => widget.onResumeCamera?.call(),
+        child: PageView(
+          controller: _paneController,
+          onPageChanged: (index) {
+            HapticFeedback.selectionClick();
+            _pane = index;
+          },
+          // Each page owns its footer and glass surfaces while it slides.
+          children: <Widget>[
+            Column(
+              children: [
+                const Expanded(child: DigitalTableScreen()),
+                const ReadingGuide(),
+                if (ctrl.sourceMode == TableSourceMode.physicalCameraSync)
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
+                    child: TaroGlassPill(
+                      key: ValueKey('physical-sync-ribbon'),
+                      label: 'PHYSICAL SYNC',
+                      icon: Icons.photo_camera_front_outlined,
+                      accentColor: TaroColors.dawn,
+                    ),
                   ),
-                  SpreadHistoryPane(
-                    history: _history,
-                    onNewSpread: _newSpread,
-                    onRestore: _restoreSession,
-                    onBackToTable: () => _goToPane(tablePane),
-                  ),
-                ],
-              ),
+                _buildFooter(ctrl, onTable: true),
+              ],
             ),
-            // Keep the photographed-spread indicator with the table actions.
-            if (_pane == tablePane &&
-                ctrl.sourceMode == TableSourceMode.physicalCameraSync)
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
-                child: TaroGlassPill(
-                  key: ValueKey('physical-sync-ribbon'),
-                  label: 'PHYSICAL SYNC',
-                  icon: Icons.photo_camera_front_outlined,
-                  accentColor: TaroColors.dawn,
-                ),
-              ),
-            if (_pane == tablePane || (_pane == chatPane && inConversation))
-              _buildBottomArea(ctrl),
-          ],
+            OracleChatPane(
+              session: session,
+              inConversation: inConversation,
+              showReadingCards: isSpread,
+              readingKey: session.sessionId ?? _sessionTimestamp ?? session.epoch,
+              capsuleText: _capsuleText,
+              composer: inConversation ? _buildFooter(ctrl, onTable: false) : null,
+              onBackToTable: () => _goToPane(tablePane),
+              onSynthesize: _runSynthesis,
+              onClarifierQuestion: _requestClarifierForQuestion,
+              onFocusInput: () => _capsuleFocus.requestFocus(),
+              onScanClarifier: _scanClarifier,
+              onResumeCamera: () => widget.onResumeCamera?.call(),
+            ),
+            SpreadHistoryPane(
+              history: _history,
+              onNewSpread: _newSpread,
+              onRestore: _restoreSession,
+              onBackToTable: () => _goToPane(tablePane),
+            ),
+          ].map((pane) => TaroGlassLayer(child: pane)).toList(),
         ),
       ),
     );
   }
 
-  /// Pane 0 (Digital Table): the armed-clarifier banner + a single compact
-  /// Analyze Reading button that opens the Oracle pane without auto-synthesizing.
+  /// The table reserves one row for Analyze Reading throughout the flow.
   /// Pane 1 (Oracle Conversation) uses the same anchored capsule
   /// independently of the message viewport.
-  Widget _buildBottomArea(SpreadController ctrl) {
-    final onTable = _pane == tablePane;
-    // Step 1 (spread selection) is a clean picker — no reading-subject
-    // toggle, no synthesize CTA, no clarifier banner.
-    if (onTable && !ctrl.isSpreadActive) {
-      return const SizedBox.shrink();
-    }
+  Widget _buildFooter(SpreadController ctrl, {required bool onTable}) {
     final clarifier = ctrl.pendingClarifierQuestion;
     return Stack(
       alignment: Alignment.bottomCenter,
@@ -722,16 +730,10 @@ class _TableWorkspaceState extends State<TableWorkspace>
           mainAxisSize: MainAxisSize.min,
           children: [
             if (onTable) ...[
-              if (clarifier != null) ...[
-                _ClarifierBanner(
-                  question: clarifier,
-                  onCancel: ctrl.cancelClarifierScan,
-                ),
-                const SizedBox(height: 2),
-              ],
               AnalyzeReadingButton(
                 key: const ValueKey('analyze-reading-button'),
                 enabled:
+                    ctrl.isSpreadActive &&
                     (ctrl.canSynthesize || _session.hasSynthesis) &&
                     !_session.generatingInitial,
                 onPressed: () => _goToPane(chatPane),
@@ -749,7 +751,17 @@ class _TableWorkspaceState extends State<TableWorkspace>
             ],
           ],
         ),
-        if (_cosmosVisible)
+        if (onTable && clarifier != null)
+          Positioned(
+            bottom: 48,
+            left: 0,
+            right: 0,
+            child: _ClarifierBanner(
+              question: clarifier,
+              onCancel: ctrl.cancelClarifierScan,
+            ),
+          ),
+        if (!onTable && _cosmosVisible)
           Positioned(
             bottom: 64,
             left: 0,
@@ -761,9 +773,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
   }
 }
 
-/// The subtle banner shown on the Digital Table while a clarifier question
-/// is armed: names the active question and reminds the reader that exactly
-/// ONE card is unlocked and offers a way to cancel.
+/// A pending camera scan can be cancelled from the table.
 class _ClarifierBanner extends StatelessWidget {
   const _ClarifierBanner({required this.question, required this.onCancel});
 
@@ -788,7 +798,7 @@ class _ClarifierBanner extends StatelessWidget {
           const SizedBox(width: 8),
           Flexible(
             child: Text(
-              'CLARIFIER: "$question" — PULL THE UNLOCKED CARD',
+              'CAMERA CLARIFIER: "$question"',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.label(

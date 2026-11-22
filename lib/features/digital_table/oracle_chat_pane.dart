@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../../core/models/dealt_card_slot.dart';
 import '../../core/services/oracle_synthesis_service.dart';
-import '../../core/services/oracle_voice_service.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import '../../state/oracle_session_controller.dart';
@@ -22,6 +21,8 @@ class OracleChatPane extends StatefulWidget {
     required this.session,
     required this.inConversation,
     required this.showReadingCards,
+    required this.readingKey,
+    required this.composer,
     required this.capsuleText,
     required this.onBackToTable,
     required this.onSynthesize,
@@ -34,6 +35,8 @@ class OracleChatPane extends StatefulWidget {
   final OracleSessionController session;
   final bool inConversation;
   final bool showReadingCards;
+  final Object readingKey;
+  final Widget? composer;
 
   /// The shared input capsule's text — the `+1 CARD FOR MY QUESTION` chip
   /// reads the reader's own typed follow-up from it.
@@ -43,9 +46,8 @@ class OracleChatPane extends StatefulWidget {
   /// Runs the AI synthesis (used by the empty-state call to action).
   final VoidCallback onSynthesize;
 
-  /// Arms the deck for ONE +1 Clarifier Card with the tapped AI question
-  /// or the reader's own question (then slides back to the table).
-  final ValueChanged<String> onClarifierQuestion;
+  /// Draws a visible clarifier in the current conversation.
+  final bool Function(String) onClarifierQuestion;
 
   /// Pulls the keyboard focus to the shared input capsule.
   final VoidCallback onFocusInput;
@@ -61,56 +63,42 @@ class OracleChatPane extends StatefulWidget {
 
 class _OracleChatPaneState extends State<OracleChatPane> {
   final ScrollController _scroll = ScrollController();
-  late final OracleVoiceService _voice = context.read<OracleVoiceService>();
-  int _spokenOracleCount = 0;
-
+  bool _followScheduled = false;
   @override
   void initState() {
     super.initState();
     widget.session.addListener(_onSessionChanged);
-    _voice.addListener(_onVoiceChanged);
-    // Lazy TTS probe — a missing engine just reports unavailable and the
-    // text Oracle continues unaffected.
-    _voice.initialize();
   }
 
   @override
   void dispose() {
     widget.session.removeListener(_onSessionChanged);
-    _voice.removeListener(_onVoiceChanged);
     _scroll.dispose();
     super.dispose();
   }
 
-  void _onVoiceChanged() {
-    if (!mounted) return;
-    setState(() {});
-  }
-
   void _onSessionChanged() {
-    if (!mounted) return;
-    _speakNewestAnswer();
-    setState(() {});
-    if (!_scroll.hasClients) return;
+    if (_followScheduled || !_scroll.hasClients ||
+        _scroll.position.extentAfter > 24) {
+      return;
+    }
+    _followScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) {
-        _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      _followScheduled = false;
+      if (!mounted || !_scroll.hasClients || _scroll.position.extentAfter < 1) {
+        return;
+      }
+      final end = _scroll.position.maxScrollExtent;
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _scroll.jumpTo(end);
+      } else {
+        _scroll.animateTo(
+          end,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+        );
       }
     });
-  }
-
-  /// Auto-speaks the newest free-dialog Oracle answer when voice is enabled
-  /// (available + unmuted). Never re-speaks an answer already spoken.
-  void _speakNewestAnswer() {
-    final oracle = widget.session.messages
-        .where((m) => m.role == 'oracle')
-        .toList();
-    if (oracle.length <= _spokenOracleCount) return;
-    _spokenOracleCount = oracle.length;
-    final text = oracle.last.text.trim();
-    if (text.isNotEmpty && _voice.isAvailable && !_voice.isMuted) {
-      _voice.speak(text);
-    }
   }
 
   /// The reader's own follow-up from the shared input capsule: arms the
@@ -138,8 +126,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
       widget.onFocusInput();
       return;
     }
-    widget.capsuleText.clear();
-    widget.onClarifierQuestion(text);
+    if (widget.onClarifierQuestion(text)) widget.capsuleText.clear();
   }
 
   @override
@@ -159,13 +146,13 @@ class _OracleChatPaneState extends State<OracleChatPane> {
           ),
           OracleSessionMetaBar(
             session: session,
-            voice: _voice,
             onResumeCamera: widget.onResumeCamera,
           ),
           Expanded(
             child: widget.inConversation
                 ? OracleMessageViewport(
                     key: ValueKey(session.epoch),
+                    readingKey: widget.readingKey,
                     showCards:
                         widget.showReadingCards &&
                         ctrl.slots.any((slot) => slot.card != null),
@@ -198,6 +185,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                 ],
               ),
             ),
+          ?widget.composer,
         ],
       ),
     );
@@ -226,7 +214,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
     }
     // The AI-generated follow-up Clarifier questions: attached right after
     // the synthesis (or the latest clarifier reading) and recomputed from
-    // the live table — at the 10-card ceiling they become a lock note.
+    // the live table. At the card limit the suggestions become a status note.
     if (session.hasSynthesis && !session.generatingInitial) {
       children.add(
         _ClarifierSuggestions(
@@ -251,6 +239,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
       children.add(_OracleResponse.typing('Thinking…'));
     }
     return SingleChildScrollView(
+      key: PageStorageKey(('oracle-messages', widget.readingKey)),
       controller: _scroll,
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 22),
       child: Column(
@@ -402,13 +391,15 @@ class _OracleSpeakerHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: AppTypography.label(
-            fontSize: 11,
-            letterSpacing: 1.0,
-            fontWeight: FontWeight.w700,
-            color: TaroColors.lavender,
+        Flexible(
+          child: Text(
+            label,
+            style: AppTypography.label(
+              fontSize: 11,
+              letterSpacing: 1.0,
+              fontWeight: FontWeight.w700,
+              color: TaroColors.lavender,
+            ),
           ),
         ),
       ],
@@ -524,11 +515,7 @@ class _SystemBubble extends StatelessWidget {
   }
 }
 
-/// The AI-generated +1 Clarifier questions: 2-3 spread-specific probes
-/// that dynamically reference the ACTUAL cards and elemental tensions on
-/// the table. Tapping one arms the deck for exactly ONE card (the
-/// workspace slides back to the Digital Table). At the 10-card ceiling
-/// the block becomes a permanent lock note — the conversation stays open.
+/// Follow-up questions drawn from the cards already in the reading.
 class _ClarifierSuggestions extends StatelessWidget {
   const _ClarifierSuggestions({
     required this.slots,
@@ -550,8 +537,7 @@ class _ClarifierSuggestions extends StatelessWidget {
         child: Align(
           alignment: Alignment.center,
           child: Text(
-            'MAXIMUM OF ${SpreadController.maxClarifierCards} CLARIFIER CARDS '
-            'REACHED — THE CONVERSATION STAYS OPEN',
+            'MAXIMUM OF $maxCards CARDS REACHED · YOU CAN STILL CHAT',
             textAlign: TextAlign.center,
             style: AppTypography.label(
               fontSize: 10,

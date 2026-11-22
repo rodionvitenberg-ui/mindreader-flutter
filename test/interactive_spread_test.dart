@@ -516,7 +516,7 @@ void main() {
   );
 
   testWidgets(
-    'SPREAD VIEW deck matches the rendered table card size while keeping its centered dock position',
+    'SPREAD VIEW deck stays large and centered as additional cards extend the board',
     (tester) async {
       await openTable(tester);
       final ctrl = table(tester).read<SpreadController>()
@@ -537,9 +537,32 @@ void main() {
       final deckRect = tester.getRect(deckCard);
       final tableRect = tester.getRect(tableCard);
 
-      // Horizontal deck in the dock has the exact rotated dimensions of a table card.
-      expect(deckRect.width, closeTo(tableRect.height, 1.0));
-      expect(deckRect.height, closeTo(tableRect.width, 1.0));
+      expect(deckRect.width, greaterThan(tableRect.height));
+      for (var i = 0; i < ctrl.spreadCardCount; i++) {
+        if (i > 0) ctrl.dealNextCard();
+        ctrl.flipSlot(i);
+      }
+      await tester.pump();
+      final baseCard = find.byKey(const ValueKey('spread-slot-0'));
+      final before = tester.getRect(baseCard);
+      ctrl.drawOracleClarifier('What next?');
+      await tester.pump();
+      expect(tester.getRect(baseCard), before);
+      expect(tester.getRect(deckCard), deckRect);
+
+      final camera = tester.widget<InteractiveViewer>(viewport)
+          .transformationController!;
+      final zoomed = Matrix4.translationValues(-48, -64, 0)
+        ..scaleByDouble(1.3, 1.3, 1.3, 1);
+      camera.value = zoomed;
+      await tester.pump();
+      await goToPane(tester, 1);
+      ctrl.drawOracleClarifier('And after that?');
+      await tester.pump();
+      await goToPane(tester, 0);
+      expect(tester.widget<InteractiveViewer>(viewport)
+          .transformationController!.value, zoomed);
+
       // Centered horizontally in the dock above the board.
       expect(deckRect.center.dx, closeTo(tester.getRect(viewport).center.dx, 3.0));
       expect(deckRect.bottom, lessThanOrEqualTo(tester.getRect(viewport).top));

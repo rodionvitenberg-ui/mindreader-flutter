@@ -15,6 +15,8 @@ import 'rune_stone_3d_widget.dart';
 import 'shuffle_physics.dart';
 import 'tarot_card_3d_widget.dart';
 
+const overviewStackExtent = 20.0;
+
 /// Fixed frosted surface shared by the mode switch and the horizontal deck.
 class SpreadDeckDock extends StatelessWidget {
   const SpreadDeckDock({
@@ -23,7 +25,7 @@ class SpreadDeckDock extends StatelessWidget {
     required this.badge,
     required this.wrapDeck,
     required this.topKey,
-    required this.lifted,
+    required this.held,
     this.deckWidthPx,
     this.deckHeightPx,
   });
@@ -32,10 +34,9 @@ class SpreadDeckDock extends StatelessWidget {
   final Widget badge;
   final Widget Function(Widget) wrapDeck;
   final GlobalKey topKey;
-  final bool lifted;
+  final bool held;
 
-  /// Optional explicit outer size of the horizontal deck stack so its top card
-  /// matches the rendered size of cards on the table.
+  /// Outer size of the horizontal stack in the dock.
   final double? deckWidthPx;
   final double? deckHeightPx;
 
@@ -81,9 +82,8 @@ class SpreadDeckDock extends StatelessWidget {
                       Center(
                         child: wrapDeck(
                           _OverviewDeck(
-                            system: context.watch<SpreadController>().system,
                             topKey: topKey,
-                            lifted: lifted,
+                            held: held,
                             width: width,
                             height: height,
                           ),
@@ -116,24 +116,31 @@ class SpreadDeckDock extends StatelessWidget {
 
 class _OverviewDeck extends StatelessWidget {
   const _OverviewDeck({
-    required this.system,
     required this.width,
     required this.height,
     required this.topKey,
-    required this.lifted,
+    required this.held,
   });
 
-  final DivinationSystem system;
   final double width;
   final double height;
   final GlobalKey topKey;
-  final bool lifted;
+  final bool held;
 
   @override
   Widget build(BuildContext context) {
     final w = width;
     final h = height;
-    if (h <= 4) return const SizedBox.shrink();
+    final ctrl = context.watch<SpreadController>();
+    final stackCount = math.max(
+      0,
+      math.min(fanLayerCount, ctrl.totalCards) -
+          (ctrl.totalCards - ctrl.remaining) -
+          (held ? 1 : 0),
+    );
+    if (h <= overviewStackExtent || w <= overviewStackExtent) {
+      return const SizedBox.shrink();
+    }
     final label = AppStrings.t(
       context.watch<AppSettingsController>().language,
       'table.deal',
@@ -141,6 +148,7 @@ class _OverviewDeck extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
+      value: ctrl.system == DivinationSystem.runes ? null : '$stackCount',
       child: SizedBox(
         key: const ValueKey('overview-deck'),
         width: w + 12,
@@ -149,7 +157,7 @@ class _OverviewDeck extends StatelessWidget {
           child: SizedBox(
             width: w,
             height: h,
-            child: system == DivinationSystem.runes
+            child: ctrl.system == DivinationSystem.runes
                 ? const FittedBox(
                     child: SizedBox(
                       width: 76,
@@ -160,46 +168,40 @@ class _OverviewDeck extends StatelessWidget {
                 : Stack(
                     fit: StackFit.expand,
                     children: [
-                      for (final inset in [0.0, 2.0])
+                      for (var depth = stackCount - 1; depth > 0; depth--)
                         Positioned(
-                          left: inset,
-                          top: 4 - inset,
-                          right: 4 - inset,
-                          bottom: inset,
+                          key: ValueKey('overview-deck-edge-$depth'),
+                          left: overviewStackExtent / 2 - depth * .5,
+                          top: overviewStackExtent / 2 + depth * .5,
+                          width: w - overviewStackExtent,
+                          height: h - overviewStackExtent,
                           child: DecoratedBox(
                             decoration: BoxDecoration(
                               color: TaroColors.surface,
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(5),
                               border: Border.all(
                                 color: TaroColors.lavender.withValues(
-                                  alpha: 0.45,
+                                  alpha: .42,
                                 ),
+                                width: .7,
                               ),
                             ),
                           ),
                         ),
-                      if (lifted)
-                        Positioned(
-                          left: 2,
-                          top: 2,
-                          right: 2,
-                          bottom: 2,
-                          child: RotatedBox(
-                            quarterTurns: 1,
-                            child: SpreadCardBack(width: h - 4, height: w - 4),
-                          ),
-                        ),
                       Positioned(
-                        left: 4,
-                        top: 0,
-                        bottom: 4,
-                        right: 0,
+                        left: overviewStackExtent / 2,
+                        top: overviewStackExtent / 2,
+                        right: overviewStackExtent / 2,
+                        bottom: overviewStackExtent / 2,
                         child: RotatedBox(
                           quarterTurns: 1,
                           child: Opacity(
                             key: topKey,
-                            opacity: lifted ? 0 : 1,
-                            child: SpreadCardBack(width: h - 4, height: w - 4),
+                            opacity: stackCount == 0 ? 0 : 1,
+                            child: SpreadCardBack(
+                              width: h - overviewStackExtent,
+                              height: w - overviewStackExtent,
+                            ),
                           ),
                         ),
                       ),
@@ -212,7 +214,7 @@ class _OverviewDeck extends StatelessWidget {
   }
 }
 
-/// The exact same back is painted on the dock and on the lifted card.
+/// The exact same back is painted on the dock and on the held card.
 class SpreadCardBack extends StatelessWidget {
   const SpreadCardBack({super.key, required this.width, required this.height});
   final double width;

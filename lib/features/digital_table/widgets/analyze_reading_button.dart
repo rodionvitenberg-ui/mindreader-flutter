@@ -82,11 +82,7 @@ class _AnalyzeReadingButtonState extends State<AnalyzeReadingButton> {
             fillColor: TaroColors.surface,
             borderColor: TaroColors.lavender.withValues(alpha: 0.65),
             glow: TaroGlow.soft(TaroColors.lavender, alpha: 0.24, blur: 14),
-            child: AnimatedOpacity(
-              duration: TaroMotion.fast,
-              opacity: _pressed ? 0.84 : 1.0,
-              child: content,
-            ),
+            child: const SizedBox.expand(),
           )
         : DecoratedBox(
             decoration: BoxDecoration(
@@ -97,7 +93,6 @@ class _AnalyzeReadingButtonState extends State<AnalyzeReadingButton> {
                 width: 1.0,
               ),
             ),
-            child: content,
           );
 
     return Padding(
@@ -112,7 +107,17 @@ class _AnalyzeReadingButtonState extends State<AnalyzeReadingButton> {
           onTapUp: enabled ? (_) => setState(() => _pressed = false) : null,
           onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
           onTap: enabled ? _onTap : null,
-          child: pill,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(child: pill),
+              AnimatedOpacity(
+                duration: TaroMotion.fast,
+                opacity: enabled && _pressed ? .84 : 1,
+                child: content,
+              ),
+            ],
+          ),
         ),
       ),
     );

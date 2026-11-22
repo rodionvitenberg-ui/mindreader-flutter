@@ -11,31 +11,49 @@ class SpreadViewport extends StatefulWidget {
     super.key,
     required this.viewport,
     required this.boardSize,
+    required this.baseBoardSize,
+    required this.readingRevision,
     required this.fitLabel,
     required this.child,
   });
 
   final Size viewport;
   final Size boardSize;
+  final Size baseBoardSize;
+  final int readingRevision;
   final String fitLabel;
   final Widget child;
 
-  double get fit {
-    final inset = math.min(12.0, viewport.shortestSide / 8);
-    return math.min(
-      1.0,
-      math.min(
-        (viewport.width - 2 * inset) / boardSize.width,
-        (viewport.height - 2 * inset) / boardSize.height,
-      ),
-    );
-  }
+  double get inset => math.min(12.0, viewport.shortestSide / 8);
 
-  // A scene at least as wide AND tall as the viewport at the minimum zoom
-  // keeps InteractiveViewer's pan bounds correct for short and tall layouts.
-  Size get scene => viewport / fit;
+  double get initialScale => math.min(
+    1.0,
+    math.min(
+      (viewport.width - 2 * inset) / baseBoardSize.width,
+      (viewport.height - 2 * inset) / baseBoardSize.height,
+    ),
+  );
+
+  Size get _baseScene => viewport / initialScale;
+
+  // Additional rows extend the scene below the base spread. Its origin stays
+  // fixed so a new card cannot re-center or scale the cards already visible.
   Offset get boardOrigin =>
-      scene.center(Offset.zero) - boardSize.center(Offset.zero);
+      _baseScene.center(Offset.zero) - baseBoardSize.center(Offset.zero);
+
+  Size get scene => Size(
+    math.max(
+      _baseScene.width,
+      boardOrigin.dx + boardSize.width + inset / initialScale,
+    ),
+    math.max(
+      _baseScene.height,
+      boardOrigin.dy + boardSize.height + inset / initialScale,
+    ),
+  );
+
+  double get fit =>
+      math.min(viewport.width / scene.width, viewport.height / scene.height);
 
   @override
   State<SpreadViewport> createState() => SpreadViewportState();
@@ -44,8 +62,29 @@ class SpreadViewport extends StatefulWidget {
 class SpreadViewportState extends State<SpreadViewport>
     with SingleTickerProviderStateMixin {
   late final TransformationController _camera = TransformationController(
-    _fitMatrix(),
-  );
+    _matrixAtScale(widget.initialScale),
+  )..addListener(_storeCamera);
+  PageStorageBucket? _storage;
+  Object get _storageKey =>
+      ('spread-camera', widget.readingRevision, widget.viewport);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final storage = PageStorage.maybeOf(context);
+    if (identical(_storage, storage)) return;
+    _storage = storage;
+    final saved = storage?.readState(context, identifier: _storageKey);
+    if (saved is Matrix4) _camera.value = _clampMatrix(saved);
+  }
+
+  void _storeCamera() {
+    _storage?.writeState(
+      context,
+      _camera.value.clone(),
+      identifier: _storageKey,
+    );
+  }
 
   late final _pan = AnimationController(
     vsync: this,
@@ -85,41 +124,50 @@ class SpreadViewportState extends State<SpreadViewport>
       ..scaleByDouble(_panScale, _panScale, _panScale, 1);
   }
 
-  Matrix4 _fitMatrix() =>
-      Matrix4.diagonal3Values(widget.fit, widget.fit, widget.fit);
+  Matrix4 _matrixAtScale(double scale) =>
+      Matrix4.diagonal3Values(scale, scale, scale);
+
+  Matrix4 _clampMatrix(Matrix4 matrix) {
+    final scale = math.max(widget.fit, matrix.getMaxScaleOnAxis());
+    final extent = widget.scene * scale;
+    final dx = matrix.storage[12].clamp(
+      math.min(0.0, widget.viewport.width - extent.width),
+      0.0,
+    );
+    final dy = matrix.storage[13].clamp(
+      math.min(0.0, widget.viewport.height - extent.height),
+      0.0,
+    );
+    return Matrix4.translationValues(dx.toDouble(), dy.toDouble(), 0)
+      ..scaleByDouble(scale, scale, scale, 1);
+  }
 
   @override
   void didUpdateWidget(SpreadViewport oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.viewport == widget.viewport &&
-        oldWidget.boardSize == widget.boardSize) {
+        oldWidget.baseBoardSize == widget.baseBoardSize) {
+      if (oldWidget.scene.height > widget.scene.height ||
+          oldWidget.scene.width > widget.scene.width) {
+        _pan.stop();
+        _camera.value = _clampMatrix(_camera.value);
+      }
       return;
     }
     _pan.stop();
-    // A zoomed reader keeps the same board point under the viewport center
-    // after a rotation, keyboard resize, or the addition of a clarifier.
     final scale = _camera.value.getMaxScaleOnAxis();
-    if (scale <= oldWidget.fit + 0.0001) {
-      _camera.value = _fitMatrix();
-      return;
-    }
     final center =
         _camera.toScene(oldWidget.viewport.center(Offset.zero)) -
         oldWidget.boardOrigin +
         widget.boardOrigin;
-    final nextScale = math.max(scale, widget.fit);
+    final nextScale = scale <= oldWidget.initialScale + 0.001
+        ? widget.initialScale
+        : math.max(scale, widget.fit);
     final offset = widget.viewport.center(Offset.zero) - center * nextScale;
-    final extent = widget.scene * nextScale;
-    final dx = offset.dx.clamp(
-      math.min(0.0, widget.viewport.width - extent.width),
-      0.0,
+    _camera.value = _clampMatrix(
+      Matrix4.translationValues(offset.dx, offset.dy, 0)
+        ..scaleByDouble(nextScale, nextScale, nextScale, 1),
     );
-    final dy = offset.dy.clamp(
-      math.min(0.0, widget.viewport.height - extent.height),
-      0.0,
-    );
-    _camera.value = Matrix4.translationValues(dx.toDouble(), dy.toDouble(), 0)
-      ..scaleByDouble(nextScale, nextScale, nextScale, 1);
   }
 
   @override
@@ -141,7 +189,9 @@ class SpreadViewportState extends State<SpreadViewport>
     return ValueListenableBuilder<Matrix4>(
       valueListenable: _camera,
       builder: (context, matrix, child) {
-        final isZoomed = matrix.getMaxScaleOnAxis() > widget.fit + 0.001;
+        final scale = matrix.getMaxScaleOnAxis();
+        final isZoomed = scale > widget.initialScale + 0.001;
+        final canPan = scale > widget.fit + 0.001;
         return Stack(
           fit: StackFit.expand,
           children: [
@@ -155,13 +205,14 @@ class SpreadViewportState extends State<SpreadViewport>
                 alignment: Alignment.topLeft,
                 transformationController: _camera,
                 constrained: false,
-                panEnabled: isZoomed,
+                panEnabled: canPan,
+                panAxis: isZoomed ? PanAxis.free : PanAxis.vertical,
                 minScale: widget.fit,
                 maxScale: 3,
                 child: child!,
               ),
             ),
-            if (isZoomed)
+            if (canPan)
               Positioned(
                 top: 2,
                 right: 8,
@@ -172,7 +223,7 @@ class SpreadViewportState extends State<SpreadViewport>
                     size: 20,
                     color: TaroColors.lavender,
                   ),
-                  onPressed: () => _camera.value = _fitMatrix(),
+                  onPressed: () => _camera.value = _matrixAtScale(widget.fit),
                 ),
               ),
           ],
@@ -180,7 +231,17 @@ class SpreadViewportState extends State<SpreadViewport>
       },
       child: SizedBox.fromSize(
         size: widget.scene,
-        child: Center(child: RepaintBoundary(child: widget.child)),
+        child: Stack(
+          children: [
+            Positioned(
+              left: widget.boardOrigin.dx,
+              top: widget.boardOrigin.dy,
+              width: widget.boardSize.width,
+              height: widget.boardSize.height,
+              child: RepaintBoundary(child: widget.child),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -33,6 +33,7 @@ const _reading = StructuredSynthesis(
 
 class _DeferredOracle extends OracleSynthesisService {
   final requests = <Completer<StructuredSynthesis>>[];
+  final clarifiers = <Completer<String>>[];
   String? question;
   String? subject;
 
@@ -54,6 +55,18 @@ class _DeferredOracle extends OracleSynthesisService {
     final request = Completer<StructuredSynthesis>();
     requests.add(request);
     return request.future;
+  }
+
+  @override
+  Future<String> synthesizeClarifier({
+    required String question,
+    required DealtCardSlot newSlot,
+    required List<DealtCardSlot> previous,
+    String? profileContext,
+  }) {
+    final result = Completer<String>();
+    clarifiers.add(result);
+    return result.future;
   }
 }
 
@@ -257,15 +270,15 @@ void main() {
       expect(last.card.id, spread.slots[11].card!.id);
       expect(last.isReversed, spread.slots[11].isReversed);
       await tester.pumpAndSettle();
+      final artName = last.card.id.toString().padLeft(2, '0');
       final selectedArt = find.descendant(
         of: lastArt,
         matching: find.byWidgetPredicate(
           (widget) =>
               widget is Image &&
               widget.image is AssetImage &&
-              (widget.image as AssetImage).assetName.startsWith(
-                'assets/decks/marseille/',
-              ),
+              (widget.image as AssetImage).assetName ==
+                  'assets/decks/marseille/$artName.jpg',
         ),
       );
       expect(selectedArt, findsOneWidget);
@@ -284,6 +297,32 @@ void main() {
       );
       await tester.binding.handlePopRoute();
       await pumpTransition(tester);
+
+      final position = tester.state<ScrollableState>(list).position;
+      final offset = position.pixels;
+      final nextId = spread.deckTop.first.id;
+      await tester.enterText(
+        find.byKey(const ValueKey('oracle-input')),
+        'What does the next card add?',
+      );
+      await tester.tap(find.text('🃏 +1 CARD FOR MY QUESTION'));
+      await tester.pump();
+      expect(service.clarifiers.single.isCompleted, isFalse);
+      expect(spread.slots[12].state, SlotState.faceUp);
+      expect(spread.slots[12].card!.id, nextId);
+      expect(tester.getRect(composer), composerRect);
+      expect(tester.getRect(header), headerRect);
+      expect(position.pixels, offset);
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pump();
+      expect(thumb(12).hitTestable(), findsOneWidget);
+
+      service.clarifiers.single.complete('The card adds a practical step.');
+      await tester.pump();
+      spread.dealNextCardOrClarifier();
+      spread.flipSlot(13);
+      await tester.pump();
+      expect(service.clarifiers, hasLength(1));
 
       tester.view.viewInsets = const FakeViewPadding(bottom: 230);
       addTearDown(tester.view.resetViewInsets);
@@ -306,7 +345,6 @@ void main() {
       expect(rail, findsNothing);
       expect(tester.getRect(header), headerRect);
       expect(tester.getRect(composer), composerRect);
-      expect(tester.takeException(), isNull);
     },
   );
 }

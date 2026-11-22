@@ -46,6 +46,33 @@ void main() {
   }
 
   testWidgets(
+    'Analyze Reading reserves the same space on the picker and table',
+    (tester) async {
+      await tester.pumpWidget(const MindreaderApp());
+      await tester.pump();
+      final pickerRect = tester.getRect(analyzeButton);
+      expect(
+        tester.widget<AnalyzeReadingButton>(analyzeButton).enabled,
+        isFalse,
+      );
+      await activateSpread(tester, 'Three Cards');
+      final spread = tester
+          .element(find.byType(DigitalTableScreen))
+          .read<SpreadController>();
+      for (var i = 0; i < 3; i++) {
+        spread.dealNextCard();
+        spread.flipSlot(i);
+      }
+      await tester.pump();
+      expect(
+        tester.widget<AnalyzeReadingButton>(analyzeButton).enabled,
+        isTrue,
+      );
+      expect(tester.getRect(analyzeButton), pickerRect);
+    },
+  );
+
+  testWidgets(
     'Digital Table removes redundant Oracle preparation controls in Spread and Focus views',
     (tester) async {
       await openTable(tester);

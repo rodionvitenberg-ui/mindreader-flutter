@@ -135,8 +135,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
   /// play ONE continuous flight from the release point into its slot.
   /// The camera does NOT follow — the user stays focused on the deck while
   /// pulling multiple cards and scrolls down manually whenever ready.
-  /// When the initial spread is full, the pull becomes a Clarifier (+1) —
-  /// but only while a clarifier question is armed.
+  /// Once the spread is revealed, a pull adds one face-down card.
   void _onDealRelease(DeckDealReleaseRequest request) {
     final ctrl = context.read<SpreadController>();
     final slotIndex = ctrl.dealCardAtOrClarifier(request.depth);
@@ -364,6 +363,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
+                  key: PageStorageKey(('focus-table', ctrl.readingRevision)),
                   controller: _scroll,
                   physics: const BouncingScrollPhysics(),
                   child: SizedBox(

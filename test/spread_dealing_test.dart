@@ -70,8 +70,17 @@ void main() {
       final order = ctrl.remainingDeck.map((c) => c.id).toList();
       final reversed = ctrl.remainingReversalFlags;
       ctrl.queueContext(note: 'first question');
+      final edges = find.byWidgetPredicate(
+        (w) =>
+            w.key is ValueKey<String> &&
+            (w.key! as ValueKey<String>).value.startsWith(
+              'overview-deck-edge-',
+            ),
+      );
+      expect(edges, findsNWidgets(19));
       await tester.tap(deck);
       await tester.pump();
+      expect(edges, findsNWidgets(18));
       for (var i = 0; i < 4; i++) {
         await tester.tap(deck);
       }
@@ -84,7 +93,9 @@ void main() {
       final source = tester.getCenter(back);
       final target = tester.getCenter(slot(0));
       expect((source - tester.getCenter(deck)).distance, lessThan(5));
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 16));
+      expect((tester.getCenter(back) - source).distance, greaterThan(2));
+      await tester.pump(const Duration(milliseconds: 300));
       final midway = tester.getCenter(back);
       expect(
         (midway - source).distance,
@@ -96,7 +107,7 @@ void main() {
       );
       expect(ctrl.slots.first.state, SlotState.faceDown);
       expect(angle(tester, back), inExclusiveRange(0.1, 1.5));
-      await tester.pump(const Duration(milliseconds: 349));
+      await tester.pump(const Duration(milliseconds: 383));
       expect(
         (tester.getCenter(back) - tester.getCenter(slot(0))).distance,
         lessThan(1),
@@ -345,7 +356,9 @@ void main() {
       await settle(tester);
       expect(ctrl.dealtCount, 12);
       expect(moving, findsNothing);
-      expect(ctrl.armClarifierQuestion('What next?'), isTrue);
+      for (var i = 0; i < 12; i++) {
+        ctrl.flipSlot(i);
+      }
       await tester.pump();
       final clarifier = await grab(tester);
       await tester.pump(const Duration(milliseconds: 220));
@@ -353,7 +366,7 @@ void main() {
       await clarifier.up();
       await settle(tester);
       expect(ctrl.clarifierCount, 1);
-      expect(ctrl.slots.last.userContext, contains('What next?'));
+      expect(ctrl.slots.last.userContext, isNull);
     },
   );
 

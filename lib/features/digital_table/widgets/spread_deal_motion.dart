@@ -47,11 +47,7 @@ class _DealPose {
   /// Drive the same lifted card as a drag with a virtual pointer. Both the
   /// target and its rotation are measured in the current viewport each frame.
   _DealPose carriedTo(_DealPose target, double time) {
-    final travel = const Interval(
-      .06,
-      .96,
-      curve: Curves.easeInOutCubic,
-    ).transform(time);
+    final travel = Curves.easeOutQuad.transform(time);
     final lift =
         const Interval(0, .14, curve: Curves.easeOut).transform(time) *
         (1 - const Interval(.78, 1, curve: Curves.easeInOut).transform(time));

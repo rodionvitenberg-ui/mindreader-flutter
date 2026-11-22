@@ -16,10 +16,12 @@ class OracleMessageViewport extends StatefulWidget {
   const OracleMessageViewport({
     super.key,
     required this.showCards,
+    required this.readingKey,
     required this.messages,
   });
 
   final bool showCards;
+  final Object readingKey;
   final Widget messages;
 
   @override
@@ -29,6 +31,24 @@ class OracleMessageViewport extends StatefulWidget {
 class _OracleMessageViewportState extends State<OracleMessageViewport> {
   final _cards = ScrollController();
   bool _expanded = false;
+
+  Object get _storageKey => ('oracle-rail', widget.readingKey);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _expanded =
+        PageStorage.maybeOf(context)
+                ?.readState(context, identifier: _storageKey)
+            as bool? ??
+        false;
+  }
+
+  void _toggleRail() {
+    setState(() => _expanded = !_expanded);
+    PageStorage.maybeOf(context)
+        ?.writeState(context, _expanded, identifier: _storageKey);
+  }
 
   @override
   void dispose() {
@@ -85,7 +105,7 @@ class _OracleMessageViewportState extends State<OracleMessageViewport> {
           ),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints.tightFor(width: 32, height: 44),
-          onPressed: () => setState(() => _expanded = !_expanded),
+          onPressed: _toggleRail,
         ),
       ),
     );
@@ -110,6 +130,7 @@ class _OracleMessageViewportState extends State<OracleMessageViewport> {
             SizedBox(height: math.min(44, bounds.maxHeight), child: handle),
             Expanded(
               child: Scrollbar(
+                key: PageStorageKey(('oracle-rail-scroll', widget.readingKey)),
                 controller: _cards,
                 child: ListView.builder(
                   key: const ValueKey('oracle-card-rail'),
