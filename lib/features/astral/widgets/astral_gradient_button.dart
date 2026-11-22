@@ -16,12 +16,14 @@ class AstralGradientButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: TaroGlassButton(
-        label: label,
-        variant: TaroGlassButtonVariant.primary,
-        onPressed: onTap,
+    return TaroGlassLayer(
+      child: SizedBox(
+        width: double.infinity,
+        child: TaroGlassButton(
+          label: label,
+          variant: TaroGlassButtonVariant.primary,
+          onPressed: onTap,
+        ),
       ),
     );
   }

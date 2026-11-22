@@ -1,5 +1,7 @@
+import 'dart:async';
+
 import 'package:camera_platform_interface/camera_platform_interface.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/main.dart';
 
@@ -157,5 +159,44 @@ void main() {
     expect(fake.createCalls, 0);
     // The simulated-viewfinder hint is shown instead of a live preview.
     expect(find.textContaining('SIMULATED VIEWFINDER'), findsOneWidget);
+  });
+
+  testWidgets(
+      'camera shows a solid black backdrop and standard preloader while '
+      'hardware is initializing instead of flashing the app background',
+      (tester) async {
+    final gate = Completer<void>();
+    fake.initGate = gate;
+
+    await tester.pumpWidget(const MindreaderApp());
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('CAMERA'));
+    await tester.pump(); // tab switches, _initCamera starts
+    await tester.pump(); // availableCameras resolves, initializeCamera pending
+
+    // Solid black backdrop + standard CircularProgressIndicator — never the
+    // simulated viewfinder fallback while loading.
+    final backdrop = tester.widget<ColoredBox>(
+      find.byKey(const ValueKey('camera-black-backdrop')),
+    );
+    expect(backdrop.color, Colors.black);
+    expect(
+      find.byKey(const ValueKey('camera-loading-indicator')),
+      findsOneWidget,
+    );
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.textContaining('CAMERA UNAVAILABLE'), findsNothing);
+
+    // Once hardware initialization resolves, the loading spinner disappears
+    // and the live camera preview takes over on the black backdrop.
+    gate.complete();
+    await tester.pump();
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('camera-loading-indicator')),
+      findsNothing,
+    );
   });
 }

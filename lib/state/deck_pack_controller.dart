@@ -17,8 +17,11 @@ import '../core/services/local_storage_service.dart';
 class DeckPackController extends ChangeNotifier {
   DeckPackController({LocalStorageService? storage})
       : _storage = storage ?? LocalStorageService() {
-    _restore();
+    initialLoad = _restore();
   }
+
+  /// Completes once the initial startup pack restore finishes.
+  late final Future<void> initialLoad;
 
   final LocalStorageService _storage;
 

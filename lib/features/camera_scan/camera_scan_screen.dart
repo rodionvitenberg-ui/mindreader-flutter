@@ -104,6 +104,7 @@ class _CameraScanScreenState extends State<CameraScanScreen>
   }
 
   Future<void> _initCamera() async {
+    if (_initError && mounted) setState(() => _initError = false);
     try {
       final cameras = await availableCameras();
       // The user may have left the tab while the hardware was opening.
@@ -376,16 +377,32 @@ class _CameraScanScreenState extends State<CameraScanScreen>
     final ctrl = context.watch<SpreadController>();
     final cameraReady =
         _camera != null && _camera!.value.isInitialized && !_initError;
+    final cameraLoading =
+        widget.isActiveTab &&
+        _mobileCameraAvailable &&
+        !cameraReady &&
+        !_initError;
     final simulated = !_mobileCameraAvailable || _initError;
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        if (_mobileCameraAvailable && cameraReady)
-          CameraPreview(_camera!)
-        else
-          const _SimulatedViewfinder(),
-        const _HudContrastScrim(),
+    return ColoredBox(
+      key: const ValueKey('camera-black-backdrop'),
+      color: Colors.black,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (_mobileCameraAvailable && cameraReady)
+            CameraPreview(_camera!)
+          else if (cameraLoading)
+            const Center(
+              child: CircularProgressIndicator(
+                key: ValueKey('camera-loading-indicator'),
+                color: Colors.white70,
+                strokeWidth: 2.5,
+              ),
+            )
+          else if (simulated)
+            const _SimulatedViewfinder(),
+          const _HudContrastScrim(),
         SafeArea(
           child: Column(
             children: [
@@ -494,7 +511,8 @@ class _CameraScanScreenState extends State<CameraScanScreen>
               ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -514,8 +532,8 @@ class _HudContrastScrim extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  TaroColors.background.withValues(alpha: 0.72),
-                  TaroColors.background.withValues(alpha: 0.0),
+                  Colors.black.withValues(alpha: 0.68),
+                  Colors.black.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -528,8 +546,8 @@ class _HudContrastScrim extends StatelessWidget {
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
                 colors: [
-                  TaroColors.background.withValues(alpha: 0.76),
-                  TaroColors.background.withValues(alpha: 0.0),
+                  Colors.black.withValues(alpha: 0.72),
+                  Colors.black.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -545,19 +563,8 @@ class _SimulatedViewfinder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            TaroColors.background,
-            TaroColors.duskMid,
-            TaroColors.duskHorizon,
-          ],
-          stops: [0.0, 0.58, 1.0],
-        ),
-      ),
+    return ColoredBox(
+      color: Colors.black,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

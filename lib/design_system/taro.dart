@@ -16,6 +16,7 @@ export 'components/taro_glass_sheet.dart';
 export 'components/taro_glass_slider.dart';
 export 'components/taro_glass_snackbar.dart';
 export 'components/taro_glass_toggle.dart';
+export 'components/taro_preloader.dart';
 export 'taro_glass.dart';
 export 'taro_glass_capability.dart';
 export 'taro_glass_mode.dart';

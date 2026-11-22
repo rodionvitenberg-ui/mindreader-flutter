@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
@@ -17,18 +18,45 @@ import 'state/session_history_controller.dart';
 import 'state/spread_controller.dart';
 import 'state/user_profile_controller.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MindreaderApp());
-  // Прогрев шейдеров liquid glass в фоне, не блокируя первый кадр.
-  unawaited(LiquidGlass.precache());
+  // Преддекодируем логотип (~10 КБ) до первого кадра, чтобы переход с
+  // нативного сплэша на Flutter-прелоадер прошёл без единого чёрного кадра.
+  final preloaderLogo = await TaroPreloader.decodeLogoAsset();
+  // Прогрев шейдеров liquid glass стартует сразу и отслеживается прелоадером.
+  final shaderPrecache = LiquidGlass.precache().catchError((Object _) {});
+  runApp(
+    MindreaderApp(
+      preloaderLogo: preloaderLogo,
+      shaderPrecache: shaderPrecache,
+    ),
+  );
 }
 
 class MindreaderApp extends StatelessWidget {
-  const MindreaderApp({super.key});
+  const MindreaderApp({
+    super.key,
+    this.showPreloader,
+    this.preloaderLogo,
+    this.shaderPrecache,
+    this.preloaderReady,
+    this.onPreloaderCompleted,
+  });
+
+  /// При `null` прелоадер включается автоматически в реальном приложении
+  /// (`WidgetsFlutterBinding`) и не мешает существующим `testWidgets`-тестам,
+  /// если тест не передал `showPreloader: true` явно.
+  final bool? showPreloader;
+  final ui.Image? preloaderLogo;
+  final Future<void>? shaderPrecache;
+  final Future<void>? preloaderReady;
+  final VoidCallback? onPreloaderCompleted;
 
   @override
   Widget build(BuildContext context) {
+    final enablePreloader =
+        showPreloader ?? (WidgetsBinding.instance is WidgetsFlutterBinding);
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SpreadController()),
@@ -61,12 +89,89 @@ class MindreaderApp extends StatelessWidget {
           )..load(),
         ),
       ],
-      child: MaterialApp(
-        title: 'mindreader.quest',
-        debugShowCheckedModeBanner: false,
-        theme: buildTaroTheme(),
-        home: const MainNavigationShell(),
+      child: _AppRoot(
+        enablePreloader: enablePreloader,
+        preloaderLogo: preloaderLogo,
+        shaderPrecache: shaderPrecache,
+        preloaderReady: preloaderReady,
+        onPreloaderCompleted: onPreloaderCompleted,
       ),
+    );
+  }
+}
+
+class _AppRoot extends StatefulWidget {
+  const _AppRoot({
+    required this.enablePreloader,
+    required this.preloaderLogo,
+    required this.shaderPrecache,
+    required this.preloaderReady,
+    required this.onPreloaderCompleted,
+  });
+
+  final bool enablePreloader;
+  final ui.Image? preloaderLogo;
+  final Future<void>? shaderPrecache;
+  final Future<void>? preloaderReady;
+  final VoidCallback? onPreloaderCompleted;
+
+  @override
+  State<_AppRoot> createState() => _AppRootState();
+}
+
+class _AppRootState extends State<_AppRoot> {
+  late bool _preloaderActive = widget.enablePreloader;
+  Future<void>? _warmupFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_preloaderActive) {
+      _warmupFuture = widget.preloaderReady ?? _collectStartupWarmup();
+    }
+  }
+
+  /// Собирает все реальные асинхронные задачи старта приложения, чтобы
+  /// прелоадер держался ровно столько, сколько реально инициализируется экран.
+  Future<void> _collectStartupWarmup() {
+    final tasks = <Future<void>>[
+      if (widget.shaderPrecache != null) widget.shaderPrecache!,
+      TaroGlassCapability.whenResolved,
+      context.read<AppSettingsController>().initialLoad,
+      context.read<DeckPackController>().initialLoad,
+      context.read<SessionHistoryController>().initialLoad,
+      context.read<UserProfileController>().initialLoad,
+    ];
+    return Future.wait(tasks).then((_) {}, onError: (Object _) {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'mindreader.quest',
+      debugShowCheckedModeBanner: false,
+      theme: buildTaroTheme(),
+      builder: (context, child) {
+        final content = child ?? const SizedBox.shrink();
+        if (!_preloaderActive) return content;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            content,
+            TaroPreloader(
+              ready: _warmupFuture!,
+              predecodedLogo: widget.preloaderLogo,
+              onCompleted: () {
+                if (mounted) {
+                  setState(() => _preloaderActive = false);
+                }
+                widget.onPreloaderCompleted?.call();
+              },
+            ),
+          ],
+        );
+      },
+      home: const MainNavigationShell(),
     );
   }
 }

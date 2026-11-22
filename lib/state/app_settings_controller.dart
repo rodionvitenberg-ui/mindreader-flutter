@@ -17,8 +17,11 @@ enum ReadingAid { positions, guide, relationships }
 class AppSettingsController extends ChangeNotifier {
   AppSettingsController({LocalStorageService? storage})
       : _storage = storage ?? LocalStorageService() {
-    load();
+    initialLoad = load();
   }
+
+  /// Completes once the initial startup preference restore finishes.
+  late final Future<void> initialLoad;
 
   final LocalStorageService _storage;
 

@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/models/natal_chart.dart';
 import 'package:mindreader/core/services/natal_calculator_service.dart';
 import 'package:mindreader/design_system/taro.dart';
+import 'package:mindreader/features/astral/astral_screen.dart';
 import 'package:mindreader/features/astral/widgets/synastry_window.dart';
+import 'package:mindreader/main.dart';
 
 /// STEP 2 — the 3-window Astral workspace engine: 2-profile synastry
 /// (resonance score + 4 axes), the 7-day power/tension forecast and the
@@ -148,5 +150,63 @@ void main() {
       await tester.pump();
       expect(handoff, isNotNull);
     });
+  });
+
+  group('AstralScreen glass isolation & 3-window stability', () {
+    testWidgets(
+      'uses no nested Scaffold, isolates glass controls from PageView, and '
+      'keeps all three windows populated across switches',
+      (tester) async {
+        await tester.pumpWidget(const MindreaderApp());
+        await tester.pump();
+
+        await tester.tap(find.text('ASTRAL'));
+        await tester.pump();
+
+        // No redundant nested Scaffold inside AstralScreen.
+        expect(
+          find.descendant(
+            of: find.byType(AstralScreen),
+            matching: find.byType(Scaffold),
+          ),
+          findsNothing,
+        );
+
+        // Every glass control inside AstralScreen belongs to a local isolated
+        // TaroGlassLayer below AstralScreen (not the outer tab layer spanning
+        // across PageView and its scrolling children).
+        final outerAstralLayer = tester.element(
+          find.ancestor(
+            of: find.byType(AstralScreen),
+            matching: find.byType(TaroGlassLayer),
+          ).first,
+        );
+        final switcherLayer = tester.element(
+          find.ancestor(
+            of: find.byKey(const ValueKey('astral-window-natalChart')),
+            matching: find.byType(TaroGlassLayer),
+          ).first,
+        );
+        expect(switcherLayer, isNot(same(outerAstralLayer)));
+
+        // Window 0 (Natal) visible.
+        expect(find.byKey(const ValueKey('natal-wheel-placeholder')), findsOneWidget);
+
+        // Jump directly 0 -> 2 (Synastry) without losing content.
+        await tester.tap(find.byKey(const ValueKey('astral-window-synastry')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('synastry-window')), findsOneWidget);
+
+        // Switch 2 -> 1 (Horoscope) and verify content renders cleanly.
+        await tester.tap(find.byKey(const ValueKey('astral-window-horoscope')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('horoscope-window')), findsOneWidget);
+
+        // Return 1 -> 0 (Natal).
+        await tester.tap(find.byKey(const ValueKey('astral-window-natalChart')));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('natal-wheel-placeholder')), findsOneWidget);
+      },
+    );
   });
 }

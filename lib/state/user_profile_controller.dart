@@ -79,9 +79,20 @@ class UserProfileController extends ChangeNotifier {
   }
 
 
+  Future<void>? _initialLoad;
+
+  /// Completes once the first [load] finishes (or immediately if not started).
+  Future<void> get initialLoad => _initialLoad ?? Future<void>.value();
+
   /// Restores the persisted profile without clearing anything typed in the
   /// current session (non-destructive merge).
-  Future<void> load() async {
+  Future<void> load() {
+    final future = _loadInternal();
+    _initialLoad ??= future;
+    return future;
+  }
+
+  Future<void> _loadInternal() async {
     try {
       final json = await _storage.loadUserProfile();
       if (json != null) _applyJson(json, notify: false);

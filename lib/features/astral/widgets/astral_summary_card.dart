@@ -25,10 +25,11 @@ class AstralSummaryCard extends StatelessWidget {
         .firstOrNull;
     final day = chart.birthLocalDay.toString().padLeft(2, '0');
     final month = chart.birthLocalMonth.toString().padLeft(2, '0');
-    return TaroGlassPanel(
-      radius: 18,
-      padding: const EdgeInsets.all(18),
-      child: Column(
+    return TaroGlassLayer(
+      child: TaroGlassPanel(
+        radius: 18,
+        padding: const EdgeInsets.all(18),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -86,6 +87,7 @@ class AstralSummaryCard extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -137,17 +139,19 @@ class AstralEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TaroGlassEmptyState(
-      icon: Icons.auto_awesome_outlined,
-      title: context.astralRussian
-          ? 'НАТАЛЬНОЙ КАРТЫ ПОКА НЕТ'
-          : 'NO NATAL PROFILE YET',
-      subtitle: context.astralRussian
-          ? 'Укажите дату, время и город рождения.'
-          : 'Enter your birth date, time and city.',
-      actionLabel: '✦ ADD FIRST PROFILE',
-      framed: true,
-      onAction: onGenerate,
+    return TaroGlassLayer(
+      child: TaroGlassEmptyState(
+        icon: Icons.auto_awesome_outlined,
+        title: context.astralRussian
+            ? 'НАТАЛЬНОЙ КАРТЫ ПОКА НЕТ'
+            : 'NO NATAL PROFILE YET',
+        subtitle: context.astralRussian
+            ? 'Укажите дату, время и город рождения.'
+            : 'Enter your birth date, time and city.',
+        actionLabel: '✦ ADD FIRST PROFILE',
+        framed: true,
+        onAction: onGenerate,
+      ),
     );
   }
 }

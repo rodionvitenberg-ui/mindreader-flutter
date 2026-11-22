@@ -114,6 +114,7 @@ class _AstralScreenState extends State<AstralScreen>
   int _streak = 0;
 
   AstralWindow _window = AstralWindow.natalChart;
+  AstralWindow? _animatingToWindow;
 
   late final PageController _windowController = PageController();
 
@@ -259,15 +260,26 @@ class _AstralScreenState extends State<AstralScreen>
   }
 
   void _selectWindow(AstralWindow w) {
-    if (_window == w) return;
+    if (_window == w && _animatingToWindow == null) return;
     HapticFeedback.selectionClick();
-    setState(() => _window = w);
+    setState(() {
+      _window = w;
+      _animatingToWindow = w;
+    });
     if (_windowController.hasClients) {
-      _windowController.animateToPage(
-        w.index,
-        duration: const Duration(milliseconds: 320),
-        curve: Curves.easeOutCubic,
-      );
+      _windowController
+          .animateToPage(
+            w.index,
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutCubic,
+          )
+          .whenComplete(() {
+            if (mounted && _animatingToWindow == w) {
+              _animatingToWindow = null;
+            }
+          });
+    } else {
+      _animatingToWindow = null;
     }
   }
 
@@ -280,11 +292,9 @@ class _AstralScreenState extends State<AstralScreen>
   Widget build(BuildContext context) {
     final astral = context.watch<AstralController>();
     final chart = astral.activeProfile;
-    final report =
-        widget.isActive &&
-            _window == AstralWindow.horoscope &&
-            chart != null &&
-            _quickSign == null
+    // Keep the cached daily report available across swipes so the Horoscope
+    // window never flashes an empty fallback while sliding into view.
+    final report = widget.isActive && chart != null && _quickSign == null
         ? _reportFor(chart, _showWeek ? _dayOffset : 0)
         : null;
     // Quick-sign mode: an explicit sign wins; without a chart the current
@@ -296,9 +306,10 @@ class _AstralScreenState extends State<AstralScreen>
             sign,
             forDate: _now.toUtc(),
           );
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: SafeArea(
+    return Material(
+      type: MaterialType.transparency,
+      child: SafeArea(
+        bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -321,9 +332,11 @@ class _AstralScreenState extends State<AstralScreen>
                     onAdd: _openNewChart,
                   ),
                   const SizedBox(height: 12),
-                  _AstralWindowSwitcher(
-                    window: _window,
-                    onChanged: _selectWindow,
+                  TaroGlassLayer(
+                    child: _AstralWindowSwitcher(
+                      window: _window,
+                      onChanged: _selectWindow,
+                    ),
                   ),
                   const SizedBox(height: 14),
                 ],
@@ -332,12 +345,22 @@ class _AstralScreenState extends State<AstralScreen>
             Expanded(
               child: PageView(
                 controller: _windowController,
-                onPageChanged: (i) =>
-                    setState(() => _window = AstralWindow.values[i]),
+                onPageChanged: (i) {
+                  final next = AstralWindow.values[i];
+                  if (_animatingToWindow != null && next != _animatingToWindow) {
+                    return;
+                  }
+                  _animatingToWindow = null;
+                  if (_window != next) {
+                    setState(() => _window = next);
+                  }
+                },
                 children: [
-                  _buildNatalWindow(astral, chart),
-                  _buildHoroscopeWindow(chart, report, sign, forecast),
-                  _buildSynastryWindow(astral),
+                  RepaintBoundary(child: _buildNatalWindow(astral, chart)),
+                  RepaintBoundary(
+                    child: _buildHoroscopeWindow(chart, report, sign, forecast),
+                  ),
+                  RepaintBoundary(child: _buildSynastryWindow(astral)),
                 ],
               ),
             ),
@@ -349,6 +372,7 @@ class _AstralScreenState extends State<AstralScreen>
 
   Widget _buildNatalWindow(AstralController astral, NatalChart? chart) {
     return SingleChildScrollView(
+      key: const PageStorageKey<String>('astral-natal-scroll'),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -394,6 +418,7 @@ class _AstralScreenState extends State<AstralScreen>
     ZodiacSignForecast? forecast,
   ) {
     return SingleChildScrollView(
+      key: const PageStorageKey<String>('astral-horoscope-scroll'),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
       child: HoroscopeWindow(
         chart: chart,
@@ -420,6 +445,7 @@ class _AstralScreenState extends State<AstralScreen>
 
   Widget _buildSynastryWindow(AstralController astral) {
     return SingleChildScrollView(
+      key: const PageStorageKey<String>('astral-synastry-scroll'),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
       child: SynastryPairPicker(
         profiles: astral.profiles,

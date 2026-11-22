@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/widgets.dart';
 
@@ -17,6 +19,10 @@ class FakeCameraPlatform extends CameraPlatform {
   /// with no camera / denied permission) so the screen exercises its
   /// honest simulated-viewfinder fallback.
   bool noCameras = false;
+
+  /// Optional gate to pause `initializeCamera` so tests can inspect the
+  /// loading state before the live feed arrives.
+  Completer<void>? initGate;
 
   @override
   Future<List<CameraDescription>> availableCameras() async => noCameras
@@ -44,6 +50,9 @@ class FakeCameraPlatform extends CameraPlatform {
     ImageFormatGroup imageFormatGroup = ImageFormatGroup.unknown,
   }) async {
     initCalls++;
+    if (initGate != null) {
+      await initGate!.future;
+    }
   }
 
   @override

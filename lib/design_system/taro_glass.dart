@@ -69,15 +69,26 @@ class TaroGlassLayer extends StatelessWidget {
   const TaroGlassLayer({
     required this.child,
     this.mode = TaroGlassMode.auto,
+    this.useBackdropGroup = true,
     super.key,
   });
 
   final Widget child;
   final TaroGlassMode mode;
 
+  /// Разделять ли захват бэкдропа с ближайшим [BackdropGroup]. Для локальных
+  /// изолированных виджетов внутри скроллящихся/перелистываемых экранов
+  /// передавайте `false`, чтобы их проходы не сцеплялись с глобальным доком.
+  final bool useBackdropGroup;
+
   @override
   Widget build(BuildContext context) {
     if (mode != TaroGlassMode.auto) return _buildResolved(context, mode);
+    final inheritedMode = _TaroGlassScope.maybeOf(context)?.mode;
+    if (inheritedMode == TaroGlassMode.simple ||
+        inheritedMode == TaroGlassMode.opaque) {
+      return _buildResolved(context, inheritedMode!);
+    }
     // Резолвим возможности один раз после первого кадра (не блокируя его).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
@@ -117,7 +128,7 @@ class TaroGlassLayer extends StatelessWidget {
         settings: settings,
         defaultAppearance: appearance,
         fake: resolved == TaroGlassMode.fake,
-        useBackdropGroup: true,
+        useBackdropGroup: useBackdropGroup,
         child: child,
       ),
     );

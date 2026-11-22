@@ -13,13 +13,23 @@ class SessionHistoryController extends ChangeNotifier {
   final LocalStorageService _storage;
   final List<SpreadSessionSnapshot> _sessions = [];
   bool loaded = false;
+  Future<void>? _initialLoad;
+
+  /// Completes once the first [load] finishes (or immediately if not started).
+  Future<void> get initialLoad => _initialLoad ?? Future<void>.value();
 
   List<SpreadSessionSnapshot> get sessions => List.unmodifiable(_sessions);
 
   /// Loads the archive from the local store WITHOUT blocking the UI: the
   /// pane renders immediately and merges disk data in when it arrives
   /// (in-memory sessions captured meanwhile are never dropped).
-  Future<void> load() async {
+  Future<void> load() {
+    final future = _loadInternal();
+    _initialLoad ??= future;
+    return future;
+  }
+
+  Future<void> _loadInternal() async {
     loaded = true;
     notifyListeners();
     try {

@@ -31,6 +31,9 @@ abstract final class TaroColors {
   static const hudScrim = Color(0xBD151725);
   static const hudFill = Color(0xD11E1D2D);
   static const hudBorder = Color(0x52A9A4BE);
+
+  /// Сплошной тёмно-синий фон прелоадера (точный #0c101b из promo-tarottree).
+  static const preloaderBackground = Color(0xFF0C101B);
 }
 
 /// Прозрачности поверхностей, бордеров и текста.

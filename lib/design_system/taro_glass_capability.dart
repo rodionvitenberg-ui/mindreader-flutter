@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:ui' as ui;
 
@@ -25,6 +26,10 @@ abstract final class TaroGlassCapability {
       ValueNotifier<TaroGlassMode>(TaroGlassMode.fake);
 
   static bool _resolved = false;
+  static Completer<void> _resolvedCompleter = Completer<void>();
+
+  /// Завершается, когда первичная проба [ensureResolved] определила режим стекла.
+  static Future<void> get whenResolved => _resolvedCompleter.future;
 
   /// Чистое решение по результатам проб — без платформенных вызовов, тестируется.
   static TaroGlassMode decide({
@@ -52,48 +57,55 @@ abstract final class TaroGlassCapability {
   /// (см. [_selfTestGlass]): она ловит устройства, которые рапортуют GPU, но
   /// реально рисуют чёрный кадр.
   static Future<void> ensureResolved({OverlayState? overlay}) async {
-    if (_resolved) return;
+    if (_resolved) return _resolvedCompleter.future;
     _resolved = true;
-    final shaderOk = ui.ImageFilter.isShaderFilterSupported;
-    final isAndroid = !kIsWeb && Platform.isAndroid;
-    final isApple = !kIsWeb && (Platform.isIOS || Platform.isMacOS);
+    try {
+      final shaderOk = ui.ImageFilter.isShaderFilterSupported;
+      final isAndroid = !kIsWeb && Platform.isAndroid;
+      final isApple = !kIsWeb && (Platform.isIOS || Platform.isMacOS);
 
-    if (!shaderOk) {
-      mode.value = TaroGlassMode.fake;
-      return;
-    }
+      if (!shaderOk) {
+        mode.value = TaroGlassMode.fake;
+        return;
+      }
 
-    var vulkan = false;
-    if (isAndroid) {
-      try {
-        vulkan = await _channel.invokeMethod<bool>('hasVulkan') ?? false;
-      } on Object {
-        vulkan = false;
+      var vulkan = false;
+      if (isAndroid) {
+        try {
+          vulkan = await _channel.invokeMethod<bool>('hasVulkan') ?? false;
+        } on Object {
+          vulkan = false;
+        }
+      }
+
+      bool? selfTest;
+      final canRunSelfTest =
+          overlay != null &&
+          WidgetsBinding.instance is WidgetsFlutterBinding &&
+          (isAndroid || isApple);
+      if (canRunSelfTest) {
+        selfTest = await _selfTestGlass(overlay);
+      }
+
+      mode.value = decide(
+        shaderFiltersSupported: shaderOk,
+        isAndroid: isAndroid,
+        isApple: isApple,
+        androidVulkanSupported: vulkan,
+        selfTestGlassWorks: selfTest,
+      );
+    } finally {
+      if (!_resolvedCompleter.isCompleted) {
+        _resolvedCompleter.complete();
       }
     }
-
-    bool? selfTest;
-    final canRunSelfTest =
-        overlay != null &&
-        WidgetsBinding.instance is WidgetsFlutterBinding &&
-        (isAndroid || isApple);
-    if (canRunSelfTest) {
-      selfTest = await _selfTestGlass(overlay);
-    }
-
-    mode.value = decide(
-      shaderFiltersSupported: shaderOk,
-      isAndroid: isAndroid,
-      isApple: isApple,
-      androidVulkanSupported: vulkan,
-      selfTestGlassWorks: selfTest,
-    );
   }
 
   /// Сбрасывает кеш пробы (только для тестов).
   @visibleForTesting
   static void resetForTest() {
     _resolved = false;
+    _resolvedCompleter = Completer<void>();
     mode.value = TaroGlassMode.fake;
   }
 

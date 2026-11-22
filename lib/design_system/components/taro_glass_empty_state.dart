@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_typography.dart';
+import '../taro_glass.dart';
 import '../taro_tokens.dart';
 import 'taro_glass_button.dart';
 import 'taro_glass_panel.dart';
@@ -77,11 +78,21 @@ class TaroGlassEmptyState extends StatelessWidget {
         ],
         if (actionLabel != null && onAction != null) ...[
           const SizedBox(height: 16),
-          TaroGlassButton(
-            label: actionLabel!,
-            variant: TaroGlassButtonVariant.primary,
-            onPressed: onAction,
-          ),
+          if (framed)
+            TaroGlassLayer(
+              useBackdropGroup: false,
+              child: TaroGlassButton(
+                label: actionLabel!,
+                variant: TaroGlassButtonVariant.primary,
+                onPressed: onAction,
+              ),
+            )
+          else
+            TaroGlassButton(
+              label: actionLabel!,
+              variant: TaroGlassButtonVariant.primary,
+              onPressed: onAction,
+            ),
         ],
       ],
     );

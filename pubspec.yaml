@@ -33,6 +33,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/loader/
     - assets/cards/
     - assets/decks/
     # Flutter includes only files directly in a listed directory — every
