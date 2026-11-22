@@ -7,11 +7,13 @@ import 'package:provider/provider.dart';
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/lenormand_card.dart';
 import '../../../core/models/lenormand_pack.dart';
+import '../../../core/services/pack_asset_store.dart';
 import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/deck_pack_controller.dart';
 import 'foil_glint.dart';
 import 'tarot_card_3d_widget.dart' show CardBack;
+import '../../../core/l10n/app_strings.dart';
 
 /// A single 3D Petit Lenormand card on the table plane: same footprint and
 /// reveal choreography as the tarot cards (750ms arcane materialization),
@@ -272,7 +274,7 @@ class _LenormandCard3DWidgetState extends State<LenormandCard3DWidget>
           ),
           SizedBox(height: widget.height * 0.012),
           Text(
-            'PETIT LENORMAND · ${card.timing.toUpperCase()}',
+            AppStrings.g('lenormand.cardTitle', {'timing': card.timing.toUpperCase()}),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -286,12 +288,27 @@ class _LenormandCard3DWidgetState extends State<LenormandCard3DWidget>
       ),
     );
 
-    // Real scan if it exists — full-bleed art, never covered by bars.
-    final candidates = pack.cardAssetCandidates(card.number);
+    // Store-downloaded scan or bundled scan if present — full-bleed art, never covered by bars.
+    Widget artwork;
+    if (pack.isStorePack) {
+      final relPath = pack.storeCardPathForNumber(card.number);
+      final provider = relPath == null
+          ? null
+          : PackAssetStore.instance.imageProviderFor(pack.storeKey!, relPath);
+      artwork = provider == null
+          ? face
+          : Image(
+              image: provider,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => face,
+            );
+    } else {
+      artwork = _faceAsset(pack.cardAssetCandidates(card.number), face);
+    }
     return Stack(
       fit: StackFit.expand,
       children: [
-        _faceAsset(candidates, face),
+        artwork,
         Positioned.fill(
           child: FoilGlint(angleY: 0.18, angleX: 0.10, intensity: 0.5),
         ),

@@ -4,6 +4,7 @@ import '../../../core/models/natal_chart.dart';
 import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 import '../astral_copy.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// ASTRAL Phase 4 — today's cosmic weather for the active profile: the
 /// moon house, the day theme and the live transit cards tagged by register.
@@ -91,7 +92,7 @@ class DailyHoroscopeCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '${context.astroPlanet(PlanetId.moon).toUpperCase()}'
-                    '${report.transitingMoonHouse == null ? '' : ' ${context.astralRussian ? 'В ДОМЕ' : 'IN HOUSE'} ${report.transitingMoonHouse}'} · '
+                    '${report.transitingMoonHouse == null ? '' : ' ${AppStrings.g('ui.astral_daily_horoscope_card.in_house')} ${report.transitingMoonHouse}'} · '
                     '${context.astroSign(report.transitingMoonSign).toUpperCase()}',
                     style: AppTypography.label(
                       fontSize: 9,
@@ -105,9 +106,7 @@ class DailyHoroscopeCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            context.astralRussian
-                ? report.overallThemeRu ?? report.overallTheme
-                : report.overallTheme,
+            report.overallTheme,
             style: AppTypography.body(
               fontSize: 13,
               height: 1.45,
@@ -117,7 +116,7 @@ class DailyHoroscopeCard extends StatelessWidget {
           if (report.transits.isNotEmpty) ...[
             const SizedBox(height: 14),
             Text(
-              context.astralRussian ? 'ТРАНЗИТЫ' : 'LIVE TRANSITS',
+              AppStrings.g('ui.astral_daily_horoscope_card.live_transits'),
               style: AppTypography.label(
                 fontSize: 9,
                 letterSpacing: 1.0,
@@ -172,7 +171,7 @@ class _EnergyBadge extends StatelessWidget {
             ),
           ),
           Text(
-            context.astralRussian ? 'ЭНЕРГИЯ' : 'ENERGY',
+            AppStrings.g('ui.astral_daily_horoscope_card.energy'),
             style: AppTypography.label(
               fontSize: 7.5,
               letterSpacing: 0.8,
@@ -213,7 +212,7 @@ class _TransitTile extends StatelessWidget {
         transitBody == null || natalBody == null || transit.aspectType == null
         ? transit.transitLabel
         : '${context.astroPlanet(transitBody)} ${transit.aspectType!.glyph} '
-              '${context.astroPlanet(natalBody)} ${context.astralRussian ? '(натал)' : '(natal)'}';
+              '${context.astroPlanet(natalBody)} ${AppStrings.g('ui.astral_daily_horoscope_card.natal')}';
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Container(
@@ -264,14 +263,7 @@ class _TransitTile extends StatelessWidget {
             ],
             const SizedBox(height: 5),
             Text(
-              context.astralRussian
-                  ? switch (transit.harmony) {
-                      AspectHarmony.harmonious =>
-                        'Используйте момент для небольшого осознанного шага.',
-                      AspectHarmony.tense => 'Заметьте, где возникло напряжение, и выберите одно посильное изменение.',
-                      AspectHarmony.intense => 'Направьте внимание на одно дело, которое сейчас важно.',
-                    }
-                  : transit.advice,
+              transit.advice,
               style: AppTypography.body(
                 fontSize: 11.5,
                 height: 1.4,

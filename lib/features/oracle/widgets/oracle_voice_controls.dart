@@ -5,6 +5,7 @@ import '../../../core/models/voice_state.dart';
 import '../../../core/services/oracle_voice_service.dart';
 import '../../../design_system/taro_tokens.dart';
 import 'oracle_presence_indicator.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// The interactive half of the voice overlay: mic, mute/unmute, pause,
 /// interrupt, expand/collapse and end.
@@ -48,7 +49,7 @@ class OracleVoiceControls extends StatelessWidget {
             if (onMicToggle != null)
               _ControlButton(
                 icon: listening ? Icons.mic : Icons.mic_none,
-                tooltip: listening ? 'Stop listening' : 'Start listening',
+                tooltip: listening ? AppStrings.g('ui.oracle_voice_controls.stop_listening') : AppStrings.g('ui.oracle_voice_controls.start_listening'),
                 active: listening,
                 color: color,
                 onTap: () {
@@ -60,7 +61,7 @@ class OracleVoiceControls extends StatelessWidget {
               icon: muted
                   ? Icons.volume_off_outlined
                   : Icons.volume_up_outlined,
-              tooltip: muted ? 'Unmute the Oracle' : 'Mute the Oracle',
+              tooltip: muted ? AppStrings.g('ui.oracle_voice_controls.unmute_the_oracle') : AppStrings.g('ui.oracle_voice_controls.mute_the_oracle'),
               active: !muted,
               color: color,
               onTap: () {
@@ -71,7 +72,7 @@ class OracleVoiceControls extends StatelessWidget {
             if (voice.state == VoiceState.speaking)
               _ControlButton(
                 icon: Icons.pause,
-                tooltip: 'Pause',
+                tooltip: AppStrings.g('ui.oracle_voice_controls.pause'),
                 active: true,
                 color: color,
                 onTap: () {
@@ -82,7 +83,7 @@ class OracleVoiceControls extends StatelessWidget {
             if (speaking)
               _ControlButton(
                 icon: Icons.stop,
-                tooltip: 'Interrupt',
+                tooltip: AppStrings.g('ui.oracle_voice_controls.interrupt'),
                 active: true,
                 color: color,
                 onTap: () {
@@ -93,7 +94,7 @@ class OracleVoiceControls extends StatelessWidget {
             if (onToggleExpand != null)
               _ControlButton(
                 icon: expanded ? Icons.unfold_less : Icons.open_in_full,
-                tooltip: expanded ? 'Collapse' : 'Expand',
+                tooltip: expanded ? AppStrings.g('ui.oracle_voice_controls.collapse') : AppStrings.g('ui.oracle_voice_controls.expand'),
                 active: false,
                 color: color,
                 onTap: () {
@@ -104,7 +105,7 @@ class OracleVoiceControls extends StatelessWidget {
             if (onEnd != null)
               _ControlButton(
                 icon: Icons.call_end,
-                tooltip: 'End',
+                tooltip: AppStrings.g('ui.oracle_voice_controls.end'),
                 active: false,
                 color: color,
                 onTap: () {

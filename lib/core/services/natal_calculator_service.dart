@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../data/astro_ephemeris_tables.dart';
+import '../l10n/app_strings.dart';
 import '../models/natal_chart.dart';
 import '../models/tarot_card_model.dart' show Element;
 import '../models/zodiac_forecast.dart';
@@ -632,16 +633,6 @@ class NatalCalculatorService {
 
   /// Elongation-based moon phase snapshot (8 classical phases).
   static MoonPhase computeMoonPhase(DateTime utc) {
-    const names = [
-      'New Moon',
-      'Waxing Crescent',
-      'First Quarter',
-      'Waxing Gibbous',
-      'Full Moon',
-      'Waning Gibbous',
-      'Last Quarter',
-      'Waning Crescent',
-    ];
     const glyphs = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
     final sunLon = computeEclipticLongitude(PlanetId.sun, utc);
     final moonLon = computeEclipticLongitude(PlanetId.moon, utc);
@@ -650,7 +641,7 @@ class NatalCalculatorService {
     final illumination = (1 - math.cos(_rad(elongation))) / 2;
     final idx = ((elongation + 22.5) ~/ 45) % 8;
     return MoonPhase(
-      name: names[idx],
+      name: AppStrings.g('content.moonPhase.$idx'),
       glyph: glyphs[idx],
       illumination: illumination,
       elongationDegrees: elongation,
@@ -921,19 +912,9 @@ class NatalCalculatorService {
         dayTransits ??
         _transitCandidates(chart, date).take(5).map(_toTransitItem).toList();
     final dominant = transits.firstOrNull?.harmony ?? AspectHarmony.harmonious;
-    final theme = switch (dominant) {
-      AspectHarmony.harmonious =>
-        'A flowing day: ${moonPhase.name.toLowerCase()} favors gentle '
-            'alignment, small steps and letting ease do the work.',
-      AspectHarmony.tense =>
-        'A day of friction with a purpose: '
-            '${moonPhase.name.toLowerCase()} energy asks you to name the '
-            'pressure and adjust one thing instead of fighting the weather.',
-      AspectHarmony.intense =>
-        'An intense day: ${moonPhase.name.toLowerCase()} concentrates '
-            'energy — channel it into one deliberate act instead of '
-            'letting it scatter.',
-    };
+    final theme = AppStrings.g('astral.theme.${dominant.name}', {
+      'phase': moonPhase.name.toLowerCase(),
+    });
 
     var score = 50.0;
     for (final c in transits) {
@@ -958,13 +939,6 @@ class NatalCalculatorService {
       transitingMoonSign: moonSign,
       transitingMoonHouse: moonHouse,
       overallTheme: theme,
-      overallThemeRu: switch (dominant) {
-        AspectHarmony.harmonious =>
-          'Подходящий день для спокойной работы и небольших шагов.',
-        AspectHarmony.tense => 'Заметьте, что создаёт напряжение, и попробуйте изменить одну конкретную вещь.',
-        AspectHarmony.intense =>
-          'Сосредоточьте внимание на одном деле, которое важнее остальных.',
-      },
       energyScore: energyScore,
       transits: transits,
       focusSpheres: _dailyFocusSpheres(
@@ -1012,7 +986,7 @@ class NatalCalculatorService {
 
     final axes = [
       SynastryAxis(
-        title: 'Emotional Bond',
+        titleKey: 'content.synastry.emotional.title',
         score: axis(
           (x) =>
               between(
@@ -1027,12 +1001,10 @@ class NatalCalculatorService {
               ),
           tensionPositive: false,
         ),
-        text:
-            'Moon–Moon and Moon–Venus contact: how needs are felt, held '
-            'and mirrored.',
+        textKey: 'content.synastry.emotional.text',
       ),
       SynastryAxis(
-        title: 'Attraction & Spark',
+        titleKey: 'content.synastry.attraction.title',
         score: axis(
           (x) =>
               between(
@@ -1043,12 +1015,10 @@ class NatalCalculatorService {
               between(x, <PlanetId>{PlanetId.sun}, <PlanetId>{PlanetId.venus}),
           tensionPositive: false,
         ),
-        text:
-            'Venus–Mars and Sun contact: the charge that pulls two people '
-            'together.',
+        textKey: 'content.synastry.attraction.text',
       ),
       SynastryAxis(
-        title: 'Mental & Communication',
+        titleKey: 'content.synastry.mental.title',
         score: axis(
           (x) => between(
             x,
@@ -1057,12 +1027,10 @@ class NatalCalculatorService {
           ),
           tensionPositive: false,
         ),
-        text:
-            'Mercury links: how the two minds trade, question and '
-            'understand.',
+        textKey: 'content.synastry.mental.text',
       ),
       SynastryAxis(
-        title: 'Growth & Friction',
+        titleKey: 'content.synastry.growth.title',
         score: axis(
           (x) =>
               anyOf(x, <PlanetId>{PlanetId.saturn}) ||
@@ -1070,9 +1038,7 @@ class NatalCalculatorService {
               x.type == AspectType.opposition,
           tensionPositive: true,
         ),
-        text:
-            'Saturn and the squares: where the bond is built through '
-            'resistance.',
+        textKey: 'content.synastry.growth.text',
       ),
     ];
     final overall =
@@ -1147,12 +1113,22 @@ class NatalCalculatorService {
     DateTime? activeFrom,
     DateTime? activeUntil,
   }) => DailyTransitItem(
-    title: '${transit.title} stirs your ${natal.title}',
-    transitLabel: 'Transit ${transit.title} ${type.glyph} Natal ${natal.title}',
+    title: AppStrings.g('astral.transit.title', {
+      'transit': transit.title,
+      'natal': natal.title,
+    }),
+    transitLabel: AppStrings.g('astral.transit.label', {
+      'transit': transit.title,
+      'glyph': type.glyph,
+      'natal': natal.title,
+    }),
     orb: orb,
-    advice:
-        'Let ${transit.title} touch your natal ${natal.title}: '
-        '${type.dynamicLine}. ${_harmonyAdvice[type.harmony]!}',
+    advice: AppStrings.g('astral.transit.advice', {
+      'transit': transit.title,
+      'natal': natal.title,
+      'line': type.dynamicLine,
+      'advice': AppStrings.g(_harmonyAdvice[type.harmony]!),
+    }),
     harmony: type.harmony,
     transitingBody: transit,
     natalBody: natal,
@@ -1203,12 +1179,12 @@ class NatalCalculatorService {
       solarMoonHouse: moonHouse,
       solarSunHouse: sunHouse,
       sunDegreeInSign: sunLon - sunSign.index * 30.0,
-      overallTheme:
-          '${sign.title} weather: the ${moonSign.title} Moon moves '
-          'through your solar house $moonHouse — ${houseTheme(moonHouse)}.',
-      overallThemeRu:
-          '${sign.titleRu}. Луна в знаке «${moonSign.titleRu}» '
-          'проходит через солнечный дом $moonHouse. Темы дня — ${houseThemeRu(moonHouse)}.',
+      overallTheme: AppStrings.g('astral.zodiac.theme', {
+        'sign': sign.title,
+        'moon': moonSign.title,
+        'house': moonHouse,
+        'theme': houseTheme(moonHouse),
+      }),
       energyScore: energyScore,
       focusSpheres: _dailyFocusSpheres(
         moonSign: moonSign,
@@ -1237,39 +1213,45 @@ class NatalCalculatorService {
         .length;
     final illumination = (moonPhase.illumination * 100).round();
     final moonContext = moonHouse == null
-        ? 'The ${moonSign.title} Moon highlights'
-        : 'The ${moonSign.title} Moon crosses house $moonHouse '
-              '(${houseTheme(moonHouse)}), so feeling moves through';
+        ? AppStrings.g('astral.moon.highlights', {'sign': moonSign.title})
+        : AppStrings.g('astral.moon.crosses', {
+            'sign': moonSign.title,
+            'house': moonHouse,
+            'theme': houseTheme(moonHouse),
+          });
     return [
       FocusSphere(
-        title: 'Relationships & Feelings',
-        titleRu: 'Отношения и чувства',
-        textRu:
-            '${moonHouse == null ? 'Луна в знаке «${moonSign.titleRu}».' : 'Луна в доме $moonHouse. Темы — ${houseThemeRu(moonHouse)}.'} '
-            '${tension > harmony ? 'Скажите прямо, что вам нужно.' : 'Если хочется выразить поддержку, сделайте это сейчас.'}',
-        text:
-            '$moonContext ${moonSign.trait}. '
-            '${tension > harmony ? 'Name one need plainly before it leaks out sideways.' : 'Say the warm thing out loud while it is easy to give.'}',
+        title: AppStrings.g('astral.focus.relationships.title'),
+        text: AppStrings.g('astral.focus.relationships', {
+          'moonContext': moonContext,
+          'trait': moonSign.trait,
+          'need': AppStrings.g(
+            tension > harmony
+                ? 'astral.need.namePlain'
+                : 'astral.need.sayWarm',
+          ),
+        }),
       ),
       FocusSphere(
-        title: 'Career & Decisions',
-        titleRu: 'Работа и решения',
-        textRu: harmony >= tension
-            ? 'Выберите один конкретный шаг в важном деле.'
-            : 'Примите решение, которое сможете обосновать и завтра. Оставьте себе время подумать.',
-        text:
-            '${harmony >= tension ? 'A clean decision moves faster than a perfect one today.' : 'Choose the option you can still defend tomorrow; urgency is not a strategy.'} '
-            'Anchor on one concrete next step in the work that matters.',
+        title: AppStrings.g('astral.focus.career.title'),
+        text: AppStrings.g('astral.focus.career', {
+          'decision': AppStrings.g(
+            harmony >= tension
+                ? 'astral.career.cleanDecision'
+                : 'astral.career.chooseDefend',
+          ),
+          'anchor': AppStrings.g('astral.career.anchor'),
+        }),
       ),
       FocusSphere(
-        title: 'Inner State',
-        titleRu: 'Внутреннее состояние',
-        textRu:
-            'Луна освещена на $illumination%. '
-            '${energyScore >= 60 ? 'Направьте силы на одно важное для вас дело.' : 'Поберегите внимание и найдите время для отдыха.'}',
-        text:
-            '${moonPhase.name} at $illumination% illumination. '
-            '${energyScore >= 60 ? 'There is surplus energy — spend it on one deliberate act, not on proving yourself.' : 'Energy is thin — protect your attention and let recovery count as progress.'}',
+        title: AppStrings.g('astral.focus.inner.title'),
+        text: AppStrings.g('astral.focus.inner', {
+          'phase': moonPhase.name,
+          'illumination': illumination,
+          'energy': AppStrings.g(
+            energyScore >= 60 ? 'astral.inner.surplus' : 'astral.inner.thin',
+          ),
+        }),
       ),
     ];
   }
@@ -1278,38 +1260,11 @@ class NatalCalculatorService {
   // Interpretation texts (deterministic, grounded, non-fatalistic)
   // ---------------------------------------------------------------------
 
-  static const List<String> _houseThemes = [
-    'the self you present, the body and the first move',
-    'resources, values and what you build with your hands',
-    'communication, siblings and the everyday mind',
-    'roots, home and the private foundation',
-    'play, romance and creative self-expression',
-    'work, health and daily service',
-    'partnership, marriage and the mirror of the other',
-    'intimacy, shared resources and deep transformation',
-    'belief, travel and the search for wider meaning',
-    'career, reputation and the public summit',
-    'friends, community and the future you join',
-    'solitude, endings and the inner sanctuary',
-  ];
+  static String houseTheme(int house) =>
+      AppStrings.g('content.houseTheme.${house.clamp(1, 12)}');
 
-  /// The grounded theme of a natal house, 1..12 (clamped).
-  static String houseTheme(int house) => _houseThemes[house.clamp(1, 12) - 1];
-
-  static String houseThemeRu(int house) => const [
-    'самовыражение и первое впечатление',
-    'деньги и личные ценности',
-    'общение и обучение',
-    'дом и семья',
-    'творчество и радость',
-    'повседневные привычки и забота о себе',
-    'партнёрство',
-    'близость и общие ресурсы',
-    'мировоззрение и путешествия',
-    'работа и репутация',
-    'друзья и долгосрочные цели',
-    'уединение и восстановление',
-  ][house.clamp(1, 12) - 1];
+  static String houseThemeRu(int house) =>
+      AppStrings.t(AppLanguage.ru, 'content.houseTheme.${house.clamp(1, 12)}');
 
   static String _positionInterpretation(
     PlanetId planet,
@@ -1317,29 +1272,38 @@ class NatalCalculatorService {
     int? house,
   ) {
     if (planet.isAngle || house == null) {
-      return '${planet.title} in ${sign.title}: ${planet.archetype}, '
-          'colored by ${sign.trait}.';
+      return AppStrings.g('astral.placement.short', {
+        'planet': planet.title,
+        'sign': sign.title,
+        'archetype': planet.archetype,
+        'trait': sign.trait,
+      });
     }
-    return '${planet.title} in ${sign.title}, house $house: '
-        '${planet.archetype} expressed through ${sign.trait}; here it plays '
-        'out in ${_houseThemes[house - 1]}.';
+    return AppStrings.g('astral.placement.house', {
+      'planet': planet.title,
+      'sign': sign.title,
+      'house': house,
+      'archetype': planet.archetype,
+      'trait': sign.trait,
+      'theme': houseTheme(house),
+    });
   }
 
   static String _aspectSynthesis(PlanetId a, PlanetId b, AspectType type) {
-    return '${a.title} ${type.name} ${b.title}: ${type.dynamicLine} '
-        'between ${a.archetype} and ${b.archetype}.';
+    return AppStrings.g('astral.aspect.synthesis', {
+      'a': a.title,
+      'type': AppStrings.g('content.aspect.${type.name}.name'),
+      'b': b.title,
+      'line': type.dynamicLine,
+      'archetypeA': a.archetype,
+      'archetypeB': b.archetype,
+    });
   }
 
   static const Map<AspectHarmony, String> _harmonyAdvice = {
-    AspectHarmony.harmonious:
-        'Work with it gently: small consistent steps compound faster '
-        'today than force.',
-    AspectHarmony.tense:
-        'Name the friction before it names you: adjust one concrete '
-        'thing rather than resisting the pressure.',
-    AspectHarmony.intense:
-        'Channel the intensity into one deliberate act instead of '
-        'letting it scatter.',
+    AspectHarmony.harmonious: 'astral.harmony.advice.harmonious',
+    AspectHarmony.tense: 'astral.harmony.advice.tense',
+    AspectHarmony.intense: 'astral.harmony.advice.intense',
   };
 }
 

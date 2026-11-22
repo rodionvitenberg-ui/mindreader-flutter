@@ -11,6 +11,7 @@ import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import 'astral_gradient_button.dart';
 import '../astral_copy.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// Keeps the selected pair by chart ID so reordering and editing are safe.
 class SynastryPairPicker extends StatefulWidget {
@@ -207,9 +208,7 @@ class SynastryWindow extends StatelessWidget {
           ),
         if (cross.isEmpty)
           Text(
-            context.astralRussian
-                ? 'Нет близких аспектов.'
-                : 'No close cross-chart aspects.',
+            AppStrings.g('ui.astral_synastry_window.no_close_cross_chart_aspects'),
           ),
         ExpansionTile(
           tilePadding: EdgeInsets.zero,
@@ -218,15 +217,13 @@ class SynastryWindow extends StatelessWidget {
             _ResonanceCard(score: report.overallScore),
             const SizedBox(height: 12),
             _label(
-              context.astralRussian
-                  ? 'ТЕМЫ СОВМЕСТИМОСТИ'
-                  : 'COMPATIBILITY AXES',
+              AppStrings.g('ui.astral_synastry_window.compatibility_axes'),
             ),
             const SizedBox(height: 8),
             for (final axis in report.axes) _AxisBar(axis: axis),
             const SizedBox(height: 12),
             _label(
-              context.astralRussian ? 'БАЛАНС СТИХИЙ' : 'ELEMENTAL BALANCE',
+              AppStrings.g('ui.astral_synastry_window.elemental_balance'),
             ),
             for (final e in Element.values)
               _ElementBar(element: e, count: balance[e] ?? 0, total: total),
@@ -244,7 +241,7 @@ class SynastryWindow extends StatelessWidget {
         AstralGradientButton(
           label: context.astralRussian
               ? context.astralText('discuss')
-              : '✦ DISCUSS SYNASTRY WITH ORACLE →',
+              : AppStrings.g('astral.discussSynastry'),
           onTap: () => _send(context),
         ),
       ],
@@ -310,7 +307,7 @@ class _ResonanceCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                context.astralRussian ? 'ОБЩИЙ БАЛЛ' : 'OVERALL RESONANCE',
+                AppStrings.g('ui.astral_synastry_window.overall_resonance'),
                 style: AppTypography.label(
                   fontSize: 9,
                   letterSpacing: 0.9,
@@ -370,16 +367,7 @@ class _AxisBar extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  (context.astralRussian
-                          ? switch (axis.title) {
-                              'Emotional Bond' => 'Эмоциональная связь',
-                              'Attraction & Spark' => 'Притяжение',
-                              'Mental & Communication' => 'Мышление и общение',
-                              'Growth & Friction' => 'Рост и напряжение',
-                              _ => axis.title,
-                            }
-                          : axis.title)
-                      .toUpperCase(),
+                  axis.title.toUpperCase(),
                   style: AppTypography.label(
                     fontSize: 9,
                     letterSpacing: 0.7,
@@ -413,15 +401,7 @@ class _AxisBar extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            context.astralRussian
-                ? switch (axis.title) {
-                    'Emotional Bond' => 'Связи Луны и Венеры описывают, как люди выражают чувства и замечают потребности друг друга.',
-                    'Attraction & Spark' => 'Связи Венеры, Марса и Солнца описывают различия в симпатиях и инициативе.',
-                    'Mental & Communication' => 'Аспекты Меркурия показывают, где проще договориться и где важно переспросить.',
-                    'Growth & Friction' => 'Связи Сатурна и напряжённые аспекты указывают, о чём стоит договариваться прямо.',
-                    _ => axis.text,
-                  }
-                : axis.text,
+            axis.text,
             style: AppTypography.body(
               fontSize: 11,
               height: 1.35,

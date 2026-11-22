@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../../../core/data/astro_cities_data.dart';
 import '../../../core/l10n/app_strings.dart';
-import '../../../state/app_settings_controller.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/services/natal_calculator_service.dart';
 import '../../../core/services/birth_time_service.dart';
@@ -67,8 +66,8 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
       _city =
           _matchingCity(chart.cityName) ??
           AstroCity(
-            name: chart.cityName,
-            country: chart.country,
+            literalName: chart.cityName,
+            literalCountry: chart.country,
             latitude: chart.latitude,
             longitude: chart.longitude,
             timezoneOffsetHours: chart.timezoneOffsetHours,
@@ -134,10 +133,7 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
     if (!profile.hasBirthData) {
       showTaroGlassSnackbar(
         context,
-        message:
-            context.read<AppSettingsController?>()?.language == AppLanguage.ru
-                ? 'Сначала добавьте дату и город рождения в Профиле.'
-                : 'Add your birth date and city in Profile first.',
+        message: AppStrings.g('astral.addBirthDataFirst'),
         tone: TaroGlassSnackbarTone.warning,
       );
       return;
@@ -146,7 +142,7 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
     final match = _matchingCity(profile.cityName);
     setState(() {
       _nameCtrl.text = profile.displayName.trim().isEmpty
-          ? 'My Chart'
+          ? AppStrings.g('astral.myChart')
           : profile.displayName;
       _date = profile.birthDate!;
       if (profile.birthTime != null) _time = profile.birthTime!;
@@ -154,8 +150,8 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
       _city =
           match ??
           AstroCity(
-            name: profile.cityName,
-            country: '',
+            literalName: profile.cityName,
+            literalCountry: '',
             latitude: profile.latitude!,
             longitude: profile.longitude!,
             timezoneOffsetHours: profile.timezoneOffset ?? 0,
@@ -168,7 +164,7 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
       .where(
         (city) =>
             city.name.toLowerCase() == name.trim().toLowerCase() ||
-            city.russianName?.toLowerCase() == name.trim().toLowerCase(),
+            city.englishName.toLowerCase() == name.trim().toLowerCase(),
       )
       .firstOrNull;
 
@@ -184,7 +180,7 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
       return;
     }
     final name = _nameCtrl.text.trim().isEmpty
-        ? 'My Chart'
+        ? AppStrings.g('astral.myChart')
         : _nameCtrl.text.trim();
     final timeKnown = _timeKnown;
     final hour = timeKnown ? _time.hour : 12;
@@ -267,8 +263,8 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
     } else if (controller.generateChart(chart) ==
         AstralGenerateResult.proGateBlocked) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ASTRAL PRO required for a 3rd natal profile.'),
+        SnackBar(
+          content: Text(AppStrings.g('ui.birth_data_form_sheet.astral_pro_required_for_a_3rd_natal_profile')),
         ),
       );
       return;
@@ -296,9 +292,7 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
           TaroGlassInput(
             label: context.astralText('name'),
             controller: _nameCtrl,
-            hint: context.astralRussian
-                ? 'Как назвать карту'
-                : 'How to address this chart',
+            hint: AppStrings.g('ui.astral_birth_data_form_sheet.how_to_address_this_chart'),
           ),
           const SizedBox(height: 14),
           Row(
@@ -518,7 +512,7 @@ class _CityResult extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                '${context.astralRussian ? city.russianName ?? city.name : city.name} · ${city.country}',
+                '${city.name} · ${city.country}',
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 13,

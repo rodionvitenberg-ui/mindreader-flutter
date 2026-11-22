@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/l10n/app_strings.dart';
 import '../core/services/local_storage_service.dart';
 import 'spread_controller.dart';
 import 'spread_session_snapshot.dart';
@@ -103,15 +104,12 @@ class SessionHistoryController extends ChangeNotifier {
         if (s.userContext != null) s.userContext!,
       ...ctrl.sessionContextNotes,
     ].join(' ').toLowerCase();
-    if (all.contains('relationship') || all.contains('love')) {
-      return 'Relationships';
-    }
-    if (all.contains('career') ||
-        all.contains('money') ||
-        all.contains('crossroad') ||
-        all.contains('path')) {
-      return 'Career & Path';
-    }
-    return 'All Readings';
+    final relationship = AppStrings.g('history.keywords.relationship')
+        .toLowerCase()
+        .split('|');
+    if (relationship.any(all.contains)) return 'relationships';
+    final career = AppStrings.g('history.keywords.career').toLowerCase().split('|');
+    if (career.any(all.contains)) return 'career';
+    return 'all';
   }
 }

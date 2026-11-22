@@ -19,8 +19,7 @@ class ProfileMigrationCard extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: TaroColors.surface,
-        title: const Text(
-          'EXPORT DATA',
+        title: Text(AppStrings.g('ui.profile_migration_card.export_data'),
           style: TextStyle(
             fontSize: 14,
             letterSpacing: 1.4,
@@ -28,11 +27,7 @@ class ProfileMigrationCard extends StatelessWidget {
           ),
         ),
         content: Text(
-          'To move your history and profiles to a new device, a snapshot of '
-          'your local data (profile, sessions, natal charts) is generated on '
-          'this phone. No relay server is configured yet: the snapshot is '
-          'copied to your clipboard and shown here so you can transfer it '
-          'yourself.',
+          AppStrings.g('profile.migration.explainer'),
           style: TextStyle(
             fontSize: 12,
             height: 1.45,
@@ -42,11 +37,11 @@ class ProfileMigrationCard extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('CANCEL'),
+            child: Text(AppStrings.g('common.cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('EXPORT'),
+            child: Text(AppStrings.g('common.export')),
           ),
         ],
       ),
@@ -60,8 +55,7 @@ class ProfileMigrationCard extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: TaroColors.surface,
-        title: const Text(
-          'SNAPSHOT READY',
+        title: Text(AppStrings.g('ui.profile_migration_card.snapshot_ready'),
           style: TextStyle(
             fontSize: 14,
             letterSpacing: 1.4,
@@ -84,7 +78,7 @@ class ProfileMigrationCard extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('DONE'),
+            child: Text(AppStrings.g('common.done')),
           ),
         ],
       ),
@@ -98,8 +92,7 @@ class ProfileMigrationCard extends StatelessWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: TaroColors.surface,
-        title: const Text(
-          'IMPORT DATA',
+        title: Text(AppStrings.g('ui.profile_migration_card.import_data'),
           style: TextStyle(
             fontSize: 14,
             letterSpacing: 1.4,
@@ -111,19 +104,19 @@ class ProfileMigrationCard extends StatelessWidget {
           maxLines: 8,
           cursorColor: TaroColors.lavender,
           style: const TextStyle(fontSize: 11, color: TaroColors.textPrimary),
-          decoration: const InputDecoration(
-            hintText: 'Paste the backup JSON here',
+          decoration: InputDecoration(
+            hintText: AppStrings.g('ui.profile_migration_card.paste_the_backup_json_here'),
             hintStyle: TextStyle(fontSize: 11, color: TaroColors.textSecondary),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('CANCEL'),
+            child: Text(AppStrings.g('common.cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(controller.text),
-            child: const Text('IMPORT'),
+            child: Text(AppStrings.g('common.import')),
           ),
         ],
       ),
@@ -135,8 +128,7 @@ class ProfileMigrationCard extends StatelessWidget {
     showTaroGlassSnackbar(
       context,
       message: ok
-          ? 'Backup imported — profile, sessions and natal charts merged.'
-          : 'This payload is not a valid backup.',
+          ? AppStrings.g('ui.profile_migration_card.backup_imported_profile_sessions_and_natal_chart') : AppStrings.g('ui.profile_migration_card.this_payload_is_not_a_valid_backup'),
       tone: ok ? TaroGlassSnackbarTone.success : TaroGlassSnackbarTone.error,
     );
   }
@@ -151,14 +143,14 @@ class ProfileMigrationCard extends StatelessWidget {
         children: [
           TaroGlassButton(
             icon: Icons.cloud_upload_outlined,
-            label: 'EXPORT DATA FOR NEW DEVICE',
+            label: AppStrings.g('ui.profile_migration_card.export_data_for_new_device'),
             variant: TaroGlassButtonVariant.secondary,
             onPressed: () => _export(context),
           ),
           const SizedBox(height: 10),
           TaroGlassButton(
             icon: Icons.download_outlined,
-            label: 'IMPORT DATA',
+            label: AppStrings.g('ui.profile_migration_card.import_data'),
             variant: TaroGlassButtonVariant.secondary,
             onPressed: () => _import(context),
           ),

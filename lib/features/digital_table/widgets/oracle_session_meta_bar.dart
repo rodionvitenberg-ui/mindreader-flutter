@@ -4,6 +4,7 @@ import '../../../core/models/reading_mode.dart';
 import '../../../core/models/reading_source.dart';
 import '../../../design_system/taro.dart';
 import '../../../state/oracle_session_controller.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// The label of the physical-flow call-to-action, or null for a plain digital
 /// STANDARD reading (where no camera/guided CTA belongs). Pure — no Flutter.
@@ -12,10 +13,10 @@ String? oraclePhysicalCtaLabel(ReadingSource source, ReadingMode mode) {
     return null;
   }
   return switch (mode) {
-    ReadingMode.quickScan => 'RESUME CAMERA',
-    ReadingMode.liveOracle => 'RESUME CAMERA',
-    ReadingMode.guidedSpread => 'CONTINUE GUIDED SESSION',
-    ReadingMode.standard => 'RETURN TO PHYSICAL SPREAD',
+    ReadingMode.quickScan => AppStrings.g('ui.oracle_session_meta_bar.resume_camera'),
+    ReadingMode.liveOracle => AppStrings.g('ui.oracle_session_meta_bar.resume_camera'),
+    ReadingMode.guidedSpread => AppStrings.g('ui.oracle_session_meta_bar.continue_guided_session'),
+    ReadingMode.standard => AppStrings.g('ui.oracle_session_meta_bar.return_to_physical_spread'),
   };
 }
 

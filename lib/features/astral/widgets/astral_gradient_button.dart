@@ -17,6 +17,7 @@ class AstralGradientButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TaroGlassLayer(
+      useBackdropGroup: false,
       child: SizedBox(
         width: double.infinity,
         child: TaroGlassButton(

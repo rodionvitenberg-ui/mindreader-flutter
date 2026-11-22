@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../l10n/app_strings.dart';
+
 import 'birth_time_service.dart';
 
 import 'package:timezone/timezone.dart' as tz;
@@ -61,19 +63,21 @@ class RitualNotificationService {
     try {
       await _ensureInitialized();
       await _plugin.cancelAll();
-      const android = AndroidNotificationDetails(
+      final android = AndroidNotificationDetails(
         'daily_ritual',
-        'Daily Ritual',
-        channelDescription: 'Morning anchor and evening reflection reminders.',
+        AppStrings.g('ritual.notification.channel'),
+        channelDescription: AppStrings.g(
+          'ritual.notification.channelDescription',
+        ),
         importance: Importance.defaultImportance,
         priority: Priority.defaultPriority,
       );
       const ios = DarwinNotificationDetails();
-      const details = NotificationDetails(android: android, iOS: ios);
+      final details = NotificationDetails(android: android, iOS: ios);
       await _plugin.zonedSchedule(
         1,
-        'Morning Anchor',
-        'Draw your Daily Anchor card.',
+        AppStrings.g('ritual.notification.morningTitle'),
+        AppStrings.g('ritual.notification.morningBody'),
         _nextInstanceOf(morningMinutes),
         details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -81,8 +85,8 @@ class RitualNotificationService {
       );
       await _plugin.zonedSchedule(
         2,
-        'Evening Reflection',
-        'Ground your thoughts before sleep.',
+        AppStrings.g('ritual.notification.eveningTitle'),
+        AppStrings.g('ritual.notification.eveningBody'),
         _nextInstanceOf(eveningMinutes),
         details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

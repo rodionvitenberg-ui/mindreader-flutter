@@ -9,15 +9,20 @@ import 'package:provider/provider.dart';
 
 import 'core/services/oracle_voice_service.dart';
 import 'design_system/taro.dart';
+import 'features/onboarding/onboarding_flow.dart';
 import 'features/shell/main_navigation_shell.dart';
 import 'state/app_settings_controller.dart';
 import 'state/astral_controller.dart';
+import 'state/backend_auth_controller.dart';
 import 'state/deck_pack_controller.dart';
+import 'state/guided_reading_controller.dart';
 import 'state/live_oracle_controller.dart';
 import 'state/live_reading_controller.dart';
+import 'state/onboarding_controller.dart';
 import 'state/oracle_session_controller.dart';
 import 'state/session_history_controller.dart';
 import 'state/spread_controller.dart';
+import 'state/store_controller.dart';
 import 'state/user_profile_controller.dart';
 
 Future<void> main() async {
@@ -44,6 +49,7 @@ class MindreaderApp extends StatelessWidget {
   const MindreaderApp({
     super.key,
     this.showPreloader,
+    this.showOnboarding,
     this.preloaderLogo,
     this.shaderPrecache,
     this.preloaderReady,
@@ -54,6 +60,11 @@ class MindreaderApp extends StatelessWidget {
   /// (`WidgetsFlutterBinding`) и не мешает существующим `testWidgets`-тестам,
   /// если тест не передал `showPreloader: true` явно.
   final bool? showPreloader;
+
+  /// При `null` интро (G3) показывается только в реальном приложении — тем же
+  /// правилом, что и прелоадер, — чтобы существующие `testWidgets`-тесты не
+  /// получали внезапный полноэкранный оверлей. Тест включает его явно.
+  final bool? showOnboarding;
   final ui.Image? preloaderLogo;
   final Future<void>? shaderPrecache;
   final Future<void>? preloaderReady;
@@ -63,6 +74,8 @@ class MindreaderApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final enablePreloader =
         showPreloader ?? (WidgetsBinding.instance is WidgetsFlutterBinding);
+    final enableOnboarding =
+        showOnboarding ?? (WidgetsBinding.instance is WidgetsFlutterBinding);
 
     return MultiProvider(
       providers: [
@@ -82,8 +95,29 @@ class MindreaderApp extends StatelessWidget {
         // SpreadController / OracleSessionController respectively.
         ChangeNotifierProvider(create: (_) => LiveOracleController()),
         ChangeNotifierProvider(create: (_) => DeckPackController()),
+        ChangeNotifierProvider(create: (_) => BackendAuthController()),
+        ChangeNotifierProvider(
+          create: (context) => StoreController(
+            auth: context.read<BackendAuthController>(),
+            deckPacks: context.read<DeckPackController>(),
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => AstralController()),
         ChangeNotifierProvider(create: (_) => AppSettingsController()),
+        // G3 — the one-time guided-reading intro; seeds the detail level.
+        ChangeNotifierProvider(
+          create: (context) => OnboardingController(
+            settings: context.read<AppSettingsController>(),
+          ),
+        ),
+        // The educational mentor: a pure observer of the table + settings that
+        // derives the single most relevant hint (never mutates cards).
+        ChangeNotifierProvider(
+          create: (context) => GuidedReadingController(
+            spread: context.read<SpreadController>(),
+            settings: context.read<AppSettingsController>(),
+          ),
+        ),
         // One writer for the reading archive: the Table mutates it and the
         // ProfileScreen reads it for the device-migration backup.
         ChangeNotifierProvider(
@@ -98,6 +132,7 @@ class MindreaderApp extends StatelessWidget {
       ],
       child: _AppRoot(
         enablePreloader: enablePreloader,
+        enableOnboarding: enableOnboarding,
         preloaderLogo: preloaderLogo,
         shaderPrecache: shaderPrecache,
         preloaderReady: preloaderReady,
@@ -110,6 +145,7 @@ class MindreaderApp extends StatelessWidget {
 class _AppRoot extends StatefulWidget {
   const _AppRoot({
     required this.enablePreloader,
+    required this.enableOnboarding,
     required this.preloaderLogo,
     required this.shaderPrecache,
     required this.preloaderReady,
@@ -117,6 +153,7 @@ class _AppRoot extends StatefulWidget {
   });
 
   final bool enablePreloader;
+  final bool enableOnboarding;
   final ui.Image? preloaderLogo;
   final Future<void>? shaderPrecache;
   final Future<void>? preloaderReady;
@@ -145,7 +182,11 @@ class _AppRootState extends State<_AppRoot> {
       if (widget.shaderPrecache != null) widget.shaderPrecache!,
       TaroGlassCapability.whenResolved,
       context.read<AppSettingsController>().initialLoad,
+      if (widget.enableOnboarding)
+        context.read<OnboardingController>().initialLoad,
       context.read<DeckPackController>().initialLoad,
+      context.read<BackendAuthController>().initialLoad,
+      context.read<StoreController>().initialLoad,
       context.read<SessionHistoryController>().initialLoad,
       context.read<UserProfileController>().initialLoad,
     ];
@@ -157,24 +198,27 @@ class _AppRootState extends State<_AppRoot> {
     return MaterialApp(
       title: 'mindreader.quest',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const TaroScrollBehavior(),
       theme: buildTaroTheme(),
       builder: (context, child) {
         final content = child ?? const SizedBox.shrink();
-        if (!_preloaderActive) return content;
+        if (!_preloaderActive && !widget.enableOnboarding) return content;
         return Stack(
           fit: StackFit.expand,
           children: [
             content,
-            TaroPreloader(
-              ready: _warmupFuture!,
-              predecodedLogo: widget.preloaderLogo,
-              onCompleted: () {
-                if (mounted) {
-                  setState(() => _preloaderActive = false);
-                }
-                widget.onPreloaderCompleted?.call();
-              },
-            ),
+            if (widget.enableOnboarding) const OnboardingFlow(),
+            if (_preloaderActive)
+              TaroPreloader(
+                ready: _warmupFuture!,
+                predecodedLogo: widget.preloaderLogo,
+                onCompleted: () {
+                  if (mounted) {
+                    setState(() => _preloaderActive = false);
+                  }
+                  widget.onPreloaderCompleted?.call();
+                },
+              ),
           ],
         );
       },

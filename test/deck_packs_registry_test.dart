@@ -4,15 +4,16 @@ import 'package:mindreader/core/data/tarot_deck_data.dart';
 import 'package:mindreader/core/models/tarot_deck_pack.dart';
 
 void main() {
-  test('registry ships exactly 8 selectable decks with unique ids', () {
-    expect(deckPacksRegistry.length, 8);
+  test('registry ships exactly 7 built-in decks with unique ids (soimoi lives in the store)', () {
+    expect(deckPacksRegistry.length, 7);
     final ids = deckPacksRegistry.map((p) => p.id).toList();
-    expect(ids.toSet().length, 8);
+    expect(ids.toSet().length, 7);
     expect(deckPackById('rider_waite')!.name, 'Rider-Waite');
+    expect(deckPackById('soimoi'), isNull);
     expect(deckPackById('unknown_id'), isNull);
   });
 
-  test('the 7 real open-source decks are registered with their license', () {
+  test('the 6 built-in real open-source decks are registered with their license', () {
     const realIds = [
       'rider_waite',
       'marseille',
@@ -20,7 +21,6 @@ void main() {
       'etteilla',
       'visconti_sforza',
       'vieville',
-      'soimoi',
     ];
     for (final id in realIds) {
       final pack = deckPackById(id);
@@ -54,11 +54,10 @@ void main() {
   test('real scan backs are wired where the sources ship a Cover', () {
     expect(deckPackById('rider_waite')!.backAsset, 'back');
     expect(deckPackById('vieville')!.backAsset, 'back');
-    expect(deckPackById('soimoi')!.backAsset, 'back');
     expect(deckPackById('marseille')!.backAsset, isNull);
   });
 
-  test('all 8 packs are free and selectable (no locked/pro tiers)', () {
+  test('all 7 built-in packs are free and selectable (no locked/pro tiers)', () {
     expect(deckPacksRegistry.every((p) => !p.isLocked), isTrue);
     expect(deckPacksRegistry.every((p) => !p.isPro), isTrue);
     expect(deckPackById('obsidian_minimal'), isNotNull);

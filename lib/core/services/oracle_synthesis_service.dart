@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:http/http.dart' as http;
 
 import '../models/chat_message.dart';
+import '../l10n/app_strings.dart';
 import '../models/dealt_card_slot.dart';
 import '../models/divination_system.dart';
 import '../models/natal_chart.dart';
@@ -118,12 +119,13 @@ List<Element> missingElements(Map<Element, int> balance) => [
 
 /// True when the slot role is the spread's "shadowy" position — the slot
 /// most likely to speak about resistance, blocks and hidden forces.
-bool _isShadowRole(String role) =>
-    role.contains('Hidden') ||
-    role.contains('Shadow') ||
-    role.contains('Block') ||
-    role.contains('Obstacle') ||
-    role.contains('Bridges');
+bool _isShadowRole(String role) {
+  final lower = role.toLowerCase();
+  final keywords = AppStrings.g('synthesis.shadowKeywords')
+      .toLowerCase()
+      .split('|');
+  return keywords.any(lower.contains);
+}
 
 /// The AI's 2-3 spread-specific follow-up Clarifier Questions shown at the
 /// end of the synthesis (and after every Clarifier Reading until the
@@ -148,8 +150,10 @@ List<String> buildClarifierSuggestions(
       ? reversed.first
       : (shadow.isNotEmpty ? shadow.first : faceUp.first);
   suggestions.add(
-    "What is hidden behind ${anchor.card!.name}"
-    '${anchor.isReversed ? ' (Reversed)' : ''}\'s resistance?',
+    AppStrings.g('synthesis.suggest.resistance', {
+      'card': anchor.card!.name,
+      'reversed': anchor.isReversed ? ' ${AppStrings.g('common.reversed')}' : '',
+    }),
   );
 
   // 2. The elemental tension: a conflict thread between two concrete
@@ -161,24 +165,29 @@ List<String> buildClarifierSuggestions(
   if (conflict.isNotEmpty) {
     final t = conflict.first;
     suggestions.add(
-      'What concrete action resolves the elemental tension between '
-      '${slots[t.from].card!.name} and ${slots[t.to].card!.name}?',
+      AppStrings.g('synthesis.suggest.tension', {
+        'a': slots[t.from].card!.name,
+        'b': slots[t.to].card!.name,
+      }),
     );
   } else {
     final dominant = dominantElements(elementalBalance(slots));
     suggestions.add(
       dominant.isEmpty
-          ? 'What concrete action steadies the balanced elements on the table?'
-          : 'What concrete action rebalances the '
-              '${dominant.first.label.toLowerCase()} weight of this reading?',
+          ? AppStrings.g('synthesis.suggest.balanced')
+          : AppStrings.g('synthesis.suggest.rebalance', {
+              'element': dominant.first.label.toLowerCase(),
+            }),
     );
   }
 
   // 3. The last voice: the newest card keeps something unspoken.
   final last = faceUp.last;
   suggestions.add(
-    'What is ${last.card!.name}${last.isReversed ? ' (Reversed)' : ''} '
-    'not yet telling you about the next step?',
+    AppStrings.g('synthesis.suggest.next', {
+      'card': last.card!.name,
+      'reversed': last.isReversed ? ' ${AppStrings.g('common.reversed')}' : '',
+    }),
   );
   return suggestions;
 }
@@ -193,20 +202,31 @@ String _alchemyText(List<DealtCardSlot> slots, List<ThreadInfo> threads) {
     for (final e in Element.values)
       '${e.label} ${e.glyph} ×${balance[e] ?? 0}',
   ];
-  b.writeln('Balance: ${parts.join(' · ')}.');
+  b.writeln(AppStrings.g('synthesis.balance', {'parts': parts.join(' · ')}));
   if (dominant.isNotEmpty) {
-    b.writeln('${dominant.map((e) => e.label).join(' + ')} dominates — '
-        '${dominant.map((e) => e.trait).join(' and ')} lead the reading.');
+    b.writeln(AppStrings.g('synthesis.dominant', {
+      'elements': dominant.map((e) => e.label).join(' + '),
+      'traits': dominant.map((e) => e.trait).join(' + '),
+    }));
   }
   if (missing.isNotEmpty) {
-    b.writeln('${missing.map((e) => e.label).join(' and ')} is absent — '
-        'the table is asking where that ${missing.map((e) => e.trait).join(' and ')} went.');
+    b.writeln(AppStrings.g('synthesis.missing', {
+      'elements': missing.map((e) => e.label).join(' + '),
+      'traits': missing.map((e) => e.trait).join(' + '),
+    }));
   }
   final harmonies = threads.where((t) => t.tone == ThreadTone.harmony).length;
   final tensions = threads.where((t) => t.tone == ThreadTone.conflict).length;
   if (threads.isEmpty) return b.toString();
-  b.writeln('Threads: $harmonies harmonious, $tensions tensed — '
-      '${tensions > 0 ? 'the friction marks the growth point of this reading.' : 'the strings hum in cooperation.'}');
+  b.writeln(AppStrings.g('synthesis.threads', {
+    'harmonious': harmonies,
+    'tensions': tensions,
+    'closing': AppStrings.g(
+      tensions > 0
+          ? 'synthesis.threads.growth'
+          : 'synthesis.threads.cooperation',
+    ),
+  }));
   return b.toString();
 }
 
@@ -221,8 +241,12 @@ String meaningFor(DealtCardSlot s) {
 
 /// The orientation word per slot: 'reversed' / 'upright' / 'merkstave'.
 String orientationWord(DealtCardSlot s) {
-  if (!s.isReversed) return 'upright';
-  return s.card?.system == DivinationSystem.runes ? 'merkstave' : 'reversed';
+  if (!s.isReversed) return AppStrings.g('common.orientation.upright');
+  return AppStrings.g(
+    s.card?.system == DivinationSystem.runes
+        ? 'common.orientation.merkstave'
+        : 'common.orientation.reversed',
+  );
 }
 
 /// Composes the Actionable Verdict from the last card + element context.
@@ -233,14 +257,18 @@ String _verdictText(List<DealtCardSlot> slots, Map<Element, int> balance) {
   final missing = missingElements(balance);
   final b = StringBuffer();
   final action = c.reflection;
-  b.writeln(
-    '${last.role}: ${c.name} points at one move — ${c.upright.split(' — ').last}.',
-  );
+  b.writeln(AppStrings.g('synthesis.verdict', {
+    'role': last.role,
+    'card': c.name,
+    'move': c.upright.split(' — ').last,
+  }));
   if (missing.isNotEmpty) {
-    b.writeln('Ground it with the missing ${missing.first.label.toLowerCase()} '
-        '(${missing.first.trait.toLowerCase()}) and the path stays honest.');
+    b.writeln(AppStrings.g('synthesis.ground', {
+      'element': missing.first.label.toLowerCase(),
+      'trait': missing.first.trait.toLowerCase(),
+    }));
   }
-  b.writeln('The step to take today: $action');
+  b.writeln(AppStrings.g('synthesis.todayStep', {'step': action}));
   return b.toString();
 }
 
@@ -281,7 +309,7 @@ String synthesizeSpreadFor(
 }) {
   final faceUp = slots.where((s) => s.card != null).toList();
   if (faceUp.isEmpty) {
-    return 'Flip at least one card to begin the synthesis.';
+    return AppStrings.g('synthesis.flipOne');
   }
 
   final hasQuestionPairs =
@@ -289,29 +317,41 @@ String synthesizeSpreadFor(
 
   final b = StringBuffer();
   if (profileContext != null && profileContext.isNotEmpty) {
-    b.writeln('Who this reading is for: $profileContext.');
+    b.writeln(AppStrings.g('synthesis.profileContext', {'profile': profileContext}));
   }
   if (contextChip != null && contextChip.isNotEmpty) {
-    b.writeln('Lens: $contextChip.');
+    b.writeln(AppStrings.g('synthesis.lens', {'chip': contextChip}));
   }
-  b.writeln('$spreadLabel — $focusLine');
+  b.writeln(AppStrings.g('synthesis.header', {
+    'spread': spreadLabel,
+    'focus': focusLine,
+  }));
   b.writeln();
 
   for (final s in faceUp) {
     final c = s.card!;
     final held = slotContexts?[s.index];
     if (held != null && held.isNotEmpty) {
-      b.writeln('You held before drawing: $held.');
+      b.writeln(AppStrings.g('synthesis.held', {'held': held}));
     }
     final orientation =
         c.system == DivinationSystem.lenormand ? '' : ' (${orientationWord(s)})';
     if (hasQuestionPairs && s.index < positionQuestions.length) {
       final q = positionQuestions[s.index];
-      b.writeln(
-        '${s.index + 1}. Question: $q — ${c.name}$orientation: ${meaningFor(s)}',
-      );
+      b.writeln(AppStrings.g('synthesis.questionLine', {
+        'n': s.index + 1,
+        'question': q,
+        'card': c.name,
+        'orientation': orientation,
+        'meaning': meaningFor(s),
+      }));
     } else {
-      b.writeln('${s.role} — ${c.name}$orientation: ${meaningFor(s)}');
+      b.writeln(AppStrings.g('synthesis.slotLine', {
+        'role': s.role,
+        'card': c.name,
+        'orientation': orientation,
+        'meaning': meaningFor(s),
+      }));
     }
   }
 
@@ -319,11 +359,11 @@ String synthesizeSpreadFor(
     final first = faceUp.first.card!;
     final last = faceUp.last.card!;
     b.writeln();
-    b.writeln(
-      'Overall thread: across these ${faceUp.length} question–card pairs, '
-      'the reading moves from ${first.name} toward ${last.name}, linking each '
-      'answer into one connected arc.',
-    );
+    b.writeln(AppStrings.g('synthesis.overallThread', {
+      'count': faceUp.length,
+      'first': first.name,
+      'last': last.name,
+    }));
   }
 
   final threads = _readingThreads(slots, relationships);
@@ -336,18 +376,21 @@ String synthesizeSpreadFor(
       b.writeln('${roles[link.from]} / ${roles[link.to]} — ${link.explanation}');
     }
   } else if (threads.isEmpty) {
-    b.writeln('The cards stand alone for now — a single clear signal rather than a chorus.');
+    b.writeln(AppStrings.g('synthesis.standAlone'));
   } else {
-    b.writeln(
-      'Between the cards: $harmonies harmonious exchanges, $tensions elemental tensions.',
-    );
-    b.writeln(tensions > 0
-        ? 'The friction is not a flaw — it marks exactly where the reading is asking you to grow.'
-        : 'The elements cooperate; the spread moves with you rather than against you.');
+    b.writeln(AppStrings.g('synthesis.between', {
+      'harmonious': harmonies,
+      'tensions': tensions,
+    }));
+    b.writeln(AppStrings.g(
+      tensions > 0 ? 'synthesis.friction' : 'synthesis.cooperate',
+    ));
   }
 
   b.writeln();
-  b.writeln('The question to sit with: ${faceUp.first.card!.reflection}');
+  b.writeln(AppStrings.g('synthesis.questionToSit', {
+    'question': faceUp.first.card!.reflection,
+  }));
   return b.toString();
 }
 
@@ -593,20 +636,23 @@ class OracleSynthesisService {
   ) {
     final c = newSlot.card!;
     final b = StringBuffer();
-    b.writeln('You asked: $question');
-    b.writeln(
-      '${c.name} (${orientationWord(newSlot)}) answers '
-      'with: ${meaningFor(newSlot)}',
-    );
+    b.writeln(AppStrings.g('synthesis.youAsked', {'question': question}));
+    b.writeln(AppStrings.g('synthesis.clarifierAnswers', {
+      'card': c.name,
+      'orientation': orientationWord(newSlot),
+      'meaning': meaningFor(newSlot),
+    }));
     final prevNames = [
       for (final s in previous)
         if (s.card != null) s.card!.name,
     ];
     if (prevNames.isNotEmpty) {
-      b.writeln('Read beside ${prevNames.join(', ')} already on the table, '
-          'this ${c.system.unit} tightens the reading rather than replacing it.');
+      b.writeln(AppStrings.g('synthesis.clarifierBeside', {
+        'cards': prevNames.join(', '),
+        'unit': c.system.unit,
+      }));
     }
-    b.writeln('The step to take: ${c.reflection}');
+    b.writeln(AppStrings.g('synthesis.stepToTake', {'step': c.reflection}));
     return b.toString();
   }
   /// Builds the LLM prompt for a spread synthesis. When [positionQuestions] is
@@ -756,6 +802,80 @@ class OracleSynthesisService {
     return fallback;
   }
 
+  /// G4 — ONE deeper explanation of the mentor moment the reader explicitly
+  /// asked about ("Ask the Oracle"). It is never called automatically: the
+  /// guide sheet's button is the only entry point. Offline it answers from the
+  /// authored cards, the active link and a Socratic question, so the option
+  /// works with no model configured.
+  Future<String> explainGuideMoment({
+    required String moment,
+    required String focus,
+    required List<DealtCardSlot> slots,
+    ReadingRelationship? link,
+    int? focusSlot,
+  }) async {
+    final faceUp = [
+      for (final s in slots)
+        if (s.state == SlotState.faceUp && s.card != null) s,
+    ];
+    final fallback = _guideMomentFallback(
+      focus: focus,
+      slots: faceUp,
+      link: link,
+      focusSlot: focusSlot,
+    );
+    if (!hasPrimary && !hasCloud) return fallback;
+
+    final b = StringBuffer();
+    b.writeln(oraclePersona);
+    b.writeln('Guided Reading moment: $moment.');
+    b.writeln('Spread focus: $focus');
+    for (final s in faceUp) {
+      final c = s.card!;
+      b.writeln('- ${s.role}: ${c.name} (${orientationWord(s)}).');
+    }
+    if (link != null) {
+      b.writeln(
+        'The reader just touched the link ${link.fromName} + ${link.toName} '
+        '(${link.method}'
+        '${link.influence == null ? '' : ', ${link.influence!.name}'}).',
+      );
+    }
+    b.writeln(
+      'Explain this moment in 3-5 short sentences: what these cards say '
+      'together for the focus of this spread, then one concrete question the '
+      'reader can sit with. Plain text only: no markdown, no lists.',
+    );
+    try {
+      if (hasPrimary) {
+        final text = await _chat(
+          url: primaryWorkerUrl,
+          key: primaryWorkerKey,
+          model: primaryChatModel,
+          timeout: primaryTimeout,
+          prompt: b.toString(),
+        );
+        if (text.isNotEmpty) return text;
+      }
+      if (hasCloud) {
+        final text = await _chat(
+          url: cloudUrl,
+          key: cloudKey,
+          model: cloudModel,
+          timeout: cloudTimeout,
+          prompt: b.toString(),
+        );
+        if (text.isNotEmpty) return text;
+      }
+    } catch (e) {
+      debugPrint(
+        'oracle: guide-moment endpoints failed (${e.runtimeType}), '
+        'local answer',
+      );
+    }
+    return fallback;
+  }
+
   /// A Live Oracle FREEFORM turn (4.5): interprets the freely-laid cards in
   /// the light of the reader's [intention] and returns a validated
   /// [OracleActionCommand] (text + an optional requested action). Same dual
@@ -881,6 +1001,39 @@ class OracleSynthesisService {
         '${last.name} stays the loudest voice on the table: ${last.reflection}';
   }
 
+  /// Localized offline answer for the guide's Oracle option: the focus line,
+  /// the face-up cards with their roles, the touched link (if any) and the
+  /// focus card's Socratic question — the mentor's voice, never prompt-speak.
+  String _guideMomentFallback({
+    required String focus,
+    required List<DealtCardSlot> slots,
+    ReadingRelationship? link,
+    int? focusSlot,
+  }) {
+    if (slots.isEmpty) return AppStrings.g('guide.oracle.empty');
+    final cards = slots
+        .map(
+          (s) => AppStrings.g('guide.oracle.card', {
+            'role': s.role,
+            'card': s.card!.name,
+            'orientation': orientationWord(s),
+          }),
+        )
+        .join('; ');
+    final focusCard = slots.firstWhere(
+      (s) => s.index == focusSlot,
+      orElse: () => slots.last,
+    );
+    return [
+      AppStrings.g('guide.oracle.fallback', {'focus': focus, 'cards': cards}),
+      if (link != null)
+        AppStrings.g('guide.oracle.link', {'link': link.explanation}),
+      AppStrings.g('guide.oracle.question', {
+        'question': focusCard.card!.reflection,
+      }),
+    ].join('\n\n');
+  }
+
   /// OpenAI/Ollama-compatible chat request. No keys or prompts are logged.
   Future<String> _chat({
     required String url,
@@ -926,18 +1079,29 @@ class OracleSynthesisService {
   static NatalPlanetPosition _find(NatalChart chart, PlanetId planet) =>
       chart.planets.firstWhere((p) => p.planet == planet);
 
-  static String _describe(NatalPlanetPosition p) =>
-      '${p.planet.title} ${p.sign.glyph} ${p.sign.title} ${p.formattedDegree}'
-      '${p.house == null ? '' : ' in house ${p.house}'}';
+  static String _describe(NatalPlanetPosition p) => AppStrings.g(
+    'astral.summary.describe',
+    {
+      'planet': p.planet.title,
+      'glyph': p.sign.glyph,
+      'sign': p.sign.title,
+      'degree': p.formattedDegree,
+      'house': p.house == null
+          ? ''
+          : AppStrings.g('astral.summary.inHouse', {'house': p.house}),
+    },
+  );
 
   static String _mainPlacements(NatalChart chart) => [
     _describe(_find(chart, PlanetId.sun)),
     if (chart.timeKnown)
       _describe(_find(chart, PlanetId.moon))
     else if (!chart.moonSignUncertain)
-      'Moon in ${_find(chart, PlanetId.moon).sign.title}'
+      AppStrings.g('astral.summary.moonIn', {
+        'sign': _find(chart, PlanetId.moon).sign.title,
+      })
     else
-      'Moon sign uncertain',
+      AppStrings.g('astral.summary.moonUncertain'),
     if (chart.timeKnown) _describe(_find(chart, PlanetId.ascendant)),
   ].join(' · ');
 
@@ -957,7 +1121,7 @@ class OracleSynthesisService {
   }
 
   /// A structured, reader-facing summary of a natal chart and today's sky —
-  /// used both as the user message and as the AI prompt for the handoff.
+  /// shown as the user's message and reused as the AI prompt.
   static String buildNatalPrompt(
     NatalChart chart,
     DailyHoroscopeReport? horoscope, {
@@ -965,34 +1129,50 @@ class OracleSynthesisService {
   }) {
     final sharp = chart.aspects.firstOrNull;
     final buf = StringBuffer()
+      ..writeln(AppStrings.g('astral.summary.natalProfile', {
+        'name': includeProfileNames ? chart.profileName : 'A',
+      }))
       ..writeln(
-        'Natal profile: ${includeProfileNames ? chart.profileName : 'A'}.',
+        chart.timeKnown
+            ? AppStrings.g('astral.summary.bigThree', {
+                'placements': _mainPlacements(chart),
+              })
+            : AppStrings.g('astral.summary.availablePlacements', {
+                'placements': _mainPlacements(chart),
+              }),
       )
-      ..writeln(
-        '${chart.timeKnown ? 'Big Three' : 'Birth time unknown; available placements'}: '
-        '${_mainPlacements(chart)}.',
-      )
-      ..writeln('Dominant element: ${_dominantElementOf(chart).label}.');
+      ..writeln(AppStrings.g('astral.summary.dominantElement', {
+        'element': _dominantElementOf(chart).label,
+      }));
     if (chart.timeKnown) {
-      buf.writeln('House system: ${chart.houseSystem.label}.');
+      buf.writeln(AppStrings.g('astral.summary.houseSystem', {
+        'system': chart.houseSystem.label,
+      }));
     }
     if (sharp != null) {
-      buf.writeln(
-        'Sharpest natal aspect: ${sharp.bodyA.title} ${sharp.type.glyph} '
-        '${sharp.bodyB.title} (orb ${sharp.orb.toStringAsFixed(1)}°).',
-      );
+      buf.writeln(AppStrings.g('astral.summary.sharpestAspect', {
+        'a': sharp.bodyA.title,
+        'glyph': sharp.type.glyph,
+        'b': sharp.bodyB.title,
+        'orb': sharp.orb.toStringAsFixed(1),
+      }));
     }
     if (horoscope != null) {
-      buf.writeln('${horoscope.overallTheme} ${_moonLocation(horoscope)}.');
+      buf.writeln(AppStrings.g('astral.summary.themeMoon', {
+        'theme': horoscope.overallTheme,
+        'moon': _moonLocation(horoscope),
+      }));
       for (final t in horoscope.transits.take(3)) {
-        buf.writeln('- ${t.transitLabel} · orb ${t.orb.toStringAsFixed(1)}°.');
+        buf.writeln(AppStrings.g('astral.summary.transitBullet', {
+          'label': t.transitLabel,
+          'orb': t.orb.toStringAsFixed(1),
+        }));
       }
     }
     return buf.toString().trim();
   }
 
-  /// A structured daily-horoscope summary for the active natal profile —
-  /// today's sky, the three focus spheres and the loudest live transits.
+  /// A structured daily-horoscope summary for the active natal profile.
   static String buildHoroscopePrompt(
     NatalChart chart,
     DailyHoroscopeReport report, {
@@ -1001,46 +1181,71 @@ class OracleSynthesisService {
   }) {
     final buf = StringBuffer();
     final d = report.date.toLocal();
-    buf.writeln(
-      'Daily horoscope for ${includeProfileNames ? chart.profileName : 'profile A'} — '
-      '${d.day.toString().padLeft(2, '0')}.'
-      '${d.month.toString().padLeft(2, '0')}.${d.year}.',
-    );
-    buf.writeln(
-      '${report.moonPhaseGlyph} ${report.moonPhaseName} · '
-      '${(report.moonIllumination * 100).round()}% illuminated · '
-      '${_moonLocation(report)}.',
-    );
-    buf.writeln('Energy: ${report.energyScore}/100. ${report.overallTheme}');
+    final date =
+        '${d.day.toString().padLeft(2, '0')}.'
+        '${d.month.toString().padLeft(2, '0')}.${d.year}';
+    buf.writeln(AppStrings.g('astral.summary.horoscopeTitle', {
+      'name': includeProfileNames ? chart.profileName : 'A',
+      'date': date,
+    }));
+    buf.writeln(AppStrings.g('astral.summary.moonLine', {
+      'glyph': report.moonPhaseGlyph,
+      'phase': report.moonPhaseName,
+      'illumination': (report.moonIllumination * 100).round(),
+      'moon': _moonLocation(report),
+    }));
+    buf.writeln(AppStrings.g('astral.summary.energy', {
+      'score': report.energyScore,
+      'theme': report.overallTheme,
+    }));
     for (final f in report.focusSpheres) {
-      buf.writeln('${f.title}: ${f.text}');
+      buf.writeln(AppStrings.g('astral.summary.sphere', {
+        'title': f.title,
+        'text': f.text,
+      }));
     }
     if (!chart.timeKnown) {
-      buf.writeln('Birth time unknown. Do not infer houses or angles.');
+      buf.writeln(AppStrings.g('astral.summary.birthTimeUnknown'));
     }
     if (transit != null) {
       final timing = [
         if (transit.closestAt != null)
-          'closest at ${transit.closestAt!.toUtc()}',
+          AppStrings.g('astral.summary.closestAt', {
+            'date': transit.closestAt!.toUtc(),
+          }),
         if (transit.activeFrom != null)
-          'active from ${transit.activeFrom!.toUtc()}',
+          AppStrings.g('astral.summary.activeFrom', {
+            'date': transit.activeFrom!.toUtc(),
+          }),
         if (transit.activeUntil != null)
-          'active until ${transit.activeUntil!.toUtc()}',
+          AppStrings.g('astral.summary.activeUntil', {
+            'date': transit.activeUntil!.toUtc(),
+          }),
       ];
-      buf.writeln(
-        'Selected transit: ${transit.transitLabel}, '
-        'orb ${transit.orb.toStringAsFixed(2)}°; ${timing.join(', ')}.',
-      );
+      buf.writeln(AppStrings.g('astral.summary.selectedTransit', {
+        'label': transit.transitLabel,
+        'orb': transit.orb.toStringAsFixed(2),
+        'timing': timing.join(', '),
+      }));
     }
     for (final t in report.transits.take(4)) {
-      buf.writeln('- ${t.transitLabel} · orb ${t.orb.toStringAsFixed(1)}°.');
+      buf.writeln(AppStrings.g('astral.summary.transitBullet', {
+        'label': t.transitLabel,
+        'orb': t.orb.toStringAsFixed(1),
+      }));
     }
     return buf.toString().trim();
   }
 
   static String _moonLocation(DailyHoroscopeReport report) =>
-      'Moon${report.transitingMoonHouse == null ? '' : ' in house ${report.transitingMoonHouse}'}'
-      ' (${report.transitingMoonSign.title})';
+      AppStrings.g('astral.summary.moonLocation', {
+        'house': report.transitingMoonHouse == null
+            ? ''
+            : AppStrings.g('astral.summary.inHouse', {
+                'house': report.transitingMoonHouse,
+              }),
+        'sign': report.transitingMoonSign.title,
+      });
 
   /// A structured quick-sign forecast prompt — no natal chart required.
   static String buildZodiacForecastPrompt(
@@ -1048,20 +1253,29 @@ class OracleSynthesisService {
     ZodiacSignForecast forecast,
   ) {
     final buf = StringBuffer();
-    buf.writeln(
-      'Daily horoscope for ${sign.title} ${sign.glyph} (no natal chart, calculated at ${forecast.date.toUtc()}).',
-    );
-    buf.writeln(
-      '${forecast.moonPhaseGlyph} ${forecast.moonPhaseName} · '
-      '${(forecast.moonIllumination * 100).round()}% illuminated · '
-      'Moon in ${forecast.transitingMoonSign.title}, solar house '
-      '${forecast.solarMoonHouse}.',
-    );
-    buf.writeln(
-      'Energy: ${forecast.energyScore}/100. ${forecast.overallTheme}',
-    );
+    buf.writeln(AppStrings.g('astral.summary.zodiacTitle', {
+      'sign': sign.title,
+      'glyph': sign.glyph,
+      'date': forecast.date.toUtc(),
+    }));
+    buf.writeln(AppStrings.g('astral.summary.moonLine', {
+      'glyph': forecast.moonPhaseGlyph,
+      'phase': forecast.moonPhaseName,
+      'illumination': (forecast.moonIllumination * 100).round(),
+      'moon': AppStrings.g('astral.summary.zodiacMoonInline', {
+        'sign': forecast.transitingMoonSign.title,
+        'house': forecast.solarMoonHouse,
+      }),
+    }));
+    buf.writeln(AppStrings.g('astral.summary.energy', {
+      'score': forecast.energyScore,
+      'theme': forecast.overallTheme,
+    }));
     for (final f in forecast.focusSpheres) {
-      buf.writeln('${f.title}: ${f.text}');
+      buf.writeln(AppStrings.g('astral.summary.sphere', {
+        'title': f.title,
+        'text': f.text,
+      }));
     }
     return buf.toString().trim();
   }
@@ -1072,25 +1286,39 @@ class OracleSynthesisService {
     NatalChart b, {
     bool includeProfileNames = true,
   }) {
-    final nameA = includeProfileNames ? a.profileName : 'Profile A';
-    final nameB = includeProfileNames ? b.profileName : 'Profile B';
+    final nameA = includeProfileNames
+        ? a.profileName
+        : AppStrings.g('astral.summary.profileA');
+    final nameB = includeProfileNames
+        ? b.profileName
+        : AppStrings.g('astral.summary.profileB');
     final buf = StringBuffer()
-      ..writeln('Synastry: $nameA × $nameB.')
-      ..writeln('$nameA: ${_mainPlacements(a)}.')
-      ..writeln('$nameB: ${_mainPlacements(b)}.');
+      ..writeln(AppStrings.g('astral.summary.synastry', {
+        'a': nameA,
+        'b': nameB,
+      }))
+      ..writeln(AppStrings.g('astral.summary.placements', {
+        'name': nameA,
+        'placements': _mainPlacements(a),
+      }))
+      ..writeln(AppStrings.g('astral.summary.placements', {
+        'name': nameB,
+        'placements': _mainPlacements(b),
+      }));
     if (!a.timeKnown || !b.timeKnown) {
-      buf.writeln(
-        'Birth time is unknown for at least one chart. Do not infer missing angles or houses.',
-      );
+      buf.writeln(AppStrings.g('astral.summary.birthTimeUnknownSynastry'));
     }
     final aspects = NatalCalculatorService.computeSynastryAspects(a, b);
-    buf.writeln('Tightest cross-chart aspects:');
+    buf.writeln(AppStrings.g('astral.summary.tightestAspects'));
     for (final aspect in aspects.take(5)) {
-      buf.writeln(
-        '- $nameA ${aspect.bodyA.title} ${aspect.type.glyph} '
-        '$nameB ${aspect.bodyB.title} '
-        '(orb ${aspect.orb.toStringAsFixed(1)}°).',
-      );
+      buf.writeln(AppStrings.g('astral.summary.aspectLine', {
+        'a': nameA,
+        'bodyA': aspect.bodyA.title,
+        'glyph': aspect.type.glyph,
+        'b': nameB,
+        'bodyB': aspect.bodyB.title,
+        'orb': aspect.orb.toStringAsFixed(1),
+      }));
     }
     return buf.toString().trim();
   }
@@ -1224,11 +1452,18 @@ class OracleSynthesisService {
       final sphere = zodiacForecast.focusSpheres.isEmpty
           ? null
           : zodiacForecast.focusSpheres.first;
-      return 'Reading ${zodiacForecast.sign.title} '
-          '${zodiacForecast.sign.glyph}: '
-          '${zodiacForecast.overallTheme} '
-          'Energy reads ${zodiacForecast.energyScore}/100. '
-          '${sphere == null ? '' : '${sphere.title}: ${sphere.text}'}';
+      return AppStrings.g('astral.fallback.zodiac', {
+        'sign': zodiacForecast.sign.title,
+        'glyph': zodiacForecast.sign.glyph,
+        'theme': zodiacForecast.overallTheme,
+        'score': zodiacForecast.energyScore,
+        'sphere': sphere == null
+            ? ''
+            : AppStrings.g('astral.fallback.zodiacSphere', {
+                'title': sphere.title,
+                'text': sphere.text,
+              }),
+      });
     }
     if (chart != null && otherChart != null) {
       final aspects = NatalCalculatorService.computeSynastryAspects(
@@ -1239,39 +1474,62 @@ class OracleSynthesisService {
       final moonA = _find(chart, PlanetId.moon);
       final moonB = _find(otherChart, PlanetId.moon);
       final shared = chart.moonSignUncertain || otherChart.moonSignUncertain
-          ? 'one or both Moon signs are uncertain'
+          ? AppStrings.g('astral.fallback.moonsUncertain')
           : moonA.sign.element == moonB.sign.element
-          ? 'your Moons share the ${moonA.sign.element.label} element, so '
-                'emotional rhythms tend to match'
-          : 'your Moons sit in ${moonA.sign.title} and ${moonB.sign.title}, '
-                'so emotional languages differ and need translation';
+          ? AppStrings.g('astral.fallback.moonsSame', {
+              'element': moonA.sign.element.label,
+            })
+          : AppStrings.g('astral.fallback.moonsDifferent', {
+              'a': moonA.sign.title,
+              'b': moonB.sign.title,
+            });
       final sharpLine = sharp == null
-          ? 'no very tight cross-chart aspect stands out — the bond is built '
-                'from temperament, not friction'
-          : '${chart.profileName} ${sharp.bodyA.title} ${sharp.type.glyph} '
-                '${otherChart.profileName} ${sharp.bodyB.title} is the '
-                'sharpest point of contact: ${sharp.type.dynamicLine}.';
-      return 'Comparing your charts: $shared. $sharpLine '
-          'Work with the harmony where it flows and name the friction where '
-          'it asks to be named.';
+          ? AppStrings.g('astral.fallback.noSharpAspect')
+          : AppStrings.g('astral.fallback.sharpPoint', {
+              'a': chart.profileName,
+              'bodyA': sharp.bodyA.title,
+              'glyph': sharp.type.glyph,
+              'b': otherChart.profileName,
+              'bodyB': sharp.bodyB.title,
+              'line': sharp.type.dynamicLine,
+            });
+      return AppStrings.g('astral.fallback.synastry', {
+        'shared': shared,
+        'sharp': sharpLine,
+      });
     }
-    if (chart == null) return 'Bring your natal chart and I will read it.';
+    if (chart == null) return AppStrings.g('astral.fallback.needChart');
     final sun = _find(chart, PlanetId.sun);
     final moon = _find(chart, PlanetId.moon);
     final sharp = chart.aspects.firstOrNull;
-    final base =
-        'Reading the chart of ${chart.profileName}: a ${sun.sign.title} Sun, '
-        '${chart.moonSignUncertain ? 'an uncertain Moon sign' : 'a ${moon.sign.title} Moon'}'
-        '${chart.timeKnown ? ' and a ${_find(chart, PlanetId.ascendant).sign.title} Ascendant' : ''}.';
+    final base = AppStrings.g('astral.fallback.chart', {
+      'name': chart.profileName,
+      'sun': sun.sign.title,
+      'moon': chart.moonSignUncertain
+          ? AppStrings.g('astral.fallback.moonUncertain')
+          : AppStrings.g('astral.fallback.moon', {'moon': moon.sign.title}),
+      'asc': chart.timeKnown
+          ? AppStrings.g('astral.fallback.ascendant', {
+              'asc': _find(chart, PlanetId.ascendant).sign.title,
+            })
+          : '',
+    });
     final aspectLine = sharp == null
         ? ''
-        : ' The sharpest natal aspect is ${sharp.bodyA.title} '
-              '${sharp.type.glyph} ${sharp.bodyB.title}: '
-              '${sharp.type.dynamicLine}.';
+        : AppStrings.g('astral.fallback.sharpNatal', {
+            'a': sharp.bodyA.title,
+            'glyph': sharp.type.glyph,
+            'b': sharp.bodyB.title,
+            'line': sharp.type.dynamicLine,
+          });
     final focus = transit ?? horoscope?.transits.firstOrNull;
     final transitLine = focus == null
         ? ''
-        : ' ${focus.transitLabel} (${focus.orb.toStringAsFixed(1)}°). ${focus.advice}';
+        : AppStrings.g('astral.fallback.transit', {
+            'label': focus.transitLabel,
+            'orb': focus.orb.toStringAsFixed(1),
+            'advice': focus.advice,
+          });
     return '$base$aspectLine$transitLine';
   }
 }

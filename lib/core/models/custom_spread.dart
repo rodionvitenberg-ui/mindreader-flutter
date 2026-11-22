@@ -1,3 +1,5 @@
+import '../l10n/app_strings.dart';
+
 /// User-defined spread built from an ordered list of questions ("Свой расклад"
 /// / "Custom Spread"): 1 question = 1 position, from 1 to [maxPositions] (12).
 /// Pure Dart — no Flutter imports.
@@ -20,7 +22,7 @@ class CustomSpreadConfig {
     required List<String> questions,
     bool compareNeighbors = false,
     String name = '',
-    String defaultName = 'Custom Spread',
+    String? defaultName,
     int maxCards = maxPositions,
   }) {
     final cleaned = <String>[];
@@ -34,7 +36,9 @@ class CustomSpreadConfig {
     if (cleaned.isEmpty) {
       throw ArgumentError('CustomSpreadConfig requires at least one question.');
     }
-    final resolvedName = name.trim().isEmpty ? defaultName : name.trim();
+    final resolvedName = name.trim().isEmpty
+        ? (defaultName ?? AppStrings.g('spread.customDefault'))
+        : name.trim();
     final shorts = List<String>.generate(cleaned.length, (i) {
       final q = cleaned[i];
       if (q.length <= 24) return q;
@@ -74,6 +78,5 @@ class CustomSpreadConfig {
 
   /// Focus line sent to the Oracle synthesis prompt.
   String get focusLine =>
-      'Custom $cardCount-card spread: connect every question–card pair into '
-      'one cohesive reading.';
+      AppStrings.g('spread.customFocus', {'count': cardCount});
 }

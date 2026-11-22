@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'tarot_card_model.dart' show Element;
 
 /// ASTRAL Phase 1 — astrological domain models. Pure Dart, immutable,
@@ -8,22 +9,18 @@ enum HouseSystem { placidus, koch, wholeSign }
 
 extension HouseSystemX on HouseSystem {
   /// Uppercase display label, e.g. 'PLACIDUS'.
-  String get label => switch (this) {
-    HouseSystem.placidus => 'PLACIDUS',
-    HouseSystem.koch => 'KOCH',
-    HouseSystem.wholeSign => 'WHOLE SIGN',
-  };
+  String get label => AppStrings.g('content.houseSystem.$name.label');
 
-  /// Russian subtitle shown under the display label.
-  String get ruSubtitle => switch (this) {
-    HouseSystem.placidus => 'Плацидус · квадрантная',
-    HouseSystem.koch => 'Кох · место рождения',
-    HouseSystem.wholeSign => 'Целые знаки · традиция',
-  };
+  /// Localized subtitle shown under the display label.
+  String get ruSubtitle => AppStrings.g('content.houseSystem.$name.subtitle');
 }
 
 /// Zodiac modality: how a sign initiates, holds, or transforms energy.
 enum ZodiacModality { cardinal, fixed, mutable }
+
+extension ZodiacModalityX on ZodiacModality {
+  String get label => AppStrings.g('content.modality.$name');
+}
 
 /// The twelve zodiac signs in canonical Aries-first order.
 enum ZodiacSign {
@@ -57,40 +54,40 @@ extension ZodiacSignX on ZodiacSign {
     '♓',
   ];
 
-  static const List<String> _titles = [
-    'Aries',
-    'Taurus',
-    'Gemini',
-    'Cancer',
-    'Leo',
-    'Virgo',
-    'Libra',
-    'Scorpio',
-    'Sagittarius',
-    'Capricorn',
-    'Aquarius',
-    'Pisces',
+  static const List<String> _titleKeys = [
+    'content.sign.aries.title',
+    'content.sign.taurus.title',
+    'content.sign.gemini.title',
+    'content.sign.cancer.title',
+    'content.sign.leo.title',
+    'content.sign.virgo.title',
+    'content.sign.libra.title',
+    'content.sign.scorpio.title',
+    'content.sign.sagittarius.title',
+    'content.sign.capricorn.title',
+    'content.sign.aquarius.title',
+    'content.sign.pisces.title',
   ];
 
   /// One grounded psychological trait line (used in interpretations).
-  static const List<String> _traits = [
-    'direct will and the courage to begin before the plan is ready',
-    'steady patience that builds value slowly and keeps what matters',
-    'curious perception that learns by naming, linking and asking',
-    'protective feeling that knows a room and its people by heart',
-    'radiant self-expression that earns attention and shares warmth',
-    'precise discernment that serves by noticing what can be improved',
-    'relational fairness that weighs both sides before it commits',
-    'deep intensity that transforms what it touches or lets go of it',
-    'expansive belief that finds meaning beyond the next horizon',
-    'disciplined ambition that respects limits and outlasts setbacks',
-    'independent vision that questions the crowd and reforms the system',
-    'porous imagination that absorbs the mood and dreams it back softer',
+  static const List<String> _traitKeys = [
+    'content.sign.aries.trait',
+    'content.sign.taurus.trait',
+    'content.sign.gemini.trait',
+    'content.sign.cancer.trait',
+    'content.sign.leo.trait',
+    'content.sign.virgo.trait',
+    'content.sign.libra.trait',
+    'content.sign.scorpio.trait',
+    'content.sign.sagittarius.trait',
+    'content.sign.capricorn.trait',
+    'content.sign.aquarius.trait',
+    'content.sign.pisces.trait',
   ];
 
   String get glyph => _glyphs[index];
-  String get title => _titles[index];
-  String get trait => _traits[index];
+  String get title => AppStrings.g(_titleKeys[index]);
+  String get trait => AppStrings.g(_traitKeys[index]);
 
   Element get element => switch (this) {
     ZodiacSign.aries ||
@@ -137,20 +134,7 @@ extension ZodiacSignX on ZodiacSign {
   };
 
   /// The sign containing an ecliptic longitude in degrees (0..360).
-  String get titleRu => const [
-    'Овен',
-    'Телец',
-    'Близнецы',
-    'Рак',
-    'Лев',
-    'Дева',
-    'Весы',
-    'Скорпион',
-    'Стрелец',
-    'Козерог',
-    'Водолей',
-    'Рыбы',
-  ][index];
+  String get titleRu => AppStrings.t(AppLanguage.ru, _titleKeys[index]);
 
   static ZodiacSign fromLongitude(double longitude) {
     final idx = ((longitude % 360.0) / 30.0).floor();
@@ -190,40 +174,40 @@ extension PlanetIdX on PlanetId {
     'MC',
   ];
 
-  static const List<String> _titles = [
-    'Sun',
-    'Moon',
-    'Mercury',
-    'Venus',
-    'Mars',
-    'Jupiter',
-    'Saturn',
-    'Uranus',
-    'Neptune',
-    'Pluto',
-    'Ascendant',
-    'Midheaven',
+  static const List<String> _titleKeys = [
+    'content.planet.sun.title',
+    'content.planet.moon.title',
+    'content.planet.mercury.title',
+    'content.planet.venus.title',
+    'content.planet.mars.title',
+    'content.planet.jupiter.title',
+    'content.planet.saturn.title',
+    'content.planet.uranus.title',
+    'content.planet.neptune.title',
+    'content.planet.pluto.title',
+    'content.planet.ascendant.title',
+    'content.planet.midheaven.title',
   ];
 
   /// Archetype theme used in interpretations and transit advice.
-  static const List<String> _archetypes = [
-    'core identity, vitality and conscious purpose',
-    'emotional needs, instinct and the inner child',
-    'perception, language and how the mind trades ideas',
-    'attraction, values and what the heart finds beautiful',
-    'drive, courage and the honest edge of desire',
-    'growth, faith and the search for meaning',
-    'structure, limits and the long game of mastery',
-    'freedom, disruption and the sudden upgrade',
-    'dreams, compassion and the dissolving boundary',
-    'power, renewal and what is transformed in the deep',
-    'the first impression you give and the path you walk',
-    'public calling, ambition and the summit you aim for',
+  static const List<String> _archetypeKeys = [
+    'content.planet.sun.archetype',
+    'content.planet.moon.archetype',
+    'content.planet.mercury.archetype',
+    'content.planet.venus.archetype',
+    'content.planet.mars.archetype',
+    'content.planet.jupiter.archetype',
+    'content.planet.saturn.archetype',
+    'content.planet.uranus.archetype',
+    'content.planet.neptune.archetype',
+    'content.planet.pluto.archetype',
+    'content.planet.ascendant.archetype',
+    'content.planet.midheaven.archetype',
   ];
 
   String get glyph => _glyphs[index];
-  String get title => _titles[index];
-  String get archetype => _archetypes[index];
+  String get title => AppStrings.g(_titleKeys[index]);
+  String get archetype => AppStrings.g(_archetypeKeys[index]);
 
   bool get isAngle => this == PlanetId.ascendant || this == PlanetId.midheaven;
 
@@ -273,13 +257,7 @@ extension AspectTypeX on AspectType {
   };
 
   /// One-line dynamic description of the aspect (for synthesis text).
-  String get dynamicLine => switch (this) {
-    AspectType.conjunction => 'a fusion that concentrates both forces',
-    AspectType.sextile => 'an easy invitation to cooperate',
-    AspectType.square => 'a productive friction that demands adjustment',
-    AspectType.trine => 'a natural flow that needs a conscious goal',
-    AspectType.opposition => 'a mirror that asks for balance',
-  };
+  String get dynamicLine => AppStrings.g('content.aspect.$name.line');
 }
 
 /// One computed natal position: a planet or an angle placed in the zodiac
@@ -719,9 +697,11 @@ class NatalChart {
                 degreeInSign: p.degreeInSign,
                 house: null,
                 isRetrograde: p.isRetrograde,
-                interpretation:
-                    '${p.planet.title} in ${p.sign.title}: '
-                    '${p.planet.archetype}.',
+                interpretation: AppStrings.g('astral.placement.shortNoHouse', {
+                  'planet': p.planet.title,
+                  'sign': p.sign.title,
+                  'archetype': p.planet.archetype,
+                }),
               )
             else
               p,
@@ -737,30 +717,57 @@ class NatalChart {
 /// One axis of the four-axis synastry compatibility read.
 class SynastryAxis {
   const SynastryAxis({
-    required this.title,
+    required this.titleKey,
     required this.score,
-    required this.text,
+    required this.textKey,
   });
 
-  /// E.g. 'Emotional Bond'.
-  final String title;
+  /// Dictionary key of the axis title, e.g. `content.synastry.emotional.title`.
+  final String titleKey;
 
   /// Deterministic 0..100 axis score.
   final int score;
 
-  /// Grounded, non-fatalistic interpretation line.
-  final String text;
+  /// Dictionary key of the grounded, non-fatalistic interpretation line.
+  final String textKey;
+
+  String get title => AppStrings.g(titleKey);
+  String get text => AppStrings.g(textKey);
 
   Map<String, dynamic> toJson() => {
-    'title': title,
+    'titleKey': titleKey,
     'score': score,
-    'text': text,
+    'textKey': textKey,
   };
 
+  /// Legacy English titles/texts saved before the localization migration.
+  static const Map<String, String> _legacyKeys = {
+    'Emotional Bond': 'emotional',
+    'Attraction & Spark': 'attraction',
+    'Mental & Communication': 'mental',
+    'Growth & Friction': 'growth',
+    'Moon–Moon and Moon–Venus contact: how needs are felt, held and mirrored.':
+        'emotional',
+    'Venus–Mars and Sun contact: the charge that pulls two people together.':
+        'attraction',
+    'Mercury links: how the two minds trade, question and understand.':
+        'mental',
+    'Saturn and the squares: where the bond is built through resistance.':
+        'growth',
+  };
+
+  static String _legacy(String? value, String field) {
+    final slug = _legacyKeys[value] ?? 'emotional';
+    return 'content.synastry.$slug.$field';
+  }
+
   static SynastryAxis fromJson(Map<String, dynamic> json) => SynastryAxis(
-    title: json['title'] as String,
+    titleKey:
+        json['titleKey'] as String? ??
+        _legacy(json['title'] as String?, 'title'),
     score: json['score'] as int,
-    text: json['text'] as String,
+    textKey:
+        json['textKey'] as String? ?? _legacy(json['text'] as String?, 'text'),
   );
 }
 

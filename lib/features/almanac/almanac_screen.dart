@@ -263,8 +263,7 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
                             hintText: AppStrings.t(
                               language,
                               system == null
-                                  ? 'almanac.searchSigns'
-                                  : 'almanac.searchCards',
+                                  ? AppStrings.g('ui.almanac_screen.almanac_searchsigns') : AppStrings.g('ui.almanac_screen.almanac_searchcards'),
                             ),
                             hintStyle: const TextStyle(
                               fontSize: 13,
@@ -340,7 +339,7 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
           icon: Icons.search_off_outlined,
           title: AppStrings.t(
             language,
-            zodiac ? 'almanac.noSigns' : 'almanac.noCards',
+            zodiac ? AppStrings.g('ui.almanac_screen.almanac_nosigns') : AppStrings.g('ui.almanac_screen.almanac_nocards'),
           ),
         ),
       );
@@ -648,18 +647,16 @@ class _AlmanacTile extends StatelessWidget {
                   ),
                   DivinationSystem.runes => Center(
                     child: SizedBox(
-                      width: w * 0.8,
-                      height: w * 0.94,
-                      child: CustomPaint(
-                        painter: RuneStonePainter(
-                          stone: (card as RuneDivinationCard).stone,
-                          pack: context
-                              .watch<DeckPackController>()
-                              .activeRunePack,
-                          faceUp: true,
-                          ignite: 1,
-                          seed: card.id + 5,
-                        ),
+                      width: w * 0.84,
+                      height: w * 0.98,
+                      child: RuneStoneView(
+                        stone: (card as RuneDivinationCard).stone,
+                        pack: context
+                            .watch<DeckPackController>()
+                            .activeRunePack,
+                        faceUp: true,
+                        ignite: 1,
+                        seed: card.id + 5,
                       ),
                     ),
                   ),
@@ -889,7 +886,7 @@ class _ZodiacTile extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              '${entry.modality.name.toUpperCase()} · '
+              '${entry.modality.label.toUpperCase()} · '
               '${entry.rulersLabel.toUpperCase()}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

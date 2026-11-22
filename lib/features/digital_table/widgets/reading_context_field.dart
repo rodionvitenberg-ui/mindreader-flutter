@@ -158,7 +158,7 @@ class _ReadingContextFieldState extends State<ReadingContextField>
         listenOptions: SpeechListenOptions(
           listenMode: ListenMode.dictation,
           cancelOnError: true,
-          localeId: widget.language == AppLanguage.ru ? 'ru_RU' : 'en_US',
+          localeId: widget.language == AppLanguage.ru ? AppStrings.g('ui.reading_context_field.ru_ru') : AppStrings.g('ui.reading_context_field.en_us'),
         ),
         onResult: (result) {
           if (!_current(request)) return;

@@ -106,10 +106,14 @@ class TaroGlassLayer extends StatelessWidget {
     final brightness = MediaQuery.platformBrightnessOf(context);
     final settings = taroSettings(brightness);
     final appearance = taroAppearance(brightness);
-    final useGlass =
-        resolved == TaroGlassMode.glass || resolved == TaroGlassMode.fake;
 
-    if (!useGlass) {
+    // Настоящий LiquidGlassLayer создаётся только для TaroGlassMode.glass
+    // (Apple Metal / проверенный Android Vulkan). В TaroGlassMode.fake каждая
+    // поверхность рендерится напрямую через standalone FakeGlass, без
+    // ConsolidatedFakeGlassLayer / SeededBackdropPassLayer / BlendMode.clear,
+    // чтобы на Impeller OpenGLES скролл и касания не затемняли док/кнопки и
+    // не рисовали обрезанные «огрызки» стекла.
+    if (resolved != TaroGlassMode.glass) {
       return _TaroGlassScope(
         mode: resolved,
         brightness: brightness,
@@ -127,7 +131,7 @@ class TaroGlassLayer extends StatelessWidget {
       child: LiquidGlassLayer(
         settings: settings,
         defaultAppearance: appearance,
-        fake: resolved == TaroGlassMode.fake,
+        fake: false,
         useBackdropGroup: useBackdropGroup,
         child: child,
       ),
@@ -199,8 +203,6 @@ class TaroGlassSurface extends StatelessWidget {
 
     switch (mode) {
       case TaroGlassMode.glass:
-      case TaroGlassMode.auto:
-      case TaroGlassMode.fake:
         if (scope != null) {
           return LiquidGlass(
             shape: liquidShape,
@@ -213,9 +215,24 @@ class TaroGlassSurface extends StatelessWidget {
         return LiquidGlass.auto(
           shape: liquidShape,
           settings: taroSettings(brightness),
-          fake: mode == TaroGlassMode.fake,
+          fake: false,
           appearance: appearance,
           shadows: shadows,
+          child: child,
+        );
+      case TaroGlassMode.auto:
+      case TaroGlassMode.fake:
+        // Прямой FakeGlass (RenderFakeGlass): один чистый ClipPath +
+        // BackdropFilterLayer без SeededBackdropPassLayer и без общего
+        // BackdropGroup, поэтому скролл не затемняет соседние панели и не
+        // оставляет артефактов под кнопками на Impeller OpenGLES.
+        return FakeGlass(
+          shape: liquidShape,
+          settings: scope?.settings ?? taroSettings(brightness),
+          appearance:
+              appearance ?? baseAppearance ?? taroAppearance(brightness),
+          shadows: shadows,
+          useBackdropGroup: false,
           child: child,
         );
       case TaroGlassMode.simple:

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/divination_system.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// Top overlay row for the Camera: the active divination system (what the
 /// scan will feed), plus flash and gallery actions. The system switch is an
@@ -67,7 +68,7 @@ class CameraTopHud extends StatelessWidget {
             children: [
               TaroGlassIconButton(
                 icon: flashOn ? Icons.flash_on : Icons.flash_off_outlined,
-                tooltip: flashOn ? 'Turn flash off' : 'Turn flash on',
+                tooltip: flashOn ? AppStrings.g('ui.camera_top_hud.turn_flash_off') : AppStrings.g('ui.camera_top_hud.turn_flash_on'),
                 active: flashOn,
                 size: 44,
                 iconSize: 18,
@@ -79,7 +80,7 @@ class CameraTopHud extends StatelessWidget {
               const SizedBox(width: 8),
               TaroGlassIconButton(
                 icon: Icons.photo_library_outlined,
-                tooltip: 'Pick from gallery',
+                tooltip: AppStrings.g('ui.camera_top_hud.pick_from_gallery'),
                 size: 44,
                 iconSize: 18,
                 tint: TaroColors.hudScrim,

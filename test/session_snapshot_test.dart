@@ -38,7 +38,7 @@ void main() {
 
     expect(restored.timestamp, snapshot.timestamp);
     expect(restored.spreadType, SpreadType.three);
-    expect(restored.notebook, 'Relationships');
+    expect(restored.notebook, 'relationships');
     expect(restored.cards.length, 3);
     expect(restored.cards[0].cardId, ctrl.slots[0].card!.id);
     expect(restored.cards[0].reversed, ctrl.slots[0].isReversed);

@@ -145,3 +145,80 @@ class StoreTests(TestCase):
         )
         listing = anonymous.get("/api/v1/store/decks/?system=lenormand").json()
         self.assertEqual(listing["results"][0]["promoImageUrl"], after["results"][0]["url"])
+
+    def test_seed_test_store_handoff_and_guest_gift_migration(self):
+        from django.core.management import call_command
+
+        call_command("seed_test_store")
+        anonymous = APIClient()
+        catalog = anonymous.get("/api/v1/store/decks/").json()
+        slugs = [item["slug"] for item in catalog["results"]]
+        self.assertEqual(slugs, ["soimoi", "charred_birch"])
+        # Built-in decks are never listed in the store.
+        self.assertNotIn("rider_waite", slugs)
+        self.assertNotIn("nordic_bone", slugs)
+
+        soimoi = next(i for i in catalog["results"] if i["slug"] == "soimoi")
+        birch = next(i for i in catalog["results"] if i["slug"] == "charred_birch")
+        self.assertFalse(soimoi["free"])
+        self.assertEqual(soimoi["priceMinor"], 499)
+        self.assertTrue(soimoi["featured"])
+        self.assertIsNotNone(soimoi["coverUrl"])
+        self.assertEqual(soimoi["version"]["cardCount"], 78)
+
+        self.assertTrue(birch["free"])
+        self.assertEqual(birch["priceMinor"], 0)
+        self.assertEqual(birch["itemType"], "rune_set")
+        self.assertEqual(birch["version"]["cardCount"], 24)
+        self.assertIsNotNone(birch["coverUrl"])
+        self.assertEqual(anonymous.get(birch["coverUrl"]).status_code, 200)
+
+        # Guest claims the free wooden runes gift.
+        guest_client = guest()
+        self.assertEqual(
+            guest_client.post(
+                f"/api/v1/store/decks/{birch['id']}/acquire-free/",
+                HTTP_IDEMPOTENCY_KEY="gift-1",
+            ).status_code,
+            200,
+        )
+        guest_catalog = guest_client.get("/api/v1/store/decks/").json()
+        birch_after = next(i for i in guest_catalog["results"] if i["slug"] == "charred_birch")
+        self.assertTrue(birch_after["owned"])
+
+        # Guest upgrades to a verified email account -> free gift migrates automatically.
+        with override_settings(EMAIL_VERIFICATION_ENABLED=True, AUTH_DEV_SHOW_CODE=True):
+            start = guest_client.post(
+                "/api/v1/auth/email/start/",
+                {"email": "reader@example.org"},
+                format="json",
+            )
+            self.assertEqual(start.status_code, 202)
+            code = start.json()["devCode"]
+            verify = guest_client.post(
+                "/api/v1/auth/email/verify/",
+                {"token": code},
+                format="json",
+            )
+            self.assertEqual(verify.status_code, 200)
+            verified_data = verify.json()
+            self.assertTrue(verified_data["verified"])
+            self.assertEqual(verified_data["email"], "reader@example.org")
+
+        verified_client = APIClient()
+        verified_client.credentials(HTTP_AUTHORIZATION=f"Bearer {verified_data['token']}")
+        lib = verified_client.get("/api/v1/store/library/").json()
+        self.assertEqual([i["slug"] for i in lib["results"]], ["charred_birch"])
+
+        # One-time handoff from Flutter app to promo website.
+        handoff = verified_client.post("/api/v1/auth/handoff/")
+        self.assertEqual(handoff.status_code, 201)
+        handoff_code = handoff.json()["code"]
+        exchanged = anonymous.post("/api/v1/auth/handoff/exchange/", {"code": handoff_code}, format="json")
+        self.assertEqual(exchanged.status_code, 200)
+        self.assertEqual(exchanged.json()["email"], "reader@example.org")
+        # Replay must fail.
+        self.assertEqual(
+            anonymous.post("/api/v1/auth/handoff/exchange/", {"code": handoff_code}, format="json").status_code,
+            400,
+        )

@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'divination_system.dart';
 import 'lenormand_card.dart';
 import 'rune_stone.dart';
@@ -44,8 +45,7 @@ sealed class DivinationCard {
 
 /// Tarot: wraps the existing 78-card [TarotCard] dataset untouched.
 final class TarotDivinationCard extends DivinationCard {
-  const TarotDivinationCard(this.card)
-      : super(system: DivinationSystem.tarot);
+  const TarotDivinationCard(this.card) : super(system: DivinationSystem.tarot);
 
   final TarotCard card;
 
@@ -60,9 +60,9 @@ final class TarotDivinationCard extends DivinationCard {
 
   @override
   String get categoryLabel => card.arcana == Arcana.major
-      ? 'MAJOR ARCANA'
+      ? AppStrings.g('content.category.majorArcana')
       : '${card.suit!.label.toUpperCase()} · '
-          '${card.element.label.toUpperCase()}';
+            '${card.element.label.toUpperCase()}';
 
   @override
   Element get element => card.element;
@@ -83,7 +83,7 @@ final class TarotDivinationCard extends DivinationCard {
 /// Lenormand: always upright, read in pairs.
 final class LenormandDivinationCard extends DivinationCard {
   const LenormandDivinationCard(this.card)
-      : super(system: DivinationSystem.lenormand);
+    : super(system: DivinationSystem.lenormand);
 
   final LenormandCard card;
 
@@ -113,13 +113,12 @@ final class LenormandDivinationCard extends DivinationCard {
 
   @override
   String get reflection =>
-      'Which card beside ${card.name} is whispering its true story?';
+      AppStrings.g('content.reflection.lenormand', {'card': card.name});
 }
 
 /// Elder Futhark rune stone: merkstave exists only for non-symmetrical runes.
 final class RuneDivinationCard extends DivinationCard {
-  const RuneDivinationCard(this.stone)
-      : super(system: DivinationSystem.runes);
+  const RuneDivinationCard(this.stone) : super(system: DivinationSystem.runes);
 
   final RuneStone stone;
 
@@ -133,7 +132,8 @@ final class RuneDivinationCard extends DivinationCard {
   String get shortLabel => stone.glyph;
 
   @override
-  String get categoryLabel => '${stone.aett.title.toUpperCase()} · '
+  String get categoryLabel =>
+      '${stone.aett.title.toUpperCase()} · '
       '${stone.element.label.toUpperCase()}';
 
   @override
@@ -149,7 +149,8 @@ final class RuneDivinationCard extends DivinationCard {
   String? get reversed => stone.merkstave;
 
   @override
-  String get reflection =>
-      'Where in your life is the force of ${stone.name} (${stone.glyph}) '
-      'asking to be named aloud?';
+  String get reflection => AppStrings.g('content.reflection.rune', {
+    'name': stone.name,
+    'glyph': stone.glyph,
+  });
 }

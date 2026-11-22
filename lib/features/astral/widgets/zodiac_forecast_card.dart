@@ -8,6 +8,7 @@ import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import 'horoscope_blocks.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// The quick-sign Horoscope card: a whole-sign solar forecast with no natal
 /// chart required.
@@ -85,7 +86,7 @@ class ZodiacForecastCard extends StatelessWidget {
                     '${context.astroPhase(forecast.moonPhaseName, forecast.moonPhaseGlyph).toUpperCase()} · '
                     '${(forecast.moonIllumination * 100).round()}% · '
                     '${context.astroPlanet(PlanetId.moon).toUpperCase()} · ${context.astroSign(forecast.transitingMoonSign).toUpperCase()} '
-                    '(${context.astralRussian ? 'СОЛНЕЧНЫЙ ДОМ' : 'SOLAR HOUSE'} ${forecast.solarMoonHouse})',
+                    '(${AppStrings.g('ui.astral_zodiac_forecast_card.solar_house')} ${forecast.solarMoonHouse})',
                     style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 1.0,
@@ -98,9 +99,7 @@ class ZodiacForecastCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            context.astralRussian
-                ? forecast.overallThemeRu ?? forecast.overallTheme
-                : forecast.overallTheme,
+            forecast.overallTheme,
             style: AppTypography.body(
               fontSize: 12,
               height: 1.45,

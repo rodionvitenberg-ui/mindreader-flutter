@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../core/models/oracle_action.dart';
+import '../core/l10n/app_strings.dart';
 
 /// One proposed role reassignment when moving freely-laid cards into a
 /// structured spread. The app NEVER applies this silently.
@@ -48,7 +49,9 @@ GuidedTransitionPlan planGuidedTransition({
     for (var i = 0; i < existingCardCount; i++)
       GuidedRoleAssignment(
         cardIndex: i,
-        role: i < targetRoles.length ? targetRoles[i] : 'Card ${i + 1}',
+        role: i < targetRoles.length
+            ? targetRoles[i]
+            : '${AppStrings.g('table.cardWord')} ${i + 1}',
         isGeneric: i >= targetRoles.length,
       ),
   ];

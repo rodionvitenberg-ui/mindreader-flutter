@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// The `✦ SYNTHESIZE IN CHAT →` call to action — PERMANENTLY anchored at
 /// the bottom of the Digital Table (Pane 0), right above the bottom
@@ -126,16 +127,19 @@ class _SynthesizeChatCtaState extends State<SynthesizeChatCta>
 
   /// Reference label whose single-line box defines the fixed size shared by
   /// all CTA states (dormant, ignited, generating, and OPEN ORACLE CHAT).
-  static const _sizeReferenceLabel = '✦ SYNTHESIZE IN CHAT →';
+  String get _sizeReferenceLabel => AppStrings.g('table.synthesize.openChat');
 
   String get _label {
-    if (widget.generating) return 'WEAVING THE READING · · ·';
-    if (widget.synthesized) return '✦ OPEN ORACLE CHAT →';
+    if (widget.generating) return AppStrings.g('table.synthesize.weaving');
+    if (widget.synthesized) return AppStrings.g('table.synthesize.openChat');
     if (!widget.ignited) {
-      if (widget.faceUp <= 0) return '✦ SYNTHESIZE IN CHAT';
-      return '✦ SYNTHESIZE IN CHAT (${widget.faceUp}/${widget.total})';
+      if (widget.faceUp <= 0) return AppStrings.g('table.synthesize.idle');
+      return AppStrings.g('table.synthesize.withCount', {
+        'up': widget.faceUp,
+        'total': widget.total,
+      });
     }
-    return '✦ SYNTHESIZE IN CHAT →';
+    return AppStrings.g('table.synthesize.openChat');
   }
 
   @override

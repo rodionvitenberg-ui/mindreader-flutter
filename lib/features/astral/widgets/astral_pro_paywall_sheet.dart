@@ -6,6 +6,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
 import '../../../state/astral_controller.dart';
 import 'astral_gradient_button.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// ASTRAL PRO gate (Phase G5: migrated to [TaroGlassSheet] + [TaroGlassPanel]
 /// + [TaroGlassButton]).
@@ -22,27 +23,27 @@ class AstralProPaywallSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TaroGlassSheet(
-      title: 'ASTRAL PRO',
-      subtitle: 'FREE TIER · 2 SAVED NATAL PROFILES',
+      title: AppStrings.g('ui.astral_pro_paywall_sheet.astral_pro'),
+      subtitle: AppStrings.g('ui.astral_pro_paywall_sheet.free_tier_2_saved_natal_profiles'),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const TaroGlassPanel(
+          TaroGlassPanel(
             radius: 18,
             padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ProFeature('Unlimited natal profiles'),
-                _ProFeature('Synastry comparison between any two charts'),
-                _ProFeature('Chart regeneration · full house control'),
+                _ProFeature(AppStrings.g('pro.feature.unlimitedProfiles')),
+                _ProFeature(AppStrings.g('pro.feature.synastry')),
+                _ProFeature(AppStrings.g('pro.feature.chartRegeneration')),
               ],
             ),
           ),
           const SizedBox(height: 18),
           AstralGradientButton(
-            label: 'UNLOCK PRO',
+            label: AppStrings.g('ui.astral_pro_paywall_sheet.unlock_pro'),
             onTap: () {
               HapticFeedback.mediumImpact();
               context.read<AstralController>().unlockPro();

@@ -24,10 +24,10 @@ class TaroPreloader extends StatefulWidget {
     required this.ready,
     this.predecodedLogo,
     this.onCompleted,
-    this.creepDuration = const Duration(milliseconds: 1400),
-    this.minFinishDuration = const Duration(milliseconds: 280),
-    this.maxFinishDuration = const Duration(milliseconds: 560),
-    this.hideDuration = const Duration(milliseconds: 500),
+    this.creepDuration = const Duration(milliseconds: 1600),
+    this.minFinishDuration = const Duration(milliseconds: 420),
+    this.maxFinishDuration = const Duration(milliseconds: 1100),
+    this.hideDuration = const Duration(milliseconds: 480),
     this.readyTimeout = const Duration(seconds: 4),
   });
 
@@ -93,6 +93,8 @@ class _TaroPreloaderState extends State<TaroPreloader>
   late final AnimationController _fadeController;
 
   Timer? _timeoutTimer;
+  bool _firstFramePresented = false;
+  bool _readyArrived = false;
   bool _readyHandled = false;
   bool _finishing = false;
   bool _hiding = false;
@@ -102,7 +104,7 @@ class _TaroPreloaderState extends State<TaroPreloader>
   double get _progress {
     if (_hiding || _done) return 1.0;
     if (_finishing) {
-      final t = Curves.easeOutQuad.transform(_finishController.value);
+      final t = Curves.easeInOutCubic.transform(_finishController.value);
       return _finishStart + (1.0 - _finishStart) * t;
     }
     return Curves.easeOutCubic.transform(_creepController.value) *
@@ -144,8 +146,18 @@ class _TaroPreloaderState extends State<TaroPreloader>
       }
     });
 
-    // Веточка начинает прорастать немедленно на первом кадре без пустой паузы.
-    _creepController.forward();
+    // Запускаем рост веточки сразу ПОСЛЕ фактической отрисовки 1-го кадра,
+    // чтобы время нативного сплэша/подъёма движка не «съедало» анимацию до
+    // появления прелоадера на экране.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _done) return;
+      _firstFramePresented = true;
+      if (_readyArrived) {
+        _beginFinish();
+      } else {
+        _creepController.forward();
+      }
+    });
 
     _timeoutTimer = Timer(widget.readyTimeout, _onReady);
     widget.ready.then(
@@ -155,10 +167,18 @@ class _TaroPreloaderState extends State<TaroPreloader>
   }
 
   void _onReady() {
-    if (_readyHandled || !mounted) return;
-    _readyHandled = true;
+    if (_readyArrived || !mounted) return;
+    _readyArrived = true;
     _timeoutTimer?.cancel();
     _timeoutTimer = null;
+    if (_firstFramePresented) {
+      _beginFinish();
+    }
+  }
+
+  void _beginFinish() {
+    if (_readyHandled || !mounted) return;
+    _readyHandled = true;
 
     _finishStart = _progress;
     _creepController.stop();
@@ -339,20 +359,21 @@ class PreloaderBranchRingPainter extends CustomPainter {
       }
     }
 
-    final metric = stemPath.computeMetrics().first;
+    final metric = stemPath.computeMetrics().firstOrNull;
+    if (metric == null) return;
     final stemFraction = Curves.easeInOutSine.transform(
       (p / _stemEndProgress).clamp(0.0, 1.0),
     );
     final grownLen = metric.length * stemFraction;
     if (grownLen <= 0) return;
 
-    // 3. Мягкая светящаяся аура под растущим стеблем.
+    // 3. Мягкая светящаяся лавандовая аура под растущим стеблем.
     final auraPaint = Paint()
-      ..color = branchColor.withValues(alpha: 0.24)
-      ..strokeWidth = 5.0
+      ..color = TaroColors.lavender.withValues(alpha: 0.34)
+      ..strokeWidth = 6.0
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.5);
     canvas.drawPath(metric.extractPath(0, grownLen), auraPaint);
 
     // 4. Конусный стебель: плотнее у истока, тоньше к растущему кончику.
@@ -361,8 +382,8 @@ class PreloaderBranchRingPainter extends CustomPainter {
       final t0 = i / slices;
       final t1 = (i + 1) / slices;
       final stemPaint = Paint()
-        ..color = branchColor.withValues(alpha: 0.88 - 0.12 * t0)
-        ..strokeWidth = 2.8 - 1.5 * t0
+        ..color = branchColor.withValues(alpha: 0.92 - 0.10 * t0)
+        ..strokeWidth = 3.2 - 1.6 * t0
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
       canvas.drawPath(

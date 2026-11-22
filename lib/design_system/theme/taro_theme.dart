@@ -5,6 +5,21 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_typography.dart';
 import '../taro_tokens.dart';
 
+/// Единое поведение прокрутки Tarot Tree без Android Material 3 stretch-эффекта:
+/// `StretchingOverscrollIndicator` накладывает нелинейный вертикальный scale
+/// Transform поверх `BackdropFilterLayer`, что искажает стеклянные панели при
+/// касании и протяжке вверх/вниз на границе скролла.
+class TaroScrollBehavior extends MaterialScrollBehavior {
+  const TaroScrollBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) => child;
+}
+
 /// Оптические параметры стекла Tarot Tree как [ThemeExtension], чтобы виджеты
 /// могли читать токены [TaroOptics] из [ThemeData] при необходимости.
 class TaroOpticsTheme extends ThemeExtension<TaroOpticsTheme> {

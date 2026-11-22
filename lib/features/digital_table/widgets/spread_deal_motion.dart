@@ -87,9 +87,14 @@ class _DealPose {
 }
 
 class _MovingCard extends StatelessWidget {
-  const _MovingCard({required this.pose, required this.child});
+  const _MovingCard({
+    required this.pose,
+    required this.child,
+    this.showCardShadow = true,
+  });
   final _DealPose pose;
   final Widget child;
+  final bool showCardShadow;
 
   @override
   Widget build(BuildContext context) {
@@ -109,21 +114,23 @@ class _MovingCard extends StatelessWidget {
               ..scaleByDouble(scale, scale, scale, 1)
               ..setEntry(3, 2, perspectiveEntry)
               ..rotateX(pose.tilt),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(deckWidth * 0.06),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(
-                      alpha: 0.15 + 0.10 * pose.lift,
+            child: showCardShadow
+                ? DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(deckWidth * 0.06),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: 0.15 + 0.10 * pose.lift,
+                          ),
+                          blurRadius: 2 + 5 * pose.lift,
+                          offset: Offset(0, 1 + 3 * pose.lift),
+                        ),
+                      ],
                     ),
-                    blurRadius: 2 + 5 * pose.lift,
-                    offset: Offset(0, 1 + 3 * pose.lift),
-                  ),
-                ],
-              ),
-              child: child,
-            ),
+                    child: child,
+                  )
+                : child,
           ),
         ),
       ],

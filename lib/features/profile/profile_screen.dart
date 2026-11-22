@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
+import '../../state/guided_reading_controller.dart';
+import '../../state/onboarding_controller.dart';
+import '../shell/widgets/language_selector.dart';
+import 'widgets/profile_account_card.dart';
 import 'widgets/profile_card.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_identity_card.dart';
@@ -48,6 +53,7 @@ class ProfileScreen extends StatelessWidget {
                       primary: true,
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                       children: [
+                        const ProfileAccountCard(),
                         const ProfileIdentityCard(),
                         ProfileCard(
                           section: SettingsSection.readingExperience,
@@ -77,6 +83,24 @@ class ProfileScreen extends StatelessWidget {
                                         settings.setAid(aid, value),
                                   ),
                                 ),
+                              if (settings.enabled(ReadingAid.guide))
+                                _GuideDetailControls(
+                                  lang: lang,
+                                  detail: settings.guideDetail,
+                                ),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton.icon(
+                                  key: const ValueKey('onboarding-replay'),
+                                  icon: const Icon(Icons.replay, size: 16),
+                                  label: Text(
+                                    AppStrings.t(lang, 'onboarding.restart'),
+                                  ),
+                                  onPressed: () => context
+                                      .read<OnboardingController>()
+                                      .restart(),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -100,6 +124,58 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
+/// The Guided Reading detail level + a way to forget every lesson the mentor
+/// has already taught. Shown only while Guided Reading is on.
+class _GuideDetailControls extends StatelessWidget {
+  const _GuideDetailControls({required this.lang, required this.detail});
+
+  final AppLanguage lang;
+  final GuideDetail detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.read<AppSettingsController>();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppStrings.t(lang, 'reading.detail').toUpperCase(),
+            style: AppTypography.label(
+              color: TaroColors.textSecondary,
+              letterSpacing: 1.8,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TaroGlassSegmentedControl<GuideDetail>(
+            key: const ValueKey('guide-detail'),
+            segments: [
+              for (final value in GuideDetail.values)
+                TaroGlassSegment<GuideDetail>(
+                  value: value,
+                  label: AppStrings.t(lang, 'reading.detail.${value.name}'),
+                ),
+            ],
+            value: detail,
+            onChanged: settings.setGuideDetail,
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              key: const ValueKey('guide-reset-progress'),
+              icon: const Icon(Icons.restart_alt, size: 16),
+              label: Text(AppStrings.t(lang, 'reading.resetProgress')),
+              onPressed: () =>
+                  context.read<GuidedReadingController>().resetLearned(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _LanguageSelector extends StatelessWidget {
   const _LanguageSelector({required this.lang});
 
@@ -107,22 +183,6 @@ class _LanguageSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.read<AppSettingsController>();
-    return TaroGlassSegmentedControl<AppLanguage>(
-      segments: [
-        for (final language in AppLanguage.values)
-          TaroGlassSegment<AppLanguage>(
-            value: language,
-            label: AppStrings.t(
-              AppLanguage.en,
-              language == AppLanguage.en
-                  ? 'settings.english'
-                  : 'settings.russian',
-            ),
-          ),
-      ],
-      value: lang,
-      onChanged: settings.setLanguage,
-    );
+    return const LanguageSelector();
   }
 }

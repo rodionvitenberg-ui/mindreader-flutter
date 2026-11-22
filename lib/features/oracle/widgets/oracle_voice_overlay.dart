@@ -6,6 +6,7 @@ import '../../../design_system/taro.dart';
 import 'oracle_presence_indicator.dart';
 import 'oracle_subtitles.dart';
 import 'oracle_voice_controls.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// The full Voice Overlay: a Tarot Tree glass panel meant to dock to the
 /// bottom edge BELOW the camera viewfinder — it never covers the viewfinder
@@ -59,8 +60,7 @@ class OracleVoiceOverlay extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      'LIVE ORACLE',
+                    child: Text(AppStrings.g('ui.oracle_voice_overlay.live_oracle'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTypography.label(

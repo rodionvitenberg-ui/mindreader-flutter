@@ -300,6 +300,8 @@ class _InteractiveRuneStonesWidgetState
                     _stoneTile(
                       _stoneOrder[i],
                       pack,
+                      renderIndex: i,
+                      visibleCount: visible,
                       isGrabbed: _stoneOrder[i] == grabbed,
                       returnDelta: returnDelta,
                     ),
@@ -313,10 +315,13 @@ class _InteractiveRuneStonesWidgetState
   }
 
   /// One heap stone: swirl orbit + rest imperfection + cast drag. Each stone
-  /// shows its REAL rune identity from the shuffled remaining deck.
+  /// shows its REAL rune identity from the shuffled remaining deck with depth
+  /// occlusion beneath upper stones and an expanded lift shadow when grabbed.
   Widget _stoneTile(
     int heapIndex,
     RunePack pack, {
+    required int renderIndex,
+    required int visibleCount,
     required bool isGrabbed,
     required Offset returnDelta,
   }) {
@@ -333,20 +338,26 @@ class _InteractiveRuneStonesWidgetState
       dy += _grabDelta.dy + returnDelta.dy;
     }
     final size = 88.0 * pose.scale;
+    // Lower-rendered stones sit physically beneath upper stones.
+    final depthRatio = visibleCount <= 1
+        ? 0.0
+        : (visibleCount - 1 - renderIndex) / (visibleCount - 1);
+    final depthShade = isGrabbed ? 0.0 : depthRatio * 0.44;
     return Positioned(
       left: dx - size / 2,
       top: dy - size / 2,
       child: Transform.rotate(
         angle: pose.rotZ + (isGrabbed ? _grabDelta.dy * 0.0015 : 0),
-        child: CustomPaint(
-          size: Size(size, size * 1.18),
-          painter: RuneStonePainter(
-            stone: stone,
-            pack: pack,
-            faceUp: false,
-            ignite: 0,
-            seed: 11 + stone.id,
-          ),
+        child: RuneStoneView(
+          stone: stone,
+          pack: pack,
+          faceUp: false,
+          ignite: 0,
+          seed: 11 + stone.id,
+          depthShade: depthShade,
+          lift: isGrabbed ? 1.0 : 0.0,
+          width: size,
+          height: size * 1.18,
         ),
       ),
     );

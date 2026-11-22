@@ -52,3 +52,5 @@ app.*.map.json
 /TarotCards/
 
 /promo-tarottree/
+# Python tooling caches
+__pycache__/

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_typography.dart';
 import '../taro_tokens.dart';
+import '../../core/l10n/app_strings.dart';
 
 /// Индикатор прогресса / загрузки Tarot Tree (Phase G4): загрузка и синтез
 /// Оракула. Поддерживает линейную полосу (`linear: true`, determinate /
@@ -73,7 +74,7 @@ class _TaroGlassProgressState extends State<TaroGlassProgress>
 
     if (!widget.linear) {
       return Semantics(
-        label: widget.semanticLabel ?? widget.label ?? 'Loading',
+        label: widget.semanticLabel ?? widget.label ?? AppStrings.g('common.loading'),
         value: pct,
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -166,7 +167,7 @@ class _TaroGlassProgressState extends State<TaroGlassProgress>
     );
 
     return Semantics(
-      label: widget.semanticLabel ?? widget.label ?? 'Progress',
+      label: widget.semanticLabel ?? widget.label ?? AppStrings.g('common.progress'),
       value: pct,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

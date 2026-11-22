@@ -80,12 +80,12 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
   }
 
   String _fmtDate(DateTime? date) => date == null
-      ? 'NOT SET'
+      ? AppStrings.g('common.notSet')
       : '${date.day.toString().padLeft(2, '0')}.'
           '${date.month.toString().padLeft(2, '0')}.${date.year}';
 
   String _fmtTime(TimeOfDay? time) => time == null
-      ? 'UNKNOWN'
+      ? AppStrings.g('common.unknown')
       : '${time.hour.toString().padLeft(2, '0')}:'
           '${time.minute.toString().padLeft(2, '0')}';
 
@@ -98,10 +98,10 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ProfileFieldLabel('NAME'),
+          ProfileFieldLabel(AppStrings.g('common.name')),
           _field(
             controller: _name,
-            hint: 'How the Oracle should address you',
+            hint: AppStrings.g('profile.field.nameHint'),
             onChanged: profile.setDisplayName,
           ),
           const SizedBox(height: 12),
@@ -109,7 +109,7 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
             children: [
               Expanded(
                 child: _tile(
-                  label: 'BIRTH DATE',
+                  label: AppStrings.g('ui.profile_identity_card.birth_date'),
                   value: _fmtDate(profile.birthDate),
                   icon: Icons.calendar_today_outlined,
                   onTap: _pickDate,
@@ -118,10 +118,10 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
               const SizedBox(width: 10),
               Expanded(
                 child: _tile(
-                  label: 'BIRTH TIME',
+                  label: AppStrings.g('ui.profile_identity_card.birth_time'),
                   value: profile.birthTimeKnown
                       ? _fmtTime(profile.birthTime)
-                      : 'UNKNOWN',
+                      : AppStrings.g('common.unknown'),
                   icon: Icons.schedule_outlined,
                   onTap: _pickTime,
                 ),
@@ -130,7 +130,7 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
           ),
           const SizedBox(height: 8),
           ProfilePill(
-            label: profile.birthTimeKnown ? 'BIRTH TIME KNOWN' : 'TIME UNKNOWN',
+            label: profile.birthTimeKnown ? AppStrings.g('ui.profile_identity_card.birth_time_known') : AppStrings.g('ui.profile_identity_card.time_unknown'),
             active: profile.birthTimeKnown,
             icon: profile.birthTimeKnown
                 ? Icons.check_circle_outline
@@ -139,10 +139,10 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
                 profile.setBirthData(timeKnown: !profile.birthTimeKnown),
           ),
           const SizedBox(height: 12),
-          const ProfileFieldLabel('BIRTH CITY'),
+          ProfileFieldLabel(AppStrings.g('astral.city')),
           _field(
             controller: _city,
-            hint: 'Search a city',
+            hint: AppStrings.g('astral.searchCity'),
             onChanged: (v) =>
                 setState(() => _matches = searchAstroCities(v, limit: 5)),
           ),
@@ -162,17 +162,14 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
               ),
             ),
           const SizedBox(height: 12),
-          const ProfileFieldLabel('MY LIFE CONTEXT & BACKGROUND'),
+          ProfileFieldLabel(AppStrings.g('profile.field.context')),
           _field(
             controller: _bio,
-            hint: 'Relationship status, career crossroads, inner state…',
+            hint: AppStrings.g('profile.field.contextHint'),
             maxLines: 4,
             onChanged: profile.setPersonalBioContext,
           ),
-          const ProfilePrivacyNote(
-            'Stored strictly on your device. Used to personalize Oracle '
-            'readings when you draw for yourself.',
-          ),
+          ProfilePrivacyNote(AppStrings.g('profile.field.privacy')),
         ],
       ),
     );

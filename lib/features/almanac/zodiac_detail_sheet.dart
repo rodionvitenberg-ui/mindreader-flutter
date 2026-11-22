@@ -8,6 +8,7 @@ import '../../core/services/natal_calculator_service.dart';
 import '../../core/theme/element_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
+import '../../core/l10n/app_strings.dart';
 
 /// The Almanac's rich zodiac inspector (Phase G5: migrated to [TaroGlassSheet],
 /// [TaroGlassPanel] and [TaroGlassButton]).
@@ -95,15 +96,15 @@ class ZodiacDetailSheet extends StatelessWidget {
             runSpacing: 8,
             children: [
               _StatTile(
-                label: 'ELEMENT',
+                label: AppStrings.g('common.element'),
                 value: '${e.element.glyph} ${e.element.label}',
               ),
-              _StatTile(label: 'MODALITY', value: e.modality.name.toUpperCase()),
-              _StatTile(label: 'POLARITY', value: e.polarity.label),
-              _StatTile(label: 'RULERS', value: e.rulersLabel),
-              _StatTile(label: 'NATURAL HOUSE', value: e.houseLabel),
+              _StatTile(label: AppStrings.g('common.modality'), value: e.modality.label.toUpperCase()),
+              _StatTile(label: AppStrings.g('common.polarity'), value: e.polarity.label),
+              _StatTile(label: AppStrings.g('common.rulers'), value: e.rulersLabel),
+              _StatTile(label: AppStrings.g('ui.zodiac_detail_sheet.natural_house'), value: e.houseLabel),
               _StatTile(
-                label: 'HOUSE THEME',
+                label: AppStrings.g('ui.zodiac_detail_sheet.house_theme'),
                 value: NatalCalculatorService.houseTheme(e.houseAffinity),
                 wide: true,
               ),
@@ -116,17 +117,17 @@ class ZodiacDetailSheet extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Section(title: 'CORE ARCHETYPE', body: e.archetype),
-                _Section(title: 'SHADOW · STRESS RESPONSE', body: e.shadow),
-                _Section(title: 'LOVE & CONNECTION', body: e.loveStyle),
-                _Section(title: 'CAREER & PATH VECTOR', body: e.careerVector),
+                _Section(title: AppStrings.g('ui.zodiac_detail_sheet.core_archetype'), body: e.archetype),
+                _Section(title: AppStrings.g('ui.zodiac_detail_sheet.shadow_stress_response'), body: e.shadow),
+                _Section(title: AppStrings.g('ui.zodiac_detail_sheet.love_connection'), body: e.loveStyle),
+                _Section(title: AppStrings.g('ui.zodiac_detail_sheet.career_path_vector'), body: e.careerVector),
               ],
             ),
           ),
           const SizedBox(height: 14),
           TaroGlassButton(
             key: const ValueKey('zodiac-open-horoscope'),
-            label: '✦ VIEW HOROSCOPE IN ASTRAL',
+            label: AppStrings.g('ui.zodiac_detail_sheet.view_horoscope_in_astral'),
             variant: TaroGlassButtonVariant.primary,
             onPressed: onOpenHoroscope == null
                 ? null

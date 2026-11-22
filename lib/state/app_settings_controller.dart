@@ -1,4 +1,7 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart' show WidgetsBinding;
 
 import '../core/config/app_flags.dart';
 import '../core/l10n/app_strings.dart';
@@ -6,7 +9,15 @@ import '../core/services/local_storage_service.dart';
 
 enum ReadingAid { positions, guide, relationships }
 
+/// How much teaching the Guided Reading mentor attaches to a hint.
+///
+/// * [concise] — only the next actionable step.
+/// * [thorough] — the step plus the conceptual lesson for the moment (read
+///   once per spread type; see `GuidedReadingController`).
+enum GuideDetail { concise, thorough }
+
 enum SettingsSection {
+  account,
   personalContext,
   readingExperience,
   subscription,
@@ -25,6 +36,7 @@ enum SettingsSection {
 class AppSettingsController extends ChangeNotifier {
   AppSettingsController({LocalStorageService? storage})
       : _storage = storage ?? LocalStorageService() {
+    AppStrings.setCurrent(_language);
     initialLoad = load();
   }
 
@@ -39,6 +51,20 @@ class AppSettingsController extends ChangeNotifier {
   final _aids = <ReadingAid, bool>{ReadingAid.positions: true};
   final _edited = <ReadingAid>{};
   bool enabled(ReadingAid aid) => _aids[aid] ?? false;
+
+  GuideDetail _guideDetail = GuideDetail.concise;
+  bool _editedGuideDetail = false;
+  GuideDetail get guideDetail => _guideDetail;
+
+  Future<void> setGuideDetail(GuideDetail detail) async {
+    if (_guideDetail == detail) return;
+    _editedGuideDetail = true;
+    _guideDetail = detail;
+    notifyListeners();
+    try {
+      await _storage.saveGuideDetail(detail.name);
+    } catch (_) { /* Keep the in-session choice when storage is unavailable. */ }
+  }
 
   Future<void> setAid(ReadingAid aid, bool value) async {
     _edited.add(aid);
@@ -82,12 +108,15 @@ class AppSettingsController extends ChangeNotifier {
       if (code != null) {
         _language = AppLanguage.values.firstWhere(
           (l) => l.name == code,
-          orElse: () => AppLanguage.en,
+          orElse: () => AppLanguage.fromCode(code),
         );
       }
     } catch (_) {
       // Storage unavailable — keep the default language.
     }
+    // Always publish the resolved language, including the no-preference case,
+    // so pure-Dart lookups never keep a language from an earlier test/session.
+    AppStrings.setCurrent(_language);
     try {
       // Backward compatibility: PRO bought through the ASTRAL paywall before
       // the shared flag existed must keep the account unlocked.
@@ -103,6 +132,17 @@ class AppSettingsController extends ChangeNotifier {
         final saved = await _storage.loadReadingAid(aid.name);
         if (saved != null && !_edited.contains(aid)) _aids[aid] = saved;
       } catch (_) { /* Use the default on devices without a preference store. */ }
+    }
+    try {
+      final detail = await _storage.loadGuideDetail();
+      if (!_editedGuideDetail && detail != null) {
+        _guideDetail = GuideDetail.values.firstWhere(
+          (d) => d.name == detail,
+          orElse: () => GuideDetail.concise,
+        );
+      }
+    } catch (_) {
+      // Keep the concise default when local preferences are unavailable.
     }
     try {
       final sections = await _storage.loadSettingsSections();
@@ -121,10 +161,27 @@ class AppSettingsController extends ChangeNotifier {
   void setLanguage(AppLanguage language) {
     if (_language == language) return;
     _language = language;
+    AppStrings.setCurrent(language);
     notifyListeners();
     _storage
         .saveAppLanguage(language.name)
         .then((_) {}, onError: (Object _) {});
+    // Pure-Dart content (card names, generated horoscopes) resolves through
+    // `AppStrings.current`, so a language switch must rebuild the whole tree.
+    // `reassembleApplication` does that without losing Navigator state — the
+    // user stays exactly where they toggled the language. Defer it until the
+    // tap has fully settled (reassembling inside a pointer event trips the
+    // gesture arena's `locked` assertion) and skip it under `flutter test`,
+    // where each `pumpWidget` already builds a fresh tree.
+    if (kIsWeb || Platform.environment['FLUTTER_TEST'] != 'true') {
+      Future<void>.delayed(const Duration(milliseconds: 150), () {
+        try {
+          WidgetsBinding.instance.reassembleApplication();
+        } catch (_) {
+          // A detached binding is harmless: the next navigation rebuilds.
+        }
+      });
+    }
   }
 
   /// Unlocks the shared PRO tier. Idempotent — the ProSubscriptionSheet

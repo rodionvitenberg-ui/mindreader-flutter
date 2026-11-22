@@ -10,6 +10,7 @@ import 'widgets/astral_gradient_button.dart';
 import 'widgets/astral_house_selector.dart';
 import 'widgets/birth_data_form_sheet.dart';
 import 'astral_copy.dart';
+import '../../core/l10n/app_strings.dart';
 
 /// Aspect filter inside the full natal profile sheet.
 enum _AspectFilter { all, harmony, tension }
@@ -138,7 +139,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                context.astralRussian ? 'НАТАЛЬНАЯ КАРТА' : 'NATAL PROFILE',
+                AppStrings.g('ui.astral_natal_profile_detail_sheet.natal_profile'),
                 style: AppTypography.label(
                   fontSize: 9,
                   letterSpacing: 1.0,
@@ -192,27 +193,27 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionLabel(
-          context.astralRussian ? 'ОСНОВНЫЕ ПОЛОЖЕНИЯ' : 'BIG THREE',
+          AppStrings.g('ui.astral_natal_profile_detail_sheet.big_three'),
         ),
         const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
-              child: _SpotlightTile(pos: sun, label: 'SUN'),
+              child: _SpotlightTile(pos: sun, label: AppStrings.g('astral.bigThree.sun')),
             ),
             const SizedBox(width: 8),
             if (!_chart.moonSignUncertain)
               Expanded(
                 child: _SpotlightTile(
                   pos: moon,
-                  label: 'MOON',
+                  label: AppStrings.g('astral.bigThree.moon'),
                   showDegree: _chart.timeKnown,
                 ),
               ),
             if (asc != null) ...[
               const SizedBox(width: 8),
               Expanded(
-                child: _SpotlightTile(pos: asc, label: 'RISING'),
+                child: _SpotlightTile(pos: asc, label: AppStrings.g('astral.bigThree.rising')),
               ),
             ],
           ],
@@ -281,9 +282,7 @@ class _NatalProfileDetailSheetState extends State<NatalProfileDetailSheet> {
         const SizedBox(height: 10),
         if (filtered.isEmpty)
           Text(
-            context.astralRussian
-                ? 'В этой группе нет аспектов.'
-                : 'No aspects in this register.',
+            AppStrings.g('ui.astral_natal_profile_detail_sheet.no_aspects_in_this_register'),
             style: AppTypography.body(fontSize: 12, color: TaroColors.textSecondary),
           )
         else
@@ -467,7 +466,7 @@ class _HouseChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        'H$house',
+        AppStrings.g('astral.houseShort', {'house': house}),
         style: AppTypography.label(
           fontSize: 8.5,
           letterSpacing: 0.4,

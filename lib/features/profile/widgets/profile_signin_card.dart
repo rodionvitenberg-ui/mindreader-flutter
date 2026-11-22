@@ -22,16 +22,14 @@ class ProfileSignInCard extends StatelessWidget {
       section: SettingsSection.subscription,
       title: AppStrings.t(settings.language, 'profile.card.signIn'),
       trailing: ProfilePill(
-        label: pro ? 'PRO ACTIVE' : 'FREE TIER',
+        label: pro ? AppStrings.g('ui.profile_signin_card.pro_active') : AppStrings.g('ui.profile_signin_card.free_tier'),
         active: pro,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'No account is required to use the app. 1-Click Sign-In is used '
-            'solely to protect your PRO purchase across reinstalls and help '
-            'you move data to a new phone.',
+            AppStrings.g('profile.signIn.disclaimer'),
             style: TextStyle(
               fontSize: 11.5,
               height: 1.45,
@@ -44,8 +42,7 @@ class ProfileSignInCard extends StatelessWidget {
                 ? Icons.verified_outlined
                 : Icons.login_outlined,
             label: profile.isGoogleLinked
-                ? 'LINKED · GOOGLE'
-                : 'CONTINUE WITH GOOGLE / APPLE (1-CLICK)',
+                ? AppStrings.g('ui.profile_signin_card.linked_google') : AppStrings.g('ui.profile_signin_card.continue_with_google_apple_1_click'),
             variant: TaroGlassButtonVariant.primary,
             onPressed: () => profile.setGoogleLinked(!profile.isGoogleLinked),
           ),
@@ -54,15 +51,15 @@ class ProfileSignInCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _PlanCard(
-                  title: 'PRO MONTHLY',
+                  title: AppStrings.g('ui.profile_signin_card.pro_monthly'),
                   onTap: () => ProSubscriptionSheet.show(context),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _PlanCard(
-                  title: 'PRO ANNUAL',
-                  badge: 'BEST VALUE',
+                  title: AppStrings.g('ui.profile_signin_card.pro_annual'),
+                  badge: AppStrings.g('pro.bestValue'),
                   onTap: () => ProSubscriptionSheet.show(context),
                 ),
               ),
@@ -112,10 +109,9 @@ class _PlanCard extends StatelessWidget {
                   ),
                 ),
                 if (badge != null)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 6),
-                    child: Text(
-                      'BEST VALUE',
+                    child: Text(AppStrings.g('ui.profile_signin_card.best_value'),
                       style: TextStyle(
                         fontSize: 9,
                         letterSpacing: 1.2,

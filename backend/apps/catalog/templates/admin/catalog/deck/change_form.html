@@ -1,0 +1,13 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+  {% if change and original %}
+    <li>
+      <a href="{% url 'admin:catalog_deck_upload_raw_package' original.pk %}" class="addlink">
+        Build &amp; upload raw ZIP package
+      </a>
+    </li>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

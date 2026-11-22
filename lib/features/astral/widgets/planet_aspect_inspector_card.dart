@@ -5,6 +5,7 @@ import '../../../core/models/natal_chart.dart';
 import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
 import 'natal_wheel_painter.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// Tap-to-inspect panel: the selected body's sign/house reading plus every
 /// chord touching it, harmony-colored and tightest orb first.
@@ -66,7 +67,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
                   children: [
                     Text(
                       '${context.astroPlanet(body).toUpperCase()}'
-                      '${position.house == null ? '' : ' · ${context.astralRussian ? 'ДОМ' : 'HOUSE'} ${position.house}'}',
+                      '${position.house == null ? '' : ' · ${AppStrings.g('ui.astral_planet_aspect_inspector_card.house')} ${position.house}'}',
                       style: AppTypography.label(
                         fontSize: 9,
                         letterSpacing: 0.8,
@@ -117,9 +118,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
           const SizedBox(height: 12),
           if (aspects.isEmpty)
             Text(
-              context.astralRussian
-                  ? 'НЕТ ОСНОВНЫХ АСПЕКТОВ'
-                  : 'NO MAJOR ASPECTS',
+              AppStrings.g('ui.astral_planet_aspect_inspector_card.no_major_aspects'),
               style: AppTypography.label(
                 fontSize: 8.5,
                 letterSpacing: 0.7,
@@ -128,7 +127,7 @@ class PlanetAspectInspectorCard extends StatelessWidget {
             )
           else ...[
             Text(
-              '${context.astralRussian ? 'АСПЕКТЫ' : 'ACTIVE ASPECTS'} · ${aspects.length}',
+              '${AppStrings.g('ui.astral_planet_aspect_inspector_card.active_aspects')} · ${aspects.length}',
               style: AppTypography.label(
                 fontSize: 8.5,
                 letterSpacing: 0.9,
@@ -201,8 +200,7 @@ class _RetrogradeBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: TaroColors.textSecondary.withValues(alpha: 0.4)),
       ),
-      child: Text(
-        'Rx',
+      child: Text(AppStrings.g('ui.planet_aspect_inspector_card.rx'),
         style: AppTypography.label(
           fontSize: 7.5,
           letterSpacing: 1,

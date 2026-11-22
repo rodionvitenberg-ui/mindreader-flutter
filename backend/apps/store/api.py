@@ -6,13 +6,16 @@ from django.db.models import Prefetch, Q
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, serializers
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from apps.accounts.authentication import AccessTokenAuthentication
 from apps.catalog.models import VERSION, Deck, DeckAsset, DeckPromo, DeckVersion
 from apps.catalog.packages import MIME
 from apps.core.api import IDEMPOTENCY, Problem, checked, finish, operation, replay
@@ -20,9 +23,28 @@ from apps.core.cards import SYSTEM_SIZES
 from apps.entitlements.models import Grant, active_grants
 
 
+class OptionalAccessTokenAuthentication(AccessTokenAuthentication):
+    """Authenticates when a valid Bearer token is present; treats invalid/expired tokens as anonymous on public endpoints."""
+
+    def authenticate(self, request):
+        try:
+            return super().authenticate(request)
+        except AuthenticationFailed:
+            return None
+
+
+class OptionalBearerScheme(OpenApiAuthenticationExtension):
+    target_class = "apps.store.api.OptionalAccessTokenAuthentication"
+    name = "tarotOptionalBearer"
+
+    def get_security_definition(self, auto_schema):
+        return {"type": "http", "scheme": "bearer"}
+
+
 class Filters(serializers.Serializer):
     system = serializers.ChoiceField(SYSTEM_SIZES, required=False)
     pricing = serializers.ChoiceField(("free", "paid"), required=False)
+    itemType = serializers.ChoiceField(Deck.ItemType.values, required=False)
 
 
 class VersionFilter(serializers.Serializer):
@@ -43,8 +65,14 @@ class DeckInfo(serializers.Serializer):
     id = serializers.UUIDField()
     slug = serializers.SlugField()
     title = serializers.CharField()
+    tagline = serializers.CharField()
     description = serializers.CharField()
     system = serializers.CharField()
+    itemType = serializers.CharField()
+    badge = serializers.CharField()
+    featured = serializers.BooleanField()
+    sortOrder = serializers.IntegerField()
+    visualConfig = serializers.DictField()
     artist = serializers.CharField()
     publisher = serializers.CharField()
     license = serializers.CharField()
@@ -54,7 +82,9 @@ class DeckInfo(serializers.Serializer):
     priceMinor = serializers.IntegerField()
     currency = serializers.CharField()
     published = serializers.BooleanField()
+    owned = serializers.BooleanField()
     promoImageUrl = serializers.CharField(allow_null=True)
+    coverUrl = serializers.CharField(allow_null=True)
     version = VersionInfo(allow_null=True)
 
 
@@ -124,33 +154,84 @@ def promo_data(promo):
     }
 
 
-def deck_data(deck, *, details=False):
+def _cover_url_for_version(version):
+    if version is None:
+        return None
+    assets = getattr(version, "public_assets", None)
+    if assets is not None:
+        for asset in assets:
+            if asset.kind == "cover":
+                return reverse("deck-preview", args=[asset.pk])
+        return None
+    cover = version.assets.filter(kind="cover").first()
+    return reverse("deck-preview", args=[cover.pk]) if cover else None
+
+
+def deck_data(deck, *, details=False, owned_ids=None):
     versions = versions_by_release(deck.released_versions)
+    latest = versions[0] if versions else None
     try:
         promo = deck.promo
     except DeckPromo.DoesNotExist:
         promo = None
     result = {
-        "id": str(deck.pk), "slug": deck.slug, "title": deck.title, "description": deck.description,
-        "system": deck.system, "artist": deck.artist, "publisher": deck.publisher, "license": deck.license,
-        "attribution": deck.attribution, "commercialRights": deck.commercial_rights, "free": deck.price_minor == 0,
-        "priceMinor": deck.price_minor, "currency": deck.currency, "published": deck.published,
+        "id": str(deck.pk),
+        "slug": deck.slug,
+        "title": deck.title,
+        "tagline": deck.tagline,
+        "description": deck.description,
+        "system": deck.system,
+        "itemType": deck.resolved_item_type,
+        "badge": deck.badge,
+        "featured": deck.featured,
+        "sortOrder": deck.sort_order,
+        "visualConfig": deck.visual_config or {},
+        "artist": deck.artist,
+        "publisher": deck.publisher,
+        "license": deck.license,
+        "attribution": deck.attribution,
+        "commercialRights": deck.commercial_rights,
+        "free": deck.price_minor == 0,
+        "priceMinor": deck.price_minor,
+        "currency": deck.currency,
+        "published": deck.published,
+        "owned": (deck.pk in owned_ids) if owned_ids is not None else False,
         "promoImageUrl": promo_image_url(promo),
-        "version": version_data(versions[0]) if versions else None,
+        "coverUrl": _cover_url_for_version(latest),
+        "version": version_data(latest) if latest else None,
     }
     if details:
-        result.update(versions=[version_data(v) for v in versions], previews=[
-            {"kind": asset.kind, "url": reverse("deck-preview", args=[asset.pk])}
-            for asset in versions[0].assets.filter(kind__in=["cover", "preview"])
-        ] if versions else [])
+        public_assets = (
+            getattr(latest, "public_assets", None)
+            if latest is not None
+            else []
+        )
+        if latest is not None and public_assets is None:
+            public_assets = list(latest.assets.filter(kind__in=["cover", "preview"]))
+        result.update(
+            versions=[version_data(v) for v in versions],
+            previews=[
+                {"kind": asset.kind, "url": reverse("deck-preview", args=[asset.pk])}
+                for asset in (public_assets or [])
+            ],
+        )
     return result
 
 
 def with_versions(queryset):
-    versions = DeckVersion.objects.filter(published=True)
+    public_assets = DeckAsset.objects.filter(kind__in=["cover", "preview"])
+    versions = DeckVersion.objects.filter(published=True).prefetch_related(
+        Prefetch("assets", queryset=public_assets, to_attr="public_assets")
+    )
     return queryset.select_related("promo").prefetch_related(
         Prefetch("versions", queryset=versions, to_attr="released_versions")
     )
+
+
+def _owned_ids_for_request(request):
+    if getattr(request, "auth", None) is None:
+        return set()
+    return set(active_grants(request.auth.principal).values_list("deck_id", flat=True))
 
 
 class Promos(generics.GenericAPIView):
@@ -195,6 +276,7 @@ def promo_image(request, system, pack_id):
 
 
 class Decks(generics.GenericAPIView):
+    authentication_classes = [OptionalAccessTokenAuthentication]
     permission_classes = [AllowAny]
     serializer_class = DeckInfo
 
@@ -204,12 +286,15 @@ class Decks(generics.GenericAPIView):
         decks = Deck.objects.filter(published=True)
         if "system" in filters:
             decks = decks.filter(system=filters["system"])
+        if "itemType" in filters:
+            decks = decks.filter(item_type=filters["itemType"])
         if filters.get("pricing") == "free":
             decks = decks.filter(price_minor=0)
         elif filters.get("pricing") == "paid":
             decks = decks.filter(price_minor__gt=0)
+        owned_ids = _owned_ids_for_request(request)
         page = self.paginate_queryset(with_versions(decks))
-        return self.get_paginated_response([deck_data(deck) for deck in page])
+        return self.get_paginated_response([deck_data(deck, owned_ids=owned_ids) for deck in page])
 
 
 class Library(generics.GenericAPIView):
@@ -217,16 +302,24 @@ class Library(generics.GenericAPIView):
 
     @extend_schema(responses=DeckInfo(many=True))
     def get(self, request):
-        grants = active_grants(request.auth.principal).values("deck_id")
+        grants = set(active_grants(request.auth.principal).values_list("deck_id", flat=True))
         page = self.paginate_queryset(with_versions(Deck.objects.filter(id__in=grants)))
-        return self.get_paginated_response([deck_data(deck) for deck in page])
+        return self.get_paginated_response([deck_data(deck, owned_ids=grants) for deck in page])
 
 
-@extend_schema(responses=DeckDetail)
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def detail(request, slug):
-    return Response(deck_data(get_object_or_404(with_versions(Deck.objects.filter(published=True)), slug=slug), details=True))
+class DeckDetailView(generics.GenericAPIView):
+    authentication_classes = [OptionalAccessTokenAuthentication]
+    permission_classes = [AllowAny]
+    serializer_class = DeckDetail
+
+    @extend_schema(responses=DeckDetail)
+    def get(self, request, slug):
+        owned_ids = _owned_ids_for_request(request)
+        deck = get_object_or_404(with_versions(Deck.objects.filter(published=True)), slug=slug)
+        return Response(deck_data(deck, details=True, owned_ids=owned_ids))
+
+
+detail = DeckDetailView.as_view()
 
 
 @extend_schema(responses=OpenApiTypes.BINARY)

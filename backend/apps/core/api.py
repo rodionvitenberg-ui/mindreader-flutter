@@ -115,15 +115,24 @@ class PublicConfigSerializer(serializers.Serializer):
     systems = serializers.ListField(child=serializers.CharField())
     guestAccess = serializers.BooleanField()
     emailVerification = serializers.BooleanField()
+    devPayments = serializers.BooleanField()
 
 
 @extend_schema(responses=PublicConfigSerializer)
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def public_config(request):
+    import os
     from django.conf import settings
 
+    dev_payments = (
+        not settings.PRODUCTION
+        and os.getenv("PAYMENTS_ENABLE_DEV") == "true"
+        and len(os.getenv("PAYMENTS_DEV_WEBHOOK_SECRET", "")) >= 32
+    )
     return Response({
         "systems": ["tarot", "lenormand", "runes"],
-        "guestAccess": True, "emailVerification": settings.EMAIL_VERIFICATION_ENABLED,
+        "guestAccess": True,
+        "emailVerification": settings.EMAIL_VERIFICATION_ENABLED,
+        "devPayments": dev_payments,
     })

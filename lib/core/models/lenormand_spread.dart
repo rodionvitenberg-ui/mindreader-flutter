@@ -1,33 +1,64 @@
 import 'dart:ui' show Offset;
 
+import '../l10n/app_strings.dart';
+
 /// The canonical Petit Lenormand spread templates — all open without
 /// subscription. Pure Dart; real board geometry lives in `shuffle_physics.dart`.
 enum LenormandSpread {
   one(
-    '1 · Daily Sign',
+    'content.spread.lenormand.one.label',
+
     1,
+
     false,
-    ['Today’s Sign'],
-    'A single card to read the weather of the day.',
-    ['Sign'],
+    ['content.spread.lenormand.one.role.0'],
+    'content.spread.lenormand.one.focus',
+    ['content.spread.lenormand.one.short.0'],
+
     [Offset(0.5, 0.5)],
   ),
   three(
-    '3 · Lenormand Line',
+    'content.spread.lenormand.three.label',
+
     3,
+
     false,
-    ['Past', 'Present', 'Future'],
-    'The classic three-card line: what has been, what is, what comes.',
-    ['Past', 'Present', 'Future'],
+    [
+      'content.spread.lenormand.three.role.0',
+      'content.spread.lenormand.three.role.1',
+      'content.spread.lenormand.three.role.2',
+    ],
+    'content.spread.lenormand.three.focus',
+    [
+      'content.spread.lenormand.three.short.0',
+      'content.spread.lenormand.three.short.1',
+      'content.spread.lenormand.three.short.2',
+    ],
+
     [Offset(0.08, 0.5), Offset(0.5, 0.5), Offset(0.92, 0.5)],
   ),
   five(
-    '5 · Cross of 5',
+    'content.spread.lenormand.five.label',
+
     5,
+
     false,
-    ['The Matter', 'What Crosses It', 'The Root', 'What Passes', 'The Crown'],
-    'The Cross of 5: the matter, the forces crossing it, and the path through.',
-    ['Matter', 'Cross', 'Root', 'Passes', 'Crown'],
+    [
+      'content.spread.lenormand.five.role.0',
+      'content.spread.lenormand.five.role.1',
+      'content.spread.lenormand.five.role.2',
+      'content.spread.lenormand.five.role.3',
+      'content.spread.lenormand.five.role.4',
+    ],
+    'content.spread.lenormand.five.focus',
+    [
+      'content.spread.lenormand.five.short.0',
+      'content.spread.lenormand.five.short.1',
+      'content.spread.lenormand.five.short.2',
+      'content.spread.lenormand.five.short.3',
+      'content.spread.lenormand.five.short.4',
+    ],
+
     [
       Offset(0.5, 0.5),
       Offset(0.5, 0.1),
@@ -37,22 +68,35 @@ enum LenormandSpread {
     ],
   ),
   nine(
-    '9 · 3×3 Portrait Box',
+    'content.spread.lenormand.nine.label',
+
     9,
+
     false,
     [
-      'Past',
-      'Present',
-      'Future',
-      'What You Hide',
-      'The Querent',
-      'What You Show',
-      'Hopes',
-      'Fears',
-      'Outcome',
+      'content.spread.lenormand.nine.role.0',
+      'content.spread.lenormand.nine.role.1',
+      'content.spread.lenormand.nine.role.2',
+      'content.spread.lenormand.nine.role.3',
+      'content.spread.lenormand.nine.role.4',
+      'content.spread.lenormand.nine.role.5',
+      'content.spread.lenormand.nine.role.6',
+      'content.spread.lenormand.nine.role.7',
+      'content.spread.lenormand.nine.role.8',
     ],
-    'The 3×3 portrait box: a full map of the querent’s situation.',
-    ['Past', 'Present', 'Future', 'Hide', 'Querent', 'Show', 'Hopes', 'Fears', 'Outcome'],
+    'content.spread.lenormand.nine.focus',
+    [
+      'content.spread.lenormand.nine.short.0',
+      'content.spread.lenormand.nine.short.1',
+      'content.spread.lenormand.nine.short.2',
+      'content.spread.lenormand.nine.short.3',
+      'content.spread.lenormand.nine.short.4',
+      'content.spread.lenormand.nine.short.5',
+      'content.spread.lenormand.nine.short.6',
+      'content.spread.lenormand.nine.short.7',
+      'content.spread.lenormand.nine.short.8',
+    ],
+
     [
       Offset(0.1, 0.1),
       Offset(0.5, 0.1),
@@ -66,22 +110,35 @@ enum LenormandSpread {
     ],
   ),
   grandPortrait(
-    '9 · Grand Portrait',
+    'content.spread.lenormand.grandPortrait.label',
+
     9,
+
     false,
     [
-      'The House',
-      'The Heart',
-      'The Mind',
-      'The Body',
-      'The Soul',
-      'The Path',
-      'The Key',
-      'The Ring',
-      'The Star',
+      'content.spread.lenormand.grandPortrait.role.0',
+      'content.spread.lenormand.grandPortrait.role.1',
+      'content.spread.lenormand.grandPortrait.role.2',
+      'content.spread.lenormand.grandPortrait.role.3',
+      'content.spread.lenormand.grandPortrait.role.4',
+      'content.spread.lenormand.grandPortrait.role.5',
+      'content.spread.lenormand.grandPortrait.role.6',
+      'content.spread.lenormand.grandPortrait.role.7',
+      'content.spread.lenormand.grandPortrait.role.8',
     ],
-    'The Grand Portrait: a nine-card map of the querent’s inner and outer world.',
-    ['House', 'Heart', 'Mind', 'Body', 'Soul', 'Path', 'Key', 'Ring', 'Star'],
+    'content.spread.lenormand.grandPortrait.focus',
+    [
+      'content.spread.lenormand.grandPortrait.short.0',
+      'content.spread.lenormand.grandPortrait.short.1',
+      'content.spread.lenormand.grandPortrait.short.2',
+      'content.spread.lenormand.grandPortrait.short.3',
+      'content.spread.lenormand.grandPortrait.short.4',
+      'content.spread.lenormand.grandPortrait.short.5',
+      'content.spread.lenormand.grandPortrait.short.6',
+      'content.spread.lenormand.grandPortrait.short.7',
+      'content.spread.lenormand.grandPortrait.short.8',
+    ],
+
     [
       Offset(0.1, 0.1),
       Offset(0.5, 0.1),
@@ -96,35 +153,44 @@ enum LenormandSpread {
   );
 
   const LenormandSpread(
-    this.label,
+    this.labelKey,
     this.cardCount,
     this.isPro,
-    this.slotRoles,
-    this.focusLine,
-    this.slotRoleShorts,
+    this.slotRoleKeys,
+    this.focusKey,
+    this.slotRoleShortKeys,
     this.miniSlots,
   );
 
-  final String label;
+  final String labelKey;
   final int cardCount;
 
   /// Always false: all preset Lenormand spreads are open without subscription.
   final bool isPro;
-  final List<String> slotRoles;
-  final String focusLine;
+  final List<String> slotRoleKeys;
+  final String focusKey;
 
   /// Compact single-word role per slot for the overview slot labels.
-  final List<String> slotRoleShorts;
+  final List<String> slotRoleShortKeys;
 
   /// Normalized (0..1) slot coordinates for the miniature wireframe.
   final List<Offset> miniSlots;
+
+  String get label => AppStrings.g(labelKey);
+  List<String> get slotRoles => [
+    for (final key in slotRoleKeys) AppStrings.g(key),
+  ];
+  String get focusLine => AppStrings.g(focusKey);
+  List<String> get slotRoleShorts => [
+    for (final key in slotRoleShortKeys) AppStrings.g(key),
+  ];
 }
 
 /// Maps a scanned Lenormand card count to the closest spread template.
 LenormandSpread lenormandSpreadForCount(int count) => switch (count) {
-      1 => LenormandSpread.one,
-      3 => LenormandSpread.three,
-      5 => LenormandSpread.five,
-      9 => LenormandSpread.nine,
-      _ => LenormandSpread.three,
-    };
+  1 => LenormandSpread.one,
+  3 => LenormandSpread.three,
+  5 => LenormandSpread.five,
+  9 => LenormandSpread.nine,
+  _ => LenormandSpread.three,
+};

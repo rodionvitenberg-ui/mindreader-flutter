@@ -13,6 +13,7 @@ VERSION = r"^(0|[1-9]\d{0,5})\.(0|[1-9]\d{0,5})\.(0|[1-9]\d{0,5})\Z"
 
 # Built-in decks and rune sets shipped inside the Flutter app so operators can
 # attach promo artwork to them in Django Admin without uploading a ZIP package.
+# Note: `soimoi` and `charred_birch` are store products, not built-in packs.
 BUILTIN_PROMO_PACKS = (
     ("tarot", "rider_waite", "Rider-Waite"),
     ("tarot", "marseille", "Tarot de Marseille"),
@@ -20,7 +21,6 @@ BUILTIN_PROMO_PACKS = (
     ("tarot", "etteilla", "Grand Etteilla"),
     ("tarot", "visconti_sforza", "Visconti-Sforza"),
     ("tarot", "vieville", "Jacques Viéville"),
-    ("tarot", "soimoi", "Soimoi"),
     ("tarot", "obsidian_minimal", "Obsidian Minimal"),
     ("lenormand", "antique_petit", "Antique Petit Lenormand"),
     ("lenormand", "obsidian_gilded", "Obsidian Gilded Lenormand"),
@@ -28,6 +28,7 @@ BUILTIN_PROMO_PACKS = (
     ("runes", "obsidian_lavender", "Obsidian & Lavender Quartz"),
     ("runes", "nordic_bone", "Nordic Carved Bone & Gold"),
     ("runes", "blood_jasper", "Blood Jasper & Runic Fire"),
+    ("runes", "moss_agate", "Forest Moss Agate & Silver"),
 )
 
 
@@ -53,12 +54,34 @@ def promo_path(instance, filename):
     return str(PurePosixPath("promos", instance.system, instance.pack_id, f"{uuid.uuid4()}{ext}"))
 
 
+SYSTEM_DEFAULT_ITEM_TYPE = {
+    "tarot": "tarot_deck",
+    "lenormand": "lenormand_deck",
+    "runes": "rune_set",
+}
+
+
 class Deck(models.Model):
+    class ItemType(models.TextChoices):
+        TAROT_DECK = "tarot_deck", "Tarot deck"
+        LENORMAND_DECK = "lenormand_deck", "Lenormand deck"
+        RUNE_SET = "rune_set", "Rune set"
+        CARD_BACK = "card_back", "Card back"
+        TABLE_THEME = "table_theme", "Table theme"
+        SPREAD_PACK = "spread_pack", "Spread pack"
+        BUNDLE = "bundle", "Bundle"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.SlugField(max_length=80, unique=True)
     title = models.CharField(max_length=180)
+    tagline = models.CharField(max_length=200, blank=True)
     description = models.TextField()
     system = models.CharField(max_length=10, choices=[(system, system.title()) for system in SYSTEM_SIZES])
+    item_type = models.CharField(max_length=24, choices=ItemType.choices, blank=True, default="")
+    badge = models.CharField(max_length=32, blank=True)
+    featured = models.BooleanField(default=False)
+    sort_order = models.IntegerField(default=100)
+    visual_config = models.JSONField(default=dict, blank=True)
     artist = models.CharField(max_length=180, blank=True)
     publisher = models.CharField(max_length=180, blank=True)
     license = models.TextField()
@@ -70,7 +93,7 @@ class Deck(models.Model):
     published = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ("title", "id")
+        ordering = ("-featured", "sort_order", "title", "id")
         constraints = [
             models.CheckConstraint(
                 condition=Q(published=False) | (Q(distribution_verified=True) & (Q(price_minor=0) | Q(commercial_rights=True))),
@@ -81,7 +104,22 @@ class Deck(models.Model):
     def __str__(self):
         return self.title
 
+    @property
+    def resolved_item_type(self):
+        return self.item_type or SYSTEM_DEFAULT_ITEM_TYPE.get(self.system, self.ItemType.TAROT_DECK)
+
+    def save(self, *args, **kwargs):
+        if not self.item_type:
+            self.item_type = SYSTEM_DEFAULT_ITEM_TYPE.get(self.system, self.ItemType.TAROT_DECK)
+        super().save(*args, **kwargs)
+
     def clean(self):
+        if not self.item_type:
+            self.item_type = SYSTEM_DEFAULT_ITEM_TYPE.get(self.system, self.ItemType.TAROT_DECK)
+        if self.visual_config is None:
+            self.visual_config = {}
+        if not isinstance(self.visual_config, dict):
+            raise ValidationError({"visual_config": "Visual config must be a JSON object."})
         if self.published and (
             not self.distribution_verified or (self.price_minor > 0 and not self.commercial_rights)
         ):
@@ -128,7 +166,7 @@ class DeckAsset(models.Model):
     version = models.ForeignKey(DeckVersion, on_delete=models.CASCADE, related_name="assets")
     path = models.CharField(max_length=150)
     kind = models.CharField(max_length=8, choices=[
-        ("cover", "Cover"), ("preview", "Preview"), ("card", "Card"), ("back", "Back"),
+        ("cover", "Cover"), ("preview", "Preview"), ("card", "Card"), ("back", "Back"), ("stone", "Stone"),
     ])
     card_id = models.CharField(max_length=20, blank=True)
     sha256 = models.CharField(max_length=64)
@@ -169,6 +207,10 @@ class DeckPromo(models.Model):
             self.pack_id = self.deck.slug
             if not self.title:
                 self.title = self.deck.title
+
+    def clean_fields(self, exclude=None):
+        self._sync_from_deck()
+        super().clean_fields(exclude=exclude)
 
     def clean(self):
         from .packages import PackageError, validate_promo_image

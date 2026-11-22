@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/data/deck_packs_registry.dart';
 import '../../../core/data/lenormand_data.dart';
 import '../../../core/data/runes_data.dart';
 import '../../../core/data/tarot_deck_data.dart';
@@ -51,9 +50,11 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
   @override
   void initState() {
     super.initState();
-    final pack = context.read<DeckPackController>().activeFor(widget.system);
+    final ctrl = context.read<DeckPackController>();
+    final pack = ctrl.activeFor(widget.system);
+    final idx = ctrl.packsFor(widget.system).indexWhere((p) => p.id == pack.id);
     _page = PageController(
-      initialPage: packsFor(widget.system).indexOf(pack),
+      initialPage: idx < 0 ? 0 : idx,
       viewportFraction: 0.62,
     );
   }
@@ -68,7 +69,7 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
   Widget build(BuildContext context) {
     final ctrl = context.watch<DeckPackController>();
     final active = ctrl.activeFor(widget.system);
-    final packs = packsFor(widget.system);
+    final packs = ctrl.packsFor(widget.system);
     final language = context.watch<AppSettingsController>().language;
     final title = AppStrings.t(
       language,
@@ -155,15 +156,14 @@ class _PackTile extends StatelessWidget {
         interactive: false,
       );
     } else {
-      preview = CustomPaint(
-        size: const Size(150, 178),
-        painter: RuneStonePainter(
-          stone: elderFuthark[0],
-          pack: pack as RunePack,
-          faceUp: true,
-          ignite: 1,
-          seed: 3,
-        ),
+      preview = RuneStoneView(
+        stone: elderFuthark[0],
+        pack: pack as RunePack,
+        faceUp: true,
+        ignite: 1,
+        seed: 3,
+        width: 150,
+        height: 178,
       );
     }
     return GestureDetector(

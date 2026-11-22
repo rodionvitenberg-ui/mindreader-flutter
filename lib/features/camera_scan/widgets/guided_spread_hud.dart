@@ -3,34 +3,35 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
 import '../../../state/live_reading_controller.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// The viewfinder instruction for each Guided Spread phase, in one place so
 /// the Camera and the HUD share a single vocabulary (never hand-rolled).
 String guidedInstruction(GuidePhase phase) => switch (phase) {
-      GuidePhase.preparing => 'PREPARING YOUR READING',
-      GuidePhase.awaitingIntention => 'SET YOUR INTENTION',
-      GuidePhase.awaitingCard => 'DRAW A CARD AND PLACE IT',
-      GuidePhase.cardDetected => 'CARD DETECTED — HOLD STEADY',
-      GuidePhase.awaitingReveal => 'TURN THE CARD FACE-UP',
-      GuidePhase.recognizingCard => 'READING THE CARD',
-      GuidePhase.awaitingConfirmation => 'CONFIRM THE CARD?',
-      GuidePhase.interpretingCard => 'INTERPRETING THE CARD',
-      GuidePhase.awaitingUser => 'YOUR TURN',
-      GuidePhase.awaitingNextCard => 'READY FOR THE NEXT CARD',
-      GuidePhase.spreadCompleted => 'SPREAD COMPLETE',
-      GuidePhase.paused => 'PAUSED',
-      GuidePhase.completed => 'READING COMPLETE',
-      GuidePhase.cancelled => 'CANCELLED',
-      GuidePhase.error => 'SOMETHING WENT WRONG',
+      GuidePhase.preparing => AppStrings.g('ui.guided_spread_hud.preparing_your_reading'),
+      GuidePhase.awaitingIntention => AppStrings.g('ui.guided_spread_hud.set_your_intention'),
+      GuidePhase.awaitingCard => AppStrings.g('ui.guided_spread_hud.draw_a_card_and_place_it'),
+      GuidePhase.cardDetected => AppStrings.g('ui.guided_spread_hud.card_detected_hold_steady'),
+      GuidePhase.awaitingReveal => AppStrings.g('ui.guided_spread_hud.turn_the_card_face_up'),
+      GuidePhase.recognizingCard => AppStrings.g('ui.guided_spread_hud.reading_the_card'),
+      GuidePhase.awaitingConfirmation => AppStrings.g('ui.guided_spread_hud.confirm_the_card'),
+      GuidePhase.interpretingCard => AppStrings.g('ui.guided_spread_hud.interpreting_the_card'),
+      GuidePhase.awaitingUser => AppStrings.g('ui.guided_spread_hud.your_turn'),
+      GuidePhase.awaitingNextCard => AppStrings.g('ui.guided_spread_hud.ready_for_the_next_card'),
+      GuidePhase.spreadCompleted => AppStrings.g('ui.guided_spread_hud.spread_complete'),
+      GuidePhase.paused => AppStrings.g('common.paused'),
+      GuidePhase.completed => AppStrings.g('ui.guided_spread_hud.reading_complete'),
+      GuidePhase.cancelled => AppStrings.g('common.cancelled'),
+      GuidePhase.error => AppStrings.g('ui.guided_spread_hud.something_went_wrong'),
     };
 
 /// The primary action label for a phase, or null when there is no primary
 /// action yet (the reader is still moving cards). Drives the Confirm / Next /
 /// Resume button so the button and the FSM can never disagree.
 String? guidedPrimaryAction(GuidePhase phase) => switch (phase) {
-      GuidePhase.awaitingConfirmation => 'CONFIRM',
-      GuidePhase.awaitingNextCard => 'NEXT',
-      GuidePhase.paused => 'RESUME',
+      GuidePhase.awaitingConfirmation => AppStrings.g('common.confirm'),
+      GuidePhase.awaitingNextCard => AppStrings.g('common.next'),
+      GuidePhase.paused => AppStrings.g('common.resume'),
       _ => null,
     };
 
@@ -156,7 +157,7 @@ class GuidedSpreadHud extends StatelessWidget {
             children: [
               TaroGlassIconButton(
                 icon: flashOn ? Icons.flash_on : Icons.flash_off_outlined,
-                tooltip: flashOn ? 'Turn flash off' : 'Turn flash on',
+                tooltip: flashOn ? AppStrings.g('ui.guided_spread_hud.turn_flash_off') : AppStrings.g('ui.guided_spread_hud.turn_flash_on'),
                 active: flashOn,
                 size: 44,
                 iconSize: 18,
@@ -168,7 +169,7 @@ class GuidedSpreadHud extends StatelessWidget {
               const SizedBox(width: 6),
               TaroGlassIconButton(
                 icon: isPaused ? Icons.play_arrow : Icons.pause,
-                tooltip: isPaused ? 'Resume reading' : 'Pause reading',
+                tooltip: isPaused ? AppStrings.g('ui.guided_spread_hud.resume_reading') : AppStrings.g('ui.guided_spread_hud.pause_reading'),
                 active: isPaused,
                 size: 44,
                 iconSize: 18,
@@ -180,7 +181,7 @@ class GuidedSpreadHud extends StatelessWidget {
               const SizedBox(width: 6),
               TaroGlassIconButton(
                 icon: Icons.close,
-                tooltip: 'Exit guided spread',
+                tooltip: AppStrings.g('ui.guided_spread_hud.exit_guided_spread'),
                 size: 44,
                 iconSize: 18,
                 tint: TaroColors.hudScrim,
@@ -203,7 +204,7 @@ class GuidedSpreadHud extends StatelessWidget {
               ],
               TaroGlassIconButton(
                 icon: Icons.chat_bubble_outline,
-                tooltip: 'Open full chat',
+                tooltip: AppStrings.g('ui.guided_spread_hud.open_full_chat'),
                 size: 44,
                 iconSize: 18,
                 tint: TaroColors.hudScrim,

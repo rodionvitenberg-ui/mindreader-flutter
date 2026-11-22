@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart' hide Element;
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/models/dealt_card_slot.dart';
@@ -12,6 +15,7 @@ import '../../state/deck_pack_controller.dart';
 import '../digital_table/widgets/lenormand_card_3d_widget.dart';
 import '../digital_table/widgets/rune_stone_3d_widget.dart';
 import '../digital_table/widgets/tarot_card_3d_widget.dart';
+import '../../core/l10n/app_strings.dart';
 
 /// Interactive inspector for one piece of ANY divination system (Phase G5:
 /// migrated to [TaroGlassSheet] + [TaroGlassPanel] + [TaroGlassSegmentedControl]).
@@ -43,7 +47,7 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
     final card = widget.card;
     final isRune = card.system == DivinationSystem.runes;
     final isLenormand = card.system == DivinationSystem.lenormand;
-    final reverseLabel = isRune ? 'MERKSTAVE' : 'REVERSED';
+    final reverseLabel = isRune ? AppStrings.g('common.merkstave') : AppStrings.g('common.reversedLabel');
 
     return TaroGlassSheet(
       padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
@@ -104,7 +108,7 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                   ..setEntry(3, 2, 0.0012)
                   ..rotateX(_tilt.dy * 0.01)
                   ..rotateY(_tilt.dx * 0.015),
-                child: _Preview(card: card),
+                child: _Preview(card: card, reversed: _reversed),
               ),
             ),
           ),
@@ -112,14 +116,17 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
           if (_canReverse)
             TaroGlassSegmentedControl<bool>(
               segments: [
-                const TaroGlassSegment<bool>(value: false, label: 'UPRIGHT'),
+                TaroGlassSegment<bool>(value: false, label: AppStrings.g('common.uprightLabel')),
                 TaroGlassSegment<bool>(value: true, label: reverseLabel),
               ],
               value: _reversed,
-              onChanged: (v) => setState(() => _reversed = v),
+              onChanged: (v) {
+                HapticFeedback.selectionClick();
+                setState(() => _reversed = v);
+              },
             )
           else
-            const TaroGlassChip(label: 'UPRIGHT', selected: true, expanded: true),
+            TaroGlassChip(label: AppStrings.g('common.uprightLabel'), selected: true, expanded: true),
           const SizedBox(height: 14),
           TaroGlassPanel(
             radius: 18,
@@ -139,7 +146,7 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'KEYWORDS',
+                  AppStrings.g('common.keywords'),
                   style: AppTypography.label(
                     fontSize: 9,
                     letterSpacing: 1.1,
@@ -158,7 +165,7 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                 if (isLenormand) ...[
                   const SizedBox(height: 14),
                   Text(
-                    'COMBINATIONS',
+                    AppStrings.g('common.combinations'),
                     style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 1.1,
@@ -183,7 +190,7 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                 if (isRune) ...[
                   const SizedBox(height: 14),
                   Text(
-                    'LORE',
+                    AppStrings.g('common.lore'),
                     style: AppTypography.label(
                       fontSize: 9,
                       letterSpacing: 1.1,
@@ -202,8 +209,7 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
                   ),
                 ],
                 const SizedBox(height: 14),
-                Text(
-                  'THE QUESTION TO SIT WITH',
+                Text(AppStrings.g('ui.card_detail_sheet.the_question_to_sit_with'),
                   style: AppTypography.label(
                     fontSize: 9,
                     letterSpacing: 1.1,
@@ -230,22 +236,34 @@ class _CardDetailSheetState extends State<CardDetailSheet> {
 }
 
 /// The tiltable preview — each system renders its own artifact (non-glass).
+/// Switching UPRIGHT ↔ REVERSED / MERKSTAVE smoothly rotates the tarot card
+/// (or carved rune glyph inside the volumetric stone) by 180°.
 class _Preview extends StatelessWidget {
-  const _Preview({required this.card});
+  const _Preview({required this.card, required this.reversed});
 
   final DivinationCard card;
+  final bool reversed;
 
   @override
   Widget build(BuildContext context) {
     return switch (card.system) {
-      DivinationSystem.tarot => TarotCard3DWidget(
-          card: (card as TarotDivinationCard).card,
-          isReversed: false,
-          state: SlotState.faceUp,
-          width: 170,
-          height: 283,
-          tilt: false,
-          interactive: false,
+      DivinationSystem.tarot => TweenAnimationBuilder<double>(
+          tween: Tween<double>(end: reversed ? math.pi : 0.0),
+          duration: const Duration(milliseconds: 420),
+          curve: Curves.easeInOutCubic,
+          builder: (context, angle, child) => Transform.rotate(
+            angle: angle,
+            child: child,
+          ),
+          child: TarotCard3DWidget(
+            card: (card as TarotDivinationCard).card,
+            isReversed: false,
+            state: SlotState.faceUp,
+            width: 170,
+            height: 283,
+            tilt: false,
+            interactive: false,
+          ),
         ),
       DivinationSystem.lenormand => LenormandCard3DWidget(
           card: (card as LenormandDivinationCard).card,
@@ -256,18 +274,30 @@ class _Preview extends StatelessWidget {
           tilt: false,
           interactive: false,
         ),
-      DivinationSystem.runes => SizedBox(
-          width: 170,
-          height: 200,
-          child: CustomPaint(
-            painter: RuneStonePainter(
-              stone: (card as RuneDivinationCard).stone,
-              pack: context.watch<DeckPackController>().activeRunePack,
-              faceUp: true,
-              ignite: 1,
-              seed: card.id + 9,
-            ),
-          ),
+      DivinationSystem.runes => TweenAnimationBuilder<double>(
+          tween: Tween<double>(end: reversed ? math.pi : 0.0),
+          duration: const Duration(milliseconds: 420),
+          curve: Curves.easeInOutCubic,
+          builder: (context, angle, _) {
+            final lift = math.sin(angle).abs();
+            return Transform.scale(
+              scale: 1.0 + 0.035 * lift,
+              child: SizedBox(
+                width: 176,
+                height: 206,
+                child: RuneStoneView(
+                  stone: (card as RuneDivinationCard).stone,
+                  pack: context.watch<DeckPackController>().activeRunePack,
+                  faceUp: true,
+                  ignite: 1,
+                  merkstave: reversed,
+                  glyphRotation: angle,
+                  lift: lift * 0.5,
+                  seed: card.id + 9,
+                ),
+              ),
+            );
+          },
         ),
     };
   }

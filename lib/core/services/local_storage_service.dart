@@ -8,7 +8,6 @@ import '../models/reading_mode.dart';
 /// single store of truth.
 class LocalStorageService {
   static const _historyKey = 'spread_history';
-  static const _maxEntries = 50;
 
   static const _deckPromoUrlsKey = 'deck_promo_urls_v1';
   static const _deckIdKey = 'active_deck_id';
@@ -19,7 +18,6 @@ class LocalStorageService {
   static const _ritualEveningKey = 'ritual_evening_minutes';
   static const _readingDaysKey = 'reading_days';
   static const _sessionsKey = 'spread_sessions_v2';
-  static const _maxSessions = 100;
 
   static const _astralProfilesKey = 'astral_profiles';
   static const _astralTotalChartsKey = 'astral_total_charts_generated';
@@ -35,16 +33,57 @@ class LocalStorageService {
   // Digital Table view mode (Iteration 4): SPREAD VIEW is the default.
   static const _tableSpreadOverviewKey = 'table_view_spread';
 
+  // Guided Reading memory (G1): the reader's detail level + every conceptual
+  // lesson the mentor has already taught. Device-local, like everything else.
+  static const _guideDetailKey = 'guide_detail';
+  static const _guidedSeenKey = 'guided_seen_v1';
+
+  // Onboarding (G3): the intro runs once per install until replayed.
+  static const _onboardingCompletedKey = 'onboarding_completed_v1';
+
   // Camera reading mode (Phase 1): the last physical mode chosen in Camera.
   static const _cameraModeKey = 'camera_mode';
 
   static const _userProfileKey = 'user_profile_v1';
+  static const _backendAuthSessionKey = 'backend_auth_session_v1';
+  static const _installedStorePacksKey = 'installed_store_packs_v1';
+  static const _storeOwnedIdsKey = 'store_owned_ids_v1';
 
   Future<bool?> loadReadingAid(String aid) async =>
       (await SharedPreferences.getInstance()).getBool('reading_aid.$aid');
 
   Future<void> saveReadingAid(String aid, bool value) async {
     await (await SharedPreferences.getInstance()).setBool('reading_aid.$aid', value);
+  }
+
+  Future<String?> loadGuideDetail() async =>
+      (await SharedPreferences.getInstance()).getString(_guideDetailKey);
+
+  Future<void> saveGuideDetail(String detail) async {
+    await (await SharedPreferences.getInstance()).setString(_guideDetailKey, detail);
+  }
+
+  /// Every conceptual lesson the mentor has already delivered. Missing storage
+  /// reads as "nothing learned yet" — never as an error.
+  Future<Set<String>> loadGuidedSeen() async {
+    final ids = (await SharedPreferences.getInstance())
+            .getStringList(_guidedSeenKey) ??
+        const <String>[];
+    return ids.toSet();
+  }
+
+  Future<void> saveGuidedSeen(Set<String> ids) async {
+    await (await SharedPreferences.getInstance())
+        .setStringList(_guidedSeenKey, ids.toList()..sort());
+  }
+
+  /// Null → the intro has never been finished on this device.
+  Future<bool?> loadOnboardingCompleted() async =>
+      (await SharedPreferences.getInstance()).getBool(_onboardingCompletedKey);
+
+  Future<void> saveOnboardingCompleted(bool completed) async {
+    await (await SharedPreferences.getInstance())
+        .setBool(_onboardingCompletedKey, completed);
   }
 
   Future<Map<String, bool>> loadSettingsSections() async {
@@ -68,14 +107,11 @@ class LocalStorageService {
     return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
   }
 
-  /// Newest first, capped at [_maxEntries].
+  /// Newest first, unlimited local storage.
   Future<void> saveSpread(Map<String, dynamic> entry) async {
     final prefs = await SharedPreferences.getInstance();
     final history = await loadHistory();
     history.insert(0, entry);
-    if (history.length > _maxEntries) {
-      history.removeRange(_maxEntries, history.length);
-    }
     await prefs.setString(_historyKey, jsonEncode(history));
   }
 
@@ -91,15 +127,13 @@ class LocalStorageService {
   }
 
   /// Upserts one session by its timestamp (identity), newest first.
+  /// Unlimited local storage — older sessions are never truncated.
   Future<void> upsertSession(Map<String, dynamic> entry) async {
     final prefs = await SharedPreferences.getInstance();
     final sessions = await loadSessions();
     final ts = entry['timestamp'] as String?;
     sessions.removeWhere((s) => s['timestamp'] == ts);
     sessions.insert(0, entry);
-    if (sessions.length > _maxSessions) {
-      sessions.removeRange(_maxSessions, sessions.length);
-    }
     await prefs.setString(_sessionsKey, jsonEncode(sessions));
   }
 
@@ -130,6 +164,58 @@ class LocalStorageService {
   Future<void> saveDeckPromoUrls(Map<String, String> urls) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_deckPromoUrlsKey, jsonEncode(urls));
+  }
+
+  Future<Map<String, dynamic>?> loadBackendAuthSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_backendAuthSessionKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveBackendAuthSession(Map<String, dynamic>? session) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (session == null) {
+      await prefs.remove(_backendAuthSessionKey);
+    } else {
+      await prefs.setString(_backendAuthSessionKey, jsonEncode(session));
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> loadInstalledStorePacks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_installedStorePacksKey);
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return const [];
+      return [
+        for (final item in decoded)
+          if (item is Map) Map<String, dynamic>.from(item),
+      ];
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> saveInstalledStorePacks(List<Map<String, dynamic>> packs) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_installedStorePacksKey, jsonEncode(packs));
+  }
+
+  Future<Set<String>> loadStoreOwnedIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    return (prefs.getStringList(_storeOwnedIdsKey) ?? const <String>[]).toSet();
+  }
+
+  Future<void> saveStoreOwnedIds(Set<String> ids) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_storeOwnedIdsKey, ids.toList()..sort());
   }
 
   Future<String?> loadDeckId() async {

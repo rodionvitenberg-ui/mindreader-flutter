@@ -10,6 +10,7 @@ import '../../core/theme/element_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import 'widgets/astral_gradient_button.dart';
+import '../../core/l10n/app_strings.dart';
 
 /// ASTRAL Phase 4 — 2-profile synastry: Moon compatibility, the combined
 /// elemental balance and the tightest cross-chart aspects, closed with a
@@ -76,7 +77,7 @@ class SynastrySummarySheet extends StatelessWidget {
             const SizedBox(height: 12),
             _moonCard(moonA, moonB),
             const SizedBox(height: 18),
-            _label('ELEMENTAL BALANCE'),
+            _label(AppStrings.g('astral.elementalBalance')),
             const SizedBox(height: 8),
             for (final e in Element.values)
               _ElementBar(
@@ -85,12 +86,11 @@ class SynastrySummarySheet extends StatelessWidget {
                 total: total,
               ),
             const SizedBox(height: 14),
-            _label('CROSS-CHART ASPECTS'),
+            _label(AppStrings.g('astral.crossChartAspects')),
             const SizedBox(height: 8),
             if (cross.isEmpty)
               Text(
-                'No tight cross-chart aspects — this bond rests on '
-                'temperament, not friction.',
+                AppStrings.g('astral.noTightAspects'),
                 style: AppTypography.body(
                   fontSize: 12,
                   height: 1.4,
@@ -102,7 +102,7 @@ class SynastrySummarySheet extends StatelessWidget {
                 _CrossAspectRow(aspect: aspect),
             const SizedBox(height: 18),
             AstralGradientButton(
-              label: '✦ DISCUSS THIS SYNASTRY WITH THE ORACLE',
+              label: AppStrings.g('ui.synastry_summary_sheet.discuss_this_synastry_with_the_oracle'),
               onTap: () => _send(context),
             ),
           ],
@@ -119,8 +119,7 @@ class SynastrySummarySheet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'SYNASTRY · 2 PROFILES',
+              Text(AppStrings.g('ui.synastry_summary_sheet.synastry_2_profiles'),
                 style: AppTypography.label(
                   fontSize: 9,
                   letterSpacing: 1.0,
@@ -150,10 +149,13 @@ class SynastrySummarySheet extends StatelessWidget {
   Widget _moonCard(NatalPlanetPosition moonA, NatalPlanetPosition moonB) {
     final same = moonA.sign.element == moonB.sign.element;
     final line = same
-        ? 'Both Moons share the ${moonA.sign.element.label} element — '
-            'emotional rhythms match easily.'
-        : 'Moons in ${moonA.sign.title} and ${moonB.sign.title} need '
-            'different things — the bond asks for translation.';
+        ? AppStrings.g('astral.moons.same', {
+            'element': moonA.sign.element.label,
+          })
+        : AppStrings.g('astral.moons.different', {
+            'a': moonA.sign.title,
+            'b': moonB.sign.title,
+          });
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -186,7 +188,7 @@ class SynastrySummarySheet extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            'MOON · ${name.toUpperCase()}',
+            AppStrings.g('astral.moonOf', {'name': name.toUpperCase()}),
             style: AppTypography.label(
               fontSize: 9,
               letterSpacing: 0.7,

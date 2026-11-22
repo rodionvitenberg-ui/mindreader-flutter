@@ -315,7 +315,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TaroGlassSheet), findsOneWidget);
-      expect(find.byType(TaroGlassSegmentedControl<AppLanguage>), findsOneWidget);
+      expect(find.byKey(const ValueKey('language-ru')), findsOneWidget);
       expect(find.byType(TaroGlassPanel), findsOneWidget);
 
       await tester.tap(find.text('РУССКИЙ'));

@@ -7,12 +7,14 @@ import 'package:provider/provider.dart';
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/models/tarot_deck_pack.dart';
+import '../../../core/services/pack_asset_store.dart';
 import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/card_motion.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/deck_pack_controller.dart';
 import 'foil_glint.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// Procedural card back — seven bespoke patterns (one per deck style), no
 /// image assets required. Palette follows the active deck pack, or the
@@ -392,22 +394,35 @@ class CardBack extends StatelessWidget {
         secondaryOverride: secondaryOverride,
       ),
     );
-    // Real deck backs (pack.backAsset → back.jpg) replace the procedural
-    // pattern when the asset exists; zero-crash fallback chain to painter.
+    // Store-downloaded deck back (if provided) takes precedence; then bundled
+    // `pack.backAsset` candidates; finally procedural CardBackPainter fallback.
+    final storeKey = pack?.storeKey;
+    final storeBackPath = pack?.storeBackPath;
+    final storeBack = (storeKey != null && storeBackPath != null)
+        ? PackAssetStore.instance.imageProviderFor(storeKey, storeBackPath)
+        : null;
     final candidates = pack?.backAssetCandidates;
-    Widget back() => candidates == null
-        ? painter
-        : Image.asset(
-            candidates.first,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => candidates.length > 1
-                ? Image.asset(
-                    candidates[1],
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => painter,
-                  )
-                : painter,
-          );
+    Widget back() {
+      if (storeBack != null) {
+        return Image(
+          image: storeBack,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => painter,
+        );
+      }
+      if (candidates == null) return painter;
+      return Image.asset(
+        candidates.first,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => candidates.length > 1
+            ? Image.asset(
+                candidates[1],
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => painter,
+              )
+            : painter,
+      );
+    }
     return RepaintBoundary(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(width * 0.06),
@@ -685,8 +700,16 @@ class _CardFace extends StatelessWidget {
   /// → active pack candidates (`<id>.jpg/png`, `00.jpg`, RWS names) → the
   /// bespoke procedural face in the pack's palette.
   Widget _faceArt({double? clipRadius}) {
-    final candidates = pack.cardAssetCandidates(card);
     Widget fallback() => _TypographicFace(card: card, width: width, pack: pack);
+    if (pack.isStorePack) {
+      final relPath = pack.storeCardPathFor(card);
+      final provider = relPath == null
+          ? null
+          : PackAssetStore.instance.imageProviderFor(pack.storeKey!, relPath);
+      if (provider == null) return fallback();
+      return _framedProviderArtwork(provider, fallback, clipRadius);
+    }
+    final candidates = pack.cardAssetCandidates(card);
     Widget build(int i) => i >= candidates.length
         ? fallback()
         : _framedArtwork(candidates[i], () => build(i + 1), clipRadius);
@@ -694,6 +717,44 @@ class _CardFace extends StatelessWidget {
       'assets/cards/${card.id}.png',
       fit: BoxFit.contain,
       errorBuilder: (_, _, _) => build(0),
+    );
+  }
+
+  Widget _framedProviderArtwork(
+    ImageProvider<Object> provider,
+    Widget Function() onError,
+    double? clipRadius,
+  ) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(clipRadius ?? width * 0.035),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image(
+            image: provider,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => onError(),
+          ),
+          IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  radius: 1.05,
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.38),
+                  ],
+                  stops: const [0.62, 0.86, 1.0],
+                ),
+                border: Border.all(
+                  color: Color(pack.faceAccentArgb).withValues(alpha: 0.35),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -805,7 +866,7 @@ class _CardFace extends StatelessWidget {
             Expanded(child: _faceArt()),
             Text(
               card.arcana == Arcana.major
-                  ? 'MAJOR ARCANA'
+                  ? AppStrings.g('common.majorArcana')
                   : '${card.suit!.label.toUpperCase()} · ${card.element.label.toUpperCase()}',
               style: AppTypography.label(
                 fontSize: width * 0.05,

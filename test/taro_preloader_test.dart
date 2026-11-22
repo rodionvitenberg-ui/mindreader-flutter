@@ -62,7 +62,8 @@ void main() {
         expect(tappedUnderlying, isFalse);
 
         // While app is loading, branch sprouts continuously (no empty stall)
-        // and stays below 1.0 until ready completes.
+        // after frame 1 is presented and stays below 1.0 until ready completes.
+        await tester.pump(); // deliver post-frame start
         await tester.pump(const Duration(milliseconds: 500));
         final painterMid = tester
             .widget<CustomPaint>(
@@ -76,9 +77,9 @@ void main() {
         // App finishes loading -> branch completes to 1.0 -> fades out.
         ready.complete();
         await tester.pump(); // deliver future completion
-        await tester.pump(const Duration(milliseconds: 600)); // finish sweep
+        await tester.pump(const Duration(milliseconds: 900)); // finish sweep
         await tester.pump(); // start fade
-        await tester.pump(const Duration(milliseconds: 550)); // fade-out
+        await tester.pump(const Duration(milliseconds: 520)); // fade-out
         await tester.pump();
 
         expect(completed, isTrue);
@@ -87,6 +88,47 @@ void main() {
         // Underlying UI is now interactive.
         await tester.tap(find.text('UNDERLYING'));
         expect(tappedUnderlying, isTrue);
+      },
+    );
+
+    testWidgets(
+      'grows branch visibly even when ready is already completed on frame 1',
+      (tester) async {
+        var completed = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: TaroPreloader(
+              ready: Future<void>.value(),
+              onCompleted: () => completed = true,
+            ),
+          ),
+        );
+
+        // Immediately after frame 1 the branch starts from 0 and has not disappeared.
+        expect(find.byKey(const ValueKey('taro-preloader-ring')), findsOneWidget);
+        expect(completed, isFalse);
+
+        // Halfway through the finish sweep, branches are actively growing around the logo.
+        await tester.pump(); // deliver post-frame start
+        await tester.pump(const Duration(milliseconds: 550));
+        final painterMid = tester
+            .widget<CustomPaint>(
+              find.byKey(const ValueKey('taro-preloader-ring')),
+            )
+            .painter! as PreloaderBranchRingPainter;
+        expect(painterMid.progress, greaterThan(0.25));
+        expect(painterMid.progress, lessThan(0.95));
+        expect(completed, isFalse);
+
+        // Sweep completes -> fades out cleanly.
+        await tester.pump(const Duration(milliseconds: 650));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 520));
+        await tester.pump();
+
+        expect(completed, isTrue);
+        expect(find.byKey(const ValueKey('taro-preloader-ring')), findsNothing);
       },
     );
 
@@ -156,9 +198,9 @@ void main() {
 
         warmup.complete();
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 650));
+        await tester.pump(const Duration(milliseconds: 1150));
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 550));
+        await tester.pump(const Duration(milliseconds: 520));
         await tester.pump();
 
         expect(completed, isTrue);

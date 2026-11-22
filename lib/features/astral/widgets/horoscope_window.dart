@@ -10,6 +10,7 @@ import 'daily_horoscope_card.dart';
 import 'horoscope_blocks.dart';
 import 'zodiac_forecast_card.dart';
 import '../astral_copy.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// ASTRAL window 1 — the Horoscope: the active profile's personal daily
 /// transit report, or a quick whole-sign solar forecast picked at the top.
@@ -95,7 +96,7 @@ class HoroscopeWindow extends StatelessWidget {
           AstralGradientButton(
             label: context.astralRussian
                 ? context.astralText('discuss')
-                : '✦ DISCUSS HOROSCOPE WITH ORACLE',
+                : AppStrings.g('astral.discussHoroscope'),
             onTap: () => onDiscuss(null),
           ),
         ] else if (forecast != null) ...[
@@ -104,7 +105,7 @@ class HoroscopeWindow extends StatelessWidget {
           AstralGradientButton(
             label: context.astralRussian
                 ? context.astralText('discuss')
-                : '✦ DISCUSS HOROSCOPE WITH ORACLE',
+                : AppStrings.g('astral.discussHoroscope'),
             onTap: () => onDiscuss(null),
           ),
         ] else
@@ -237,8 +238,7 @@ class _NoHoroscope extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: TaroColors.border),
       ),
-      child: Text(
-        'No horoscope yet — create a natal profile or pick a sign above.',
+      child: Text(AppStrings.g('ui.horoscope_window.no_horoscope_yet_create_a_natal_profile_or_pick_'),
         style: AppTypography.body(
           fontSize: 12,
           height: 1.4,

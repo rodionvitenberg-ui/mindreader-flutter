@@ -85,3 +85,44 @@ class AdminTests(TestCase):
         promo.refresh_from_db()
         self.assertTrue(bool(promo.image))
         self.assertEqual(len(promo.sha256), 64)
+
+    def test_operator_builds_package_from_raw_zip_in_admin(self):
+        from zipfile import ZipFile
+
+        temp = self.enterContext(TemporaryDirectory())
+        self.enterContext(override_settings(MEDIA_ROOT=temp))
+        from apps.catalog.models import Deck
+
+        deck = Deck.objects.create(
+            slug="birch-admin-test",
+            title="Birch Admin Test",
+            system="runes",
+            description="Wooden runes uploaded via raw ZIP",
+            license="Test",
+            distribution_verified=True,
+            commercial_rights=True,
+            price_minor=0,
+        )
+        raw_buf = io.BytesIO()
+        with ZipFile(raw_buf, "w") as archive:
+            for i in range(5):
+                img = io.BytesIO()
+                Image.new("RGBA", (64, 64), color=(58, 43, 34, 255)).save(img, "WEBP")
+                archive.writestr(f"birch/stone_{i}.webp", img.getvalue())
+        upload = SimpleUploadedFile("birch.zip", raw_buf.getvalue(), content_type="application/zip")
+        response = self.client.post(
+            reverse("admin:catalog_deck_upload_raw_package", args=[deck.pk]),
+            {
+                "version": "1.0.0",
+                "min_app_version": "0.0.0",
+                "raw_zip": upload,
+                "published": "on",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        ver = deck.versions.get()
+        self.assertEqual(ver.card_count, 24)
+        self.assertFalse(ver.incomplete)
+        self.assertTrue(ver.published)
+        self.assertEqual(ver.assets.filter(kind="stone").count(), 5)
+        self.assertEqual(ver.assets.filter(kind="cover").count(), 1)

@@ -93,14 +93,20 @@ void main() {
       }
     });
 
-    test('3 built-in stone sets are registered', () {
-      expect(runePacksRegistry.length, 3);
+    test('4 built-in volumetric stone sets are registered (charred_birch lives in the store)', () {
+      expect(runePacksRegistry.length, 4);
       for (final p in runePacksRegistry) {
         expect(p.assetFolder, startsWith('assets/runes/'));
+        expect(p.stoneVariantCount, 5);
+        expect(p.stoneBlankAsset(0), endsWith('stone_0.webp'));
+        final variants = {for (var i = 0; i < 24; i++) p.variantIndexFor(i)};
+        expect(variants, {0, 1, 2, 3, 4});
       }
       expect(runePackById('obsidian_lavender'), isNotNull);
       expect(runePackById('nordic_bone'), isNotNull);
       expect(runePackById('blood_jasper'), isNotNull);
+      expect(runePackById('moss_agate'), isNotNull);
+      expect(runePackById('charred_birch'), isNull);
       expect(runePackById('nope'), isNull);
     });
   });

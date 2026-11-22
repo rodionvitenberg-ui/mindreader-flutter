@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// Horizontal profile switcher: saved natal charts as selectable pills plus
 /// the new-chart control (locked behind ASTRAL PRO once the free tier is
@@ -119,7 +119,7 @@ class _AddPill extends StatelessWidget {
           border: Border.all(color: TaroColors.border),
         ),
         child: Text(
-          '+ ${context.astralRussian ? 'НОВАЯ КАРТА' : 'NEW CHART'}${locked ? ' · PRO' : ''}',
+          '+ ${AppStrings.g('ui.astral_astral_profile_bar.new_chart')}${locked ? ' · PRO' : ''}',
           style: AppTypography.label(
             fontSize: 9,
             letterSpacing: 0.8,

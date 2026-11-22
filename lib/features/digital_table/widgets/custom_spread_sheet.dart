@@ -212,7 +212,7 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
         listenOptions: SpeechListenOptions(
           listenMode: ListenMode.dictation,
           cancelOnError: true,
-          localeId: lang == AppLanguage.ru ? 'ru_RU' : 'en_US',
+          localeId: lang == AppLanguage.ru ? AppStrings.g('ui.custom_spread_sheet.ru_ru') : AppStrings.g('ui.custom_spread_sheet.en_us'),
         ),
         onResult: (result) {
           if (!_isCurrentSpeech(request)) return;
@@ -419,13 +419,11 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
                 effectiveCount <= 5)
               SwitchListTile.adaptive(
                 title: Text(
+                  AppStrings.t(
+                  lang,
                   effectiveCount == 5
-                      ? (lang == AppLanguage.en
-                            ? 'Read as a five-card elemental line'
-                            : 'Читать как стихийный ряд из пяти карт')
-                      : (lang == AppLanguage.en
-                            ? 'Compare elements of successive positions'
-                            : 'Сравнивать стихии последовательных позиций'),
+                      ? AppStrings.g('ui.custom_spread_sheet.table_customelementalline') : AppStrings.g('ui.custom_spread_sheet.table_customcompareelements'),
+                ),
                 ),
                 value: _compareNeighbors,
                 onChanged: (v) => setState(() => _compareNeighbors = v),

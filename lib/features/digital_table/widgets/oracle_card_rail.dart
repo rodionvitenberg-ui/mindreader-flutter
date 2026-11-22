@@ -10,6 +10,7 @@ import '../../../design_system/taro.dart';
 import '../../../state/spread_controller.dart';
 import 'shuffle_physics.dart';
 import 'slotted_divination_card.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// The rail and the scrollable dialogue share only the message area's width.
 class OracleMessageViewport extends StatefulWidget {
@@ -90,7 +91,7 @@ class _OracleMessageViewportState extends State<OracleMessageViewport> {
   }
 
   Widget _buildRail(BuildContext context) {
-    final label = _expanded ? 'Hide reading cards' : 'Show reading cards';
+    final label = _expanded ? AppStrings.g('ui.oracle_card_rail.hide_reading_cards') : AppStrings.g('ui.oracle_card_rail.show_reading_cards');
     final handle = Align(
       alignment: Alignment.centerLeft,
       child: Semantics(
@@ -141,7 +142,7 @@ class _OracleMessageViewportState extends State<OracleMessageViewport> {
                     itemBuilder: (context, index) {
                       final slot = slots[index];
                       final faceUp = slot.state == SlotState.faceUp;
-                      final name = faceUp ? slot.card!.name : 'Face-down card';
+                      final name = faceUp ? slot.card!.name : AppStrings.g('table.faceDownCard');
                       final description = faceUp
                           ? '$name, ${orientationWord(slot)}'
                           : name;

@@ -5,6 +5,7 @@ import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/ritual_notification_service.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// Daily ritual settings: enable/disable local reminders, pick the morning
 /// anchor (09:00) and evening reflection (22:00) times, and see the current
@@ -127,8 +128,7 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(_enabled
-            ? 'Daily ritual reminders set — all local, no server.'
-            : 'Ritual reminders disabled.'),
+            ? AppStrings.g('ui.ritual_settings_sheet.daily_ritual_reminders_set_all_local_no_server') : AppStrings.g('ui.ritual_settings_sheet.ritual_reminders_disabled')),
       ),
     );
     if (!widget.inline) Navigator.of(context).pop();
@@ -149,12 +149,11 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (!widget.inline) ...[
-          Text('DAILY RITUAL', style: Theme.of(context).textTheme.displayMedium),
+          Text(AppStrings.g('ui.ritual_settings_sheet.daily_ritual'), style: Theme.of(context).textTheme.displayMedium),
           const SizedBox(height: 4),
         ],
         Text(
-          'LOCAL REMINDERS · ZERO SERVER RETENTION · '
-          '$_streak-DAY STREAK',
+          AppStrings.g('ritual.retentionLine', {'streak': _streak}),
           style: AppTypography.label(
             fontSize: 9,
             letterSpacing: 1.0,
@@ -179,8 +178,8 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
           const SizedBox(height: 14),
           _TimeTile(
             icon: Icons.wb_twilight_outlined,
-            label: 'MORNING ANCHOR · 09:00',
-            hint: 'Draw your Daily Anchor card.',
+            label: AppStrings.g('ui.ritual_settings_sheet.morning_anchor_09_00'),
+            hint: AppStrings.g('ritual.morningHint'),
             time: _fmt(_morning),
             enabled: _enabled,
             onTap: () => _pickTime(morning: true),
@@ -188,8 +187,8 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
           const SizedBox(height: 10),
           _TimeTile(
             icon: Icons.nightlight_outlined,
-            label: 'EVENING REFLECTION · 22:00',
-            hint: 'Ground your thoughts before sleep.',
+            label: AppStrings.g('ui.ritual_settings_sheet.evening_reflection_22_00'),
+            hint: AppStrings.g('ritual.eveningHint'),
             time: _fmt(_evening),
             enabled: _enabled,
             onTap: () => _pickTime(morning: false),
@@ -215,7 +214,7 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '$_streak-DAY READING STREAK',
+                    AppStrings.g('ritual.streak', {'streak': _streak}),
                     style: AppTypography.label(
                       fontSize: 10,
                       letterSpacing: 0.9,
@@ -228,7 +227,7 @@ class _RitualSettingsSheetState extends State<RitualSettingsSheet> {
           ),
           const SizedBox(height: 16),
           TaroGlassButton(
-            label: _enabled ? 'SAVE RITUAL TIMES' : 'DISABLE RITUALS',
+            label: _enabled ? AppStrings.g('ui.ritual_settings_sheet.save_ritual_times') : AppStrings.g('ui.ritual_settings_sheet.disable_rituals'),
             variant: _enabled
                 ? TaroGlassButtonVariant.primary
                 : TaroGlassButtonVariant.secondary,
@@ -266,8 +265,7 @@ class _RitualSwitch extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              'DAILY RITUAL REMINDERS',
+            child: Text(AppStrings.g('ui.ritual_settings_sheet.daily_ritual_reminders'),
               style: AppTypography.label(
                 fontSize: 10,
                 letterSpacing: 0.8,
@@ -277,7 +275,7 @@ class _RitualSwitch extends StatelessWidget {
           ),
           TaroGlassToggle(
             value: value,
-            semanticLabel: 'DAILY RITUAL REMINDERS',
+            semanticLabel: AppStrings.g('ui.ritual_settings_sheet.daily_ritual_reminders'),
             onChanged: onChanged,
           ),
         ],

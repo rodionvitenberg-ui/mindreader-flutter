@@ -18,6 +18,8 @@ urlpatterns = [
     path("api/v1/auth/guest/", accounts.guest),
     path("api/v1/auth/email/start/", accounts.email_start),
     path("api/v1/auth/email/verify/", accounts.email_verify),
+    path("api/v1/auth/handoff/", accounts.handoff_create),
+    path("api/v1/auth/handoff/exchange/", accounts.handoff_exchange),
     path("api/v1/auth/logout/", accounts.logout),
     path("api/v1/account/me/", accounts.me),
 ]

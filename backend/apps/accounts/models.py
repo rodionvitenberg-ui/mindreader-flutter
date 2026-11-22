@@ -28,3 +28,13 @@ class EmailChallenge(models.Model):
     digest = models.CharField(max_length=64, unique=True, editable=False)
     expires_at = models.DateTimeField(db_index=True)
     used_at = models.DateTimeField(null=True, blank=True)
+
+
+class HandoffToken(models.Model):
+    """Short-lived single-use code to transfer a verified session to the web shop."""
+
+    principal = models.ForeignKey(Principal, on_delete=models.CASCADE, related_name="handoffs")
+    digest = models.CharField(max_length=64, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(db_index=True)
+    used_at = models.DateTimeField(null=True, blank=True)

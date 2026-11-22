@@ -13,6 +13,7 @@ import '../profile/widgets/profile_header.dart';
 import 'widgets/oracle_session_meta_bar.dart';
 import 'widgets/oracle_card_rail.dart';
 import 'widgets/reading_subject_toggle.dart';
+import '../../core/l10n/app_strings.dart';
 
 /// Preparation and conversation share the same Oracle session and header.
 class OracleChatPane extends StatefulWidget {
@@ -116,8 +117,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
             SnackBar(
               duration: const Duration(seconds: 3),
               backgroundColor: TaroColors.surface,
-              content: Text(
-                'Type your question in the input bar first, then tap +1 CARD.',
+              content: Text(AppStrings.g('ui.oracle_chat_pane.type_your_question_in_the_input_bar_first_then_t'),
                 style: AppTypography.body(fontSize: 13.5, color: Colors.white),
               ),
             ),
@@ -171,14 +171,14 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                 children: [
                   Flexible(
                     child: _ChatActionChip(
-                      label: '🃏 +1 CARD FOR MY QUESTION',
+                      label: AppStrings.g('ui.oracle_chat_pane.1_card_for_my_question'),
                       onTap: _onCustomClarifierQuestion,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Flexible(
                     child: _ChatActionChip(
-                      label: '📷 · CAMERA CLARIFIER',
+                      label: AppStrings.g('ui.oracle_chat_pane.camera_clarifier'),
                       onTap: widget.onScanClarifier,
                     ),
                   ),
@@ -200,15 +200,18 @@ class _OracleChatPaneState extends State<OracleChatPane> {
       children.add(
         _UserBubble(
           text:
-              'You asked: ${chapter.question} — pulled '
-              '${chapter.cardName}${chapter.isReversed ? ' (reversed)' : ''}',
+              AppStrings.g('table.youAskedPulled', {
+                'question': chapter.question,
+                'card':
+                    '${chapter.cardName}${chapter.isReversed ? ' ${AppStrings.g('common.reversed')}' : ''}',
+              }),
         ),
       );
       children.add(
         _OracleResponse(
           text: chapter.text,
           typing: chapter.generating,
-          header: chapter.generating ? null : 'CLARIFIER EXPANSION',
+          header: chapter.generating ? null : AppStrings.g('table.clarifierExpansion'),
         ),
       );
     }
@@ -236,7 +239,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
       }
     }
     if (session.generatingAnswer) {
-      children.add(_OracleResponse.typing('Thinking…'));
+      children.add(_OracleResponse.typing(AppStrings.g('common.thinking')));
     }
     return SingleChildScrollView(
       key: PageStorageKey(('oracle-messages', widget.readingKey)),
@@ -288,7 +291,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    ready ? 'YOUR SPREAD IS READY' : 'NO READING YET',
+                    ready ? AppStrings.g('ui.oracle_chat_pane.your_spread_is_ready') : AppStrings.g('ui.oracle_chat_pane.no_reading_yet'),
                     textAlign: TextAlign.center,
                     style: AppTypography.display(
                       fontSize: 22,
@@ -302,9 +305,12 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                     constraints: const BoxConstraints(maxWidth: 320),
                     child: Text(
                       ready
-                          ? 'Synthesize the spread and the Oracle will speak.'
-                          : 'Deal and flip your spread on the table, then come back — '
-                                'or just swipe left.',
+                          ? AppStrings.g(
+                              'ui.oracle_chat_pane.synthesize_the_spread_and_the_oracle_will_speak',
+                            )
+                          : AppStrings.g(
+                              'ui.oracle_chat_pane.deal_and_flip_empty',
+                            ),
                       textAlign: TextAlign.center,
                       style: AppTypography.body(
                         fontSize: 14.5,
@@ -320,6 +326,7 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                       child: IgnorePointer(
                         ignoring: waiting,
                         child: const TaroGlassLayer(
+                          useBackdropGroup: false,
                           child: ReadingSubjectToggle(),
                         ),
                       ),
@@ -330,19 +337,18 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                         padding: const EdgeInsets.only(bottom: 10),
                         child: Semantics(
                           liveRegion: true,
-                          child: const Text(
-                            'The Oracle could not finish this reading. Try again.',
+                          child: Text(AppStrings.g('ui.oracle_chat_pane.the_oracle_could_not_finish_this_reading_try_aga'),
                             textAlign: TextAlign.center,
                           ),
                         ),
                       ),
                     TaroGlassLayer(
+                      useBackdropGroup: false,
                       child: TaroGlassButton(
                         label: waiting
-                            ? 'CONNECTING TO THE ORACLE…'
+                            ? AppStrings.g('table.connectingOracle')
                             : widget.session.initialFailed
-                            ? 'RETRY SYNTHESIS'
-                            : '✦ SYNTHESIZE IN CHAT →',
+                            ? AppStrings.g('ui.oracle_chat_pane.retry_synthesis') : AppStrings.g('ui.oracle_chat_pane.synthesize_in_chat'),
                         loading: waiting,
                         variant: TaroGlassButtonVariant.primary,
                         onPressed: waiting ? null : widget.onSynthesize,
@@ -361,9 +367,9 @@ class _OracleChatPaneState extends State<OracleChatPane> {
 
 /// Gemini-style subtle sparkle header shared by Oracle answers and synthesis.
 class _OracleSpeakerHeader extends StatelessWidget {
-  const _OracleSpeakerHeader({this.label = 'ORACLE'});
+  const _OracleSpeakerHeader({this.label});
 
-  final String label;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -397,7 +403,7 @@ class _OracleSpeakerHeader extends StatelessWidget {
         const SizedBox(width: 8),
         Flexible(
           child: Text(
-            label,
+            label ?? AppStrings.g('common.oracle'),
             style: AppTypography.label(
               fontSize: 11,
               letterSpacing: 1.0,
@@ -474,7 +480,7 @@ class _OracleResponse extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _OracleSpeakerHeader(label: header ?? 'ORACLE'),
+          _OracleSpeakerHeader(label: header ?? AppStrings.g('common.oracle')),
           const SizedBox(height: 10),
           if (typing)
             TaroGlassProgress(label: '$text · · ·')
@@ -541,7 +547,7 @@ class _ClarifierSuggestions extends StatelessWidget {
         child: Align(
           alignment: Alignment.center,
           child: Text(
-            'MAXIMUM OF $maxCards CARDS REACHED · YOU CAN STILL CHAT',
+            AppStrings.g('table.maxCards', {'max': maxCards}),
             textAlign: TextAlign.center,
             style: AppTypography.label(
               fontSize: 10,
@@ -560,8 +566,7 @@ class _ClarifierSuggestions extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'WOULD YOU LIKE TO DRAW A +1 CLARIFIER CARD TO UNCOVER:',
+          Text(AppStrings.g('ui.oracle_chat_pane.would_you_like_to_draw_a_1_clarifier_card_to_unc'),
             style: AppTypography.label(
               fontSize: 10.5,
               letterSpacing: 0.8,
@@ -571,7 +576,10 @@ class _ClarifierSuggestions extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           for (final q in questions) ...[
-            _SuggestionCard(label: '🃏 +1 CARD: $q', onTap: () => onSelect(q)),
+            _SuggestionCard(
+              label: AppStrings.g('table.plusOneCard', {'question': q}),
+              onTap: () => onSelect(q),
+            ),
             const SizedBox(height: 8),
           ],
         ],
@@ -628,18 +636,18 @@ class _SynthesisResponse extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _OracleSpeakerHeader(label: 'ORACLE'),
+          _OracleSpeakerHeader(label: AppStrings.g('common.oracle')),
           const SizedBox(height: 14),
           _SynthesisSection(
-            title: '1 · CORE NARRATIVE SYNTHESIS',
+            title: AppStrings.g('ui.oracle_chat_pane.1_core_narrative_synthesis'),
             body: synthesis.narrative,
           ),
           _SynthesisSection(
-            title: '2 · ELEMENTAL ALCHEMY',
+            title: AppStrings.g('ui.oracle_chat_pane.2_elemental_alchemy'),
             body: synthesis.elementalAlchemy,
           ),
           _SynthesisSection(
-            title: '3 · ACTIONABLE VERDICT',
+            title: AppStrings.g('ui.oracle_chat_pane.3_actionable_verdict'),
             body: synthesis.verdict,
           ),
           Container(
@@ -656,7 +664,7 @@ class _SynthesisResponse extends StatelessWidget {
               ),
             ),
             child: Text(
-              'The question to sit with: ${synthesis.followUp}',
+              AppStrings.g('table.questionToSit', {'question': synthesis.followUp}),
               style: AppTypography.chatOracle(
                 fontSize: 14.5,
                 height: 1.5,

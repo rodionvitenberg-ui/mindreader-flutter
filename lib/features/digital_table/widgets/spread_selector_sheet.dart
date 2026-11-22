@@ -9,6 +9,7 @@ import '../../../core/models/spread_type.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
 import '../../../state/spread_controller.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// Compact spread switcher opened from the spread picker when needed (Phase G4:
 /// migrated to [TaroGlassSheet] + Tarot Tree tokens) — all preset schemas
@@ -27,9 +28,9 @@ class SpreadSelectorSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
     final title = switch (ctrl.system) {
-      DivinationSystem.tarot => 'SPREAD METHOD',
-      DivinationSystem.lenormand => 'LENORMAND SPREAD',
-      DivinationSystem.runes => 'RUNE CAST',
+      DivinationSystem.tarot => AppStrings.g('ui.spread_selector_sheet.spread_method'),
+      DivinationSystem.lenormand => AppStrings.g('ui.spread_selector_sheet.lenormand_spread'),
+      DivinationSystem.runes => AppStrings.g('ui.spread_selector_sheet.rune_cast'),
     };
     return TaroGlassSheet(
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 22),
@@ -134,7 +135,7 @@ class _SpreadOption extends StatelessWidget {
     return Semantics(
       button: true,
       selected: active,
-      label: '$label ($count cards)',
+      label: '$label (${AppStrings.cardCount(AppStrings.current, count)})',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
@@ -183,7 +184,7 @@ class _SpreadOption extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '$count CARDS · $focusLine',
+                        AppStrings.g('table.cardsAndFocus', {'cards': AppStrings.cardCount(AppStrings.current, count).toUpperCase(), 'focus': focusLine}),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.body(

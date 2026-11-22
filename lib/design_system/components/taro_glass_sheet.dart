@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/theme/app_typography.dart';
 import '../taro_glass.dart';
 import '../taro_tokens.dart';
+import '../../core/l10n/app_strings.dart';
 
 /// Открывает модальный стеклянный bottom-sheet [TaroGlassSheet].
 Future<T?> showTaroGlassSheet<T>({
@@ -63,7 +64,7 @@ class TaroGlassSheet extends StatelessWidget {
         if (showDragHandle) ...[
           Center(
             child: Semantics(
-              label: 'Drag handle',
+              label: AppStrings.g('ui.taro_glass_sheet.drag_handle'),
               child: Container(
                 width: 40,
                 height: 4,

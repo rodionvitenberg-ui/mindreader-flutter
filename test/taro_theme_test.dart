@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:mindreader/core/theme/app_typography.dart';
 import 'package:mindreader/design_system/taro.dart';
 import 'package:mindreader/main.dart';
@@ -68,9 +69,29 @@ void main() {
 
       expect(find.byType(TaroDuskBackground), findsOneWidget);
       // Visible local glass layers on Step 1: system selector, custom spread
-      // action, and bottom navigation dock (all sharing one BackdropGroup).
+      // action, and bottom navigation dock.
       expect(find.byType(TaroGlassLayer), findsNWidgets(3));
       expect(find.byType(TaroGlassDock), findsOneWidget);
+      expect(materialApp.scrollBehavior, isA<TaroScrollBehavior>());
+
+      // In FakeGlass mode (Impeller OpenGLES fallback), surfaces render as
+      // direct standalone FakeGlass without ConsolidatedFakeGlassLayer /
+      // SeededBackdropPassLayer, preventing darkening and ghost artifacts on drag.
+      expect(find.byType(LiquidGlassLayer), findsNothing);
+      expect(find.byType(FakeGlass), findsWidgets);
+      for (final fg in tester.widgetList<FakeGlass>(find.byType(FakeGlass))) {
+        expect(fg.useBackdropGroup, isFalse);
+      }
+
+      // Custom Spread lives inside a vertical scroll view, so its layer opts
+      // out of the shared BackdropGroup even in real glass mode.
+      final customSpreadLayer = tester.widget<TaroGlassLayer>(
+        find.descendant(
+          of: find.byKey(const ValueKey('custom-spread-button')),
+          matching: find.byType(TaroGlassLayer),
+        ),
+      );
+      expect(customSpreadLayer.useBackdropGroup, isFalse);
     });
 
     testWidgets('TaroDuskBackground ignores pointer events', (tester) async {

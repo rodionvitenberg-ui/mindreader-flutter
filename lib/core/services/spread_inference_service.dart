@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import '../models/divination_system.dart';
 import '../models/lenormand_spread.dart';
 import '../models/rune_cast.dart';
@@ -82,8 +83,10 @@ class SpreadCandidate {
       const <String>[];
 
   /// Human-readable basis for the match (kept honest: count-based only).
-  String get reason => '$cardCount detected card'
-      '${cardCount == 1 ? '' : 's'} match this spread';
+  String get reason => AppStrings.g(
+    cardCount == 1 ? 'inference.match.one' : 'inference.match.other',
+    {'count': cardCount},
+  );
 }
 
 class SpreadInferenceResult {

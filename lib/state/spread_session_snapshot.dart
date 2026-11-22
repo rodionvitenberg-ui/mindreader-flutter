@@ -71,6 +71,13 @@ class RestoredSpreadCard {
 /// structured synthesis, the clarifier chapters and the whole Oracle AI
 /// Chat conversation. Serialized to local JSON — the device is the only
 /// store of truth.
+String _notebook(String? raw) => switch (raw) {
+  'Relationships' => 'relationships',
+  'Career & Path' => 'career',
+  'All Readings' || null || '' => 'all',
+  _ => raw,
+};
+
 class SpreadSessionSnapshot {
   const SpreadSessionSnapshot({
     required this.timestamp,
@@ -114,7 +121,7 @@ class SpreadSessionSnapshot {
   }) => SpreadSessionSnapshot(
     timestamp: timestamp,
     spreadType: SpreadType.three,
-    notebook: 'All Readings',
+    notebook: 'all',
     cards: const [],
     sessionNotes: const [],
     synthesis: null,
@@ -141,7 +148,8 @@ class SpreadSessionSnapshot {
   /// Rune cast template (authoritative when [system] == runes).
   final RuneCast runeCast;
 
-  /// Thematic notebook: 'All Readings' | 'Relationships' | 'Career & Path'.
+  /// Thematic notebook id: 'all' | 'relationships' | 'career'. The label seen
+  /// in the UI is resolved from `history.notebook.*`.
   final String notebook;
 
   final List<RestoredSpreadCard> cards;
@@ -369,7 +377,7 @@ class SpreadSessionSnapshot {
         json['runeCast'] as String?,
         RuneCast.three,
       ),
-      notebook: json['notebook'] as String? ?? 'All Readings',
+      notebook: _notebook(json['notebook'] as String?),
       cards: [
         for (final raw in (json['cards'] as List? ?? const []))
           RestoredSpreadCard.fromJson(raw as Map<String, dynamic>),

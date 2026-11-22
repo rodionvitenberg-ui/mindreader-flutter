@@ -1,3 +1,4 @@
+import '../../l10n/app_strings.dart';
 import 'dart:async';
 
 import 'vision_engine.dart';
@@ -27,11 +28,11 @@ class UnavailableVisionEngine implements VisionEngine {
     String? sessionId,
     CancelToken? cancelToken,
   }) async {
-    return const VisionScanResult(
+    return VisionScanResult(
       candidates: [],
       observations: [],
       manualFallbackRequired: true,
-      message: 'Vision is unavailable — enter your cards manually.',
+      message: AppStrings.g('vision.unavailable'),
     );
   }
 

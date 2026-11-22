@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'tarot_card_model.dart';
 
 /// The traditional French playing-card inset suit of a Petit Lenormand
@@ -5,28 +6,18 @@ import 'tarot_card_model.dart';
 enum PlayingCardSuit { hearts, diamonds, clubs, spades }
 
 extension PlayingCardSuitX on PlayingCardSuit {
-  String get label => switch (this) {
-        PlayingCardSuit.hearts => 'Hearts',
-        PlayingCardSuit.diamonds => 'Diamonds',
-        PlayingCardSuit.clubs => 'Clubs',
-        PlayingCardSuit.spades => 'Spades',
-      };
+  String get label => AppStrings.g('content.playingSuit.$name.label');
 
   String get glyph => switch (this) {
-        PlayingCardSuit.hearts => '♥',
-        PlayingCardSuit.diamonds => '♦',
-        PlayingCardSuit.clubs => '♣',
-        PlayingCardSuit.spades => '♠',
-      };
+    PlayingCardSuit.hearts => '♥',
+    PlayingCardSuit.diamonds => '♦',
+    PlayingCardSuit.clubs => '♣',
+    PlayingCardSuit.spades => '♠',
+  };
 
   /// Hearts read emotional matters, Diamonds practical/material,
   /// Clubs work and growth, Spades challenge and obstacles.
-  String get domain => switch (this) {
-        PlayingCardSuit.hearts => 'Emotion / Heart',
-        PlayingCardSuit.diamonds => 'Matter / Resource',
-        PlayingCardSuit.clubs => 'Work / Growth',
-        PlayingCardSuit.spades => 'Challenge / Obstacle',
-      };
+  String get domain => AppStrings.g('content.playingSuit.$name.domain');
 }
 
 /// One authentic Petit Lenormand card (1 Rider .. 36 Cross). Pure Dart.
@@ -36,19 +27,19 @@ extension PlayingCardSuitX on PlayingCardSuit {
 class LenormandCard {
   const LenormandCard({
     required this.number,
-    required this.name,
+    required this.nameKey,
     required this.playingCard,
     required this.inset,
     required this.element,
-    required this.keywords,
-    required this.meaning,
-    required this.combinations,
-    required this.timing,
+    required this.keywordKeys,
+    required this.meaningKey,
+    required this.combinationKeys,
+    required this.timingKey,
   });
 
   /// 1..36 — the canonical Petit Lenormand order.
   final int number;
-  final String name;
+  final String nameKey;
 
   /// The traditional playing-card inset, e.g. '9♥' (9 of Hearts).
   final PlayingCardSuit playingCard;
@@ -58,17 +49,27 @@ class LenormandCard {
   final Element element;
 
   /// 3 archetype keywords.
-  final List<String> keywords;
+  final List<String> keywordKeys;
 
   /// One-sentence traditional meaning (always upright).
-  final String meaning;
+  final String meaningKey;
 
   /// Authentic combinatory meanings: what this card adds to the cards
   /// sitting beside it (Lenormand is read in pairs).
-  final List<String> combinations;
+  final List<String> combinationKeys;
 
   /// Traditional timing / polarity note, e.g. 'Soon', 'Slow', 'Now'.
-  final String timing;
+  final String timingKey;
+
+  String get name => AppStrings.g(nameKey);
+  List<String> get keywords => [
+    for (final key in keywordKeys) AppStrings.g(key),
+  ];
+  String get meaning => AppStrings.g(meaningKey);
+  List<String> get combinations => [
+    for (final key in combinationKeys) AppStrings.g(key),
+  ];
+  String get timing => AppStrings.g(timingKey);
 
   /// Stable identity used by serialization: number - 1 (0..35).
   int get id => number - 1;

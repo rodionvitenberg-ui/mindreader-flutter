@@ -6,6 +6,7 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
 import '../../../state/app_settings_controller.dart';
+import 'language_selector.dart';
 import 'pro_subscription_sheet.dart';
 
 /// App settings modal sheet (migrated to Tarot Tree glass in Phase G3):
@@ -41,22 +42,7 @@ class AppSettingsSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          TaroGlassSegmentedControl<AppLanguage>(
-            segments: [
-              for (final language in AppLanguage.values)
-                TaroGlassSegment<AppLanguage>(
-                  value: language,
-                  label: AppStrings.t(
-                    AppLanguage.en,
-                    language == AppLanguage.en
-                        ? 'settings.english'
-                        : 'settings.russian',
-                  ),
-                ),
-            ],
-            value: lang,
-            onChanged: settings.setLanguage,
-          ),
+          const LanguageSelector(),
           const SizedBox(height: 22),
           Text(
             AppStrings.t(lang, 'settings.proHint'),

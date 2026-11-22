@@ -21,6 +21,7 @@ import '../../state/spread_controller.dart';
 import 'widgets/camera_mode_selector.dart';
 import 'widgets/camera_top_hud.dart';
 import 'widgets/recognition_review_sheet.dart';
+import '../../core/l10n/app_strings.dart';
 
 /// Pillar 2: phygital pipeline. Native camera on Android/iOS with a
 /// simulated viewfinder + mock scan on desktop/emulator, dynamic lavender
@@ -61,14 +62,14 @@ class _CameraScanScreenState extends State<CameraScanScreen>
 
   /// Contextual viewfinder instruction per physical mode. Only the three
   /// camera-driven modes are addressed; `standard` never reaches the Camera.
-  static const _modeInstructions = <ReadingMode, String>{
-    ReadingMode.quickScan: 'POINT AT YOUR SPREAD ON THE TABLE',
-    ReadingMode.guidedSpread: 'ALIGN EACH CARD TO A GUIDED SLOT',
-    ReadingMode.liveOracle: 'HOLD A CARD FOR THE LIVE ORACLE',
+  static final _modeInstructions = <ReadingMode, String>{
+    ReadingMode.quickScan: AppStrings.g('camera.mode.quickScan'),
+    ReadingMode.guidedSpread: AppStrings.g('camera.mode.guidedSpread'),
+    ReadingMode.liveOracle: AppStrings.g('camera.mode.liveOracle'),
   };
 
   String get _modeInstruction =>
-      _modeInstructions[_mode] ?? 'POINT AT YOUR SPREAD ON THE TABLE';
+      _modeInstructions[_mode] ?? AppStrings.g('camera.mode.quickScan');
 
   late final AnimationController _lockOnAnim;
 
@@ -234,7 +235,7 @@ class _CameraScanScreenState extends State<CameraScanScreen>
       if (mounted) {
         showTaroGlassSnackbar(
           context,
-          message: 'Scan failed, try again',
+          message: AppStrings.g('ui.camera_scan_screen.scan_failed_try_again'),
           tone: TaroGlassSnackbarTone.error,
         );
       }
@@ -279,8 +280,9 @@ class _CameraScanScreenState extends State<CameraScanScreen>
   void _showManualFallback(DivinationSystem system) {
     showTaroGlassSnackbar(
       context,
-      message: '${system.label} physical scan needs manual card entry — '
-          'the camera recognizer reads TAROT only.',
+      message: AppStrings.g('camera.manualFallback', {
+        'system': system.label,
+      }),
       tone: TaroGlassSnackbarTone.warning,
     );
   }
@@ -341,8 +343,7 @@ class _CameraScanScreenState extends State<CameraScanScreen>
             color: TaroColors.mist.withValues(alpha: TaroOpacity.borderStrong),
           ),
         ),
-        title: Text(
-          'Switch reading mode?',
+        title: Text(AppStrings.g('ui.camera_scan_screen.switch_reading_mode'),
           style: AppTypography.heading(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -350,8 +351,7 @@ class _CameraScanScreenState extends State<CameraScanScreen>
           ),
         ),
         content: Text(
-          'A guided reading is in progress. Switching modes leaves the '
-          'current session.',
+          AppStrings.g('camera.modeSwitchWarning'),
           style: AppTypography.body(
             fontSize: 13.5,
             color: TaroColors.textSecondary,
@@ -360,11 +360,11 @@ class _CameraScanScreenState extends State<CameraScanScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCEL'),
+            child: Text(AppStrings.g('common.cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('SWITCH'),
+            child: Text(AppStrings.g('common.switch')),
           ),
         ],
       ),
@@ -454,7 +454,7 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                 ),
                 child: Text(
                   ctrl.clarifierScanRequested
-                      ? 'PHOTOGRAPH YOUR NEXT PHYSICAL CARD'
+                      ? AppStrings.g('camera.photographNext')
                       : _modeInstruction,
                   style: AppTypography.label(
                     fontSize: 9.5,
@@ -479,8 +479,7 @@ class _CameraScanScreenState extends State<CameraScanScreen>
                       borderRadius: BorderRadius.circular(TaroRadii.pill),
                       border: Border.all(color: TaroColors.hudBorder),
                     ),
-                    child: Text(
-                      'SIMULATED VIEWFINDER \u00b7 TAP TO RUN THE MOCK SCAN',
+                    child: Text(AppStrings.g('ui.camera_scan_screen.simulated_viewfinder_u00b7_tap_to_run_the_mock_s'),
                       style: AppTypography.label(
                         fontSize: 9,
                         letterSpacing: 0.9,
@@ -492,10 +491,10 @@ class _CameraScanScreenState extends State<CameraScanScreen>
               Padding(
                 padding: const EdgeInsets.only(bottom: 28),
                 child: _busy
-                    ? const TaroGlassProgress(
+                    ? TaroGlassProgress(
                         linear: false,
                         size: 32,
-                        semanticLabel: 'Scanning spread',
+                        semanticLabel: AppStrings.g('ui.camera_scan_screen.scanning_spread'),
                       )
                     : _ShutterButton(
                         key: const ValueKey('shutter'),
@@ -582,8 +581,7 @@ class _SimulatedViewfinder extends StatelessWidget {
               color: TaroColors.mist,
             ),
             const SizedBox(height: 12),
-            Text(
-              'CAMERA UNAVAILABLE\nMOCK MODE',
+            Text(AppStrings.g('ui.camera_scan_screen.camera_unavailable_mock_mode'),
               textAlign: TextAlign.center,
               style: AppTypography.label(
                 fontSize: 10,
@@ -608,7 +606,7 @@ class _ShutterButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Capture spread',
+      label: AppStrings.g('ui.camera_scan_screen.capture_spread'),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,

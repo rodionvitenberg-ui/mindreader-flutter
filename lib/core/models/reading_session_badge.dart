@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import 'reading_mode.dart';
 import 'reading_source.dart';
 
@@ -14,10 +15,10 @@ String readingSessionBadge({
 }) {
   if (source == ReadingSource.physical) {
     return switch (mode) {
-      ReadingMode.guidedSpread => 'GUIDED',
-      ReadingMode.liveOracle => 'LIVE',
-      _ => 'PHYSICAL',
+      ReadingMode.guidedSpread => AppStrings.g('reading.badge.guided'),
+      ReadingMode.liveOracle => AppStrings.g('reading.badge.live'),
+      _ => AppStrings.g('reading.badge.physical'),
     };
   }
-  return 'DIGITAL';
+  return AppStrings.g('reading.badge.digital');
 }

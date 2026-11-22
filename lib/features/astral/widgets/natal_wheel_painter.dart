@@ -7,6 +7,7 @@ import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
 import 'natal_wheel_geometry.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// Harmonious chord gradient (trine 120° / sextile 60°).
 const wheelHarmonyStart = Color(0xFF38BDF8);
@@ -371,7 +372,7 @@ class NatalWheelPainter extends CustomPainter {
 
       if (body.isRetrograde) {
         final rx = _text(
-          'Rx',
+          AppStrings.g('ui.natal_wheel_painter.rx'),
           size: 6,
           color: TaroColors.textSecondary.withValues(alpha: 0.9 * ignite),
         );
@@ -565,9 +566,9 @@ class NatalWheelPainter extends CustomPainter {
     final lat = chart.latitude;
     final lon = chart.longitude;
     final lines = [
-      'LAT ${lat.abs().toStringAsFixed(2)}° ${lat >= 0 ? 'N' : 'S'}',
-      'LON ${lon.abs().toStringAsFixed(2)}° ${lon >= 0 ? 'E' : 'W'}',
-      'SID ${_siderealClock(siderealTimeDegrees)}',
+      AppStrings.g('astral.coord.lat', {'value': lat.abs().toStringAsFixed(2), 'dir': lat >= 0 ? 'N' : 'S'}),
+      AppStrings.g('astral.coord.lon', {'value': lon.abs().toStringAsFixed(2), 'dir': lon >= 0 ? 'E' : 'W'}),
+      AppStrings.g('astral.coord.sid', {'value': _siderealClock(siderealTimeDegrees)}),
     ];
     var y = center.dy - 38.0;
     for (final line in lines) {
@@ -582,7 +583,7 @@ class NatalWheelPainter extends CustomPainter {
     }
     final percent = (t / 0.30).clamp(0.0, 1.0) * 100;
     final status = _text(
-      'CALIBRATING ${percent.round().toString().padLeft(3, '0')}%',
+      AppStrings.g('astral.calibrating', {'percent': percent.round()}),
       size: 7,
       color: TaroColors.lavender.withValues(alpha: alpha),
       letterSpacing: 1.4,

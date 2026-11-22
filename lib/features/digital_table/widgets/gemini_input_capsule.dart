@@ -4,6 +4,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// The shared Gemini-style floating input capsule docked directly above
 /// the bottom navigation dock — ONE component used by the Digital Table
@@ -17,7 +18,7 @@ class GeminiInputCapsule extends StatefulWidget {
     super.key,
     required this.onSend,
     required this.onPlus,
-    this.hint = 'Add context or ask Oracle...',
+    this.hint,
     this.sendKey,
     this.fieldKey,
     this.controller,
@@ -26,7 +27,8 @@ class GeminiInputCapsule extends StatefulWidget {
 
   final ValueChanged<String> onSend;
   final VoidCallback onPlus;
-  final String hint;
+  /// Optional override; when null the shared dictionary hint is used.
+  final String? hint;
   final Key? sendKey;
   final Key? fieldKey;
 
@@ -104,9 +106,8 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
     if (!ok) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Voice input is not available here — type your thought instead.',
+          SnackBar(
+            content: Text(AppStrings.g('ui.gemini_input_capsule.voice_input_is_not_available_here_type_your_thou'),
             ),
           ),
         );
@@ -147,7 +148,7 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
             children: [
               _CapsuleIconButton(
                 icon: Icons.add,
-                tooltip: 'Add context',
+                tooltip: AppStrings.g('ui.gemini_input_capsule.add_context'),
                 onTap: () {
                   HapticFeedback.selectionClick();
                   widget.onPlus();
@@ -170,7 +171,7 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
                     color: TaroColors.textPrimary,
                   ),
                   decoration: InputDecoration(
-                    hintText: widget.hint,
+                    hintText: widget.hint ?? AppStrings.g('table.addContextHint'),
                     hintStyle: AppTypography.chatUser(
                       fontSize: 14.5,
                       height: 1.4,
@@ -186,14 +187,14 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
               ),
               _CapsuleIconButton(
                 icon: _micListening ? Icons.graphic_eq : Icons.mic_none,
-                tooltip: 'Voice',
+                tooltip: AppStrings.g('ui.gemini_input_capsule.voice'),
                 tint: _micListening ? TaroColors.rose : null,
                 onTap: _toggleMic,
               ),
               const SizedBox(width: 6),
               Semantics(
                 button: true,
-                label: 'Send',
+                label: AppStrings.g('ui.gemini_input_capsule.send'),
                 child: GestureDetector(
                   key: widget.sendKey,
                   behavior: HitTestBehavior.opaque,

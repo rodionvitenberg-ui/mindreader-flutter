@@ -3,9 +3,11 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import '../core/data/guide_content.dart';
 import '../core/data/lenormand_data.dart';
 import '../core/data/runes_data.dart';
 import '../core/data/tarot_deck_data.dart';
+import '../core/l10n/app_strings.dart';
 import '../core/models/custom_spread.dart';
 import '../core/models/dealt_card_slot.dart';
 import '../core/models/divination_card.dart';
@@ -20,6 +22,12 @@ import '../core/services/local_storage_service.dart';
 /// Pure domain logic — the UI only reads state and calls these methods.
 /// Hosts all three divination systems (Tarot 78 / Lenormand 36 / Runes 24)
 /// behind one unified [DivinationCard] interface.
+/// True when [role] is a clarifier label in ANY supported language, so a
+/// session restored after a language switch still recognises its clarifiers.
+bool isClarifierRole(String role) => AppLanguage.values.any(
+  (lang) => role.startsWith(AppStrings.t(lang, 'table.clarifierWord')),
+);
+
 class SpreadController extends ChangeNotifier {
   SpreadController({
     Random? random,
@@ -47,13 +55,13 @@ class SpreadController extends ChangeNotifier {
 
   String get dealLockMessage {
     if (isClarifierLimitReached) {
-      return 'Maximum of $maxTableCards cards reached for this reading.';
+      return AppStrings.g('table.maxCardsReached', {'max': maxTableCards});
     }
-    if (remaining == 0) return 'The deck is empty.';
+    if (remaining == 0) return AppStrings.g('table.deckEmpty');
     if (clarifierScanRequested) {
-      return 'Finish or cancel the camera scan before drawing another card.';
+      return AppStrings.g('table.finishScanFirst');
     }
-    return 'Flip all cards face-up before drawing another card.';
+    return AppStrings.g('table.flipAllFirst');
   }
 
   late List<int> _cardIds; // shuffled order of the active system's cards
@@ -139,6 +147,33 @@ class SpreadController extends ChangeNotifier {
         DivinationSystem.tarot => _spreadType.slotRoleShorts,
         DivinationSystem.lenormand => _lenormandSpread.slotRoleShorts,
         DivinationSystem.runes => _runeCast.slotRoleShorts,
+      };
+
+  /// A concise "why this position matters" lesson, localized (G4). Null for
+  /// custom spreads (the reader authored those questions) and out-of-range
+  /// slots.
+  String? slotLesson(int index, AppLanguage lang) {
+    if (_customSpread != null) return null;
+    return guideSlotLesson(
+      system: _system,
+      spreadKey: _spreadKey,
+      slot: index,
+      lang: lang,
+    );
+  }
+
+  /// Why this spread exists and how it reads, localized (G4). Null for custom
+  /// spreads.
+  String? guidePurpose(AppLanguage lang) {
+    if (_customSpread != null) return null;
+    return guidePurposeLine(_system, _spreadKey)?.forLanguage(lang);
+  }
+
+  /// The active preset spread's stable content key (enum `name`).
+  String get _spreadKey => switch (_system) {
+        DivinationSystem.tarot => _spreadType.name,
+        DivinationSystem.lenormand => _lenormandSpread.name,
+        DivinationSystem.runes => _runeCast.name,
       };
 
   // ---- two-step entry flow (Step 1 picker → Step 2 active table) ----------
@@ -286,6 +321,28 @@ class SpreadController extends ChangeNotifier {
   int? get nextEmptySlotIndex {
     for (final s in _slots) {
       if (s.state == SlotState.empty) return s.index;
+    }
+    return null;
+  }
+
+  /// The advisory slot to deal into or reveal next. Never drives the deck — a
+  /// recommendation only, so the reader may always act out of order. While
+  /// dealing it is the first empty base slot; once every base slot holds a
+  /// face-down card, the centre of a Three-card Tarot spread is recommended
+  /// first (a card is read with its flanks), otherwise the first face-down
+  /// slot.
+  int? get recommendedSlot {
+    final empty = nextEmptySlotIndex;
+    if (empty != null && empty < spreadCardCount) return empty;
+    final slots = _slots.take(spreadCardCount).toList();
+    final centerFirst =
+        !isCustomSpread &&
+        _system == DivinationSystem.tarot &&
+        _spreadType == SpreadType.three &&
+        slots.length >= 3;
+    if (centerFirst && slots[1].state == SlotState.faceDown) return 1;
+    for (final slot in slots) {
+      if (slot.state == SlotState.faceDown) return slot.index;
     }
     return null;
   }
@@ -560,7 +617,7 @@ class SpreadController extends ChangeNotifier {
   DealtCardSlot _appendClarifierSlot({String? oracleQuestion}) {
     final slot = DealtCardSlot(
       index: _slots.length,
-      role: 'Clarifier ${++_clarifierCount}',
+      role: '${AppStrings.g('table.clarifierWord')} ${++_clarifierCount}',
     )..oracleQuestion = oracleQuestion;
     slot.setUserContext(text: oracleQuestion);
     _slots.add(slot);
@@ -666,7 +723,9 @@ class SpreadController extends ChangeNotifier {
     _pendingChip = null;
     _pendingNote = null;
     _slots = List.generate(cards.length, (i) {
-      final role = i < roles.length ? roles[i] : 'Card ${i + 1}';
+      final role = i < roles.length
+          ? roles[i]
+          : '${AppStrings.g('table.cardWord')} ${i + 1}';
       final slot = DealtCardSlot(index: i, role: role);
       slot.fromPhysicalCard = true;
       slot.placeCardFaceUp(cards[i], i < reversed.length ? reversed[i] : false);
@@ -796,7 +855,7 @@ class SpreadController extends ChangeNotifier {
     _spreadType = type ?? SpreadType.three;
     _lenormandSpread = lenormandSpread ?? LenormandSpread.three;
     _runeCast = runeCast ?? RuneCast.three;
-    final baseCards = cards.where((c) => !c.role.startsWith('Clarifier')).toList();
+    final baseCards = cards.where((c) => !isClarifierRole(c.role)).toList();
     final restoredQuestions = customQuestions.isNotEmpty
         ? customQuestions
         : [for (final c in baseCards) c.role];
@@ -817,7 +876,7 @@ class SpreadController extends ChangeNotifier {
       DivinationSystem.runes => elderFuthark.length,
     };
     _clarifierCount =
-        cards.where((c) => c.role.startsWith('Clarifier')).length;
+        cards.where((c) => isClarifierRole(c.role)).length;
     _pendingClarifierQuestion = null;
     _pendingChip = null;
     _pendingNote = null;

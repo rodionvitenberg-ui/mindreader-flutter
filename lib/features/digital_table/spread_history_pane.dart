@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 
-import '../../core/models/reading_session_badge.dart';
-import '../../core/models/reading_source.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
-import '../../state/app_settings_controller.dart';
 import '../../state/session_history_controller.dart';
 import '../../state/spread_session_snapshot.dart';
 import '../profile/widgets/profile_header.dart';
+import '../../core/l10n/app_strings.dart';
 
 /// Pane 2 — SPREAD HISTORY & NOTEBOOKS: the local-first archive of saved
 /// readings (Gemini sidebar/history inspired). One tap restores the exact
-/// conversation AND the exact table. `PRO` badge marks unlimited local
-/// storage.
+/// conversation AND the exact table with unlimited local storage.
 class SpreadHistoryPane extends StatefulWidget {
   const SpreadHistoryPane({
     super.key,
@@ -34,9 +30,9 @@ class SpreadHistoryPane extends StatefulWidget {
 }
 
 class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
-  static const _notebooks = ['All Readings', 'Relationships', 'Career & Path'];
+  static const _notebooks = ['all', 'relationships', 'career'];
 
-  String _notebook = 'All Readings';
+  String _notebook = 'all';
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +43,7 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
         builder: (context, _) {
           final sessions = [
             for (final s in widget.history.sessions)
-              if (_notebook == 'All Readings' || s.notebook == _notebook) s,
+              if (_notebook == 'all' || s.notebook == _notebook) s,
           ];
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,28 +53,18 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
                   color: TaroColors.lavender,
                   onPressed: widget.onBackToTable,
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'SPREAD HISTORY',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.label(
-                          fontSize: 13,
-                          letterSpacing: 1.3,
-                          fontWeight: FontWeight.w700,
-                          color: TaroColors.textPrimary,
-                        ),
-                      ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(AppStrings.g('ui.spread_history_pane.spread_history'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.label(
+                      fontSize: 13,
+                      letterSpacing: 1.3,
+                      fontWeight: FontWeight.w700,
+                      color: TaroColors.textPrimary,
                     ),
-                    const SizedBox(width: 4),
-                    _ProBadge(
-                      unlocked: context
-                          .watch<AppSettingsController>()
-                          .isProUnlocked,
-                    ),
-                  ],
+                  ),
                 ),
               ),
               Padding(
@@ -93,7 +79,7 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
                       if (i > 0) const SizedBox(width: 8),
                       Expanded(
                         child: _NotebookChip(
-                          label: _notebooks[i],
+                          label: AppStrings.g('history.notebook.${_notebooks[i]}'),
                           active: _notebook == _notebooks[i],
                           onTap: () {
                             HapticFeedback.selectionClick();
@@ -111,7 +97,7 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
                         child: TaroGlassProgress(linear: false, size: 22),
                       )
                     : sessions.isEmpty
-                    ? _EmptyArchive(filtered: _notebook != 'All Readings')
+                    ? _EmptyArchive(filtered: _notebook != 'all')
                     : ListView.builder(
                         padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
                         itemCount: sessions.length,
@@ -129,37 +115,6 @@ class _SpreadHistoryPaneState extends State<SpreadHistoryPane> {
   }
 }
 
-class _ProBadge extends StatelessWidget {
-  const _ProBadge({required this.unlocked});
-
-  /// Mirrors the shared PRO flag from [AppSettingsController].
-  final bool unlocked;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [TaroColors.lavender, TaroColors.indigo],
-        ),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        unlocked ? 'PRO ∞' : 'PRO',
-        style: AppTypography.label(
-          fontSize: 9,
-          letterSpacing: 0.9,
-          fontWeight: FontWeight.w800,
-          color: TaroColors.background,
-        ),
-      ),
-    );
-  }
-}
-
 class _NewSpreadButton extends StatelessWidget {
   const _NewSpreadButton({required this.onTap});
 
@@ -171,7 +126,7 @@ class _NewSpreadButton extends StatelessWidget {
       width: double.infinity,
       child: TaroGlassLayer(
         child: TaroGlassButton(
-          label: 'NEW SPREAD · НОВЫЙ РАСКЛАД',
+          label: AppStrings.g('ui.spread_history_pane.new_spread'),
           icon: Icons.add,
           variant: TaroGlassButtonVariant.primary,
           onPressed: onTap,
@@ -223,7 +178,7 @@ class _EmptyArchive extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            filtered ? 'THIS NOTEBOOK IS EMPTY' : 'NO READINGS SAVED YET',
+            filtered ? AppStrings.g('ui.spread_history_pane.this_notebook_is_empty') : AppStrings.g('ui.spread_history_pane.no_readings_saved_yet'),
             style: AppTypography.label(
               fontSize: 10.5,
               letterSpacing: 1.0,
@@ -231,8 +186,7 @@ class _EmptyArchive extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            'Synthesize your first spread and it will wait here.',
+          Text(AppStrings.g('ui.spread_history_pane.synthesize_your_first_spread_and_it_will_wait_he'),
             style: AppTypography.body(
               fontSize: 11,
               color: TaroColors.textSecondary.withValues(alpha: 0.8),
@@ -257,9 +211,8 @@ class _SessionTile extends StatelessWidget {
         (session.messages.isNotEmpty
             ? session.messages.last.text
             : session.sessionNotes.isEmpty
-                ? 'No context notes'
+                ? AppStrings.g('history.noContextNotes')
                 : session.sessionNotes.join(' · '));
-    final isAstral = session.kind != SessionKind.divinationSpread;
     final customCount = session.customQuestions.isNotEmpty
         ? session.customQuestions.length
         : session.cards.length;
@@ -292,36 +245,16 @@ class _SessionTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          title.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.label(
-                            fontSize: 10,
-                            letterSpacing: 0.7,
-                            fontWeight: FontWeight.w700,
-                            color: TaroColors.lavender,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      if (isAstral)
-                        _AstralBadge(kind: session.kind)
-                      else ...[
-                        if (session.readingSource == ReadingSource.physical)
-                          _FlowBadge(
-                            label: readingSessionBadge(
-                              source: session.readingSource,
-                              mode: session.readingMode,
-                            ),
-                          ),
-                        const SizedBox(width: 4),
-                        _NotebookTag(label: session.notebook),
-                      ],
-                    ],
+                  Text(
+                    title.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.label(
+                      fontSize: 10,
+                      letterSpacing: 0.7,
+                      fontWeight: FontWeight.w700,
+                      color: TaroColors.lavender,
+                    ),
                   ),
                   const SizedBox(height: 3),
                   Text(
@@ -421,108 +354,13 @@ class _CardGlyphStack extends StatelessWidget {
   }
 }
 
-class _NotebookTag extends StatelessWidget {
-  const _NotebookTag({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(
-        color: TaroColors.indigo.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: TaroColors.indigo.withValues(alpha: 0.5)),
-      ),
-      child: Text(
-        label.toUpperCase(),
-        style: AppTypography.label(
-          fontSize: 7.5,
-          letterSpacing: 1.0,
-          fontWeight: FontWeight.w700,
-          color: TaroColors.cyan,
-        ),
-      ),
-    );
-  }
-}
-
-/// The cosmic badge marking a saved Astral conversation.
-class _AstralBadge extends StatelessWidget {
-  const _AstralBadge({required this.kind});
-
-  final SessionKind kind;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = switch (kind) {
-      SessionKind.natalChartReading => '☉ NATAL',
-      SessionKind.horoscopeReading => '✦ HOROSCOPE',
-      SessionKind.synastryReading => '☍ SYNASTRY',
-      SessionKind.zodiacReading => '✦ ZODIAC',
-      SessionKind.divinationSpread => 'SPREAD',
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(
-        color: TaroColors.lavender.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: TaroColors.lavender.withValues(alpha: 0.5)),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.label(
-          fontSize: 7.5,
-          letterSpacing: 1.0,
-          fontWeight: FontWeight.w700,
-          color: TaroColors.lavender,
-        ),
-      ),
-    );
-  }
-}
-
-/// The flow badge marking a physical reading's origin: GUIDED / LIVE /
-/// PHYSICAL. Digital readings show no flow badge (DIGITAL is the implicit
-/// default), keeping the common case uncluttered.
-class _FlowBadge extends StatelessWidget {
-  const _FlowBadge({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(
-        color: TaroColors.indigo.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: TaroColors.indigo.withValues(alpha: 0.55)),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.label(
-          fontSize: 7.5,
-          letterSpacing: 1.0,
-          fontWeight: FontWeight.w700,
-          color: TaroColors.cyan,
-        ),
-      ),
-    );
-  }
-}
-
 /// 'Nov 17 · 14:32' — short local form, no year clutter.
 String formatSessionTime(String iso) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
+
   final parsed = DateTime.tryParse(iso);
   if (parsed == null) return iso;
   final hh = parsed.hour.toString().padLeft(2, '0');
   final mm = parsed.minute.toString().padLeft(2, '0');
-  return '${months[parsed.month - 1]} ${parsed.day} · $hh:$mm';
+  return '${AppStrings.g('common.month.${parsed.month}')} ${parsed.day} · $hh:$mm';
 }
 

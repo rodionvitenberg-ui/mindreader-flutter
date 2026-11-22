@@ -3,8 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-import '../../../design_system/taro_tokens.dart';
-
 /// The board stays in card coordinates. Only the camera scales or moves.
 class SpreadViewport extends StatefulWidget {
   const SpreadViewport({
@@ -192,41 +190,22 @@ class SpreadViewportState extends State<SpreadViewport>
         final scale = matrix.getMaxScaleOnAxis();
         final isZoomed = scale > widget.initialScale + 0.001;
         final canPan = scale > widget.fit + 0.001;
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            MediaQuery(
-              data: isZoomed
-                  ? media.copyWith(gestureSettings: zoomedBoardSettings)
-                  : media,
-              child: InteractiveViewer(
-                key: const ValueKey('spread-viewport'),
-                onInteractionStart: (_) => _pan.stop(),
-                alignment: Alignment.topLeft,
-                transformationController: _camera,
-                constrained: false,
-                panEnabled: canPan,
-                panAxis: isZoomed ? PanAxis.free : PanAxis.vertical,
-                minScale: widget.fit,
-                maxScale: 3,
-                child: child!,
-              ),
-            ),
-            if (canPan)
-              Positioned(
-                top: 2,
-                right: 8,
-                child: IconButton(
-                  tooltip: widget.fitLabel,
-                  icon: const Icon(
-                    Icons.fit_screen_outlined,
-                    size: 20,
-                    color: TaroColors.lavender,
-                  ),
-                  onPressed: () => _camera.value = _matrixAtScale(widget.fit),
-                ),
-              ),
-          ],
+        return MediaQuery(
+          data: isZoomed
+              ? media.copyWith(gestureSettings: zoomedBoardSettings)
+              : media,
+          child: InteractiveViewer(
+            key: const ValueKey('spread-viewport'),
+            onInteractionStart: (_) => _pan.stop(),
+            alignment: Alignment.topLeft,
+            transformationController: _camera,
+            constrained: false,
+            panEnabled: canPan,
+            panAxis: isZoomed ? PanAxis.free : PanAxis.vertical,
+            minScale: widget.fit,
+            maxScale: 3,
+            child: child!,
+          ),
         );
       },
       child: SizedBox.fromSize(

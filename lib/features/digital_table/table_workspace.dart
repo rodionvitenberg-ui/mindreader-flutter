@@ -28,6 +28,7 @@ import 'widgets/deal_lock_prompt.dart';
 import 'widgets/gemini_input_capsule.dart';
 import 'widgets/reading_context_field.dart';
 import 'widgets/reading_guide.dart';
+import '../../core/l10n/app_strings.dart';
 
 /// Pane indices of the 3-screen horizontal workspace.
 const tablePane = 0;
@@ -205,14 +206,17 @@ class _TableWorkspaceState extends State<TableWorkspace>
   static String _astralTitleFor(OracleHandoff handoff) {
     final chart = handoff.chart;
     return switch (handoff.kind) {
-      OracleHandoffKind.natalChart =>
-        '${chart?.profileName ?? 'Natal'} · Natal',
-      OracleHandoffKind.horoscope =>
-        '${chart?.profileName ?? 'Natal'} · Horoscope',
+      OracleHandoffKind.natalChart => AppStrings.g('table.astral.natalTitle', {
+        'profile': chart?.profileName ?? AppStrings.g('table.astral.natalFallback'),
+      }),
+      OracleHandoffKind.horoscope => AppStrings.g('table.astral.horoscopeTitle', {
+        'profile': chart?.profileName ?? AppStrings.g('table.astral.natalFallback'),
+      }),
       OracleHandoffKind.synastry =>
         '${chart?.profileName ?? 'A'} × ${handoff.otherChart?.profileName ?? 'B'}',
-      OracleHandoffKind.zodiac =>
-        '${handoff.zodiacSign?.title ?? 'Zodiac'} · Horoscope',
+      OracleHandoffKind.zodiac => AppStrings.g('table.astral.zodiacTitle', {
+        'sign': handoff.zodiacSign?.title ?? AppStrings.g('table.astral.zodiacFallback'),
+      }),
     };
   }
 
@@ -242,7 +246,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
 
   String? get _tableSubject => _forSelf
       ? context.read<UserProfileController>().selfOracleContext
-      : 'Reading for someone else';
+      : AppStrings.g('table.subject.other');
 
   Future<void> _generateClarifier(ClarifierChapter chapter) async {
     final slot = _ctrl.slots.firstWhere((s) => s.index == chapter.slotIndex);
@@ -260,7 +264,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
         profileContext: _tableSubject,
       );
     } catch (_) {
-      text = 'The Oracle could not answer. Your card is still in the spread.';
+      text = AppStrings.g('table.oracleFailed');
     }
     if (!mounted || !_session.isCurrentSession(epoch)) return;
     _session.completeChapter(chapter.slotIndex, text);
@@ -359,7 +363,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
         SpreadSessionSnapshot.astral(
           timestamp: timestamp,
           kind: _sessionKind,
-          title: _astralTitle ?? 'Astral reading',
+          title: _astralTitle ?? AppStrings.g('table.astralReading'),
           natalChartId: _astralChartId,
           astralContext: _astralContext,
           messages: [..._session.messages],
@@ -392,8 +396,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
     if (_sessionKind == SessionKind.divinationSpread &&
         !_session.hasSynthesis) {
       _session.addSystemMessage(
-        'The reading is not synthesized yet — deal and flip your spread '
-        'on the table, then tap ✦ SYNTHESIZE IN CHAT.',
+        AppStrings.g('table.notSynthesized'),
       );
       return;
     }
@@ -468,7 +471,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
   void _scanClarifier() {
     if (widget.onOpenCameraClarifier == null) return;
     if (_ctrl.clarifierScanRequested ||
-        _ctrl.requestClarifierScan('What else does the table want to show?')) {
+        _ctrl.requestClarifierScan(AppStrings.g('table.clarifierQuestion'))) {
       widget.onOpenCameraClarifier!();
     } else {
       showDealLockPrompt(context, _ctrl);
@@ -604,8 +607,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'ADD TO THE READING',
+            Text(AppStrings.g('ui.table_workspace.add_to_the_reading'),
               style: AppTypography.label(
                 fontSize: 9.5,
                 letterSpacing: 1.2,
@@ -629,7 +631,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
             ),
             const SizedBox(height: 14),
             _SheetAction(
-              label: '📷 ATTACH CAMERA CARD',
+              label: AppStrings.g('ui.table_workspace.attach_camera_card'),
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 _scanClarifier();
@@ -637,7 +639,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
             ),
             const SizedBox(height: 8),
             _SheetAction(
-              label: '✦ NEW SPREAD',
+              label: AppStrings.g('ui.table_workspace.new_spread'),
               onTap: () {
                 Navigator.of(sheetContext).pop();
                 _newSpread();
@@ -681,12 +683,12 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 const Expanded(child: DigitalTableScreen()),
                 const ReadingGuide(),
                 if (ctrl.sourceMode == TableSourceMode.physicalCameraSync)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
                     child: TaroGlassLayer(
                       child: TaroGlassPill(
                         key: ValueKey('physical-sync-ribbon'),
-                        label: 'PHYSICAL SYNC',
+                        label: AppStrings.g('ui.table_workspace.physical_sync'),
                         icon: Icons.photo_camera_front_outlined,
                         accentColor: TaroColors.dawn,
                       ),
@@ -734,14 +736,38 @@ class _TableWorkspaceState extends State<TableWorkspace>
           mainAxisSize: MainAxisSize.min,
           children: [
             if (onTable) ...[
-              TaroGlassLayer(
-                child: AnalyzeReadingButton(
-                  key: const ValueKey('analyze-reading-button'),
-                  enabled:
-                      ctrl.isSpreadActive &&
-                      (ctrl.canSynthesize || _session.hasSynthesis) &&
-                      !_session.generatingInitial,
-                  onPressed: () => _goToPane(chatPane),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: TaroGlassLayer(
+                        child: ResetTableButton(
+                          key: const ValueKey('reset-table-button'),
+                          enabled:
+                              ctrl.allDealt &&
+                              ctrl.dealtCount >= ctrl.initialSpreadCardCount,
+                          onPressed: ctrl.resetTable,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 6,
+                      child: TaroGlassLayer(
+                        child: AnalyzeReadingButton(
+                          key: const ValueKey('analyze-reading-button'),
+                          padding: EdgeInsets.zero,
+                          enabled:
+                              ctrl.isSpreadActive &&
+                              (ctrl.canSynthesize || _session.hasSynthesis) &&
+                              !_session.generatingInitial,
+                          onPressed: () => _goToPane(chatPane),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ] else ...[
@@ -751,7 +777,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
                   sendKey: const ValueKey('oracle-send'),
                   controller: _capsuleText,
                   focusNode: _capsuleFocus,
-                  hint: 'Ask the Oracle — or type a question for a +1 card...',
+                  hint: AppStrings.g('table.oracleHint'),
                   onSend: _askOracle,
                   onPlus: _openPlusSheet,
                 ),
@@ -806,7 +832,7 @@ class _ClarifierBanner extends StatelessWidget {
           const SizedBox(width: 8),
           Flexible(
             child: Text(
-              'CAMERA CLARIFIER: "$question"',
+              AppStrings.g('table.cameraClarifier', {'question': question}),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.label(
@@ -818,7 +844,7 @@ class _ClarifierBanner extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Cancel clarifier',
+            tooltip: AppStrings.g('ui.table_workspace.cancel_clarifier'),
             visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.close, size: 16, color: TaroColors.lavender),
             onPressed: onCancel,

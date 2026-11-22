@@ -4,6 +4,7 @@ import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
 import '../astral_copy.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// Live summary for the active profile (Phase G5: [TaroGlassPanel]).
 class AstralSummaryCard extends StatelessWidget {
@@ -26,6 +27,7 @@ class AstralSummaryCard extends StatelessWidget {
     final day = chart.birthLocalDay.toString().padLeft(2, '0');
     final month = chart.birthLocalMonth.toString().padLeft(2, '0');
     return TaroGlassLayer(
+      useBackdropGroup: false,
       child: TaroGlassPanel(
         radius: 18,
         padding: const EdgeInsets.all(18),
@@ -49,13 +51,13 @@ class AstralSummaryCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              _BigThreeChip(label: 'SUN', pos: sun),
+              _BigThreeChip(label: AppStrings.g('astral.bigThree.sun'), pos: sun),
               const SizedBox(width: 8),
               if (!chart.moonSignUncertain)
-                _BigThreeChip(label: 'MOON', pos: moon),
+                _BigThreeChip(label: AppStrings.g('astral.bigThree.moon'), pos: moon),
               if (asc != null) ...[
                 const SizedBox(width: 8),
-                _BigThreeChip(label: 'RISING', pos: asc),
+                _BigThreeChip(label: AppStrings.g('astral.bigThree.rising'), pos: asc),
               ],
             ],
           ),
@@ -140,15 +142,12 @@ class AstralEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TaroGlassLayer(
+      useBackdropGroup: false,
       child: TaroGlassEmptyState(
         icon: Icons.auto_awesome_outlined,
-        title: context.astralRussian
-            ? 'НАТАЛЬНОЙ КАРТЫ ПОКА НЕТ'
-            : 'NO NATAL PROFILE YET',
-        subtitle: context.astralRussian
-            ? 'Укажите дату, время и город рождения.'
-            : 'Enter your birth date, time and city.',
-        actionLabel: '✦ ADD FIRST PROFILE',
+        title: AppStrings.g('ui.astral_astral_summary_card.no_natal_profile_yet'),
+        subtitle: AppStrings.g('ui.astral_astral_summary_card.enter_your_birth_date_time_and_city'),
+        actionLabel: AppStrings.g('astral.addFirstProfile'),
         framed: true,
         onAction: onGenerate,
       ),

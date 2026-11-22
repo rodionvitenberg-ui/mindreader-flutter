@@ -4,6 +4,7 @@ import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// Top strip of the ASTRAL screen: today's moon phase and the reading
 /// streak. The daily-ritual settings now live in the bottom dock.
@@ -32,7 +33,7 @@ class AstralCosmicBar extends StatelessWidget {
                 ),
               ),
               Text(
-                '${(phase.illumination * 100).round()}% ${context.astralRussian ? 'ОСВЕЩЕНО' : 'ILLUMINATED'}',
+                '${(phase.illumination * 100).round()}% ${AppStrings.g('ui.astral_astral_cosmic_bar.illuminated')}',
                 style: AppTypography.label(
                   fontSize: 8.5,
                   letterSpacing: 0.8,

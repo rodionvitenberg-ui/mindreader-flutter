@@ -15,6 +15,7 @@ class ProfileHeader extends StatelessWidget {
     super.key,
     required this.child,
     this.leading,
+    this.trailing,
     this.onProfileTap,
   });
 
@@ -23,6 +24,7 @@ class ProfileHeader extends StatelessWidget {
 
   final Widget child;
   final Widget? leading;
+  final Widget? trailing;
   final VoidCallback? onProfileTap;
 
   @override
@@ -36,6 +38,10 @@ class ProfileHeader extends StatelessWidget {
             const SizedBox(width: 4),
           ],
           Expanded(child: child),
+          if (trailing != null) ...[
+            const SizedBox(width: 6),
+            trailing!,
+          ],
           const SizedBox(width: 4),
           _ProfileAvatarButton(onTap: onProfileTap),
         ],

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
-import '../astral_copy.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// The 0..100 Energy & Resonance bar shared by both Horoscope modes.
 class EnergyResonanceBar extends StatelessWidget {
@@ -26,7 +26,7 @@ class EnergyResonanceBar extends StatelessWidget {
         Row(
           children: [
             Text(
-              context.astralRussian ? 'ЭНЕРГИЯ ДНЯ' : 'ENERGY & RESONANCE',
+              AppStrings.g('ui.astral_horoscope_blocks.energy_resonance'),
               style: AppTypography.label(
                 fontSize: 9,
                 letterSpacing: 1.0,
@@ -84,10 +84,7 @@ class FocusSphereCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            (context.astralRussian
-                    ? sphere.titleRu ?? sphere.title
-                    : sphere.title)
-                .toUpperCase(),
+            sphere.title.toUpperCase(),
             style: AppTypography.label(
               fontSize: 9,
               letterSpacing: 0.8,
@@ -97,7 +94,7 @@ class FocusSphereCard extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Text(
-            context.astralRussian ? sphere.textRu ?? sphere.text : sphere.text,
+            sphere.text,
             style: AppTypography.body(
               fontSize: 12,
               height: 1.4,
@@ -125,9 +122,16 @@ class SevenDayForecastCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final weekdays = context.astralRussian
-        ? ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
-        : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const weekdayKeys = [
+      'astral.weekday.mon',
+      'astral.weekday.tue',
+      'astral.weekday.wed',
+      'astral.weekday.thu',
+      'astral.weekday.fri',
+      'astral.weekday.sat',
+      'astral.weekday.sun',
+    ];
+    final weekdays = [for (final key in weekdayKeys) AppStrings.g(key)];
     return SizedBox(
       key: const ValueKey('seven-day-forecast'),
       height: 56,

@@ -1,3 +1,5 @@
+import '../l10n/app_strings.dart';
+
 import 'dealt_card_slot.dart';
 
 /// Session-level origin of the whole reading.
@@ -13,10 +15,7 @@ enum ReadingSource { digital, physical }
 
 extension ReadingSourceX on ReadingSource {
   /// Uppercase session-level badge: 'DIGITAL' | 'PHYSICAL'.
-  String get label => switch (this) {
-    ReadingSource.digital => 'DIGITAL',
-    ReadingSource.physical => 'PHYSICAL',
-  };
+  String get label => AppStrings.g('reading.source.$name');
 
   /// The slot-level counterpart of this session-level source.
   TableSourceMode get tableSourceMode => switch (this) {

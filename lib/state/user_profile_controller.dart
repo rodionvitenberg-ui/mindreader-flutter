@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../core/models/natal_chart.dart';
+import '../core/l10n/app_strings.dart';
 import '../core/services/local_storage_service.dart';
 import 'astral_controller.dart';
 import 'session_history_controller.dart';
@@ -65,7 +66,9 @@ class UserProfileController extends ChangeNotifier {
   String? get oracleContext {
     if (!_readingForSelf) {
       final note = _targetPersonNote.trim();
-      return note.isEmpty ? null : 'Reading for someone else: $note';
+      return note.isEmpty
+          ? null
+          : AppStrings.g('profile.context.other', {'note': note});
     }
     return selfOracleContext;
   }
@@ -75,7 +78,9 @@ class UserProfileController extends ChangeNotifier {
     final bio = _personalBioContext.trim();
     if (bio.isEmpty) return null;
     final name = _displayName.trim();
-    return name.isEmpty ? bio : '$name — $bio';
+    return name.isEmpty
+        ? bio
+        : AppStrings.g('profile.context.self', {'name': name, 'bio': bio});
   }
 
 

@@ -1,0 +1,2541 @@
+# key	text — edit this file, then run: python3 tool/gen_l10n_dart.py
+nav.camera	CAMÉRA
+nav.table	TABLEAU
+nav.almanac	ALMANACH
+nav.astral	ASTRAL
+nav.rituals	RITUELS
+nav.settings	PARAMÈTRES
+nav.profile	PROFIL
+astral.edit	Modifier les données de naissance
+astral.newChart	NOUVELLE CARTE NATALE
+astral.generate	✦ GÉNÉRER UNE CARTE NATALE
+astral.save	Enregistrer les modifications
+astral.name	NOM
+astral.date	DATE
+astral.time	TEMPS
+astral.city	VILLE NAISSANTE
+astral.searchCity	Rechercher une ville
+astral.house	SYSTÈME DE MAISON
+astral.legacyTime	Vérifiez les données de naissance afin que ce graphique utilise les règles de fuseau horaire historiques.
+astral.unknownTime	Heure de naissance inconnue
+astral.unknownMoon	La Lune change de signe à cette date.
+astral.missingCity	Choisissez d'abord une ville de naissance.
+astral.skippedTime	Cette heure locale n'existait pas à cette date. Vérifiez l'heure de naissance.
+astral.repeatedTime	Quel décalage UTC appliqué à la naissance ?
+astral.today	Aujourd'hui
+astral.week	7 jours
+astral.transits	Transits
+astral.orb	Orbe
+astral.exact	Exact à
+astral.closest	Le plus proche dans cette période
+astral.activePeriod	Période active
+astral.outsideRange	Au-delà de la plage de calcul
+astral.discuss	Discutez avec Oracle
+astral.discussTransit	Discutez de ce transit
+astral.chooseFirst	Première personne
+astral.chooseSecond	Deuxième personne
+astral.addPerson	Ajouter une personne
+astral.selectPair	Sélectionnez deux thèmes de naissance différents.
+astral.relationshipThemes	Thèmes relationnels
+astral.allAspects	Tous les aspects croisés
+astral.synastryDetails	Détails de compatibilité
+astral.pickDate	Choisissez une date
+astral.selectTime	HEURE CONNUE
+astral.placement	PLACEMENTS COMPLETS
+astral.matrix	MATRICE DES ASPECTS
+astral.details	OUVRIR LE PROFIL COMPLET
+astral.close	Fermer
+astral.profileFill	REMPLIR À PARTIR DU PROFIL
+astral.natalWheel	ROUE NATALE
+astral.replay	↻ REJOUER
+astral.overlay	✦ SUPERPOSITION DE TRANSIT EN DIRECT
+astral.myChart	MON CARTE
+astral.noTransits	Aucun transit actif pour cette journée.
+header.oracle	Oracle
+header.almanac	Almanach
+header.profile	Profil
+almanac.all	Tous
+almanac.major	Majeur
+almanac.water	Eau
+almanac.air	Air
+almanac.fire	Feu
+almanac.earth	Terre
+almanac.wands	Baguettes
+almanac.cups	Tasses
+almanac.swords	Épées
+almanac.pentacles	Pentacles
+almanac.hearts	Cœurs
+almanac.diamonds	Diamants
+almanac.clubs	Clubs
+almanac.spades	Piques
+almanac.cardinal	Cardinal
+almanac.fixed	Fixé
+almanac.mutable	Mutable
+almanac.freyr	Aett de Freyr
+almanac.hagal	Aett de Hagal
+almanac.tyr	Aett de Tyr
+almanac.picker.tarot	SÉLECTEUR DE PONT
+almanac.picker.lenormand	PACKS LÉNORMAND
+almanac.picker.runes	ENSEMBLES DE PIERRE RUNIQUE
+almanac.deck	PONT
+almanac.shop	Boutique de terrasses
+almanac.shopLink	Boutique de terrasses →
+almanac.website	Voir sur le site Internet
+almanac.buy	Acheter sur le site
+almanac.launchError	Impossible d'ouvrir le site Web de la boutique
+almanac.tarot	TAROT
+almanac.lenormand	LÉNORMAND
+almanac.runes	RUNES
+almanac.zodiac	ZODIAQUE
+almanac.searchCards	Rechercher une carte, un mot-clé ou un glyphe
+almanac.searchSigns	Rechercher un signe, un mot-clé ou un archétype
+almanac.noCards	Aucune carte ne correspond
+almanac.noSigns	Aucun signe ne correspond
+table.fit	Ajuster toute la tartinade
+table.deal	Distribuer la prochaine carte
+table.analyzeReading	Analyser la lecture
+table.myself	POUR MOI-MÊME (PROFIL)
+table.someone	POUR QUELQU'UN D'AUTRE
+table.question	Sujet ou question (journée, amour, travail)…
+table.dictate	Dicter la question
+table.stopDictation	Arrêter la dictée
+table.noDictation	La saisie vocale n'est pas disponible. Vous pouvez taper votre question.
+spread.choose	Choisissez la diffusion
+spread.tarot.one	Ancre quotidienne
+spread.tarot.three	Trois cartes
+spread.tarot.four	Cible et ombre
+spread.tarot.loveBridge	Pont d'amour
+spread.tarot.careerCrossroads	Carrefour de carrière
+spread.tarot.seven	Synthèse en fer à cheval
+spread.tarot.celticCross	Croix celtique
+spread.lenormand.one	Signe quotidien
+spread.lenormand.three	Ligne Lenormand
+spread.lenormand.five	Croix de 5
+spread.lenormand.nine	Boîte portrait 3×3
+spread.lenormand.grandPortrait	Grand portrait
+spread.runes.one	Rune d'Odin
+spread.runes.three	Les trois Nornes
+spread.runes.five	La Croix de Thor
+spread.runes.seven	Le pont Heimdall
+spread.runes.worldTree	L'arbre du monde d'Yggdrasil
+spread.custom	Spread personnalisé
+spread.customSubtitle	Écrivez ou dictez 1 à 12 questions
+spread.customTitleLabel	Nom de la diffusion (facultatif)
+spread.customQuestionsLabel	QUESTIONS · 1 QUESTION = 1 POSTE
+spread.customQuestionInput	Écrivez ou dictez une question…
+spread.customAddQuestion	Ajouter une question
+spread.customEmptyHint	Ajoutez 1 à 12 questions – chacune devient sa propre position sur la table.
+spread.customLimitReached	Maximum de 12 postes atteint
+spread.customMoveUp	Monter
+spread.customMoveDown	Descendre
+spread.customDelete	Supprimer la question
+spread.customOpenTable	TABLE OUVERTE
+profile.title	PROFIL
+profile.card.identity	CONTEXTE PERSONNEL ET DONNÉES DE NAISSANCE
+profile.card.signIn	CONNEXION ET PRO EN 1 CLIC
+profile.card.migration	MIGRATION D'APPAREILS
+rituals.title	RITUELS QUOTIDIENS
+astral.natal	CARTE NATALE
+astral.horoscope	HOROSCOPE
+astral.synastry	SYNASTRIE
+settings.title	PARAMÈTRES
+reading.title	Expérience de lecture
+reading.positions	Afficher les positions de spread
+reading.guide	Lecture guidée
+reading.relationships	Afficher les relations entre les cartes
+reading.positions.hint	Décrivez et numérotez les espaces vides.
+reading.guide.hint	Obtenez un petit conseil pour la prochaine étape.
+reading.relationships.hint	Révélez les cartes voisines pour voir leur connexion dans les spreads pris en charge.
+reading.detail	Niveau de détail
+reading.detail.concise	CONCIS
+reading.detail.thorough	COMPLET
+reading.resetProgress	Réinitialiser les astuces apprises
+onboarding.eyebrow	LECTURE GUIDÉE
+onboarding.intro.title	Bienvenue sur l'arbre du tarot
+onboarding.intro.body	Je vais vous guider à travers chaque page – une étape honnête à la fois, sans transformer la table en manuel.
+onboarding.experience.title	Avez-vous déjà travaillé avec Tarot ?
+onboarding.beginner	NOUVEAU AU TAROT
+onboarding.beginner.hint	Activez des conseils approfondis.
+onboarding.experienced	JE CONNAIS LES BASES
+onboarding.experienced.hint	Gardez les indices courts.
+onboarding.ready.title	Vous êtes tous prêts
+onboarding.ready.body	Modifiez, réinitialisez ou désactivez les indices à tout moment dans Profil → Expérience de lecture.
+onboarding.next	SUIVANT
+onboarding.skip	SAUTER
+onboarding.start	COMMENCER
+onboarding.restart	Rejouer l'intro
+settings.language	LANGUE
+settings.english	ANGLAIS
+settings.russian	РУССКИЙ
+settings.proHint	ABONNEMENT PRO
+pro.title	PRO
+pro.subtitle	NIVEAU GRATUIT · 2 PROFILS NATAUX SAUVEGARDÉS
+pro.monthly	PRO MENSUEL
+pro.annual	PRO ANNUEL
+pro.bestValue	MEILLEURE VALEUR
+pro.activate	ACTIVER PRO
+pro.active	PRO ACTIF
+pro.benefit1	Profils natals et synastrie illimités
+pro.benefit2	Historique complet de la session et carnets
+pro.benefit3	Tous les packs déco
+pro.benefit4	Synthèse Oracle profonde
+common.cards.one	Carte {count}
+common.cards.few	Cartes {count}
+common.cards.many	Cartes {count}
+common.cards.other	Cartes {count}
+common.stones.one	Pierre {count}
+common.stones.few	Pierres {count}
+common.stones.many	Pierres {count}
+common.stones.other	Pierres {count}
+settings.lang.en	ENGLISH
+settings.lang.ru	РУССКИЙ
+settings.lang.es	ESPAÑOL
+settings.lang.pt	PORTUGUÊS
+settings.lang.de	DEUTSCH
+settings.lang.fr	FRANÇAIS
+content.tarot.77.name	Roi des Pentacles
+content.tarot.77.keyword.0	Maîtrise des matériaux
+content.tarot.77.keyword.1	Fiabilité
+content.tarot.77.keyword.2	Prospérité
+content.tarot.77.upright	Le trône à l’intérieur du vignoble – l’abondance administrée avec calme et compétence.
+content.tarot.77.reversed	La cupidité, la thésaurisation du statut ou la richesse qui appartient à son propriétaire.
+content.tarot.77.socratic	Votre prospérité sert-elle votre vie, ou votre vie est-elle devenue sa servante ?
+content.tarot.76.name	Reine des Pentacles
+content.tarot.76.keyword.0	Nourrir l’abondance
+content.tarot.76.keyword.1	Soins pratiques
+content.tarot.76.keyword.2	Enracinement
+content.tarot.76.upright	Une maison qui travaille et nourrit – un soin exprimé dans le tangible.
+content.tarot.76.reversed	Négligence de soi, martyre des corvées ou soins accordés uniquement aux autres.
+content.tarot.76.socratic	Quand avez-vous pour la dernière fois pris soin de vous-même aussi pratiquement que vous prenez soin de tout le monde ?
+content.tarot.75.name	Chevalier des Pentacles
+content.tarot.75.keyword.0	Persistance
+content.tarot.75.keyword.1	Routine
+content.tarot.75.keyword.2	Travail stable
+content.tarot.75.upright	Le cavalier le plus lent, l’arrivée la plus sûre – le dévouement au quotidien.
+content.tarot.75.reversed	Stagnation, routine obstinée ou persistance visant un champ mort.
+content.tarot.75.socratic	Votre routine est-elle un chemin ou une ornière qui s’approfondit chaque jour ?
+content.tarot.74.name	Page des Pentacles
+content.tarot.74.keyword.0	Étude
+content.tarot.74.keyword.1	Ambition
+content.tarot.74.keyword.2	Apprentissage pratique
+content.tarot.74.upright	L'étudiant et la pièce de monnaie — une ambition pratique prête pour sa première leçon.
+content.tarot.74.reversed	Procrastination, études superficielles ou ambition sans professeur.
+content.tarot.74.socratic	Quelle compétence avez-vous admirée au lieu d’apprendre ?
+content.tarot.73.name	Dix de Pentacles
+content.tarot.73.keyword.0	Héritage
+content.tarot.73.keyword.1	Richesse
+content.tarot.73.keyword.2	Continuité
+content.tarot.73.upright	La longue table – une richesse qui survit à la main qui l’a construite.
+content.tarot.73.reversed	Conflits successoraux, murs familiaux ou richesses sans signification.
+content.tarot.73.socratic	Que construisez-vous qui est censé durer plus longtemps que vous ?
+content.tarot.72.name	Neuf des Pentacles
+content.tarot.72.keyword.0	Indépendance
+content.tarot.72.keyword.1	Raffinement
+content.tarot.72.keyword.2	Possession de soi
+content.tarot.72.upright	Le jardin, le faucon, l'autonomie, l'abondance appréciée seule et à l'aise.
+content.tarot.72.reversed	L'isolement acheté avec succès, ou le luxe qui cache une table vide.
+content.tarot.72.socratic	Qu’est-ce qui changerait si vous vous laissiez profiter de ce que vous avez construit ?
+content.tarot.71.name	Huit de Pentacles
+content.tarot.71.keyword.0	Diligence
+content.tarot.71.keyword.1	Artisanat
+content.tarot.71.keyword.2	Répétition
+content.tarot.71.upright	Pièce après pièce, taillée avec soin – la maîtrise a construit une répétition honnête à la fois.
+content.tarot.71.reversed	Perfectionnisme, corvée ou compétence aiguisée sans but en vue.
+content.tarot.71.socratic	Quel métier serait le vôtre si vous vous accordiez mille heures de calme ?
+content.tarot.70.name	Sept des Pentacles
+content.tarot.70.keyword.0	Patience
+content.tarot.70.keyword.1	Évaluation
+content.tarot.70.keyword.2	Croissance lente
+content.tarot.70.upright	Appuyé sur la houe, surveillant les vignes, les vendanges valent-elles une autre saison ?
+content.tarot.70.reversed	Impatience, efforts inutiles ou arrêt d'une saison avant la récolte.
+content.tarot.70.socratic	Ce que vous cultivez vaut-il une autre saison d’entretien ?
+content.tarot.69.name	Six des Pentacles
+content.tarot.69.keyword.0	Générosité
+content.tarot.69.keyword.1	Couler
+content.tarot.69.keyword.2	Réciprocité
+content.tarot.69.upright	La balance et la main ouverte – donner et recevoir dans un flux équitable.
+content.tarot.69.reversed	Dette, conditions attachées ou charité qui achète discrètement le contrôle.
+content.tarot.69.socratic	Donnez-vous librement ou prêtez-vous à des intérêts que vous ne nommerez pas ?
+content.tarot.68.name	Cinq des Pentacles
+content.tarot.68.keyword.0	Rareté
+content.tarot.68.keyword.1	Exclusion
+content.tarot.68.keyword.2	Froid
+content.tarot.68.upright	En dehors de la fenêtre éclairée – un manque qui semble personnel mais qui n’est que la météo.
+content.tarot.68.reversed	Retour à l'intérieur, aide acceptée, ou fin du long froid.
+content.tarot.68.socratic	À quelle fenêtre éclairée es-tu trop fier pour frapper ?
+content.tarot.67.name	Quatre des Pentacles
+content.tarot.67.keyword.0	Contrôle
+content.tarot.67.keyword.1	Sécurité
+content.tarot.67.keyword.2	Poignée
+content.tarot.67.upright	Tenir fermement ce qui vous appartient – ​​la sécurité ou la peur de la perdre.
+content.tarot.67.reversed	Ouvrir la prise, faire preuve de générosité, ou relâcher ce qui a été tenu trop longtemps.
+content.tarot.67.socratic	Qu’est-ce que vous saisissez si fort qu’il ne peut pas respirer – ni être donné ?
+content.tarot.66.name	Trois des Pentacles
+content.tarot.66.keyword.0	Collaboration
+content.tarot.66.keyword.1	Artisanat
+content.tarot.66.keyword.2	Maîtrise
+content.tarot.66.upright	Artisanat reconnu : le constructeur, l'architecte et le mécène construisent ensemble.
+content.tarot.66.reversed	Travail bâclé, compétences négligées ou équipe où une seule personne porte toute la pierre.
+content.tarot.66.socratic	Quelles compétences n’utilisez-vous pas parce que demander vous admettrait que vous en avez besoin ?
+content.tarot.65.name	Deux des Pentacles
+content.tarot.65.keyword.0	Équilibre
+content.tarot.65.keyword.1	Jonglerie
+content.tarot.65.keyword.2	Adaptation
+content.tarot.65.upright	Le danseur maintient les deux pièces en mouvement – ​​la flexibilité qui les maintient ensemble.
+content.tarot.65.reversed	Balles perdues, engagement excessif ou solde acheté au prix de la profondeur.
+content.tarot.65.socratic	Parmi les choses avec lesquelles vous jonglez, laquelle survivrait à sa pose ?
+content.tarot.64.name	As de Pentacles
+content.tarot.64.keyword.0	Opportunité
+content.tarot.64.keyword.1	Graine
+content.tarot.64.keyword.2	Abondance
+content.tarot.64.upright	Une graine dans une main ouverte – une opportunité matérielle qui pousse si elle est plantée.
+content.tarot.64.reversed	Opportunité manquée, graine non plantée ou valeur non encore reconnue.
+content.tarot.64.socratic	Quelle opportunité pratique se trouve entre vos mains ?
+content.tarot.63.name	Roi des épées
+content.tarot.63.keyword.0	Autorité rationnelle
+content.tarot.63.keyword.1	Logique
+content.tarot.63.keyword.2	Esprit de décision
+content.tarot.63.upright	Jugement sans sentiment – ​​un verdict juste rendu d’une main ferme.
+content.tarot.63.reversed	Tyranie froide, sentiment de rationalisation excessive ou règles appliquées sans pitié.
+content.tarot.63.socratic	Où votre logique vous protège-t-elle de ce que vous ressentez déjà ?
+content.tarot.62.name	Reine des épées
+content.tarot.62.keyword.0	Discernement
+content.tarot.62.keyword.1	Frontières
+content.tarot.62.keyword.2	Franchise
+content.tarot.62.upright	La lame honnête du discernement – ​​des limites claires énoncées sans cruauté.
+content.tarot.62.reversed	Froideur, mots tranchants ou honnêteté devenue une arme.
+content.tarot.62.socratic	Où votre honnêteté a-t-elle cessé de servir la vérité et commencé à servir la distance ?
+content.tarot.61.name	Chevalier des épées
+content.tarot.61.keyword.0	Détermination
+content.tarot.61.keyword.1	Poursuite
+content.tarot.61.keyword.2	Vitesse d'esprit
+content.tarot.61.upright	Charge totale vers la vérité – un esprit qui ne sera ni ralenti ni réduit au silence.
+content.tarot.61.reversed	Discours irréfléchi, épuisement professionnel ou charge dans une bataille qui n'a jamais été la vôtre.
+content.tarot.61.socratic	Votre quête est-elle la vérité ou le sentiment de gagner ?
+content.tarot.60.name	Page des épées
+content.tarot.60.keyword.0	Vigilance
+content.tarot.60.keyword.1	Observation
+content.tarot.60.keyword.2	Esprit curieux
+content.tarot.60.upright	Les yeux ouverts, la lame dégainée – un esprit curieux qui regarde avant de bouger.
+content.tarot.60.reversed	Potins, critiques agitées ou paroles acerbes sans objectif précis.
+content.tarot.60.socratic	Qu’avez-vous observé dernièrement et sur lequel vous ne vous êtes pas laissé agir ?
+content.tarot.59.name	Dix d'épées
+content.tarot.59.keyword.0	Le fond
+content.tarot.59.keyword.1	Fin
+content.tarot.59.keyword.2	Aube
+content.tarot.59.upright	Le coup final – et l’horizon devient déjà doré derrière lui.
+content.tarot.59.reversed	S'élever, se rétablir ou refuser d'accepter que le pire soit passé.
+content.tarot.59.socratic	Maintenant que le pire est arrivé, que reste-t-il de ce qui suffisait toujours ?
+content.tarot.58.name	Neuf d'épées
+content.tarot.58.keyword.0	Anxiété
+content.tarot.58.keyword.1	Rumination
+content.tarot.58.keyword.2	Inquiétude nocturne
+content.tarot.58.upright	L'esprit de 3 heures du matin — vous inquiétez qui boucle parce qu'il n'est jamais rencontré à la lumière du jour.
+content.tarot.58.reversed	Se réveiller d'un cauchemar, chercher de l'aide ou une anxiété enfin nommée et affrontée.
+content.tarot.58.socratic	Qu'est-ce que la peur de 3 heures du matin et que dirait-elle si vous lui demandiez d'être précis ?
+content.tarot.57.name	Huit d'épées
+content.tarot.57.keyword.0	Auto-reliant
+content.tarot.57.keyword.1	Limitation
+content.tarot.57.keyword.2	Bandeau
+content.tarot.57.upright	Lié mais pas tenu – les cordes sont lâches, le bandeau facultatif, la porte ouverte.
+content.tarot.57.reversed	Libération, agence récupérée ou premier pas hors d'une cage qui n'a jamais été verrouillée.
+content.tarot.57.socratic	Laquelle de vos limites est une corde que vous avez attachée vous-même ?
+content.tarot.56.name	Sept d'épées
+content.tarot.56.keyword.0	Stratégie
+content.tarot.56.keyword.1	Furtivité
+content.tarot.56.keyword.2	Rusé
+content.tarot.56.upright	Stratégie silencieuse : bouger seul, avec un plan que vous seul comprenez parfaitement.
+content.tarot.56.reversed	Exposition, auto-tromperie ou stratagème qui joue désormais contre vous.
+content.tarot.56.socratic	Que faites-vous en secret que vous ne défendriez pas en plein jour ?
+content.tarot.55.name	Six d'épées
+content.tarot.55.keyword.0	Transition
+content.tarot.55.keyword.1	Passage
+content.tarot.55.keyword.2	Des eaux plus calmes
+content.tarot.55.upright	Ramer vers un rivage plus calme – en laissant la tempête derrière vous, une traversée à la fois.
+content.tarot.55.reversed	Bagages non résolus, voyage retardé ou entraînement de la tempête dans le bateau.
+content.tarot.55.socratic	Qu’emportez-vous dans le prochain chapitre qui appartient au dernier ?
+content.tarot.54.name	Cinq d'épées
+content.tarot.54.keyword.0	Victoire à la Pyrrhus
+content.tarot.54.keyword.1	Conflit
+content.tarot.54.keyword.2	Coût
+content.tarot.54.upright	Le terrain est gagné et vide – comptez ce que la victoire vous a réellement coûté.
+content.tarot.54.reversed	La réconciliation, le dépôt des armes ou la fin d'un combat que tout le monde a perdu.
+content.tarot.54.socratic	Que vous coûte ce conflit que vous n’avez pas comptabilisé ?
+content.tarot.53.name	Quatre d'épées
+content.tarot.53.keyword.0	Repos
+content.tarot.53.keyword.1	Retraite
+content.tarot.53.keyword.2	Trêve
+content.tarot.53.upright	Le chevalier est toujours dans la chapelle – la guérison est une stratégie, pas une faiblesse.
+content.tarot.53.reversed	Agitation, épuisement professionnel ou retour au combat avant que la blessure ne se referme.
+content.tarot.53.socratic	Dans quelle bataille rentrez-vous et que votre corps a voté pour quitter ?
+content.tarot.52.name	Trois d'épées
+content.tarot.52.keyword.0	Chagrin
+content.tarot.52.keyword.1	Vérité douloureuse
+content.tarot.52.keyword.2	Blesser
+content.tarot.52.upright	Le cœur transpercé par la vérité – une douleur qui est aussi une information.
+content.tarot.52.reversed	Guérir, libérer la lame, ou rouvrir une plaie qui se refermait.
+content.tarot.52.socratic	Qu’est-ce que la douleur vous a appris que le confort n’a jamais pu ?
+content.tarot.51.name	Deux d'épées
+content.tarot.51.keyword.0	Impasse
+content.tarot.51.keyword.1	Indécision
+content.tarot.51.keyword.2	Bandeau
+content.tarot.51.upright	Une trêve les yeux bandés : refuser de choisir est en soi un choix qui a un coût.
+content.tarot.51.reversed	Le bandeau glisse, une décision fait surface ou l’impasse finit par sortir.
+content.tarot.51.socratic	Que sauriez-vous si vous arrêtiez de refuser de regarder ?
+content.tarot.50.name	As d'épée
+content.tarot.50.keyword.0	Clarté
+content.tarot.50.keyword.1	Vérité
+content.tarot.50.keyword.2	Percée
+content.tarot.50.upright	La vérité à double tranchant brise le brouillard – une avancée qui exige de l’honnêteté.
+content.tarot.50.reversed	Une perspicacité brutale, des mots armés ou une clarté utilisée contre vous-même.
+content.tarot.50.socratic	Quelle vérité, une fois prononcée, réduirait votre problème de moitié ?
+content.tarot.49.name	Roi des Coupes
+content.tarot.49.keyword.0	Maîtrise
+content.tarot.49.keyword.1	Calme
+content.tarot.49.keyword.2	Compassion
+content.tarot.49.upright	La tempête s'est tenue à l'intérieur d'un homme stable - la maîtrise émotionnelle exprimée par une compassion calme.
+content.tarot.49.reversed	Sentiment réprimé, froideur ou manipulation habillée en calme.
+content.tarot.49.socratic	Est-ce votre calme maîtrise, ou une tempête que vous refusez de ressentir ?
+content.tarot.48.name	Reine des Coupes
+content.tarot.48.keyword.0	Empathie
+content.tarot.48.keyword.1	Profondeur
+content.tarot.48.keyword.2	Harmonisation
+content.tarot.48.upright	Une profondeur émotionnelle tenue avec des mains fermes - l'auditeur à côté duquel les autres guérissent.
+content.tarot.48.reversed	Surabsorption émotionnelle, martyre du sentiment ou intuition obscurcie par les autres.
+content.tarot.48.socratic	De quels sentiments portez-vous comme s’ils étaient les vôtres ?
+content.tarot.47.name	Chevalier des Coupes
+content.tarot.47.keyword.0	Romance
+content.tarot.47.keyword.1	Offre
+content.tarot.47.keyword.2	Suite au sentiment
+content.tarot.47.upright	L'offre romantique arrive : un chevalier qui suit le cœur, la coupe tendue.
+content.tarot.47.reversed	Mauvaise humeur, gestes vides ou sentiments exécutés au lieu d'être vécus.
+content.tarot.47.socratic	Suivez-vous votre cœur ou poursuivez-vous son reflet ?
+content.tarot.46.name	Page de Coupes
+content.tarot.46.keyword.0	Merveille
+content.tarot.46.keyword.1	Message de coeur
+content.tarot.46.keyword.2	Curiosité
+content.tarot.46.upright	Un poisson dans une tasse : surprise, tendresse et invitation du cœur.
+content.tarot.46.reversed	Immaturité émotionnelle, rêverie ou message du cœur ignoré.
+content.tarot.46.socratic	Qu'est-ce que votre cœur essaie de vous offrir et que vous continuez à qualifier d'enfantin ?
+content.tarot.45.name	Dix de Coupes
+content.tarot.45.keyword.0	Harmonie
+content.tarot.45.keyword.1	Famille
+content.tarot.45.keyword.2	Achèvement
+content.tarot.45.upright	L’arc-en-ciel au-dessus de la maison – un accomplissement émotionnel partagé avec les personnes qui comptent.
+content.tarot.45.reversed	Idéaux brisés, fracture familiale ou harmonie qui n’est qu’une image sur le mur.
+content.tarot.45.socratic	Qu’est-ce que votre foyer exige de vous que vous n’avez pas voulu donner ?
+content.tarot.44.name	Neuf de Coupes
+content.tarot.44.keyword.0	Souhait exaucé
+content.tarot.44.keyword.1	Contentement
+content.tarot.44.keyword.2	Satisfaction
+content.tarot.44.upright	La carte de vœux : profonde satisfaction de ce que vous avez construit et ressenti.
+content.tarot.44.reversed	La suffisance, le souhait sans travail ou la satisfaction qui masque un siège vide.
+content.tarot.44.socratic	Si votre souhait se réalisait demain, vous y reconnaîtriez-vous ?
+content.tarot.43.name	Huit de Coupes
+content.tarot.43.keyword.0	Départ
+content.tarot.43.keyword.1	Recherche
+content.tarot.43.keyword.2	Retrait
+content.tarot.43.upright	S'éloigner d'une table pleine – laisser ce qui ne nourrit plus l'âme.
+content.tarot.43.reversed	Revenir trop tôt, l'envie de voyager comme évasion ou abandonner ce qui n'était pas terminé.
+content.tarot.43.socratic	Que laissez-vous derrière vous – et est-ce vraiment vide, ou l’êtes-vous ?
+content.tarot.42.name	Sept de Coupes
+content.tarot.42.keyword.0	Illusion
+content.tarot.42.keyword.1	Choix
+content.tarot.42.keyword.2	Fantaisie
+content.tarot.42.upright	Sept visions, un choix – elles ne sont pas toutes réelles ; choisissez avec les yeux clairs.
+content.tarot.42.reversed	Clarté après brouillard, décision prise ou fantasme enfin posé.
+content.tarot.42.socratic	Laquelle de vos options actuelles survivrait au contact avec la réalité ?
+content.tarot.41.name	Six de Coupes
+content.tarot.41.keyword.0	Nostalgie
+content.tarot.41.keyword.1	Innocence
+content.tarot.41.keyword.2	Mémoire
+content.tarot.41.upright	Cadeaux du passé – des souvenirs qui nourrissent plutôt qu’emprisonnent.
+content.tarot.41.reversed	Vivre à l’envers, idéaliser ce qui était ou refuser de dépasser le jardin.
+content.tarot.41.socratic	Est-ce que le passé vous nourrit, ou est-ce vous qui le nourrissez ?
+content.tarot.40.name	Cinq de Coupes
+content.tarot.40.keyword.0	Perte
+content.tarot.40.keyword.1	Regret
+content.tarot.40.keyword.2	Chagrin
+content.tarot.40.upright	Trois tasses renversées, deux encore debout : le chagrin est réel, tout comme ce qui reste.
+content.tarot.40.reversed	L'acceptation, le pardon ou le retour vers ce qui a survécu.
+content.tarot.40.socratic	Que reste-t-il derrière vous que le chagrin a caché à la vue ?
+content.tarot.39.name	Quatre de Coupes
+content.tarot.39.keyword.0	Apathie
+content.tarot.39.keyword.1	Offre manquée
+content.tarot.39.keyword.2	Plateau
+content.tarot.39.upright	Une coupe offerte du ciel alors que l’attention est fixée sur le sol – l’offre est réelle.
+content.tarot.39.reversed	Se réveiller du brouillard, une nouvelle ouverture ou enfin remarquer la coupe offerte.
+content.tarot.39.socratic	Quelle opportunité s'offre à vous que votre ennui ne vous laisse pas voir ?
+content.tarot.38.name	Trois de Coupes
+content.tarot.38.keyword.0	Amitié
+content.tarot.38.keyword.1	Joie partagée
+content.tarot.38.keyword.2	Communauté
+content.tarot.38.upright	Joie multipliée par les témoins – célébration qui devient appartenance.
+content.tarot.38.reversed	Potins, exclusion ou fête avec des gens qui vident la pièce.
+content.tarot.38.socratic	Qui célèbre vos victoires avec une joie sincère – et qui est seulement présent ?
+content.tarot.37.name	Deux de Coupes
+content.tarot.37.keyword.0	Union
+content.tarot.37.keyword.1	Attirance
+content.tarot.37.keyword.2	Mutualité
+content.tarot.37.upright	Deux coupes levées dans un échange égal – un lien fondé sur une véritable réciprocité.
+content.tarot.37.reversed	Déséquilibre, pacte unilatéral ou harmonie réalisée mais non ressentie.
+content.tarot.37.socratic	Dans quelle relation donnez-vous ce que vous n’avez jamais demandé de recevoir ?
+content.tarot.36.name	As de Coupe
+content.tarot.36.keyword.0	Renouvellement
+content.tarot.36.keyword.1	Amour
+content.tarot.36.keyword.2	Ouverture
+content.tarot.36.upright	La coupe déborde – une nouvelle sensation fait surface, demandant à être reçue.
+content.tarot.36.reversed	Émotion bloquée, amour refusé ou tasse versée avant d'être bue.
+content.tarot.36.socratic	Quel sentiment fait surface que vous continuez à qualifier de problème ?
+content.tarot.35.name	Roi des baguettes
+content.tarot.35.keyword.0	Visionnaire
+content.tarot.35.keyword.1	Direction
+content.tarot.35.keyword.2	Audace
+content.tarot.35.upright	Le commandement s'acquiert grâce à la vision : un leader qui éclaire le chemin, pas seulement le flambeau.
+content.tarot.35.reversed	Tyrannie, décret impulsif ou charisme sans responsabilité.
+content.tarot.35.socratic	Qui dirigez-vous et leur avez-vous dit où le feu les mène ?
+content.tarot.34.name	Reine des baguettes
+content.tarot.34.keyword.0	Confiance
+content.tarot.34.keyword.1	Magnétisme
+content.tarot.34.keyword.2	Chaleur
+content.tarot.34.upright	Une possession de soi rayonnante – une chaleur qui mène sans exiger.
+content.tarot.34.reversed	Jalousie, confiance performative ou feu tourné vers l'intérieur.
+content.tarot.34.socratic	Que créeriez-vous si vous arrêtiez d’auditionner pour approbation ?
+content.tarot.33.name	Chevalier des baguettes
+content.tarot.33.keyword.0	Aventure
+content.tarot.33.keyword.1	Impulsion
+content.tarot.33.keyword.2	Charge
+content.tarot.33.upright	Engagement à toute vitesse dans l’aventure – la passion avec une destination.
+content.tarot.33.reversed	Hâte imprudente, épuisement professionnel ou charme qui promet plus qu'il n'apporte.
+content.tarot.33.socratic	Votre vitesse vous amène-t-elle vers quelque chose ou vous éloigne-t-elle du calme ?
+content.tarot.32.name	Page de baguettes
+content.tarot.32.keyword.0	Enthousiasme
+content.tarot.32.keyword.1	Exploration
+content.tarot.32.keyword.2	Message
+content.tarot.32.upright	Le messager de l’étincelle – curieux, désireux, prêt à explorer le nouveau.
+content.tarot.32.reversed	Agitation, projets à moitié entamés, ou nouveauté utilisée comme évasion.
+content.tarot.32.socratic	Qu’est-ce qui vous donne le plus hâte de commencer – et pourquoi ne l’avez-vous pas commencé ?
+content.tarot.31.name	Dix de baguettes
+content.tarot.31.keyword.0	Fardeau
+content.tarot.31.keyword.1	Devoir
+content.tarot.31.keyword.2	Surcharge
+content.tarot.31.upright	Transporter plus d’une personne devrait le faire – la fin est proche, mais le poids vous appartient.
+content.tarot.31.reversed	Délégation, libération ou abandon de ce qui n'a jamais été à vous.
+content.tarot.31.socratic	Lequel de vos fardeaux survivrait à être confié à quelqu’un d’autre ?
+content.tarot.30.name	Neuf de baguettes
+content.tarot.30.keyword.0	Résilience
+content.tarot.30.keyword.1	Dernier combat
+content.tarot.30.keyword.2	Vigilance
+content.tarot.30.upright	Battu mais debout – le mur final tient parce que vous refusez de l’abaisser.
+content.tarot.30.reversed	Épuisement, paranoïa ou garde d'un mur qui n'a plus besoin d'être défendu.
+content.tarot.30.socratic	Quelle est actuellement la différence entre la résilience et le refus de se reposer ?
+content.tarot.29.name	Huit de baguettes
+content.tarot.29.keyword.0	Vitesse
+content.tarot.29.keyword.1	Nouvelles
+content.tarot.29.keyword.2	Mouvement
+content.tarot.29.upright	Mouvement rapide : les messages, les voyages et les événements arrivent en même temps.
+content.tarot.29.reversed	Retards, signaux ratés ou vitesse sans direction.
+content.tarot.29.socratic	Si tout s’accélère demain, visez-vous là où vous souhaitez atterrir ?
+content.tarot.28.name	Sept de baguettes
+content.tarot.28.keyword.0	Défense
+content.tarot.28.keyword.1	Terrain debout
+content.tarot.28.keyword.2	Conviction
+content.tarot.28.upright	Tenez les hauteurs face à vos challengers – défendez ce que vous avez construit.
+content.tarot.28.reversed	Débordement, mentalité de siège ou défense d'une position à laquelle vous ne croyez plus.
+content.tarot.28.socratic	Que défendez-vous : l’idée ou les efforts que vous avez déjà déployés ?
+content.tarot.27.name	Six de baguettes
+content.tarot.27.keyword.0	Victoire
+content.tarot.27.keyword.1	Reconnaissance
+content.tarot.27.keyword.2	Fierté
+content.tarot.27.upright	Reconnaissance publique d’une bataille honnêtement gagnée – gagnée et non empruntée.
+content.tarot.27.reversed	Applaudissements creux, peur de l’imposteur ou victoire revendiquée trop tôt.
+content.tarot.27.socratic	Que laisseriez-vous voir aux gens si vous aviez confiance que la victoire était réelle ?
+content.tarot.26.name	Cinq de baguettes
+content.tarot.26.keyword.0	Friction
+content.tarot.26.keyword.1	Concours
+content.tarot.26.keyword.2	Combat
+content.tarot.26.upright	Friction saine – des idées concurrentes s’aiguisant mutuellement pour obtenir un meilleur résultat.
+content.tarot.26.reversed	Conflit insignifiant, gaspillage d’énergie ou combat qui a dépassé son objectif.
+content.tarot.26.socratic	Vous battez-vous pour le résultat ou juste pour le combat ?
+content.tarot.25.name	Quatre de baguettes
+content.tarot.25.keyword.0	Célébration
+content.tarot.25.keyword.1	Stabilité
+content.tarot.25.keyword.2	Retour à la maison
+content.tarot.25.upright	Une étape franchie : faites une pause, célébrez et laissez la structure vous retenir.
+content.tarot.25.reversed	Des fondations instables, une joie reportée, ou célébrer seul ce qui devrait être partagé.
+content.tarot.25.socratic	Quelle victoire récente avez-vous oublié de célébrer ?
+content.tarot.24.name	Trois de baguettes
+content.tarot.24.keyword.0	Expansion
+content.tarot.24.keyword.1	Prévoyance
+content.tarot.24.keyword.2	Élan
+content.tarot.24.upright	Navires déjà envoyés – une expansion qui récompense la prévoyance des patients.
+content.tarot.24.reversed	Obstacles à l'accouchement, vision étroite ou attente que les autres agissent en premier.
+content.tarot.24.socratic	Qu’avez-vous mis en mouvement qui nécessite simplement votre patience maintenant ?
+content.tarot.23.name	Deux de baguettes
+content.tarot.23.keyword.0	Planification
+content.tarot.23.keyword.1	Vision
+content.tarot.23.keyword.2	Horizon
+content.tarot.23.upright	Le monde en main et la carte ouverte – un plan audacieux se dessinant au seuil.
+content.tarot.23.reversed	Peur de laisser le confort, une planification excessive ou un horizon ignoré.
+content.tarot.23.socratic	Quel est le coût de rester là où se termine la carte ?
+content.tarot.22.name	As de baguettes
+content.tarot.22.keyword.0	Étincelle
+content.tarot.22.keyword.1	Inspiration
+content.tarot.22.keyword.2	Impulsion
+content.tarot.22.upright	Allumage pur – une étincelle créative qui vous est offerte, attendant d'être réclamée.
+content.tarot.22.reversed	Retard, énergie bloquée ou étincelle étouffée avant de se déclencher.
+content.tarot.22.socratic	Quelle idée tenez-vous à bout de bras parce qu'elle vous exigerait ?
+content.tarot.21.name	Le monde
+content.tarot.21.keyword.0	Achèvement
+content.tarot.21.keyword.1	Intégration
+content.tarot.21.keyword.2	Intégrité
+content.tarot.21.upright	La boucle se ferme : un cycle intégré, un auto-assemblage, un voyage mérité.
+content.tarot.21.reversed	Presque là mais inachevé ; des détails qui bloquent la danse finale.
+content.tarot.21.socratic	Que faudrait-il pour déclarer ce chapitre terminé ?
+content.tarot.20.name	Jugement
+content.tarot.20.keyword.0	Éveil
+content.tarot.20.keyword.1	Compte
+content.tarot.20.keyword.2	Renaissance
+content.tarot.20.upright	Un appel des profondeurs : levez-vous, rendez compte du passé et répondez de tout votre être.
+content.tarot.20.reversed	L'auto-condamnation, un appel refusé ou le fait d'être jugé par une ancienne version de vous.
+content.tarot.20.socratic	Quel appel avez-vous entendu et avez-vous fait semblant de ne pas reconnaître ?
+content.tarot.19.name	Le Soleil
+content.tarot.19.keyword.0	Vitalité
+content.tarot.19.keyword.1	Clarté
+content.tarot.19.keyword.2	Joie
+content.tarot.19.upright	Lumière non filtrée – succès, chaleur et simple permission d’être vu.
+content.tarot.19.reversed	Confiance diminuée, optimisme forcé ou génie caché.
+content.tarot.19.socratic	Que feriez-vous différemment si vous étiez certain d’être vu et approuvé ?
+content.tarot.18.name	La Lune
+content.tarot.18.keyword.0	Illusion
+content.tarot.18.keyword.1	Subconscient
+content.tarot.18.keyword.2	Incertitude
+content.tarot.18.upright	Le chemin est éclairé par le clair de lune – suffisamment pour marcher, pas assez pour en être sûr.
+content.tarot.18.reversed	Le brouillard se dissipe, les peurs nommées ou la tromperie enfin visible pour ce qu'elle est.
+content.tarot.18.socratic	Laquelle de vos peurs semble différente à la lumière du jour ?
+content.tarot.17.name	L'étoile
+content.tarot.17.keyword.0	Espoir
+content.tarot.17.keyword.1	Guérison
+content.tarot.17.keyword.2	Renouvellement
+content.tarot.17.upright	Après la tempête, une eau calme et un ciel clair : l’espoir fondé sur ce qui a survécu.
+content.tarot.17.reversed	Désillusion, foi affaiblie ou espoir sans action.
+content.tarot.17.socratic	Qu'est-ce qui a survécu à votre dernière tempête et que vous n'avez pas encore remercié ?
+content.tarot.16.name	La Tour
+content.tarot.16.keyword.0	Changement soudain
+content.tarot.16.keyword.1	Révélation
+content.tarot.16.keyword.2	Effondrement
+content.tarot.16.upright	L’éclair ne demande pas la permission – ce qui était faux s’effondre pour que la vérité puisse subsister.
+content.tarot.16.reversed	Crise évitée, prise de décision retardée ou reconstruction sur les mêmes fondations fissurées.
+content.tarot.16.socratic	Quelle structure dans votre vie est construite sur une fondation dont vous savez déjà qu’elle est fausse ?
+content.tarot.15.name	Le Diable
+content.tarot.15.keyword.0	Pièce jointe
+content.tarot.15.keyword.1	Ombre
+content.tarot.15.keyword.2	Esclavage
+content.tarot.15.upright	Les chaînes sont lâches – cette carte nomme l’attachement que vous appelez le destin.
+content.tarot.15.reversed	Se libérer, récupérer son libre arbitre ou nier l'habitude qui vous appartient encore.
+content.tarot.15.socratic	Quelle chaîne autour de votre poignet est suffisamment lâche pour glisser aujourd'hui ?
+content.tarot.14.name	Tempérance
+content.tarot.14.keyword.0	Équilibre
+content.tarot.14.keyword.1	Alchimie
+content.tarot.14.keyword.2	Couler
+content.tarot.14.upright	Des contraires mélangés, non forcés – une patience qui transforme la tension en médicament.
+content.tarot.14.reversed	Déséquilibre, excès ou précipitation d'un mélange qui a mis du temps à se décanter.
+content.tarot.14.socratic	À quel moment de votre vie mélangez-vous plus vite que le mélange ne peut guérir ?
+content.tarot.13.name	La mort
+content.tarot.13.keyword.0	Fin
+content.tarot.13.keyword.1	Transformation
+content.tarot.13.keyword.2	Libérer
+content.tarot.13.upright	Une fin nécessaire nettoie le terrain – du compost pour la suite.
+content.tarot.13.reversed	Refuser de lâcher prise, glisser un chapitre terminé dans le suivant.
+content.tarot.13.socratic	Quel chapitre terminé portez-vous encore comme s’il était vivant ?
+content.tarot.12.name	Le Pendu
+content.tarot.12.keyword.0	Se rendre
+content.tarot.12.keyword.1	Nouvelle perspective
+content.tarot.12.keyword.2	Pause
+content.tarot.12.upright	La suspension comme révélation – la vision ne change que lorsque vous arrêtez de lutter.
+content.tarot.12.reversed	Martyre, retard inutile ou sacrifice offert là où aucun n'était demandé.
+content.tarot.12.socratic	Que verriez-vous si vous arrêtiez de lutter pendant un instant ?
+content.tarot.11.name	Justice
+content.tarot.11.keyword.0	Vérité
+content.tarot.11.keyword.1	Conséquence
+content.tarot.11.keyword.2	Équilibre
+content.tarot.11.upright	La cause et l’effet se rencontrent ouvertement – ​​un verdict honnête, équitablement mérité.
+content.tarot.11.reversed	Biais, évitement de la responsabilité ou échelles pondérées par l’auto-tromperie.
+content.tarot.11.socratic	Quel verdict avez-vous évité en refusant d’évaluer les preuves ?
+content.tarot.10.name	Roue de la Fortune
+content.tarot.10.keyword.0	Faire du vélo
+content.tarot.10.keyword.1	Destin
+content.tarot.10.keyword.2	Tournant
+content.tarot.10.upright	La roue tourne : ce qui s’élève aujourd’hui a été mis en mouvement il y a longtemps ; prendre le virage.
+content.tarot.10.reversed	Résistance au changement, mauvais timing ou accrochage à un cycle terminé.
+content.tarot.10.socratic	Si ce moment est un tournant, que vous demande-t-on de libérer ?
+content.tarot.9.name	L'Ermite
+content.tarot.9.keyword.0	Solitude
+content.tarot.9.keyword.1	Recherche intérieure
+content.tarot.9.keyword.2	Conseils
+content.tarot.9.upright	La lanterne est allumée de l’intérieur – un retrait qui vous ramène à vous-même.
+content.tarot.9.reversed	Un isolement sans but, ou un refus d'être trouvé même par ceux qui pourraient aider.
+content.tarot.9.socratic	Que pourriez-vous entendre si vous vous accordiez une journée silencieuse ?
+content.tarot.8.name	Force
+content.tarot.8.keyword.0	Courage
+content.tarot.8.keyword.1	Patience
+content.tarot.8.keyword.2	Puissance douce
+content.tarot.8.upright	Le lion n’est pas vaincu – il se lie d’amitié ; la douceur s'avère être la meilleure adhérence.
+content.tarot.8.reversed	Doute de soi, colère réprimée ou force appliquée là où la patience était nécessaire.
+content.tarot.8.socratic	Où la douceur l’emporterait-elle plus vite que la force dans votre vie en ce moment ?
+content.tarot.7.name	Le char
+content.tarot.7.keyword.0	Volonté
+content.tarot.7.keyword.1	Direction
+content.tarot.7.keyword.2	Victoire
+content.tarot.7.upright	Des forces opposées exploitées et poussées en avant par une pure intention disciplinée.
+content.tarot.7.reversed	Une ambition au point mort, des rouets ou deux chevaux qui se séparent.
+content.tarot.7.socratic	Laquelle de vos forces intérieures avez-vous laissé conduire sans rênes ?
+content.tarot.6.name	Les amoureux
+content.tarot.6.keyword.0	Union
+content.tarot.6.keyword.1	Choix
+content.tarot.6.keyword.2	Alignement
+content.tarot.6.upright	Un choix du cœur qui aligne deux chemins : l’amour comme décision, pas seulement comme sentiment.
+content.tarot.6.reversed	Désalignement, tentation ou choix reporté jusqu'à ce qu'il se fasse tout seul.
+content.tarot.6.socratic	Quel choix reportez-vous que votre cœur a déjà fait ?
+content.tarot.5.name	Le Hiérophante
+content.tarot.5.keyword.0	Tradition
+content.tarot.5.keyword.1	Enseignement
+content.tarot.5.keyword.2	Signification
+content.tarot.5.upright	La sagesse transmise – un système, un mentor ou un rituel qui donne forme à la croyance.
+content.tarot.5.reversed	Dogme sur la vérité ; des institutions dont vous avez dépassé les règles mais dont vous obéissez toujours.
+content.tarot.5.socratic	Quelle règle héritée est-il temps d’examiner avant de la suivre à nouveau ?
+content.tarot.4.name	L'Empereur
+content.tarot.4.keyword.0	Autorité
+content.tarot.4.keyword.1	Structure
+content.tarot.4.keyword.2	Protection
+content.tarot.4.upright	Commandez construit pierre par pierre – des limites qui créent la sécurité, pas des cages.
+content.tarot.4.reversed	La rigidité, la domination, ou encore la peur du chaos qui étouffe tout ce qui vit.
+content.tarot.4.socratic	Où devez-vous fixer une limite que vous avez évitée ?
+content.tarot.3.name	L'Impératrice
+content.tarot.3.keyword.0	Abondance
+content.tarot.3.keyword.1	Nourrir
+content.tarot.3.keyword.2	Création
+content.tarot.3.upright	Croissance sans force : ce que vous arrosez tranquillement devient abondant.
+content.tarot.3.reversed	Excès de soins, sécheresse créative ou dépendance déguisée en souci.
+content.tarot.3.socratic	Qu’est-ce qui, dans votre vie, demande à être nourri plutôt que réparé ?
+content.tarot.2.name	La Grande Prêtresse
+content.tarot.2.keyword.0	Intuition
+content.tarot.2.keyword.1	Mystère
+content.tarot.2.keyword.2	Voix intérieure
+content.tarot.2.upright	La réponse vit déjà derrière le voile ; arrêtez de demander et commencez à écouter.
+content.tarot.2.reversed	Des instincts ignorés, des secrets ou un esprit inondé de bruit au lieu de signal.
+content.tarot.2.socratic	Qu’est-ce que votre intuition a répété sur lequel la logique ne cesse de parler ?
+content.tarot.1.name	Le magicien
+content.tarot.1.keyword.0	Volonté
+content.tarot.1.keyword.1	Manifestation
+content.tarot.1.keyword.2	Se concentrer
+content.tarot.1.upright	Chaque outil est déjà sur la table : dès que vous vous engagez, la réalité se réorganise.
+content.tarot.1.reversed	Supercherie ou énergie dispersée ; des fuites potentielles dans la performance plutôt que dans la création.
+content.tarot.1.socratic	Quel outil entre vos mains prétendez-vous ne pas avoir ?
+content.tarot.0.name	Le fou
+content.tarot.0.keyword.0	Acte de foi
+content.tarot.0.keyword.1	Innocence
+content.tarot.0.keyword.2	Nouveau départ
+content.tarot.0.upright	Une page blanche et un bord de falaise : la liberté de commencer avant d'être prêt.
+content.tarot.0.reversed	Imprudence ou paralysie ; le saut est reporté et l'horizon se brouille.
+content.tarot.0.socratic	Quelle démarche feriez-vous aujourd’hui si l’échec était gratuit ?
+content.lenormand.36.name	Croix
+content.lenormand.36.keyword.0	Fardeau
+content.lenormand.36.keyword.1	Destin
+content.lenormand.36.keyword.2	Signification
+content.lenormand.36.meaning	Le fardeau et le sens – ce qui doit être porté et le but que cela révèle.
+content.lenormand.36.combination.0	Avec le Cercueil, le fardeau prend fin.
+content.lenormand.36.combination.1	Chez les Stars, le fardeau a du sens.
+content.lenormand.36.combination.2	Avec la Montagne, la charge semble la plus lourde.
+content.lenormand.36.timing	Destiné - jusqu'à ce qu'il soit réalisé
+content.lenormand.35.name	Ancre
+content.lenormand.35.keyword.0	Stabilité
+content.lenormand.35.keyword.1	Holding
+content.lenormand.35.keyword.2	Sécurité
+content.lenormand.35.meaning	Stabilité et maintien rapide : l'ancre qui vous maintient stable pendant que la mer se déplace autour de vous.
+content.lenormand.35.combination.0	Avec le Poisson, des revenus stables.
+content.lenormand.35.combination.1	Avec l'Anneau, un lien qui tient.
+content.lenormand.35.combination.2	Avec le Navire, la stabilité revient après le voyage.
+content.lenormand.35.timing	Tenu - longtemps et régulièrement
+content.lenormand.34.name	Poisson
+content.lenormand.34.keyword.0	Argent
+content.lenormand.34.keyword.1	Couler
+content.lenormand.34.keyword.2	Abondance
+content.lenormand.34.meaning	Argent et flux – commerce, ressources et abondance qui nage vers le filet ouvert.
+content.lenormand.34.combination.0	Avec le Soleil, la richesse réussit.
+content.lenormand.34.combination.1	Avec les souris, l'argent s'enfuit.
+content.lenormand.34.combination.2	Avec l'Anchor, les revenus sont stables.
+content.lenormand.34.timing	Coulant — saison des revenus
+content.lenormand.33.name	Clé
+content.lenormand.33.keyword.0	Répondre
+content.lenormand.33.keyword.1	Ouverture
+content.lenormand.33.keyword.2	Certitude
+content.lenormand.33.meaning	La clé - la réponse, l'ouverture, la solution certaine qui correspond à la serrure que vous portez.
+content.lenormand.33.combination.0	Avec le Livre, la réponse est révélée.
+content.lenormand.33.combination.1	Avec la Montagne, l'obstacle est débloqué.
+content.lenormand.33.combination.2	Avec le Poisson, la richesse s'ouvre.
+content.lenormand.33.timing	Certain – la réponse est à portée de main
+content.lenormand.32.name	Lune
+content.lenormand.32.keyword.0	Intuition
+content.lenormand.32.keyword.1	Reconnaissance
+content.lenormand.32.keyword.2	Rêves
+content.lenormand.32.meaning	Intuition, rêves et reconnaissance tranquille — la veilleuse par laquelle l'inconscient devient visible.
+content.lenormand.32.combination.0	Avec les Étoiles, l'intuition rencontre le destin.
+content.lenormand.32.combination.1	Avec le Livre, les rêves cachent un secret.
+content.lenormand.32.combination.2	Avec le Cœur, les sentiments parlent la nuit.
+content.lenormand.32.timing	Nuit – un cycle lunaire
+content.lenormand.31.name	Soleil
+content.lenormand.31.keyword.0	Succès
+content.lenormand.31.keyword.1	Vitalité
+content.lenormand.31.keyword.2	Joie
+content.lenormand.31.meaning	Succès et vitalité rayonnante : le soleil éclaircit la lecture et tout ce qu'il touche s'épanouit.
+content.lenormand.31.combination.0	Avec le Poisson, réussite financière.
+content.lenormand.31.combination.1	Avec les Stars, triomphe après espoir.
+content.lenormand.31.combination.2	Avec la Maison, le foyer prospère.
+content.lenormand.31.timing	L'été — une saison lumineuse
+content.lenormand.30.name	Lis
+content.lenormand.30.keyword.0	Paix
+content.lenormand.30.keyword.1	Maturité
+content.lenormand.30.keyword.2	Pureté
+content.lenormand.30.meaning	Paix et calme mature – la dignité tranquille qui vient après que le bruit ait disparu.
+content.lenormand.30.combination.0	Avec le Soleil, réussite paisible.
+content.lenormand.30.combination.1	Avec la Tour, un ancien ou une autorité respectée.
+content.lenormand.30.combination.2	Avec le Cercueil, une fin paisible.
+content.lenormand.30.timing	Mature – la vision à long terme
+content.lenormand.29.name	Dame
+content.lenormand.29.keyword.0	La femme
+content.lenormand.29.keyword.1	Le demandeur
+content.lenormand.29.keyword.2	Réceptivité
+content.lenormand.29.meaning	La Dame - la femme dans la question, ou la requérante elle-même lisant avec intuition.
+content.lenormand.29.combination.0	Avec le Gentleman, le couple est au centre.
+content.lenormand.29.combination.1	Avec le Cœur, son affection est vraie.
+content.lenormand.29.combination.2	Avec la Lune, son intuition parle.
+content.lenormand.29.timing	Son temps – la saison des femmes
+content.lenormand.28.name	Gentilhomme
+content.lenormand.28.keyword.0	L'homme
+content.lenormand.28.keyword.1	Le demandeur
+content.lenormand.28.keyword.2	Volonté
+content.lenormand.28.meaning	Le gentleman - l'homme en question, ou le demandeur lui-même agissant avec intention.
+content.lenormand.28.combination.0	Avec la Dame, le couple est au centre.
+content.lenormand.28.combination.1	Avec le Cœur, son affection est vraie.
+content.lenormand.28.combination.2	Avec la Tour, un homme d'autorité.
+content.lenormand.28.timing	Son temps - la saison de l'homme
+content.lenormand.27.name	Lettre
+content.lenormand.27.keyword.0	Message
+content.lenormand.27.keyword.1	Document
+content.lenormand.27.keyword.2	Nouvelles
+content.lenormand.27.meaning	Un message écrit : des documents, des invitations et des actualités qui circulent sur papier ou sur écran.
+content.lenormand.27.combination.0	Avec le Rider, le message arrive vite.
+content.lenormand.27.combination.1	Avec les Oiseaux, les mots écrits se discutent.
+content.lenormand.27.combination.2	Avec le Livre, le document cache quelque chose.
+content.lenormand.27.timing	Jours — par écrit
+content.lenormand.26.name	Livre
+content.lenormand.26.keyword.0	Secrète
+content.lenormand.26.keyword.1	Connaissance
+content.lenormand.26.keyword.2	Étude
+content.lenormand.26.meaning	Connaissance cachée - un secret, une étude ou une vérité non encore révélée à la lumière.
+content.lenormand.26.combination.0	Avec la Fox, un secret sert une machination.
+content.lenormand.26.combination.1	Avec la Clé, le secret sera dévoilé.
+content.lenormand.26.combination.2	Avec la Lune, l’intuition cachée fait surface.
+content.lenormand.26.timing	Caché – révèle dans le temps
+content.lenormand.25.name	Anneau
+content.lenormand.25.keyword.0	Engagement
+content.lenormand.25.keyword.1	Contracter
+content.lenormand.25.keyword.2	Faire du vélo
+content.lenormand.25.meaning	Engagement et promesses contraignantes – un contrat, un vœu ou un cycle qui lie deux choses ensemble.
+content.lenormand.25.combination.0	Avec le Coeur, fiançailles ou mariage.
+content.lenormand.25.combination.1	Avec l'Ancre, un engagement qui tient.
+content.lenormand.25.combination.2	Avec la Faux, un lien est coupé.
+content.lenormand.25.timing	Reliure – un cycle complet
+content.lenormand.24.name	Cœur
+content.lenormand.24.keyword.0	Amour
+content.lenormand.24.keyword.1	Affection
+content.lenormand.24.keyword.2	Chaleur
+content.lenormand.24.meaning	Amour et affection – les questions de cœur sont au centre de la lecture.
+content.lenormand.24.combination.0	Avec l'Anneau, l'amour s'engage.
+content.lenormand.24.combination.1	Avec le Chien, une amitié amoureuse.
+content.lenormand.24.combination.2	Avec les Nuages, les sentiments se brouillent et le doute.
+content.lenormand.24.timing	Émotionnel – questions de cœur
+content.lenormand.23.name	Souris
+content.lenormand.23.keyword.0	Perte
+content.lenormand.23.keyword.1	Déclin
+content.lenormand.23.keyword.2	Stresser
+content.lenormand.23.meaning	Perte silencieuse et stress rongeant – quelque chose est rongé petit à petit ; trouver la fuite.
+content.lenormand.23.combination.0	Avec le Poisson, l'argent s'écoule.
+content.lenormand.23.combination.1	Avec l'Arbre, la santé est grignotée par le stress.
+content.lenormand.23.combination.2	Avec la Chambre, les affaires intérieures s’érodent tranquillement.
+content.lenormand.23.timing	Fuite progressive – lente
+content.lenormand.22.name	Carrefour
+content.lenormand.22.keyword.0	Choix
+content.lenormand.22.keyword.1	Fourchette
+content.lenormand.22.keyword.2	Décision
+content.lenormand.22.meaning	Une bifurcation sur la route : un véritable choix s’offre à vous, et le retard est en soi une réponse.
+content.lenormand.22.combination.0	Avec la Faux, la décision est rapide.
+content.lenormand.22.combination.1	Avec la Lune, le choix est guidé par l'intuition.
+content.lenormand.22.combination.2	Avec le Renard, les deux voies servent la ruse de quelqu’un.
+content.lenormand.22.timing	Maintenant — choisissez
+content.lenormand.21.name	Montagne
+content.lenormand.21.keyword.0	Obstacle
+content.lenormand.21.keyword.1	Retard
+content.lenormand.21.keyword.2	Endurance
+content.lenormand.21.meaning	Une montagne fait obstacle – l’obstacle est réel, mais toute ascension commence par un seul pas.
+content.lenormand.21.combination.0	Avec la Clé, l'obstacle peut être déverrouillé.
+content.lenormand.21.combination.1	Avec le Navire, le voyage est bloqué pour l'instant.
+content.lenormand.21.combination.2	Avec le Soleil, le sommet est accessible.
+content.lenormand.21.timing	Lent – ​​bloqué pour l’instant
+content.lenormand.20.name	Jardin
+content.lenormand.20.keyword.0	Publique
+content.lenormand.20.keyword.1	Société
+content.lenormand.20.keyword.2	Rassemblement
+content.lenormand.20.meaning	La sphère publique – les rassemblements, la réputation et le cercle social où vous êtes vu.
+content.lenormand.20.combination.0	Avec les Oiseaux, la conversation publique circule.
+content.lenormand.20.combination.1	Avec le Bouquet, vous êtes célébré en compagnie.
+content.lenormand.20.combination.2	Avec les Nuages, l’image publique se brouille.
+content.lenormand.20.timing	Public — calendrier social
+content.lenormand.19.name	Tour
+content.lenormand.19.keyword.0	Institution
+content.lenormand.19.keyword.1	Limite
+content.lenormand.19.keyword.2	Isolement
+content.lenormand.19.meaning	La longue vue depuis la tour – les institutions, l’autorité et la solitude qui accompagne le fait de se tenir à l’écart.
+content.lenormand.19.combination.0	Avec l'Ours, le pouvoir officiel protège.
+content.lenormand.19.combination.1	Avec la Montagne, l'isolement s'approfondit.
+content.lenormand.19.combination.2	Avec la Clé, l’institution détient la réponse.
+content.lenormand.19.timing	Longue — horloge institutionnelle
+content.lenormand.18.name	Chien
+content.lenormand.18.keyword.0	Loyauté
+content.lenormand.18.keyword.1	Amitié
+content.lenormand.18.keyword.2	Confiance
+content.lenormand.18.meaning	Loyauté et amitié — le compagnon fidèle qui reste lorsque le reste du monde s'en va.
+content.lenormand.18.combination.0	Avec le Cœur, un amour dévoué.
+content.lenormand.18.combination.1	Avec l'Ancre, une amitié qui tient.
+content.lenormand.18.combination.2	Chez le Renard, un faux ami flatte.
+content.lenormand.18.timing	Stable - le temps d'un ami
+content.lenormand.17.name	Cigogne
+content.lenormand.17.keyword.0	Changement
+content.lenormand.17.keyword.1	Migration
+content.lenormand.17.keyword.2	Renouvellement
+content.lenormand.17.meaning	Changement et renouveau : la cigogne migre, et vous aussi ; la nouvelle saison est déjà en marche.
+content.lenormand.17.combination.0	Avec l'Enfant, un nouveau départ arrive.
+content.lenormand.17.combination.1	Avec la Maison, le ménage déménage ou renouvelle.
+content.lenormand.17.combination.2	Avec le Navire, le changement vient de loin.
+content.lenormand.17.timing	Saisonnier : un tournant
+content.lenormand.16.name	Étoiles
+content.lenormand.16.keyword.0	Espoir
+content.lenormand.16.keyword.1	Conseils
+content.lenormand.16.keyword.2	Clarté
+content.lenormand.16.meaning	Une orientation claire et un espoir tranquille : le ciel est à nouveau lisible et la direction est vraie.
+content.lenormand.16.combination.0	Avec la Lune, l'intuition et le destin s'alignent.
+content.lenormand.16.combination.1	Avec la Clé, l'espoir trouve sa réponse.
+content.lenormand.16.combination.2	Avec les Nuages, l'espoir survit au brouillard.
+content.lenormand.16.timing	Guidé - faites confiance au chemin
+content.lenormand.15.name	Ours
+content.lenormand.15.keyword.0	Force
+content.lenormand.15.keyword.1	Autorité
+content.lenormand.15.keyword.2	Protection
+content.lenormand.15.meaning	Force et pouvoir protecteur – un patron, un leader ou votre propre autorité discrète.
+content.lenormand.15.combination.0	Avec la Tour, le pouvoir institutionnel protège.
+content.lenormand.15.combination.1	Avec le Poisson, la solidité financière augmente.
+content.lenormand.15.combination.2	Avec la Fox, le pouvoir veille à ses propres intérêts.
+content.lenormand.15.timing	Fort – endurant
+content.lenormand.14.name	Renard
+content.lenormand.14.keyword.0	Rusé
+content.lenormand.14.keyword.1	Travail
+content.lenormand.14.keyword.2	Prudence
+content.lenormand.14.meaning	Ruse et intérêt personnel — quelqu'un (peut-être vous) est intelligent ; vérifiez à qui profite.
+content.lenormand.14.combination.0	Avec le Serpent, un schéma s'enroule à proximité.
+content.lenormand.14.combination.1	Avec l'Anchor, un travail stable avance tranquillement.
+content.lenormand.14.combination.2	Avec le Livre, un motif secret est caché.
+content.lenormand.14.timing	Prudent – ​​surveillez attentivement
+content.lenormand.13.name	Enfant
+content.lenormand.13.keyword.0	Début
+content.lenormand.13.keyword.1	Innocence
+content.lenormand.13.keyword.2	Nouveauté
+content.lenormand.13.meaning	Quelque chose de petit et de nouveau – un début, un enfant ou une nouvelle perspective qui n’a pas encore appris la peur.
+content.lenormand.13.combination.0	Avec le Bouquet, un nouveau cadeau ou un enfant apporte de la joie.
+content.lenormand.13.combination.1	Avec la Cigogne, un nouvel arrivant ou une naissance.
+content.lenormand.13.combination.2	Avec la Montagne, la nouveauté grandit lentement.
+content.lenormand.13.timing	Petit – ne fait que commencer
+content.lenormand.12.name	Oiseaux
+content.lenormand.12.keyword.0	Parler
+content.lenormand.12.keyword.1	Paire
+content.lenormand.12.keyword.2	Inquiétude
+content.lenormand.12.meaning	Conversation, couple ou frémissement d’inquiétude : on dit beaucoup de choses ; écoutez ce qui n’est pas dit.
+content.lenormand.12.combination.0	Avec la Lettre, la parole se transforme en message.
+content.lenormand.12.combination.1	Avec le Cœur, un couple discute.
+content.lenormand.12.combination.2	Avec les Nuages, les ragots brouillent la vérité.
+content.lenormand.12.timing	Journées – courtes conférences
+content.lenormand.11.name	Fouet
+content.lenormand.11.keyword.0	Conflit
+content.lenormand.11.keyword.1	Répétition
+content.lenormand.11.keyword.2	Conduire
+content.lenormand.11.meaning	Conflit ou répétition incessante – la même friction revient jusqu'à ce que sa source soit nommée.
+content.lenormand.11.combination.0	Chez la Fox, la dispute cache un mensonge.
+content.lenormand.11.combination.1	Au Coeur, passion et friction se mélangent.
+content.lenormand.11.combination.2	Avec la Faux, la querelle coupe les ponts.
+content.lenormand.11.timing	Répéter – encore et encore
+content.lenormand.10.name	Faux
+content.lenormand.10.keyword.0	Coupure soudaine
+content.lenormand.10.keyword.1	Décision
+content.lenormand.10.keyword.2	Récolte
+content.lenormand.10.meaning	Une coupe soudaine – une décision claire qui coupe ce qui ne peut pas continuer et récolte ce qui est mûr.
+content.lenormand.10.combination.0	Avec l'Arbre, la santé exige une coupe urgente.
+content.lenormand.10.combination.1	Avec le Cercueil, la rupture est définitive.
+content.lenormand.10.combination.2	Avec Crossroads, la coupure oblige à un choix.
+content.lenormand.10.timing	Soudain – maintenant
+content.lenormand.9.name	Bouquet
+content.lenormand.9.keyword.0	Cadeau
+content.lenormand.9.keyword.1	Grâce
+content.lenormand.9.keyword.2	Appréciation
+content.lenormand.9.meaning	Un cadeau, un compliment ou une beauté offert gratuitement, acceptez-le sans en calculer le prix.
+content.lenormand.9.combination.0	Avec le Cœur, un cadeau devient affection.
+content.lenormand.9.combination.1	Avec le Soleil, la reconnaissance arrive.
+content.lenormand.9.combination.2	Avec l'Anneau, une proposition de dévotion.
+content.lenormand.9.timing	Bientôt une agréable surprise
+content.lenormand.8.name	Cercueil
+content.lenormand.8.keyword.0	Fin
+content.lenormand.8.keyword.1	Repos
+content.lenormand.8.keyword.2	Fermeture
+content.lenormand.8.meaning	Une fin et un long repos : ce qui est fini doit être abandonné avant que quelque chose de nouveau puisse commencer.
+content.lenormand.8.combination.0	Avec la Cigogne, une fin s'ouvre sur le changement.
+content.lenormand.8.combination.1	Avec la Clé, la fermeture déverrouille une porte.
+content.lenormand.8.combination.2	Avec les Stars, la fin se transforme en espoir.
+content.lenormand.8.timing	Finir maintenant - puis silence
+content.lenormand.7.name	Serpent
+content.lenormand.7.keyword.0	DEVIATION
+content.lenormand.7.keyword.1	Séduction
+content.lenormand.7.keyword.2	Rusé
+content.lenormand.7.meaning	Un détour, une tentation ou un rival intelligent : le chemin droit n'est pas celui qui est proposé.
+content.lenormand.7.combination.0	Chez le Renard, la flatterie cache une astuce.
+content.lenormand.7.combination.1	Avec la Clé, vous découvrirez la ruse.
+content.lenormand.7.combination.2	Avec le Whip, une dispute recule.
+content.lenormand.7.timing	Torsion — indirecte
+content.lenormand.6.name	Nuages
+content.lenormand.6.keyword.0	Confusion
+content.lenormand.6.keyword.1	Doute
+content.lenormand.6.keyword.2	Tempête
+content.lenormand.6.meaning	La confusion et l’incertitude s’accumulent – ​​attendez que le brouillard se dissipe avant de prendre une décision.
+content.lenormand.6.combination.0	Avec le Soleil, la clarté fait son apparition.
+content.lenormand.6.combination.1	Avec la Lune, les doutes s’approfondissent avant de se dissiper.
+content.lenormand.6.combination.2	Avec les Stars, l'espoir survit à la tempête.
+content.lenormand.6.timing	Incertain - attendez
+content.lenormand.5.name	Arbre
+content.lenormand.5.keyword.0	Santé
+content.lenormand.5.keyword.1	Croissance
+content.lenormand.5.keyword.2	Racines
+content.lenormand.5.meaning	Croissance organique et santé lentes – ce qui est enraciné profondément se renforce au fil des années, et non des jours.
+content.lenormand.5.combination.0	Avec le Cercueil, un cycle de santé se termine et un autre commence.
+content.lenormand.5.combination.1	Avec le Soleil, la vitalité revient.
+content.lenormand.5.combination.2	Avec la Montagne, la croissance est bloquée.
+content.lenormand.5.timing	Lent – ​​des mois à des années
+content.lenormand.4.name	Maison
+content.lenormand.4.keyword.0	Maison
+content.lenormand.4.keyword.1	Famille
+content.lenormand.4.keyword.2	Stabilité
+content.lenormand.4.meaning	Maison, famille et sphère privée – sécurité, racines et structures qui abritent votre vie.
+content.lenormand.4.combination.0	Avec la Cigogne, le ménage change.
+content.lenormand.4.combination.1	Avec les souris, quelque chose à la maison s'écoule tranquillement.
+content.lenormand.4.combination.2	Avec le Ring, les liens familiaux sont scellés.
+content.lenormand.4.timing	Stable – durable
+content.lenormand.3.name	Bateau
+content.lenormand.3.keyword.0	Voyage
+content.lenormand.3.keyword.1	Distance
+content.lenormand.3.keyword.2	Commerce
+content.lenormand.3.meaning	Mouvement à travers la distance – voyage, commerce ou désir qui vous attire vers quelque chose de lointain.
+content.lenormand.3.combination.0	Avec l'Anchor, un voyage se termine dans un port sûr.
+content.lenormand.3.combination.1	Avec le Rider, un voyage s'annonce.
+content.lenormand.3.combination.2	Avec la Montagne, le voyage est retardé.
+content.lenormand.3.timing	Lointain – en transit
+content.lenormand.2.name	Trèfle
+content.lenormand.2.keyword.0	Chance
+content.lenormand.2.keyword.1	Chance
+content.lenormand.2.keyword.2	Légèreté
+content.lenormand.2.meaning	Un petit coup de chance et un cœur plus léger : saisissez l'instant présent pendant que la porte est ouverte.
+content.lenormand.2.combination.0	Avec le Soleil, la chance se transforme en succès.
+content.lenormand.2.combination.1	Avec les Souris, la chance vous échappe si vous attendez.
+content.lenormand.2.combination.2	Avec le Rider, les bonnes nouvelles arrivent par hasard.
+content.lenormand.2.timing	Maintenant, la fenêtre est brève
+content.lenormand.1.name	Cavalier
+content.lenormand.1.keyword.0	Nouvelles
+content.lenormand.1.keyword.1	Arrivée
+content.lenormand.1.keyword.2	Mouvement
+content.lenormand.1.meaning	Des nouvelles et un élan qui arrivent – ​​un message, un visiteur ou une nouvelle impulsion qui fait bouger les choses.
+content.lenormand.1.combination.0	Avec la Lettre, le message arrive par écrit.
+content.lenormand.1.combination.1	Avec le Clover, les bonnes nouvelles arrivent vite.
+content.lenormand.1.combination.2	Avec le Navire, les nouvelles arrivent de loin.
+content.lenormand.1.timing	Bientôt – des jours, pas des semaines
+content.rune.23.name	Othala
+content.rune.23.keyword.0	Ascendance
+content.rune.23.keyword.1	Patrie
+content.rune.23.keyword.2	Héritage
+content.rune.23.upright	La terre ancestrale – l’héritage, la terre natale et ce qui survit à une seule vie.
+content.rune.23.lore	La rune du domaine familial : une terre détenue à travers les générations, une place à la longue table.
+content.rune.23.merkstave	Exil, héritage dilapidé ou murs qui empêchent les proches d'entrer.
+content.rune.22.name	Dagaz
+content.rune.22.keyword.0	Aube
+content.rune.22.keyword.1	Éveil
+content.rune.22.keyword.2	Paradoxe
+content.rune.22.upright	Daybreak — le passage de la nuit au jour, le paradoxe qui se complète.
+content.rune.22.lore	La rune de l'aube : le moment où la longue nuit cède la place au long jour.
+content.rune.21.name	Ingwaz
+content.rune.21.keyword.0	Graine
+content.rune.21.keyword.1	Potentiel
+content.rune.21.keyword.2	Fécondité
+content.rune.21.upright	Le silence de la graine – le potentiel stocké, l’énergie de ce qui est sur le point de devenir.
+content.rune.21.lore	La rune d'Ing : le dieu de la terre fertile, la graine stockée de l'année à venir.
+content.rune.20.name	Laguz
+content.rune.20.keyword.0	Eau
+content.rune.20.keyword.1	Couler
+content.rune.20.keyword.2	Intuition
+content.rune.20.upright	L'eau et les profondeurs - une intuition qui se déplace comme la marée, sous et autour de la raison.
+content.rune.20.lore	La rune de la route maritime : voyages, rêves et ce que les profondeurs retiennent.
+content.rune.20.merkstave	Noyade, illusion ou sentiment qui inonde le rivage.
+content.rune.19.name	Mannaz
+content.rune.19.keyword.0	Humanité
+content.rune.19.keyword.1	Soi
+content.rune.19.keyword.2	Parenté
+content.rune.19.upright	L’humain – la connaissance de soi et la parenté qui font d’un individu un peuple.
+content.rune.19.lore	La rune de l'humanité : le soi vu aux yeux du clan.
+content.rune.19.merkstave	Le doute de soi, l’isolement ou la foule qui se noie.
+content.rune.18.name	Ehwaz
+content.rune.18.keyword.0	Cheval
+content.rune.18.keyword.1	Confiance
+content.rune.18.keyword.2	Progrès
+content.rune.18.upright	Le cheval et le cavalier – deux volontés qui ne font qu’une, un progrès fondé sur la confiance mutuelle.
+content.rune.18.lore	La rune du couple monté : le lien entre cavalier et monture, partenaire et partenaire.
+content.rune.18.merkstave	Méfiance, rythme brisé ou partenariat tirant dans les deux sens.
+content.rune.17.name	Berkano
+content.rune.17.keyword.0	Bouleau
+content.rune.17.keyword.1	Naissance
+content.rune.17.keyword.2	Nourrir
+content.rune.17.upright	La déesse du bouleau – la naissance, la croissance et l’éducation tranquille qui fait prospérer les choses.
+content.rune.17.lore	La rune du bosquet de bouleaux : le premier vert du printemps et la déesse de la nouvelle vie.
+content.rune.17.merkstave	Un retard de croissance, une négligence ou une naissance qui a refusé sa saison.
+content.rune.16.name	Tiwaz
+content.rune.16.keyword.0	Justice
+content.rune.16.keyword.1	Honneur
+content.rune.16.keyword.2	Sacrifier
+content.rune.16.upright	La rune de Tyr – la main offerte dans la gueule du loup pour le serment.
+content.rune.16.lore	La rune du dieu à une main : une justice qui coûte quelque chose au juge.
+content.rune.16.merkstave	Injustice, serments rompus ou victoire remportée sans honneur.
+content.rune.15.name	Sowilo
+content.rune.15.keyword.0	Soleil
+content.rune.15.keyword.1	Victoire
+content.rune.15.keyword.2	Volonté
+content.rune.15.upright	Le soleil est une lumière imparable, une volonté juste, une victoire qui ne s'excuse pas.
+content.rune.15.lore	La rune solaire : la roue de lumière qui anime la longue journée nordique.
+content.rune.14.name	Algiz
+content.rune.14.keyword.0	Protection
+content.rune.14.keyword.1	Wapiti
+content.rune.14.keyword.2	Garde
+content.rune.14.upright	Les bois de l’élan – protection levée, protection qui détourne le mal.
+content.rune.14.lore	La rune de protection : bois levés contre le loup, l'avertissement de l'oiseau des marais.
+content.rune.14.merkstave	Exposition, défenses abandonnées ou bouclier porté pour la mauvaise guerre.
+content.rune.13.name	Perthro
+content.rune.13.keyword.0	Mystère
+content.rune.13.keyword.1	Chance
+content.rune.13.keyword.2	Lot-tasse
+content.rune.13.upright	La coupe du lot et le caché – quel hasard décide et ce que les runes gardent secret.
+content.rune.13.lore	La rune des sorts jetés : le destin se lit dans la chute du bois sculpté.
+content.rune.13.merkstave	Des secrets gardés trop longtemps, ou une chance qui tourne contre vous.
+content.rune.12.name	Eihwaz
+content.rune.12.keyword.0	If
+content.rune.12.keyword.1	Endurance
+content.rune.12.keyword.2	Axe
+content.rune.12.upright	L’if – l’endurance, la mort et la renaissance de l’arbre du monde tressés en une seule racine.
+content.rune.12.lore	Rune d’Odin de l’arc d’if : la colonne vertébrale des mondes, flexible et ininterrompue.
+content.rune.11.name	Jera
+content.rune.11.keyword.0	Récolte
+content.rune.11.keyword.1	Faire du vélo
+content.rune.11.keyword.2	Récompense
+content.rune.11.upright	La roue de l’année tourne : ce qui a été semé en sa saison revient en son temps.
+content.rune.11.lore	La rune des récoltes : l’année du fermier, où rien ne mûrit avant son mois.
+content.rune.10.name	Isa
+content.rune.10.keyword.0	Glace
+content.rune.10.keyword.1	Calme
+content.rune.10.keyword.2	Patience
+content.rune.10.upright	Ice – une pause figée dans laquelle rien ne bouge et tout attend.
+content.rune.10.lore	La rune de la rivière gelée : un calme si profond qu'il devient sa propre saison.
+content.rune.9.name	Nauthiz
+content.rune.9.keyword.0	Besoin
+content.rune.9.keyword.1	Contrainte
+content.rune.9.keyword.2	Survie
+content.rune.9.upright	Besoin de feu et nécessité — contrainte qui enseigne ce que le confort ne pourrait jamais pouvoir faire.
+content.rune.9.lore	La rune de la nécessité : le froid qui enseigne la patience d’un long hiver.
+content.rune.9.merkstave	La faim, le désespoir ou la résistance à un besoin de leçon sont des enseignements.
+content.rune.8.name	Hagalaz
+content.rune.8.keyword.0	Grêle
+content.rune.8.keyword.1	Perturbation
+content.rune.8.keyword.2	Clairière
+content.rune.8.upright	La grêle surgit d’un ciel clair – une perturbation soudaine qui ouvre le champ pour la suite.
+content.rune.8.lore	La rune de grêle : la tempête qui aplatit la récolte et les graines qu'elle laisse derrière elle.
+content.rune.7.name	Wunjo
+content.rune.7.keyword.0	Joie
+content.rune.7.keyword.1	Harmonie
+content.rune.7.keyword.2	Appartenance
+content.rune.7.upright	La joie qui vient de l'appartenance : la parenté, le travail partagé et la paix de la tribu.
+content.rune.7.lore	La rune de la joie du clan – la prospérité partagée autour d’un même foyer.
+content.rune.7.merkstave	Solitude, joie reportée ou appartenance achetée trop bon marché.
+content.rune.6.name	Gébo
+content.rune.6.keyword.0	Cadeau
+content.rune.6.keyword.1	Échange
+content.rune.6.keyword.2	Partenariat
+content.rune.6.upright	Le don et le contre-don, tout lien est un échange entretenu par les deux mains.
+content.rune.6.lore	La rune de l'hospitalité : pas de cadeau sans retour, pas de lien sans équilibre.
+content.rune.5.name	Kénaz
+content.rune.5.keyword.0	Torche
+content.rune.5.keyword.1	Artisanat
+content.rune.5.keyword.2	Révélation
+content.rune.5.upright	Le flambeau du savoir-faire : la connaissance qui éclaire et le savoir-faire qui façonne l'obscurité.
+content.rune.5.lore	Le feu du forgeron : la rune de la forge, de l’atelier et du savoir-faire de la main.
+content.rune.5.merkstave	Lumière éteinte, potentiel brut informe ou fièvre sans direction.
+content.rune.4.name	Raidho
+content.rune.4.keyword.0	Voyage
+content.rune.4.keyword.1	Rythme
+content.rune.4.keyword.2	Monter
+content.rune.4.upright	Le trajet et la route — un mouvement rythmé, le voyage autant que l'arrivée.
+content.rune.4.lore	La rune-wagon : le bon mouvement dans le bon ordre, la roue qui tourne et revient.
+content.rune.4.merkstave	Retard, mauvais virage ou voyage forcé à dévier de sa route.
+content.rune.3.name	Ansouz
+content.rune.3.keyword.0	Voix
+content.rune.3.keyword.1	Odin
+content.rune.3.keyword.2	Sagesse
+content.rune.3.upright	La bouche d'Odin – discours inspiré, signaux et message portés par le vent.
+content.rune.3.lore	La rune du souffle du Père de tous – poésie, runes et conseils des anciens.
+content.rune.3.merkstave	Mensonges, mauvais conseils ou mots qui dépassent leur sens.
+content.rune.2.name	Thurisaz
+content.rune.2.keyword.0	Géant
+content.rune.2.keyword.1	Épine
+content.rune.2.keyword.2	Défense
+content.rune.2.upright	L’épine et le marteau – une frappe réactive qui protège la frontière.
+content.rune.2.lore	La rune de Thor de l’épine des géants : défense qui pique tout ce qui pousse trop loin.
+content.rune.2.merkstave	Hostilité, coups précipités ou menace que vous refusez de voir.
+content.rune.1.name	Uruz
+content.rune.1.keyword.0	Force
+content.rune.1.keyword.1	Aurochs
+content.rune.1.keyword.2	Santé
+content.rune.1.upright	Force indomptée et volonté propre du corps – les aurochs qui ne peuvent pas être domestiqués.
+content.rune.1.lore	Le bœuf sauvage des prairies du nord : une puissance qui vient de la terre et non de l'entraînement.
+content.rune.1.merkstave	Faiblesse, force manquée ou force retournée contre elle-même.
+content.rune.0.name	Fehu
+content.rune.0.keyword.0	Richesse
+content.rune.0.keyword.1	Bétail
+content.rune.0.keyword.2	Énergie
+content.rune.0.upright	Richesse mobile et énergie brute – une prospérité qui doit continuer à affluer pour rester en vie.
+content.rune.0.lore	La première rune de Freyr : la richesse en bétail qu'un agriculteur libre peut compter et le feu qui maintient une ferme en vie.
+content.rune.0.merkstave	La perte, l’avidité ou l’énergie brûlent plus vite qu’elles ne sont gagnées.
+content.zodiac.pisces.dateRange	19 février – 20 mars
+content.zodiac.pisces.keyword.0	Imagination
+content.zodiac.pisces.keyword.1	Compassion
+content.zodiac.pisces.keyword.2	Se rendre
+content.zodiac.pisces.archetype	Le mystique – la partie de vous qui absorbe l’humeur et la rêve plus doucement.
+content.zodiac.pisces.shadow	Évasion, frontières floues et habitude tranquille de vous présenter comme celui qui ne peut qu'endurer.
+content.zodiac.pisces.loveStyle	Fusionnant et empathique; aime à travers l'atmosphère et l'imagination, et a besoin de limites pour garder la tendresse réelle.
+content.zodiac.pisces.careerVector	Art, guérison, musique et travail contemplatif où la sensibilité est l'instrument.
+content.zodiac.aquarius.dateRange	20 janvier – 18 février
+content.zodiac.aquarius.keyword.0	Vision
+content.zodiac.aquarius.keyword.1	Système
+content.zodiac.aquarius.keyword.2	Indépendance
+content.zodiac.aquarius.archetype	Le Réformateur – la partie de vous qui remet en question la foule et reconstruit le système pour les personnes extérieures.
+content.zodiac.aquarius.shadow	Détachement, anti-conformisme et maintien de chacun à une distance de principe.
+content.zodiac.aquarius.loveStyle	L'amitié avant tout et non conventionnelle ; a besoin de liberté intellectuelle et d'un partenaire qui soit aussi un camarade.
+content.zodiac.aquarius.careerVector	Technologie, science, activisme et réseaux où se dessine l’avenir.
+content.zodiac.capricorn.dateRange	22 décembre – 19 janvier
+content.zodiac.capricorn.keyword.0	Maîtrise
+content.zodiac.capricorn.keyword.1	Structure
+content.zodiac.capricorn.keyword.2	Responsabilité
+content.zodiac.capricorn.archetype	L'architecte - la partie de vous qui respecte les limites et construit quelque chose qui survit à l'ambiance.
+content.zodiac.capricorn.shadow	Froideur, bourreau de travail et peur de l'échec qui transforme la discipline en auto-punition.
+content.zodiac.capricorn.loveStyle	Engagé et lent ; montre son amour à travers la fiabilité et les projets à long terme plutôt que par des déclarations soudaines.
+content.zodiac.capricorn.careerVector	Des travaux de gestion, d’ingénierie, d’institutions et d’héritage où le long jeu est la récompense.
+content.zodiac.sagittarius.dateRange	22 novembre – 21 décembre
+content.zodiac.sagittarius.keyword.0	Signification
+content.zodiac.sagittarius.keyword.1	Liberté
+content.zodiac.sagittarius.keyword.2	Horizon
+content.zodiac.sagittarius.archetype	Le chercheur – la partie de vous qui a besoin d’une histoire plus grande et qui voyagera pour trouver la phrase qui lui convient.
+content.zodiac.sagittarius.shadow	Dogme, évasion et promesse de plus d'aventures qu'on ne peut en livrer.
+content.zodiac.sagittarius.loveStyle	Aventurier et honnête ; a besoin d'espace pour se déplacer et d'un partenaire qui est également un compagnon de voyage.
+content.zodiac.sagittarius.careerVector	Enseignement, voyages, édition et philosophie où l'horizon est le point central.
+content.zodiac.scorpio.dateRange	23 octobre – 21 novembre
+content.zodiac.scorpio.keyword.0	Profondeur
+content.zodiac.scorpio.keyword.1	Transformation
+content.zodiac.scorpio.keyword.2	Intensité
+content.zodiac.scorpio.archetype	L'Alchimiste – la partie de vous qui descend jusqu'au bout et revient avec quelque chose qui vaut la peine d'être conservé.
+content.zodiac.scorpio.shadow	Le contrôle, le secret et le ressentiment ont dépassé depuis longtemps leur utilité.
+content.zodiac.scorpio.loveStyle	Tout compris et privé ; teste la confiance avant de la donner, puis protège le lien avec une loyauté féroce.
+content.zodiac.scorpio.careerVector	Recherche, travail de crise, finance et psychologie où la couche cachée est le véritable sujet.
+content.zodiac.libra.dateRange	23 septembre – 22 octobre
+content.zodiac.libra.keyword.0	Équilibre
+content.zodiac.libra.keyword.1	Relation
+content.zodiac.libra.keyword.2	Beauté
+content.zodiac.libra.archetype	Le Diplomate – la partie de vous qui pèse les deux côtés avant de s’engager et de trouver la forme juste.
+content.zodiac.libra.shadow	Indécision, plaire aux gens et éviter les conflits jusqu'à ce que le choix soit fait par défaut.
+content.zodiac.libra.loveStyle	Romantique et soucieux du partenariat ; s'épanouit avec quelqu'un qui traite la relation comme une œuvre d'art partagée.
+content.zodiac.libra.careerVector	Droit, conception, négociation et partenariat où l'interface humaine est l'œuvre.
+content.zodiac.virgo.dateRange	23 août – 22 septembre
+content.zodiac.virgo.keyword.0	Discernement
+content.zodiac.virgo.keyword.1	Service
+content.zodiac.virgo.keyword.2	Artisanat
+content.zodiac.virgo.archetype	L'Artisan - la partie de vous qui sert en remarquant ce qui peut être précisé.
+content.zodiac.virgo.shadow	Perfectionnisme, autocritique et contrôle déguisés en serviabilité.
+content.zodiac.virgo.loveStyle	Attentif et pratique ; montre de l'amour à travers de petits actes de réparation et a besoin d'être apprécié pour le travail invisible.
+content.zodiac.virgo.careerVector	Analyse, santé, édition et systèmes où la précision est le métier.
+content.zodiac.leo.dateRange	23 juillet – 22 août
+content.zodiac.leo.keyword.0	Éclat
+content.zodiac.leo.keyword.1	Cœur
+content.zodiac.leo.keyword.2	Création
+content.zodiac.leo.archetype	Le Souverain – la partie de vous qui crée de la chaleur en montant sur scène et en la restituant à la pièce.
+content.zodiac.leo.shadow	Fierté, ayant besoin d'applaudissements et devenant rigide lorsque le public regarde ailleurs.
+content.zodiac.leo.loveStyle	Généreux et fidèle ; veut être vu et célébré, et donne le même coup de projecteur en retour.
+content.zodiac.leo.careerVector	Performance, leadership et direction créative où une signature personnelle est le produit.
+content.zodiac.cancer.dateRange	21 juin – 22 juillet
+content.zodiac.cancer.keyword.0	Soins
+content.zodiac.cancer.keyword.1	Mémoire
+content.zodiac.cancer.keyword.2	Appartenance
+content.zodiac.cancer.archetype	Le Gardien – la partie de vous qui se souvient de qui était là et construit un foyer grâce à cette loyauté.
+content.zodiac.cancer.shadow	Le sur-attachement, les sautes d'humeur et l'expression indirecte de ses besoins afin de ne jamais pouvoir les refuser à haute voix.
+content.zodiac.cancer.loveStyle	Protecteur et nourrissant ; des liens à travers une histoire commune et a besoin d’être rassuré sur le fait que le foyer est réciproque.
+content.zodiac.cancer.careerVector	Soins, accueil, entreprise familiale et travail du patrimoine où le ressenti fait partie de la compétence.
+content.zodiac.gemini.dateRange	21 mai – 20 juin
+content.zodiac.gemini.keyword.0	Curiosité
+content.zodiac.gemini.keyword.1	Langue
+content.zodiac.gemini.keyword.2	Adaptation
+content.zodiac.gemini.archetype	Le Messager – la partie de vous qui apprend en nommant, en reliant et en posant la deuxième question.
+content.zodiac.gemini.shadow	Dispersion, agitation et demi-vérités disent de garder toutes les portes ouvertes en même temps.
+content.zodiac.gemini.loveStyle	Ludique et conversationnel ; a besoin d’un esprit qui répond et d’un espace pour changer son histoire sans perdre la connexion.
+content.zodiac.gemini.careerVector	Médias, écriture, enseignement et commerce : partout où la monnaie est l'information et la vitesse des échanges.
+content.zodiac.taurus.dateRange	20 avril – 20 mai
+content.zodiac.taurus.keyword.0	Stabilité
+content.zodiac.taurus.keyword.1	Valeur
+content.zodiac.taurus.keyword.2	Plaisir
+content.zodiac.taurus.archetype	Le Constructeur – la partie de vous qui sait ce que vaut une chose et la garde assez longtemps pour grandir.
+content.zodiac.taurus.shadow	Entêtement, possessivité et utilisation du confort comme moyen d’éviter le changement déjà arrivé.
+content.zodiac.taurus.loveStyle	Loyal, sensuel et lent à faire confiance ; montre son amour par sa présence, sa nourriture et ses mains fiables plutôt que par de grands discours.
+content.zodiac.taurus.careerVector	Des projets financiers, artisanaux, fonciers et à long terme où la patience se transforme en valeur réelle.
+content.zodiac.aries.dateRange	21 mars – 19 avril
+content.zodiac.aries.keyword.0	Initiative
+content.zodiac.aries.keyword.1	Courage
+content.zodiac.aries.keyword.2	Honnêteté
+content.zodiac.aries.archetype	Le Pionnier – la partie de vous qui bouge avant que le plan ne soit prêt et qui fait confiance à la première impulsion honnête.
+content.zodiac.aries.shadow	L'impatience, commencer ce qui ne finira pas, et prendre la vitesse pour du courage lorsque la salle demande à être écoutée.
+content.zodiac.aries.loveStyle	Poursuite directe et désir simple ; a besoin de la liberté de chasser et d'un partenaire qui répond honnêtement au lieu de jouer à des jeux.
+content.zodiac.aries.careerVector	Un travail fondateur, d’animation et compétitif où le premier pas compte plus que le coup sûr.
+content.lesson.tarot.one.0	La carte unique répond à une question : lisez-la comme l'impulsion de toute la journée.
+content.lesson.tarot.three.0	Où en sont réellement les choses à l’heure actuelle – l’essence du problème.
+content.lesson.tarot.three.1	Ce qui est caché, redouté ou bloque la situation par en dessous.
+content.lesson.tarot.three.2	La direction dans laquelle l’énergie se déplace – que faire ensuite.
+content.lesson.tarot.four.0	Votre version de la situation – comment vous vous sentez et agissez.
+content.lesson.tarot.four.1	L’autre personne ou environnement – ​​ce qui vous influence.
+content.lesson.tarot.four.2	Ce qui relie les deux rives ou se situe entre elles.
+content.lesson.tarot.four.3	Où la situation penche et ce qui la change.
+content.lesson.tarot.seven.0	Ce qui a conduit ici — les racines de la situation.
+content.lesson.tarot.seven.1	Le moment actuel et sa principale tension.
+content.lesson.tarot.seven.2	Ce qui se cache sous la surface.
+content.lesson.tarot.seven.3	L’obstacle qui fait obstacle.
+content.lesson.tarot.seven.4	Forces externes et personnes agissant sur la situation.
+content.lesson.tarot.seven.5	L'action recommandée.
+content.lesson.tarot.seven.6	Où mène le chemin actuel si rien ne change.
+content.lesson.tarot.loveBridge.0	Votre côté de la connexion.
+content.lesson.tarot.loveBridge.1	Leur côté de la connexion.
+content.lesson.tarot.loveBridge.2	Ce qui vous relie ou vous divise.
+content.lesson.tarot.loveBridge.3	Ce qui se passe entre vous – le courant émotionnel.
+content.lesson.tarot.loveBridge.4	Ce que vous devenez tous les deux.
+content.lesson.tarot.careerCrossroads.0	La racine de la question de la carrière.
+content.lesson.tarot.careerCrossroads.1	Où mène le chemin actuel.
+content.lesson.tarot.careerCrossroads.2	Où mène le chemin alternatif.
+content.lesson.tarot.careerCrossroads.3	Ce qui bloque la voie à suivre.
+content.lesson.tarot.careerCrossroads.4	Ce que vous gagnez par le choix.
+content.lesson.tarot.careerCrossroads.5	La destination ultime du chemin.
+content.lesson.tarot.celticCross.0	Le cœur du problème : vous et la situation.
+content.lesson.tarot.celticCross.1	Ce qui vous traverse — le défi immédiat.
+content.lesson.tarot.celticCross.2	Ce qui vous couronne — un objectif ou un idéal conscient.
+content.lesson.tarot.celticCross.3	Ce qui est enraciné – la fondation profonde.
+content.lesson.tarot.celticCross.4	Ce qui passe – le passé récent.
+content.lesson.tarot.celticCross.5	Ce qui approche est un avenir proche.
+content.lesson.tarot.celticCross.6	Comment vous vous voyez là-dedans.
+content.lesson.tarot.celticCross.7	L'environnement et les autres autour de vous.
+content.lesson.tarot.celticCross.8	Vos espoirs et vos craintes quant au résultat.
+content.lesson.tarot.celticCross.9	Le résultat si le chemin continue.
+content.lesson.tarot.conflict	Deux cartes qui tirent dans des directions opposées ne s'annulent pas : chacune garde son message. Nommez ce que demande chacune, puis lisez la tension entre elles — ce qui doit céder et ce qui peut être tenu en même temps.
+content.lesson.tarot.school	Les dignités élémentaires sont une tradition, pas une loi : la Golden Dawn pèse ainsi les éléments voisins, tandis que beaucoup de lecteurs modernes lisent chaque carte séparément. L'app nomme la méthode qu'elle suit — prenez ce qui sert votre lecture.
+content.purpose.tarot.one	Une seule carte pour ancrer la journée : une question, une réponse.
+content.purpose.tarot.three	Planche universelle à trois cartes : définissez votre sujet du jour, vos relations ou votre travail avant la synthèse.
+content.purpose.tarot.four	La Croix des Deux Rives : la personne qui vous préoccupe et le pont entre vous.
+content.purpose.tarot.seven	The Horseshoe : une synthèse verticale profonde des forces en mouvement dans la situation.
+content.purpose.tarot.loveBridge	Deux rives et le pont entre : comment deux cœurs se rencontrent, se croisent et se rejoignent.
+content.purpose.tarot.careerCrossroads	Un arbre de sentiers ramifiés : là où la route se divise et où chacun mène.
+content.purpose.tarot.celticCross	La Croix Celtique classique : la situation traversée par son défi, couronnée et enracinée.
+content.lesson.lenormand.one.0	Une carte définit la météo du jour ; lisez son nom comme thème.
+content.lesson.lenormand.three.0	Ce qui s'est déjà produit et colore encore le présent.
+content.lesson.lenormand.three.1	La carte du milieu est la charnière : les cartes de flanc la qualifient.
+content.lesson.lenormand.three.2	Où se dirige la ligne si la chaîne de noms actuelle continue.
+content.lesson.lenormand.five.0	La carte nomme le sujet elle-même – commencez ici avant de lire une paire.
+content.lesson.lenormand.five.1	Ce qui traverse le sujet, lisez-le comme un nom plus son verbe.
+content.lesson.lenormand.five.2	La cause tranquille en dessous ; Lenormand le montre comme un objet et non comme un sentiment.
+content.lesson.lenormand.five.3	Ce qui reste de l’image – ne construisez pas la lecture là-dessus.
+content.lesson.lenormand.five.4	Où l’affaire se règle une fois que la force de passage a reçu une réponse.
+content.lesson.lenormand.nine.0	Comment l'histoire a commencé ; lisez toute la colonne, pas seulement la carte.
+content.lesson.lenormand.nine.1	Le cœur du portrait ; le centre est le véritable terrain du demandeur.
+content.lesson.lenormand.nine.2	La direction de tout le carré – sa colonne extérieure.
+content.lesson.lenormand.nine.3	Ce qui reste en coulisses, est souvent la carte la plus discrète.
+content.lesson.lenormand.nine.4	La carte centrale : comment le demandeur se situe dans sa propre histoire.
+content.lesson.lenormand.nine.5	Ce qui est présenté extérieurement et pris au pied de la lettre.
+content.lesson.lenormand.nine.6	Ce que le lecteur veut être vrai.
+content.lesson.lenormand.nine.7	Ce que redoute le lecteur est peut-être vrai.
+content.lesson.lenormand.nine.8	La carte vers laquelle se penche tout le carré.
+content.lesson.lenormand.grandPortrait.0	Le fondement et le foyer de la question.
+content.lesson.lenormand.grandPortrait.1	Ce qui intéresse réellement le lecteur.
+content.lesson.lenormand.grandPortrait.2	Ce qui occupe les pensées et les projets.
+content.lesson.lenormand.grandPortrait.3	Le plan physique : santé, argent, vie quotidienne.
+content.lesson.lenormand.grandPortrait.4	Le besoin le plus profond sous le bruit quotidien.
+content.lesson.lenormand.grandPortrait.5	Le choix est actuellement en cours.
+content.lesson.lenormand.grandPortrait.6	De quoi débloquer la situation.
+content.lesson.lenormand.grandPortrait.7	Ce qui est lié, répété ou promis.
+content.lesson.lenormand.grandPortrait.8	L’aspiration vers laquelle pointe le portrait.
+content.purpose.lenormand.one	Une seule carte pour lire la météo du jour.
+content.purpose.lenormand.three	La ligne classique à trois cartes : ce qui a été, ce qui est, ce qui vient.
+content.purpose.lenormand.five	La Croix du 5 : la matière, les forces qui la traversent et le chemin qui la traverse.
+content.purpose.lenormand.nine	Le coffret portrait 3×3 : une cartographie complète de la situation du demandeur.
+content.purpose.lenormand.grandPortrait	Le Grand Portrait : une carte de neuf cartes du monde intérieur et extérieur du demandeur.
+content.lesson.runes.one.0	Une seule rune répond à une seule question – lisez-la comme une phrase entière.
+content.lesson.runes.three.0	Ce qui est déjà tissé et ne peut être détissé.
+content.lesson.runes.three.1	Le fil qui se tisse en ce moment.
+content.lesson.runes.three.2	Ce que le tissage exige ensuite – pas un destin fixe.
+content.lesson.runes.five.0	La force avec laquelle vous frappez – votre propre pouvoir en la matière.
+content.lesson.runes.five.1	Qu'est-ce qui vous arrive, que vous le vouliez ou non.
+content.lesson.runes.five.2	Qu’est-ce qui vous protège et combien coûte cette protection.
+content.lesson.runes.five.3	La résistance — une personne, une habitude ou une circonstance.
+content.lesson.runes.five.4	La grève qui règle l’affaire d’un coup.
+content.lesson.runes.seven.0	Le seuil auquel vous vous situez.
+content.lesson.runes.seven.1	Ce à quoi vous devriez faire attention.
+content.lesson.runes.seven.2	L’itinéraire à travers – à quoi ressemble réellement la marche.
+content.lesson.runes.seven.3	Le prix de la traversée.
+content.lesson.runes.seven.4	Ce qui attend de l'autre côté.
+content.lesson.runes.seven.5	Le risque de se souvenir en chemin.
+content.lesson.runes.seven.6	Ce que vous rapportez – la leçon.
+content.lesson.runes.worldTree.0	L'idéal, la version la plus élevée de la question.
+content.lesson.runes.worldTree.1	La réalité quotidienne et les gens qui la composent.
+content.lesson.runes.worldTree.2	Ce qui est enterré et demande à être affronté.
+content.lesson.runes.worldTree.3	Le fondement ancestral et physique.
+content.lesson.runes.worldTree.4	Ce qui bloque tout en ce moment.
+content.lesson.runes.worldTree.5	Où la croissance est encore possible.
+content.lesson.runes.worldTree.6	Ce qui est déjà corrigé dans cette situation.
+content.lesson.runes.worldTree.7	Ce qui est encore tissé par vos choix.
+content.lesson.runes.worldTree.8	Qu’est-ce qui poussera ensuite si on s’en occupe ?
+content.purpose.runes.one	Une pierre pour une question – le tirage le plus ancien.
+content.purpose.runes.three	Les Nornes tissent ce qui était, ce qui est et ce qui devient.
+content.purpose.runes.five	La Croix de Thor : la tempête, sa défense, son ennemi et sa frappe.
+content.purpose.runes.seven	Pont de Heimdall : sept pierres traversant le Bifröst.
+content.purpose.runes.worldTree	L'Arbre du Monde d'Yggdrasil : neuf pierres réparties dans les racines, le tronc et les branches du cosmos.
+content.spread.tarot.one.label	1 · Ancrage quotidien
+content.spread.tarot.one.role.0	Impulsion quotidienne de base
+content.spread.tarot.one.focus	Une seule carte pour ancrer la journée : une question, une réponse.
+content.spread.tarot.one.short.0	Impulsion
+content.spread.tarot.three.label	3 · Trois cartes
+content.spread.tarot.three.role.0	État actuel / essence
+content.spread.tarot.three.role.1	Ombre cachée / Blocage
+content.spread.tarot.three.role.2	Vecteur / Action
+content.spread.tarot.three.focus	Planche universelle à trois cartes : définissez votre sujet du jour, vos relations ou votre travail avant la synthèse.
+content.spread.tarot.three.short.0	État
+content.spread.tarot.three.short.1	Ombre
+content.spread.tarot.three.short.2	Vecteur
+content.spread.tarot.four.label	4 · Cible et ombre
+content.spread.tarot.four.role.0	Votre rivage
+content.spread.tarot.four.role.1	L'Autre / Environnement
+content.spread.tarot.four.role.2	Quels ponts ou blocs
+content.spread.tarot.four.role.3	Tournant
+content.spread.tarot.four.focus	La Croix des Deux Rives : la personne qui vous préoccupe et le pont entre vous.
+content.spread.tarot.four.short.0	Rive
+content.spread.tarot.four.short.1	Autre
+content.spread.tarot.four.short.2	Pont
+content.spread.tarot.four.short.3	Tournant
+content.spread.tarot.seven.label	7 · Synthèse en fer à cheval
+content.spread.tarot.seven.role.0	Passé
+content.spread.tarot.seven.role.1	Présent
+content.spread.tarot.seven.role.2	Influences cachées
+content.spread.tarot.seven.role.3	Obstacle
+content.spread.tarot.seven.role.4	Forces externes
+content.spread.tarot.seven.role.5	Conseil
+content.spread.tarot.seven.role.6	Résultat
+content.spread.tarot.seven.focus	The Horseshoe : une synthèse verticale profonde des forces en mouvement dans la situation.
+content.spread.tarot.seven.short.0	Passé
+content.spread.tarot.seven.short.1	Présent
+content.spread.tarot.seven.short.2	Caché
+content.spread.tarot.seven.short.3	Obstacle
+content.spread.tarot.seven.short.4	Forces
+content.spread.tarot.seven.short.5	Conseil
+content.spread.tarot.seven.short.6	Résultat
+content.spread.tarot.loveBridge.label	5 · Pont d'amour
+content.spread.tarot.loveBridge.role.0	Votre rivage
+content.spread.tarot.loveBridge.role.1	Leur rivage
+content.spread.tarot.loveBridge.role.2	Le pont
+content.spread.tarot.loveBridge.role.3	Ce qui circule entre
+content.spread.tarot.loveBridge.role.4	Le syndicat
+content.spread.tarot.loveBridge.focus	Deux rives et le pont entre : comment deux cœurs se rencontrent, se croisent et se rejoignent.
+content.spread.tarot.loveBridge.short.0	Toi
+content.spread.tarot.loveBridge.short.1	Eux
+content.spread.tarot.loveBridge.short.2	Pont
+content.spread.tarot.loveBridge.short.3	Couler
+content.spread.tarot.loveBridge.short.4	Union
+content.spread.tarot.careerCrossroads.label	6 · Carrefour de carrière
+content.spread.tarot.careerCrossroads.role.0	La racine
+content.spread.tarot.careerCrossroads.role.1	Chemin actuel
+content.spread.tarot.careerCrossroads.role.2	Chemin alternatif
+content.spread.tarot.careerCrossroads.role.3	Quels blocs
+content.spread.tarot.careerCrossroads.role.4	La récompense
+content.spread.tarot.careerCrossroads.role.5	La destination
+content.spread.tarot.careerCrossroads.focus	Un arbre de sentiers ramifiés : là où la route se divise et où chacun mène.
+content.spread.tarot.careerCrossroads.short.0	Racine
+content.spread.tarot.careerCrossroads.short.1	Chemin A
+content.spread.tarot.careerCrossroads.short.2	Chemin B
+content.spread.tarot.careerCrossroads.short.3	Bloc
+content.spread.tarot.careerCrossroads.short.4	Récompense
+content.spread.tarot.careerCrossroads.short.5	Destin
+content.spread.tarot.celticCross.label	10 · Croix celtique
+content.spread.tarot.celticCross.role.0	Signifiant
+content.spread.tarot.celticCross.role.1	Passage
+content.spread.tarot.celticCross.role.2	Couronne
+content.spread.tarot.celticCross.role.3	Fondation
+content.spread.tarot.celticCross.role.4	Passé
+content.spread.tarot.celticCross.role.5	Avenir
+content.spread.tarot.celticCross.role.6	Soi
+content.spread.tarot.celticCross.role.7	Environnement
+content.spread.tarot.celticCross.role.8	Espoirs et peurs
+content.spread.tarot.celticCross.role.9	Résultat
+content.spread.tarot.celticCross.focus	La Croix Celtique classique : la situation traversée par son défi, couronnée et enracinée.
+content.spread.tarot.celticCross.short.0	Soi
+content.spread.tarot.celticCross.short.1	Croix
+content.spread.tarot.celticCross.short.2	Couronne
+content.spread.tarot.celticCross.short.3	Racine
+content.spread.tarot.celticCross.short.4	Passé
+content.spread.tarot.celticCross.short.5	Avenir
+content.spread.tarot.celticCross.short.6	Toi
+content.spread.tarot.celticCross.short.7	Monde
+content.spread.tarot.celticCross.short.8	Espoirs
+content.spread.tarot.celticCross.short.9	Résultat
+content.spread.lenormand.one.label	1 · Signe quotidien
+content.spread.lenormand.one.role.0	Le signe du jour
+content.spread.lenormand.one.focus	Une seule carte pour lire la météo du jour.
+content.spread.lenormand.one.short.0	Signe
+content.spread.lenormand.three.label	3 · Ligne Lenormand
+content.spread.lenormand.three.role.0	Passé
+content.spread.lenormand.three.role.1	Présent
+content.spread.lenormand.three.role.2	Avenir
+content.spread.lenormand.three.focus	La ligne classique à trois cartes : ce qui a été, ce qui est, ce qui vient.
+content.spread.lenormand.three.short.0	Passé
+content.spread.lenormand.three.short.1	Présent
+content.spread.lenormand.three.short.2	Avenir
+content.spread.lenormand.five.label	5 · Croix de 5
+content.spread.lenormand.five.role.0	La question
+content.spread.lenormand.five.role.1	Ce qui le traverse
+content.spread.lenormand.five.role.2	La racine
+content.spread.lenormand.five.role.3	Ce qui passe
+content.spread.lenormand.five.role.4	La Couronne
+content.spread.lenormand.five.focus	La Croix du 5 : la matière, les forces qui la traversent et le chemin qui la traverse.
+content.spread.lenormand.five.short.0	Matière
+content.spread.lenormand.five.short.1	Croix
+content.spread.lenormand.five.short.2	Racine
+content.spread.lenormand.five.short.3	Laissez-passer
+content.spread.lenormand.five.short.4	Couronne
+content.spread.lenormand.nine.label	9 · Boîte portrait 3×3
+content.spread.lenormand.nine.role.0	Passé
+content.spread.lenormand.nine.role.1	Présent
+content.spread.lenormand.nine.role.2	Avenir
+content.spread.lenormand.nine.role.3	Ce que vous cachez
+content.spread.lenormand.nine.role.4	Le demandeur
+content.spread.lenormand.nine.role.5	Ce que vous montrez
+content.spread.lenormand.nine.role.6	Espoirs
+content.spread.lenormand.nine.role.7	Peurs
+content.spread.lenormand.nine.role.8	Résultat
+content.spread.lenormand.nine.focus	Le coffret portrait 3×3 : une cartographie complète de la situation du demandeur.
+content.spread.lenormand.nine.short.0	Passé
+content.spread.lenormand.nine.short.1	Présent
+content.spread.lenormand.nine.short.2	Avenir
+content.spread.lenormand.nine.short.3	Cacher
+content.spread.lenormand.nine.short.4	Demandeur
+content.spread.lenormand.nine.short.5	Montrer
+content.spread.lenormand.nine.short.6	Espoirs
+content.spread.lenormand.nine.short.7	Peurs
+content.spread.lenormand.nine.short.8	Résultat
+content.spread.lenormand.grandPortrait.label	9 · Grand Portrait
+content.spread.lenormand.grandPortrait.role.0	La maison
+content.spread.lenormand.grandPortrait.role.1	Le coeur
+content.spread.lenormand.grandPortrait.role.2	L'esprit
+content.spread.lenormand.grandPortrait.role.3	Le corps
+content.spread.lenormand.grandPortrait.role.4	L'âme
+content.spread.lenormand.grandPortrait.role.5	Le chemin
+content.spread.lenormand.grandPortrait.role.6	La clé
+content.spread.lenormand.grandPortrait.role.7	L'anneau
+content.spread.lenormand.grandPortrait.role.8	L'étoile
+content.spread.lenormand.grandPortrait.focus	Le Grand Portrait : une carte de neuf cartes du monde intérieur et extérieur du demandeur.
+content.spread.lenormand.grandPortrait.short.0	Maison
+content.spread.lenormand.grandPortrait.short.1	Cœur
+content.spread.lenormand.grandPortrait.short.2	Esprit
+content.spread.lenormand.grandPortrait.short.3	Corps
+content.spread.lenormand.grandPortrait.short.4	Âme
+content.spread.lenormand.grandPortrait.short.5	Chemin
+content.spread.lenormand.grandPortrait.short.6	Clé
+content.spread.lenormand.grandPortrait.short.7	Anneau
+content.spread.lenormand.grandPortrait.short.8	Étoile
+content.spread.runes.one.label	1 · Rune d'Odin
+content.spread.runes.one.role.0	Le murmure d'Odin
+content.spread.runes.one.focus	Une pierre pour une question – le tirage le plus ancien.
+content.spread.runes.one.short.0	Odin
+content.spread.runes.three.label	3 · Les Trois Nornes
+content.spread.runes.three.role.0	Urd — Qu'est-ce qui s'est passé
+content.spread.runes.three.role.1	Verdandi — Qu'est-ce que
+content.spread.runes.three.role.2	Skuld — Ce qui devient
+content.spread.runes.three.focus	Les Nornes tissent ce qui était, ce qui est et ce qui devient.
+content.spread.runes.three.short.0	Urd
+content.spread.runes.three.short.1	Verdandi
+content.spread.runes.three.short.2	Skulde
+content.spread.runes.five.label	5 · La Croix de Thor
+content.spread.runes.five.role.0	Le marteau
+content.spread.runes.five.role.1	La tempête
+content.spread.runes.five.role.2	Le Bouclier
+content.spread.runes.five.role.3	L'ennemi
+content.spread.runes.five.role.4	La foudre
+content.spread.runes.five.focus	La Croix de Thor : la tempête, sa défense, son ennemi et sa frappe.
+content.spread.runes.five.short.0	Marteau
+content.spread.runes.five.short.1	Tempête
+content.spread.runes.five.short.2	Bouclier
+content.spread.runes.five.short.3	Ennemi
+content.spread.runes.five.short.4	Foudre
+content.spread.runes.seven.label	7 · Le pont Heimdall
+content.spread.runes.seven.role.0	La porte
+content.spread.runes.seven.role.1	L'observateur
+content.spread.runes.seven.role.2	Le chemin
+content.spread.runes.seven.role.3	Le péage
+content.spread.runes.seven.role.4	L'aube
+content.spread.runes.seven.role.5	L'avertissement
+content.spread.runes.seven.role.6	Le retour
+content.spread.runes.seven.focus	Pont de Heimdall : sept pierres traversant le Bifröst.
+content.spread.runes.seven.short.0	Grille
+content.spread.runes.seven.short.1	Observateur
+content.spread.runes.seven.short.2	Chemin
+content.spread.runes.seven.short.3	Sonner
+content.spread.runes.seven.short.4	Aube
+content.spread.runes.seven.short.5	Avertissement
+content.spread.runes.seven.short.6	Retour
+content.spread.runes.worldTree.label	9 · L'arbre du monde d'Yggdrasil
+content.spread.runes.worldTree.role.0	Asgard
+content.spread.runes.worldTree.role.1	Midgard
+content.spread.runes.worldTree.role.2	Hel
+content.spread.runes.worldTree.role.3	Les racines
+content.spread.runes.worldTree.role.4	Le coffre
+content.spread.runes.worldTree.role.5	Les succursales
+content.spread.runes.worldTree.role.6	Destin
+content.spread.runes.worldTree.role.7	Wyrd
+content.spread.runes.worldTree.role.8	La graine
+content.spread.runes.worldTree.focus	L'Arbre du Monde d'Yggdrasil : neuf pierres réparties dans les racines, le tronc et les branches du cosmos.
+content.spread.runes.worldTree.short.0	Asgard
+content.spread.runes.worldTree.short.1	Midgard
+content.spread.runes.worldTree.short.2	Hel
+content.spread.runes.worldTree.short.3	Racines
+content.spread.runes.worldTree.short.4	Tronc
+content.spread.runes.worldTree.short.5	Succursales
+content.spread.runes.worldTree.short.6	Destin
+content.spread.runes.worldTree.short.7	Wyrd
+content.spread.runes.worldTree.short.8	Graine
+content.element.fire.label	Feu
+content.element.water.label	Eau
+content.element.air.label	Air
+content.element.earth.label	Terre
+content.element.fire.trait	Volonté / Conduire
+content.element.water.trait	Émotion / Intuition
+content.element.air.trait	Esprit / Conflit
+content.element.earth.trait	Matière / Ressource
+content.suit.wands.label	Baguettes
+content.suit.cups.label	Tasses
+content.suit.swords.label	Épées
+content.suit.pentacles.label	Pentacles
+content.aett.freyr.label	Freyr
+content.aett.hagal.label	Hagal
+content.aett.tyr.label	Tyr
+content.aett.freyr.title	Aett de Freyr
+content.aett.hagal.title	Aett de Hagal
+content.aett.tyr.title	Aett de Tyr
+content.aett.freyr.theme	Croissance et débuts
+content.aett.hagal.theme	Perturbation et endurance
+content.aett.tyr.theme	Justice et ordre humain
+content.playingSuit.hearts.label	Cœurs
+content.playingSuit.diamonds.label	Diamants
+content.playingSuit.clubs.label	Clubs
+content.playingSuit.spades.label	Piques
+content.playingSuit.hearts.domain	Émotion / Coeur
+content.playingSuit.diamonds.domain	Matière / Ressource
+content.playingSuit.clubs.domain	Travail / Croissance
+content.playingSuit.spades.domain	Défi / Obstacle
+content.polarity.yang	Yang · Positif
+content.polarity.yin	Yin · Réceptif
+content.rulers.traditional	{modern} · trad. {traditional}
+content.tarot.rank.0	As
+content.tarot.rank.1	Deux
+content.tarot.rank.2	Trois
+content.tarot.rank.3	Quatre
+content.tarot.rank.4	Cinq
+content.tarot.rank.5	Six
+content.tarot.rank.6	Sept
+content.tarot.rank.7	Huit
+content.tarot.rank.8	Neuf
+content.tarot.rank.9	Dix
+content.tarot.rank.10	Page
+content.tarot.rank.11	Chevalier
+content.tarot.rank.12	Reine
+content.tarot.rank.13	Roi
+content.house.1	1ère Maison
+content.house.2	2ème Maison
+content.house.3	3ème Maison
+content.house.4	4ème Maison
+content.house.5	5ème Maison
+content.house.6	6ème Maison
+content.house.7	7ème Maison
+content.house.8	8ème Maison
+content.house.9	9ème Maison
+content.house.10	10ème Maison
+content.house.11	11ème Maison
+content.house.12	12ème Maison
+ui.card_detail_sheet.the_question_to_sit_with	LA QUESTION À ASSOCIER
+ui.zodiac_detail_sheet.natural_house	MAISON NATUREL
+ui.zodiac_detail_sheet.house_theme	THÈME DE LA MAISON
+ui.zodiac_detail_sheet.core_archetype	ARCHÉTYPE DE BASE
+ui.zodiac_detail_sheet.shadow_stress_response	OMBRE · RÉPONSE AU STRESS
+ui.zodiac_detail_sheet.love_connection	AMOUR ET CONNEXION
+ui.zodiac_detail_sheet.career_path_vector	VECTEUR DE CARRIÈRE ET DE CHEMIN
+ui.zodiac_detail_sheet.view_horoscope_in_astral	✦ VOIR L'HOROSCOPE EN ASTRAL
+ui.synastry_summary_sheet.synastry_2_profiles	SYNASTRIE · 2 PROFILS
+ui.synastry_summary_sheet.discuss_this_synastry_with_the_oracle	✦ DISCUTER DE CETTE SYNASTRIE AVEC L'ORACLE
+ui.astral_pro_paywall_sheet.astral_pro	ASTRAL PRO
+ui.astral_pro_paywall_sheet.free_tier_2_saved_natal_profiles	NIVEAU GRATUIT · 2 PROFILS NATAUX SAUVEGARDÉS
+ui.astral_pro_paywall_sheet.unlock_pro	DÉBLOQUER PRO
+ui.birth_data_form_sheet.astral_pro_required_for_a_3rd_natal_profile	ASTRAL PRO requis pour un 3ème profil natal.
+ui.horoscope_window.no_horoscope_yet_create_a_natal_profile_or_pick_	Pas encore d'horoscope — créez un profil natal ou choisissez un signe ci-dessus.
+ui.natal_wheel_widget.tap_a_planet_to_inspect_its_aspects	APPUYEZ SUR UNE PLANÈTE POUR INSPECTER SES ASPECTS
+ui.planet_aspect_inspector_card.rx	réception
+ui.camera_scan_screen.switch_reading_mode	Changer de mode de lecture ?
+ui.camera_scan_screen.simulated_viewfinder_u00b7_tap_to_run_the_mock_s	VISEUR SIMULÉ \\u00b7 APPUYEZ POUR EXÉCUTER LE MOCK SCAN
+ui.camera_scan_screen.camera_unavailable_mock_mode	CAMÉRA INDISPONIBLE\nMODE MOCK
+ui.camera_scan_screen.scan_failed_try_again	Échec de l'analyse, réessayez
+ui.camera_scan_screen.scanning_spread	Balayage étendu
+ui.camera_scan_screen.capture_spread	Capturer la propagation
+ui.camera_top_hud.pick_from_gallery	Choisissez dans la galerie
+ui.guided_spread_hud.exit_guided_spread	Quitter la diffusion guidée
+ui.guided_spread_hud.open_full_chat	Ouvrir le chat complet
+ui.recognition_review_sheet.choose_spread	CHOISISSEZ LA PROPAGATION
+ui.recognition_review_sheet.confirm_order_cards	CONFIRMER LA COMMANDE ET LES CARTES
+ui.recognition_review_sheet.confirm_place_on_table	CONFIRMER ET PLACE SUR TABLE
+ui.recognition_review_sheet.toggle_orientation	Basculer l'orientation
+ui.recognition_review_sheet.move_up	Monter
+ui.recognition_review_sheet.move_down	Descendre
+ui.recognition_review_sheet.remove	Retirer
+ui.digital_table_screen.spread_view	VUE ÉLARGÉE
+ui.digital_table_screen.focus_view	VUE MISE AU POINT
+ui.oracle_chat_pane.type_your_question_in_the_input_bar_first_then_t	Tapez d'abord votre question dans la barre de saisie, puis appuyez sur +1 CARTE.
+ui.oracle_chat_pane.the_oracle_could_not_finish_this_reading_try_aga	L'Oracle n'a pas pu terminer cette lecture. Essayer à nouveau.
+ui.oracle_chat_pane.would_you_like_to_draw_a_1_clarifier_card_to_unc	SOUHAITEZ-VOUS TIRER UNE CARTE CLARIFICATEUR +1 POUR DÉCOUVRIR :
+ui.oracle_chat_pane.1_card_for_my_question	🃏 CARTE +1 POUR MA QUESTION
+ui.oracle_chat_pane.camera_clarifier	📷 · CLARIFICATEUR DE CAMÉRA
+ui.oracle_chat_pane.1_core_narrative_synthesis	1 · SYNTHÈSE NARRATIVE DE BASE
+ui.oracle_chat_pane.2_elemental_alchemy	2 · ALCHIMIE ÉLÉMENTAIRE
+ui.oracle_chat_pane.3_actionable_verdict	3 · VERDICT ACTIONNABLE
+ui.spread_history_pane.spread_history	DIFFUSER L'HISTOIRE
+ui.spread_history_pane.synthesize_your_first_spread_and_it_will_wait_he	Synthétisez votre premier spread et il attendra ici.
+ui.spread_history_pane.new_spread	NOUVELLE TARTINÉE · НОВЫЙ РАСКЛАД
+ui.table_workspace.add_to_the_reading	AJOUTER À LA LECTURE
+ui.table_workspace.attach_camera_card	📷 ATTACHER LA CARTE CAMÉRA
+ui.table_workspace.new_spread	✦ NOUVELLE PROPAGATION
+ui.table_workspace.physical_sync	SYNCHRONISATION PHYSIQUE
+ui.table_workspace.cancel_clarifier	Annuler le clarificateur
+ui.gemini_input_capsule.voice_input_is_not_available_here_type_your_thou	La saisie vocale n'est pas disponible ici – saisissez plutôt votre pensée.
+ui.gemini_input_capsule.add_context	Ajouter du contexte
+ui.gemini_input_capsule.voice	Voix
+ui.gemini_input_capsule.send	Envoyer
+ui.reading_bottom_sheet.voice_input_is_not_available_here_type_your_note	La saisie vocale n’est pas disponible ici – tapez plutôt votre note.
+ui.reading_bottom_sheet.spread_saved_on_this_device	Spread enregistré sur cet appareil
+ui.reading_bottom_sheet.personal_note	NOTE PERSONNELLE
+ui.reading_bottom_sheet.live_reading	Lecture en direct
+ui.reading_bottom_sheet.reading_context	CONTEXTE DE LECTURE
+ui.reading_bottom_sheet.flip_at_least_one_card_on_the_table_to_synthesiz	Retournez au moins une carte sur la table pour synthétiser le spread.
+ui.reading_bottom_sheet.synthesize_spread	SYNTHÉTISER LA PROPAGATION
+ui.reading_bottom_sheet.add_a_personal_note_or_thought_for_this_card	Ajoutez une note personnelle ou une pensée pour cette carte...
+ui.ritual_settings_sheet.daily_ritual	RITUEL QUOTIDIEN
+ui.ritual_settings_sheet.daily_ritual_reminders	RAPPELS RITUELS QUOTIDIENS
+ui.ritual_settings_sheet.morning_anchor_09_00	ANCRAGE DU MATIN · 09h00
+ui.ritual_settings_sheet.evening_reflection_22_00	RÉFLEXION DU SOIR · 22h00
+ui.oracle_voice_controls.pause	Pause
+ui.oracle_voice_controls.interrupt	Interrompre
+ui.oracle_voice_controls.end	Fin
+ui.oracle_voice_overlay.live_oracle	ORACLE EN DIRECT
+ui.profile_identity_card.birth_date	DATE DE NAISSANCE
+ui.profile_identity_card.birth_time	HEURE DE NAISSANCE
+ui.profile_migration_card.export_data	EXPORTER DES DONNÉES
+ui.profile_migration_card.snapshot_ready	PRÊT POUR UN INSTANTANÉ
+ui.profile_migration_card.import_data	IMPORTER DES DONNÉES
+ui.profile_migration_card.paste_the_backup_json_here	Collez le JSON de sauvegarde ici
+ui.profile_migration_card.export_data_for_new_device	EXPORTER DES DONNÉES POUR UN NOUVEL APPAREIL
+ui.profile_signin_card.best_value	MEILLEURE VALEUR
+ui.profile_signin_card.pro_monthly	PRO MENSUEL
+ui.profile_signin_card.pro_annual	PRO ANNUEL
+ui.taro_glass_sheet.drag_handle	Poignée de déplacement
+content.sign.aries.title	Bélier
+content.sign.aries.trait	volonté directe et courage de commencer avant que le plan ne soit prêt
+content.sign.taurus.title	Taureau
+content.sign.taurus.trait	une patience constante qui crée lentement de la valeur et conserve ce qui compte
+content.sign.gemini.title	Gémeaux
+content.sign.gemini.trait	perception curieuse qui apprend en nommant, en reliant et en demandant
+content.sign.cancer.title	Cancer
+content.sign.cancer.trait	sentiment de protection qui connaît une pièce et ses habitants par cœur
+content.sign.leo.title	Lion
+content.sign.leo.trait	expression de soi rayonnante qui attire l’attention et partage la chaleur
+content.sign.virgo.title	Vierge
+content.sign.virgo.trait	un discernement précis qui sert à remarquer ce qui peut être amélioré
+content.sign.libra.title	Balance
+content.sign.libra.trait	une équité relationnelle qui pèse les deux parties avant de s'engager
+content.sign.scorpio.title	Scorpion
+content.sign.scorpio.trait	intensité profonde qui transforme ce qu'elle touche ou lâche
+content.sign.sagittarius.title	Sagittaire
+content.sign.sagittarius.trait	une croyance expansive qui trouve un sens au-delà du prochain horizon
+content.sign.capricorn.title	Capricorne
+content.sign.capricorn.trait	une ambition disciplinée qui respecte les limites et surmonte les revers
+content.sign.aquarius.title	Verseau
+content.sign.aquarius.trait	vision indépendante qui questionne la foule et réforme le système
+content.sign.pisces.title	Poissons
+content.sign.pisces.trait	imagination poreuse qui absorbe l'ambiance et la rêve plus douce
+content.planet.sun.title	Soleil
+content.planet.sun.archetype	identité fondamentale, vitalité et objectif conscient
+content.planet.moon.title	Lune
+content.planet.moon.archetype	besoins émotionnels, instinct et enfant intérieur
+content.planet.mercury.title	Mercure
+content.planet.mercury.archetype	perception, langage et comment l'esprit échange des idées
+content.planet.venus.title	Vénus
+content.planet.venus.archetype	l'attirance, les valeurs et ce que le cœur trouve beau
+content.planet.mars.title	Mars
+content.planet.mars.archetype	le dynamisme, le courage et le côté honnête du désir
+content.planet.jupiter.title	Jupiter
+content.planet.jupiter.archetype	croissance, foi et recherche de sens
+content.planet.saturn.title	Saturne
+content.planet.saturn.archetype	structure, limites et long jeu de maîtrise
+content.planet.uranus.title	Uranus
+content.planet.uranus.archetype	la liberté, la perturbation et la mise à niveau soudaine
+content.planet.neptune.title	Neptune
+content.planet.neptune.archetype	rêves, compassion et frontière dissolvante
+content.planet.pluto.title	Pluton
+content.planet.pluto.archetype	le pouvoir, le renouveau et ce qui se transforme en profondeur
+content.planet.ascendant.title	Ascendant
+content.planet.ascendant.archetype	la première impression que vous donnez et le chemin que vous parcourez
+content.planet.midheaven.title	Milieu du Ciel
+content.planet.midheaven.archetype	la vocation publique, l'ambition et le sommet que vous visez
+content.aspect.conjunction.line	une fusion qui concentre les deux forces
+content.aspect.sextile.line	une invitation facile à coopérer
+content.aspect.square.line	une friction productive qui exige un ajustement
+content.aspect.trine.line	un flux naturel qui nécessite un objectif conscient
+content.aspect.opposition.line	un miroir qui demande l'équilibre
+content.houseSystem.placidus.label	PLACIDE
+content.houseSystem.placidus.subtitle	Плацидус · квадрантная
+content.houseSystem.koch.label	KOCH
+content.houseSystem.koch.subtitle	Кох · место рождения
+content.houseSystem.wholeSign.label	SIGNE ENTIER
+content.houseSystem.wholeSign.subtitle	Целые знаки · традиция
+content.aspect.conjunction.name	Conjonction
+content.aspect.sextile.name	Sextile
+content.aspect.square.name	Carré
+content.aspect.trine.name	Trigone
+content.aspect.opposition.name	Opposition
+ui.astral_astral_screen.compare_2_profiles_synastry	⚡ COMPAREZ 2 PROFILS · SYNASTRIE
+ui.astral_natal_profile_detail_sheet.natal_profile	PROFIL NATAL
+ui.astral_natal_profile_detail_sheet.big_three	TROIS GRANDS
+ui.astral_natal_profile_detail_sheet.no_aspects_in_this_register	Aucun aspect dans ce registre.
+ui.astral_astral_cosmic_bar.illuminated	ILLUMINÉ
+ui.astral_astral_profile_bar.new_chart	NOUVEAU GRAPHIQUE
+ui.astral_astral_summary_card.no_natal_profile_yet	PAS ENCORE DE PROFIL NATAL
+ui.astral_astral_summary_card.enter_your_birth_date_time_and_city	Entrez votre date de naissance, votre heure et votre ville.
+ui.astral_birth_data_form_sheet.how_to_address_this_chart	Comment aborder ce graphique
+ui.astral_daily_horoscope_card.in_house	À LA MAISON
+ui.astral_daily_horoscope_card.live_transits	TRANSIT EN DIRECT
+ui.astral_daily_horoscope_card.energy	ÉNERGIE
+ui.astral_daily_horoscope_card.natal	(natal)
+ui.astral_horoscope_blocks.energy_resonance	ÉNERGIE ET ​​RÉSONANCE
+ui.astral_planet_aspect_inspector_card.house	MAISON
+ui.astral_planet_aspect_inspector_card.no_major_aspects	AUCUN ASPECT MAJEUR
+ui.astral_planet_aspect_inspector_card.active_aspects	ASPECTS ACTIFS
+ui.astral_synastry_window.no_close_cross_chart_aspects	Aucun aspect croisé proche.
+ui.astral_synastry_window.compatibility_axes	AXES DE COMPATIBILITÉ
+ui.astral_synastry_window.elemental_balance	ÉQUILIBRE ÉLÉMENTAIRE
+ui.astral_synastry_window.overall_resonance	RÉSONANCE GLOBALE
+ui.astral_zodiac_forecast_card.solar_house	MAISON SOLAIRE
+content.synastry.emotional.title	Lien émotionnel
+content.synastry.emotional.text	Contact Lune-Lune et Lune-Vénus : comment les besoins sont ressentis, retenus et reflétés.
+content.synastry.attraction.title	Attraction et étincelle
+content.synastry.attraction.text	Contact Vénus-Mars et Soleil : la charge qui rapproche deux personnes.
+content.synastry.mental.title	Mental et communication
+content.synastry.mental.text	Liens avec Mercure : comment les deux esprits échangent, s'interrogent et se comprennent.
+content.synastry.growth.title	Croissance et friction
+content.synastry.growth.text	Saturne et les carrés : où le lien se construit par la résistance.
+table.customElementalLine	Lire comme une ligne élémentaire de cinq cartes
+table.customCompareElements	Comparer des éléments de positions successives
+astral.addBirthDataFirst	Ajoutez d'abord votre date de naissance et votre ville dans votre profil.
+astral.weekday.mon	Lun
+astral.weekday.tue	Mar
+astral.weekday.wed	Épouser
+astral.weekday.thu	Jeu
+astral.weekday.fri	Ven
+astral.weekday.sat	Assis
+astral.weekday.sun	Soleil
+ui.almanac_screen.almanac_searchsigns	almanach.searchSigns
+ui.almanac_screen.almanac_searchcards	almanach.searchCards
+ui.almanac_screen.almanac_nosigns	almanach.noSigns
+ui.almanac_screen.almanac_nocards	almanach.noCards
+ui.natal_wheel_painter.rx	réception
+ui.camera_top_hud.turn_flash_off	Éteignez le flash
+ui.camera_top_hud.turn_flash_on	Activer le flash
+ui.guided_spread_hud.turn_flash_off	Éteignez le flash
+ui.guided_spread_hud.turn_flash_on	Activer le flash
+ui.guided_spread_hud.resume_reading	Reprendre la lecture
+ui.guided_spread_hud.pause_reading	Suspendre la lecture
+ui.guided_spread_hud.preparing_your_reading	PRÉPARER VOTRE LECTURE
+ui.guided_spread_hud.set_your_intention	DÉFINISSEZ VOTRE INTENTION
+ui.guided_spread_hud.draw_a_card_and_place_it	PIOCHEZ UNE CARTE ET PLACEZ-LA
+ui.guided_spread_hud.card_detected_hold_steady	CARTE DÉTECTÉE — TENEZ STABLE
+ui.guided_spread_hud.turn_the_card_face_up	RETOURNEZ LA CARTE
+ui.guided_spread_hud.reading_the_card	LIRE LA CARTE
+ui.guided_spread_hud.confirm_the_card	CONFIRMER LA CARTE ?
+ui.guided_spread_hud.interpreting_the_card	INTERPRÉTATION DE LA CARTE
+ui.guided_spread_hud.your_turn	À VOTRE TOUR
+ui.guided_spread_hud.ready_for_the_next_card	PRÊT POUR LA PROCHAINE CARTE
+ui.guided_spread_hud.spread_complete	DIFFUSION COMPLÈTE
+ui.guided_spread_hud.reading_complete	LECTURE COMPLÈTE
+ui.guided_spread_hud.something_went_wrong	Quelque chose ne s'est pas bien passé
+ui.oracle_chat_pane.your_spread_is_ready	VOTRE TARTINÉE EST PRÊTE
+ui.oracle_chat_pane.no_reading_yet	PAS DE LECTURE ENCORE
+ui.oracle_chat_pane.synthesize_the_spread_and_the_oracle_will_speak	Synthétisez la diffusion et l’Oracle parlera.
+ui.oracle_chat_pane.deal_and_flip_your_spread_on_the_table_then_come	Négociez et retournez votre spread sur la table, puis revenez —
+ui.oracle_chat_pane.retry_synthesis	RÉESSAYER LA SYNTHÈSE
+ui.oracle_chat_pane.synthesize_in_chat	✦ SYNTHÉTISER DANS LE CHAT →
+ui.oracle_chat_pane.or_just_swipe_left	ou balayez simplement vers la gauche.
+ui.spread_history_pane.this_notebook_is_empty	CE CARNET EST VIDE
+ui.spread_history_pane.no_readings_saved_yet	AUCUNE LECTURE ENCORE ENREGISTRÉE
+ui.custom_spread_sheet.ru_ru	ru_RU
+ui.custom_spread_sheet.en_us	fr_US
+ui.custom_spread_sheet.table_customelementalline	table.customElementalLine
+ui.custom_spread_sheet.table_customcompareelements	table.customCompareElements
+ui.oracle_card_rail.hide_reading_cards	Masquer les cartes de lecture
+ui.oracle_card_rail.show_reading_cards	Afficher les fiches de lecture
+ui.oracle_session_meta_bar.resume_camera	REPRENDRE LA CAMÉRA
+ui.oracle_session_meta_bar.continue_guided_session	CONTINUER LA SÉANCE GUIDÉE
+ui.oracle_session_meta_bar.return_to_physical_spread	RETOUR À LA PROPAGATION PHYSIQUE
+ui.reading_bottom_sheet.reversed_meaning	SIGNIFICATION INVERSÉE
+ui.reading_bottom_sheet.upright_meaning	SIGNIFICATION DROITE
+ui.reading_bottom_sheet.saved_u2713	ENREGISTRÉ \\u2713
+ui.reading_bottom_sheet.save_locally	ÉCONOMISER LOCALEMENT
+ui.reading_bottom_sheet.love_relationships	Amour et relations
+ui.reading_bottom_sheet.inner_crisis	Crise intérieure
+ui.reading_bottom_sheet.career_path	Carrière et parcours
+ui.reading_bottom_sheet.custom_question	Question personnalisée
+ui.reading_context_field.ru_ru	ru_RU
+ui.reading_context_field.en_us	fr_US
+ui.ritual_settings_sheet.daily_ritual_reminders_set_all_local_no_server	Ensemble de rappels rituels quotidiens – tous locaux, pas de serveur.
+ui.ritual_settings_sheet.ritual_reminders_disabled	Rappels rituels désactivés.
+ui.ritual_settings_sheet.save_ritual_times	GAGNEZ DU TEMPS RITUEL
+ui.ritual_settings_sheet.disable_rituals	DÉSACTIVER LES RITUELS
+ui.spread_selector_sheet.spread_method	MÉTHODE DE PROPAGATION
+ui.spread_selector_sheet.lenormand_spread	PROPAGATION LENORMAND
+ui.spread_selector_sheet.rune_cast	COULEUR DE RUNES
+ui.oracle_voice_controls.stop_listening	Arrêtez d'écouter
+ui.oracle_voice_controls.start_listening	Commencez à écouter
+ui.oracle_voice_controls.unmute_the_oracle	Réactiver le son de l'Oracle
+ui.oracle_voice_controls.mute_the_oracle	Couper le son de l'Oracle
+ui.oracle_voice_controls.collapse	Effondrement
+ui.oracle_voice_controls.expand	Développer
+ui.profile_identity_card.birth_time_known	HEURE DE NAISSANCE CONNUE
+ui.profile_identity_card.time_unknown	HEURE INCONNUE
+ui.profile_migration_card.backup_imported_profile_sessions_and_natal_chart	Sauvegarde importée : fusion du profil, des sessions et des thèmes natals.
+ui.profile_migration_card.this_payload_is_not_a_valid_backup	Cette charge utile n'est pas une sauvegarde valide.
+ui.profile_signin_card.pro_active	PRO ACTIF
+ui.profile_signin_card.free_tier	NIVEAU GRATUIT
+ui.profile_signin_card.linked_google	LIÉ · GOOGLE
+ui.profile_signin_card.continue_with_google_apple_1_click	CONTINUER AVEC GOOGLE / APPLE (1-CLIC)
+ui.oracle_chat_pane.deal_and_flip_empty	Négociez et retournez votre spread sur la table, puis revenez – ou balayez simplement vers la gauche.
+reading.resonates	Résonne
+reading.challenging	Stimulant
+reading.unclear	Peu clair
+camera.mode.quickScan	POINTEZ VOTRE PROPAGATION SUR LA TABLE
+camera.mode.guidedSpread	ALIGNEZ CHAQUE CARTE SUR UN EMPLACEMENT GUIDÉ
+camera.mode.liveOracle	DÉTENEZ UNE CARTE POUR L'ORACLE EN DIRECT
+camera.manualFallback	L'analyse physique {system} nécessite une saisie manuelle de la carte : le système de reconnaissance de la caméra lit uniquement le TAROT.
+camera.modeSwitchWarning	Une lecture guidée est en cours. Le changement de mode quitte la session en cours.
+camera.photographNext	PHOTOGRAPHIEZ VOTRE PROCHAINE CARTE PHYSIQUE
+camera.recognizedCount	{count} RECONNU
+camera.freeform	FREEFORM — aucune correspondance de modèle ; chaque carte est conservée
+camera.proposed	PROPOSÉ : {label}
+profile.signIn.disclaimer	Aucun compte n'est requis pour utiliser l'application. La connexion en 1 clic est utilisée uniquement pour protéger votre achat PRO lors des réinstallations et vous aider à déplacer des données vers un nouveau téléphone.
+common.notSet	NON RÉGLÉ
+common.unknown	INCONNU
+profile.field.nameHint	Comment l'Oracle devrait s'adresser à vous
+common.name	NOM
+profile.field.context	MON CONTEXTE ET MON HISTORIQUE DE VIE
+profile.field.contextHint	Statut relationnel, carrefour de carrière, état intérieur…
+profile.field.privacy	Stocké strictement sur votre appareil. Utilisé pour personnaliser les lectures Oracle lorsque vous dessinez vous-même.
+profile.migration.explainer	Pour déplacer votre historique et vos profils vers un nouvel appareil, un instantané de vos données locales (profil, sessions, cartes natales) est généré sur ce téléphone. Aucun serveur relais n'est encore configuré : l'instantané est copié dans votre presse-papiers et affiché ici afin que vous puissiez le transférer vous-même.
+table.astral.natalTitle	{profile} · Noël
+table.astral.horoscopeTitle	{profile} · Horoscope
+table.astral.natalFallback	Natal
+table.astral.zodiacTitle	{sign} · Horoscope
+table.astral.zodiacFallback	Zodiaque
+table.subject.other	Lire pour quelqu'un d'autre
+table.oracleFailed	L'Oracle n'a pas pu répondre. Votre carte est toujours dans le spread.
+table.astralReading	Lecture astrale
+table.notSynthesized	La lecture n'est pas encore synthétisée — distribuez et retournez votre spread sur la table, puis appuyez sur ✦ SYNTHÉTISER DANS LE CHAT.
+table.clarifierQuestion	Qu'est-ce que le tableau veut montrer d'autre ?
+table.oracleHint	Demandez à l'Oracle - ou tapez une question pour une carte +1...
+table.clarifierExpansion	EXPANSION DU CLARIFICATEUR
+common.thinking	Pensée…
+table.connectingOracle	CONNEXION À L'ORACLE…
+common.reversed	(renversé)
+history.keywords.relationship	relation|amour|sentiments|отношения|любовь|чувства|relaciones|amor|sentimientos|relacionamento|sentimentos|beziehung|liebe|gefühle|relation|amour|sentiments
+history.keywords.career	carrière|argent|carrefour|chemin|работа|карьера|деньги|путь|carrera|dinero|caminho|carreira|dinheiro|beruf|geld|weg|carrière|argent|chemin
+history.notebook.all	Toutes les lectures
+history.notebook.relationships	Relations
+history.notebook.career	Carrière et parcours
+history.noContextNotes	Aucune note contextuelle
+common.month.1	Jan
+common.month.2	Fév
+common.month.3	Mar
+common.month.4	Avr
+common.month.5	Peut
+common.month.6	juin
+common.month.7	Juillet
+common.month.8	Août
+common.month.9	Sep
+common.month.10	Octobre
+common.month.11	Nov
+common.month.12	Déc
+table.addContextHint	Ajoutez du contexte ou demandez à Oracle...
+ritual.retentionLine	RAPPELS LOCAUX · RÉTENTION ZÉRO DU SERVEUR · SÉRIE DE {streak}-JOURS
+ritual.morningHint	Tirez votre carte Daily Anchor.
+ritual.eveningHint	Fondez vos pensées avant de dormir.
+table.synthesize.weaving	TISSER LA LECTURE · · ·
+table.synthesize.openChat	✦ OUVRIR LE CHAT ORACLE →
+table.synthesize.idle	✦ SYNTHÉTISER DANS LE CHAT
+table.synthesize.withCount	✦ SYNTHÉTISER DANS LE CHAT ({up}/{total})
+table.faceDownCard	Carte face cachée
+table.clarifier	Clarificateur
+common.cancel	ANNULER
+common.switch	CHANGER
+common.next	SUIVANT
+common.confirm	CONFIRMER
+common.resume	CONTINUER
+common.done	FAIT
+common.export	EXPORTER
+common.import	IMPORTER
+common.paused	EN PAUSE
+common.cancelled	ANNULÉ
+common.reversedLabel	RENVERSÉ
+common.uprightLabel	DROIT
+common.keywords	MOTS CLÉS
+common.combinations	COMBINAISONS
+common.lore	TRADITIONS
+common.merkstave	MERKSTAVE
+common.element	ÉLÉMENT
+common.modality	MODALITÉ
+common.polarity	POLARITÉ
+common.rulers	RÈGLES
+common.majorArcana	ARCANE MAJEUR
+common.oracle	ORACLE
+common.loading	Chargement
+common.progress	Progrès
+table.tapToReset	APPUYEZ POUR RÉINITIALISER
+astral.elementalBalance	ÉQUILIBRE ÉLÉMENTAIRE
+astral.crossChartAspects	ASPECTS CROISÉS
+astral.discussNatal	✦ DISCUTER DE LA CARTE NATALE AVEC ORACLE
+astral.discussHoroscope	✦ DISCUTEZ D'HOROSCOPE AVEC ORACLE
+astral.discussSynastry	✦ DISCUTER DE SYNASTRIE AVEC ORACLE →
+astral.addFirstProfile	✦ AJOUTER LE PREMIER PROFIL
+astral.bigThree.sun	SOLEIL
+astral.bigThree.moon	LUNE
+astral.bigThree.rising	SOULÈVEMENT
+pro.feature.unlimitedProfiles	Profils natals illimités
+pro.feature.synastry	Comparaison synastrie entre deux graphiques
+pro.feature.chartRegeneration	Régénération des graphiques · contrôle complet de la maison
+astral.moons.same	Les deux Lunes partagent l’élément {element} : les rythmes émotionnels s’accordent facilement.
+astral.moons.different	Les lunes dans {a} et {b} ont besoin de choses différentes – le lien demande une traduction.
+astral.noTightAspects	Pas d’aspects croisés serrés – ce lien repose sur le tempérament, pas sur les frictions.
+astral.moonOf	LUNE · {name}
+astral.houseShort	H{house}
+astral.calibrating	CALIBRAGE DE {percent}%
+table.youAskedPulled	Vous avez demandé : {question} — extrait {card}
+table.maxCards	MAXIMUM DE CARTES {max} ATTEINT · VOUS POUVEZ TOUJOURS CHATTER
+table.plusOneCard	🃏 CARTE +1 : {question}
+table.questionToSit	La question à poser : {question}
+table.cameraClarifier	CLARIFICATEUR DE CAMÉRA : "{question}"
+lenormand.cardTitle	PETIT LÉNORMAND · {timing}
+ritual.streak	SÉRIE DE LECTURE {streak}-JOUR
+table.slotLabel	EMPLACEMENT {n} · {role} · {category}
+table.cardsAndFocus	{cards} · {focus}
+astral.coord.lat	LAT {value}° {dir}
+astral.coord.lon	LON {value}° {dir}
+astral.coord.sid	SID{value}
+guide.dealTitle	Accorder {slot} sur {total} · {role}
+guide.revealTitle	Essayez de révéler {slot} · {role}
+guide.completeTitle	Comment les positions se lisent-elles ensemble ?
+guide.dealTip.stack	Retirez une carte ou une pierre de la pile.
+guide.dealTip.runes	Appuyez sur les pierres pour lancer la prochaine rune.
+guide.dealTip.cards	Appuyez sur le jeu ou maintenez et transportez une carte jusqu'à l'espace en surbrillance.
+guide.revealBody	Révélez n'importe quelle carte que vous aimez. Comment son image répond-elle à la question de sa position ?
+guide.completeBody	Choisissez une image sur une carte et comparez-la avec une autre position. Où cette image se répète-t-elle ou change-t-elle ?
+guide.slotQuestion	Quel détail de l'image vous aide à lire « {role} » dans cette planche ?
+guide.elementNote	Dans ce système, les baguettes portent le feu, les coupes d'eau, les épées d'air et les pentacles de terre. L'inversion change la façon dont vous lisez une carte tandis que son élément reste le même.
+guide.goldenDawnNote	Les dignités élémentaires de Golden Dawn comparent les éléments des cartes. Une lecture positionnelle peut plutôt explorer comment chaque image répond à sa question.
+guide.method.lenormand	Lenormand se lit par paire : un objet et le mot qui le qualifie. Ce système n'a pas de cartes inversées.
+guide.method.runes	Les runes Elder Futhark sont lues comme des forces et des actions. Seules les huit portées asymétriques peuvent tomber merkstave.
+guide.reversal.runes	Merkstave n'est pas endommagé : la même portée dans une position défavorable. Lisez d'abord la position, puis l'ombre.
+guide.reversal.default	Une carte inversée n’est pas une « mauvaise » carte : la même force tournée vers l’intérieur, retardée ou exagérée. Lisez d'abord la position, puis le renversement.
+guide.relationship.elemental	Lien élémentaire
+guide.relationship.positional	Lien de position
+guide.turnOff	Désactiver le guidage
+guide.backToSpread	Retour au tirage
+guide.askOracle	Interroger l'Oracle
+guide.oracle.thinking	L'Oracle réfléchit…
+guide.oracle.label	L'ORACLE
+guide.oracle.empty	Révélez au moins une carte — l'Oracle ne parle que de ce qui est sur la table.
+guide.oracle.fallback	{focus}\nSur la table : {cards}.
+guide.oracle.card	{role} · {card} ({orientation})
+guide.oracle.link	Lisez-les comme un seul fil : {link}
+guide.oracle.question	Restez avec cette question : {question}
+intention.slot.0	Qu’est-ce qui vous préoccupe en ce moment ? Où est la tension ?
+intention.slot.1	Quelle force ou peur cachée influence cela ?
+intention.slot.2	Quelle direction cherchez-vous ?
+intention.slot.3	Qui ou quoi se tient dans l’embrasure de la porte ?
+intention.slot.4	Qu'est-ce qui est prêt à être publié ?
+intention.slot.5	Qu'est-ce qui veut grandir dans la lumière ?
+intention.slot.6	Quelle est la leçon la plus profonde qu’offre ce cycle ?
+intention.chip.relationships	Relations et sentiments
+intention.chip.career	Carrefour carrière/argent
+intention.chip.doubt	Doute intérieur
+intention.chip.deck	Laissez le pont décider
+intention.clarifier.hidden	+ Tirez 1 carte : quel est l'obstacle caché ?
+intention.clarifier.step	+ Tirez 1 carte : quelle mesure concrète dois-je prendre ?
+intention.question.hidden	Quel est l’obstacle caché ?
+intention.question.step	Quelle mesure concrète dois-je prendre ?
+intention.custom	+ Posez ma propre question et tirez une carte...
+table.chip.relationships	✨ Relations
+table.chip.crossroads	⚡ Carrefour
+table.chip.blindDraw	🔮 Tirage à l'aveugle
+reading.link.lenormandPair	{a} + {b} — la première carte est le sujet, la seconde le qualifie.
+reading.link.positional	{a} et {b} : comparez la contribution de chaque poste.
+reading.link.elemental	{a} et {b} sont {influence} dans cette méthode.
+reading.influence.reinforcing	renforcer
+reading.influence.supportive	favorable
+reading.influence.opposing	opposé
+reading.influence.neutral	neutre
+content.moonPhase.0	Nouvelle lune
+content.moonPhase.1	Croissant d'épilation
+content.moonPhase.2	Premier trimestre
+content.moonPhase.3	Épilation gibbeuse
+content.moonPhase.4	Pleine lune
+content.moonPhase.5	Gibbeux décroissant
+content.moonPhase.6	Dernier trimestre
+content.moonPhase.7	Croissant décroissant
+astral.theme.harmonious	Une journée fluide : {phase} privilégie l’alignement en douceur, les petits pas et la facilité de faire le travail.
+astral.theme.tense	Une journée de friction avec un but : l'énergie {phase} vous demande de nommer la pression et d'ajuster une chose au lieu de lutter contre la météo.
+astral.theme.intense	Une journée intense : {phase} concentre l'énergie : canalisez-la en un seul acte délibéré au lieu de la laisser se disperser.
+astral.transit.title	{transit} remue votre {natal}
+astral.transit.label	Transit {transit} {glyph} Natal {natal}
+astral.transit.advice	Laissez {transit} toucher votre {natal} natal : {line}. {advice}
+astral.harmony.advice.harmonious	Travaillez avec douceur : de petites étapes cohérentes s’accumulent plus rapidement aujourd’hui que la force.
+astral.harmony.advice.tense	Nommez la friction avant qu’elle ne vous nomme : ajustez une chose concrète plutôt que de résister à la pression.
+astral.harmony.advice.intense	Canalisez l’intensité en un seul acte délibéré au lieu de la laisser se disperser.
+astral.zodiac.theme	Météo {sign} : la Lune {moon} se déplace dans votre maison solaire {house} — {theme}.
+astral.focus.relationships.title	Relations et sentiments
+astral.focus.career.title	Carrière et décisions
+astral.focus.inner.title	État intérieur
+astral.moon.highlights	Les points forts du {sign} Moon
+astral.moon.crosses	La Lune {sign} traverse la maison {house} ({theme}), donc les sentiments se déplacent à travers
+astral.focus.relationships	{moonContext} {trait}. {need}
+astral.need.namePlain	Nommez clairement un besoin avant qu’il ne s’échappe latéralement.
+astral.need.sayWarm	Dites la chose chaleureuse à voix haute alors qu'elle est facile à donner.
+astral.focus.career	{decision} {anchor}
+astral.career.cleanDecision	Une décision claire avance plus vite qu’une décision parfaite aujourd’hui.
+astral.career.chooseDefend	Choisissez l’option que vous pourrez encore défendre demain ; l’urgence n’est pas une stratégie.
+astral.career.anchor	Ancrez-vous sur une prochaine étape concrète du travail qui compte.
+astral.focus.inner	{phase} à {illumination}% d'éclairage. {energy}
+astral.inner.surplus	Il y a un surplus d’énergie – dépensez-le pour un acte délibéré, pas pour faire vos preuves.
+astral.inner.thin	L’énergie est mince – protégez votre attention et laissez la récupération compter comme un progrès.
+astral.placement.short	{planet} dans {sign} : {archetype}, coloré par {trait}.
+astral.placement.house	{planet} dans {sign}, maison {house} : {archetype} exprimé par {trait} ; ici, cela se joue dans {theme}.
+astral.aspect.synthesis	{a} {type} {b} : {line} entre {archetypeA} et {archetypeB}.
+content.houseTheme.1	le moi que vous présentez, le corps et le premier mouvement
+content.houseTheme.2	les ressources, les valeurs et ce que vous construisez de vos mains
+content.houseTheme.3	communication, frères et sœurs et esprit de tous les jours
+content.houseTheme.4	les racines, la maison et la fondation privée
+content.houseTheme.5	jeu, romance et expression créative de soi
+content.houseTheme.6	travail, santé et service quotidien
+content.houseTheme.7	partenariat, mariage et miroir de l'autre
+content.houseTheme.8	intimité, ressources partagées et transformation profonde
+content.houseTheme.9	croyance, voyage et recherche d'un sens plus large
+content.houseTheme.10	carrière, réputation et sommet public
+content.houseTheme.11	amis, communauté et avenir auquel vous rejoignez
+content.houseTheme.12	la solitude, les fins et le sanctuaire intérieur
+common.orientation.upright	droit
+common.orientation.reversed	renversé
+common.orientation.merkstave	merkstave
+synthesis.flipOne	Retournez au moins une carte pour commencer la synthèse.
+synthesis.profileContext	À qui s’adresse cette lecture : {profile}.
+synthesis.lens	Objectif : {chip}.
+synthesis.header	{spread} — {focus}
+synthesis.held	Vous avez tenu avant de dessiner : {held}.
+synthesis.questionLine	{n}. Question : {question} — {card}{orientation} : {meaning}
+synthesis.slotLine	{role} — {card}{orientation} : {meaning}
+synthesis.overallThread	Fil conducteur : à travers ces paires question-carte {count}, la lecture se déplace de {first} vers {last}, reliant chaque réponse en un seul arc connecté.
+synthesis.standAlone	Les cartes sont autonomes pour l’instant – un seul signal clair plutôt qu’un refrain.
+synthesis.between	Entre les cartes : {harmonious} échanges harmonieux, {tensions} tensions élémentaires.
+synthesis.friction	La friction n’est pas un défaut – elle marque exactement là où la lecture vous demande de grandir.
+synthesis.cooperate	Les éléments coopèrent ; le spread évolue avec vous plutôt que contre vous.
+synthesis.questionToSit	La question à poser : {question}
+synthesis.youAsked	Vous avez demandé : {question}
+synthesis.clarifierAnswers	{card} ({orientation}) répond par : {meaning}
+synthesis.clarifierBeside	Lu à côté de {cards} déjà sur la table, ce {unit} resserre la lecture plutôt que de la remplacer.
+synthesis.stepToTake	La démarche à franchir : {step}
+synthesis.balance	Solde : {parts}.
+synthesis.dominant	{elements} domine – {traits} mène la lecture.
+synthesis.missing	{elements} est absent — le tableau demande où est passé ce {traits}.
+synthesis.threads	Fils : {harmonious} harmonieux, {tensions} tendu — {closing}
+synthesis.threads.growth	le frottement marque le point de croissance de cette lecture.
+synthesis.threads.cooperation	les cordes bourdonnent en coopération.
+synthesis.verdict	{role} : {card} pointe d'un seul coup — {move}.
+synthesis.ground	Mettez-le à la terre avec le {element} ({trait}) manquant et le chemin reste honnête.
+synthesis.todayStep	Le pas à franchir aujourd’hui : {step}
+synthesis.suggest.resistance	Que se cache derrière la résistance {card}{reversed} ?
+synthesis.suggest.tension	Quelle action concrète résout la tension élémentaire entre {a} et {b} ?
+synthesis.suggest.balanced	Quelle action concrète stabilise les éléments équilibrés sur la table ?
+synthesis.suggest.rebalance	Quelle action concrète rééquilibre le poids {element} de cette lecture ?
+synthesis.suggest.next	Qu'est-ce que {card}{reversed} ne vous dit pas encore sur la prochaine étape ?
+synthesis.shadowKeywords	caché|ombre|bloc|obstacle|ponts
+content.system.tarot.label	TAROT
+content.system.lenormand.label	LÉNORMAND
+content.system.runes.label	RUNES
+common.unit.card	carte
+common.unit.rune	rune
+astral.fallback.zodiac	Lecture de {sign} {glyph} : {theme} Energy lit {score}/100. {sphere}
+astral.fallback.zodiacSphere	{title} : {text}
+astral.fallback.synastry	En comparant vos graphiques : {shared}. {sharp} Travailler avec l'harmonie là où elle coule et nommer la friction là où elle demande à être nommée.
+astral.fallback.moonsUncertain	un ou les deux signes lunaires sont incertains
+astral.fallback.moonsSame	vos Lunes partagent l'élément {element}, donc les rythmes émotionnels ont tendance à correspondre
+astral.fallback.moonsDifferent	vos Lunes se situent dans {a} et {b}, donc les langues émotionnelles diffèrent et nécessitent une traduction
+astral.fallback.noSharpAspect	aucun aspect croisé très serré ne ressort – le lien se construit à partir du tempérament et non de la friction
+astral.fallback.sharpPoint	{a} {bodyA} {glyph} {b} {bodyB} est le point de contact le plus net : {line}.
+astral.fallback.needChart	Apportez votre thème natal et je le lirai.
+astral.fallback.chart	Lecture du graphique de {name} : un {sun} Sun, {moon}{asc}.
+astral.fallback.moonUncertain	un signe lunaire incertain
+astral.fallback.moon	une Lune {moon}
+astral.fallback.ascendant	et un Ascendant {asc}
+astral.fallback.sharpNatal	L'aspect natal le plus net est {a} {glyph} {b} : {line}.
+astral.fallback.transit	{label} ({orb}°). {advice}
+ritual.notification.channel	Rituel Quotidien
+ritual.notification.channelDescription	Ancrage du matin et rappels de réflexion du soir.
+ritual.notification.morningTitle	Ancre du matin
+ritual.notification.morningBody	Tirez votre carte Daily Anchor.
+ritual.notification.eveningTitle	Réflexion du soir
+ritual.notification.eveningBody	Fondez vos pensées avant de dormir.
+content.deck.obsidian_minimal.subtitle	Visages typographiques procéduraux – la solution de secours intégrée
+content.license.customPack	Pack personnalisé · CC BY 4.0
+content.deck.soimoi.subtitle	Deck illustré de style japonais par Mike Koz
+content.license.soimoi	CC BY 4.0 · Mike Koz (koz.tv)
+content.deck.vieville.subtitle	Tarot parisien, v. 1650 – des majors de gravure sur bois originales
+content.license.publicDomain	Domaine public · Wikimedia Commons
+content.deck.visconti_sforza.subtitle	Cartes de cour milanaises, XVe siècle
+content.deck.etteilla.subtitle	Le jeu divinatoire d'Etteilla, v. 1880 - propre numérotation 1 à 78
+content.deck.oswald_wirth.subtitle	1889 majors ésotériques, symbolisme gravé à la main
+content.deck.marseille.subtitle	Le modèle français classique, VIII Justice · XI Force
+content.deck.rider_waite.subtitle	Le jeu classique Rider-Waite-Smith de 1909 - vrais scans
+content.license.rws	Domaine public · Pamela Colman Smith, 1909
+content.deck.botanical_noir.subtitle	Papier fusain, encre vert lierre, gravures de jardins nocturnes
+content.deck.obsidian_gilded.subtitle	Visages en obsidienne foncée avec lignes dorées lavande
+content.deck.antique_petit.subtitle	Esthétique de gravure vintage des années 1840 – papier crème, encre sépia
+content.deck.charred_birch.subtitle	Jetons en bois sombre brûlé avec des runes bleu givre pâle
+content.license.customSet	Ensemble personnalisé · CC BY 4.0
+content.deck.moss_agate.subtitle	Agate vert forêt fumée avec runes lumineuses couleur menthe argentée
+content.deck.blood_jasper.subtitle	Jaspe charbon de bois pourpre profond avec des runes de braise rougeoyantes
+content.deck.nordic_bone.subtitle	Pierre d'ivoire sculptée vieillie avec runes en bronze ambré bruni
+content.deck.obsidian_lavender.subtitle	Obsidienne noire volcanique avec des gravures violettes éclatantes
+content.city.0.name	Saint-Jacques
+content.city.1.name	Djakarta
+content.city.2.name	Mourmansk
+content.city.3.name	Samara
+content.city.4.name	Krasnoïarsk
+content.city.5.name	Tomsk
+content.city.6.name	Omsk
+content.city.7.name	Noukous
+content.city.8.name	Ferghana
+content.city.9.name	Andijan
+content.city.10.name	Pavlodar
+content.city.11.name	Atyraou
+content.city.12.name	Karaganda
+content.city.13.name	Taraz
+content.city.14.name	Kyzyl-Kiya
+content.city.15.name	Tcholponata
+content.city.16.name	Kotchkor
+content.city.17.name	Batken
+content.city.18.name	Tokmok
+content.city.19.name	Auckland
+content.city.20.name	Melbourne
+content.city.21.name	Sidney
+content.city.22.name	Nairobi
+content.city.23.name	Le Cap
+content.city.24.name	Johannesbourg
+content.city.25.name	Caire
+content.city.26.name	Tel-Aviv
+content.city.27.name	Dubaï
+content.city.28.name	Bombay
+content.city.29.name	Delhi
+content.city.30.name	Bangkok
+content.city.31.name	Singapour
+content.city.32.name	Hong Kong
+content.city.33.name	Shanghai
+content.city.34.name	Pékin
+content.city.35.name	Séoul
+content.city.36.name	Ōsaka
+content.city.37.name	Tokyo
+content.city.38.name	Tallinn
+content.city.39.name	Vilnius
+content.city.40.name	Lima
+content.city.41.name	Buenos Aires
+content.city.42.name	Rio de Janeiro
+content.city.43.name	São Paulo
+content.city.44.name	Mexico
+content.city.45.name	Vancouver
+content.city.46.name	Toronto
+content.city.47.name	Miami
+content.city.48.name	Seattle
+content.city.49.name	San Francisco
+content.city.50.name	Chicago
+content.city.51.name	Los Angeles
+content.city.52.name	New York
+content.city.53.name	Reykjavík
+content.city.54.name	Helsinki
+content.city.55.name	Copenhague
+content.city.56.name	Oslo
+content.city.57.name	Stockholm
+content.city.58.name	Zurich
+content.city.59.name	Vienne
+content.city.60.name	Bruxelles
+content.city.61.name	Amsterdam
+content.city.62.name	Milan
+content.city.63.name	Rome
+content.city.64.name	Lisbonne
+content.city.65.name	Barcelone
+content.city.66.name	Madrid
+content.city.67.name	Munich
+content.city.68.name	Berlin
+content.city.69.name	Paris
+content.city.70.name	Dublin
+content.city.71.name	Manchester
+content.city.72.name	Londres
+content.city.73.name	Istanbul
+content.city.74.name	Athènes
+content.city.75.name	Belgrade
+content.city.76.name	Sofia
+content.city.77.name	Bucarest
+content.city.78.name	Prague
+content.city.79.name	Varsovie
+content.city.80.name	Riga
+content.city.81.name	Bakou
+content.city.82.name	Erevan
+content.city.83.name	Batoumi
+content.city.84.name	Tbilissi
+content.city.85.name	Chişinău
+content.city.86.name	Minsk
+content.city.87.name	Lviv
+content.city.88.name	Kharkiv
+content.city.89.name	Odessa
+content.city.90.name	Kyiv
+content.city.91.name	Vladivostok
+content.city.92.name	Irkoutsk
+content.city.93.name	Novossibirsk
+content.city.94.name	Ekaterinbourg
+content.city.95.name	Kaliningrad
+content.city.96.name	Sotchi
+content.city.97.name	Kazan
+content.city.98.name	Saint-Pétersbourg
+content.city.99.name	Moscou
+content.city.100.name	Achgabat
+content.city.101.name	Khodjent
+content.city.102.name	Douchanbé
+content.city.103.name	Boukhara
+content.city.104.name	Samarcande
+content.city.105.name	Tachkent
+content.city.106.name	Aktioubé
+content.city.107.name	Chimkent
+content.city.108.name	Astana
+content.city.109.name	Almaty
+content.city.110.name	Talas
+content.city.111.name	Naryn
+content.city.112.name	Djalal-Abad
+content.city.113.name	Och
+content.city.114.name	Karakol
+content.city.115.name	Bichkek
+content.country.chile	Chili
+content.country.indonesia	Indonésie
+content.country.russia	Russie
+content.country.uzbekistan	Ouzbékistan
+content.country.kazakhstan	Kazakhstan
+content.country.kyrgyzstan	Kirghizistan
+content.country.new_zealand	Nouvelle-Zélande
+content.country.australia	Australie
+content.country.kenya	Kenya
+content.country.south_africa	Afrique du Sud
+content.country.egypt	Egypte
+content.country.israel	Israël
+content.country.united_arab_emirates	Émirats arabes unis
+content.country.india	Inde
+content.country.thailand	Thaïlande
+content.country.singapore	Singapour
+content.country.china	Chine
+content.country.south_korea	Corée du Sud
+content.country.japan	Japon
+content.country.estonia	Estonie
+content.country.lithuania	Lituanie
+content.country.peru	Pérou
+content.country.argentina	Argentine
+content.country.brazil	Brésil
+content.country.mexico	Mexique
+content.country.canada	Canada
+content.country.united_states	États-Unis
+content.country.iceland	Islande
+content.country.finland	Finlande
+content.country.denmark	Danemark
+content.country.norway	Norvège
+content.country.sweden	Suède
+content.country.switzerland	Suisse
+content.country.austria	Autriche
+content.country.belgium	Belgique
+content.country.netherlands	Pays-Bas
+content.country.italy	Italie
+content.country.portugal	Portugal
+content.country.spain	Espagne
+content.country.germany	Allemagne
+content.country.france	France
+content.country.ireland	Irlande
+content.country.united_kingdom	Royaume-Uni
+content.country.turkey	Turquie
+content.country.greece	Grèce
+content.country.serbia	Serbie
+content.country.bulgaria	Bulgarie
+content.country.romania	Roumanie
+content.country.czechia	Tchéquie
+content.country.poland	Pologne
+content.country.latvia	Lettonie
+content.country.azerbaijan	Azerbaïdjan
+content.country.armenia	Arménie
+content.country.georgia	Géorgie
+content.country.moldova	Moldavie
+content.country.belarus	Biélorussie
+content.country.ukraine	Ukraine
+content.country.turkmenistan	Turkménistan
+content.country.tajikistan	Tadjikistan
+reading.source.digital	NUMÉRIQUE
+reading.source.physical	PHYSIQUE
+content.category.majorArcana	ARCANE MAJEUR
+content.reflection.lenormand	Quelle carte à côté de {card} murmure sa véritable histoire ?
+content.reflection.rune	Où dans votre vie se trouve la force de {name} ({glyph}) qui demande à être nommée à haute voix ?
+spread.customDefault	Spread personnalisé
+spread.customFocus	Carte {count} personnalisée : connectez chaque paire question-carte en une seule lecture cohérente.
+table.maxCardsReached	Maximum de cartes {max} atteint pour cette lecture.
+table.deckEmpty	Le pont est vide.
+table.finishScanFirst	Terminez ou annulez le scan de la caméra avant de piocher une autre carte.
+table.flipAllFirst	Retournez toutes les cartes face visible avant de piocher une autre carte.
+table.clarifierWord	Clarificateur
+table.cardWord	Carte
+profile.context.other	Lire pour quelqu'un d'autre : {note}
+profile.context.self	{name} — {bio}
+content.modality.cardinal	Cardinal
+content.modality.fixed	Fixé
+content.modality.mutable	Mutable
+astral.placement.shortNoHouse	{planet} dans {sign} : {archetype}.
+reading.badge.guided	GUIDÉ
+reading.badge.live	EN DIRECT
+reading.badge.physical	PHYSIQUE
+reading.badge.digital	NUMÉRIQUE
+reading.mode.standard	STANDARD
+reading.mode.quickScan	ANALYSE RAPIDE
+reading.mode.guidedSpread	PROPAGATION GUIDÉE
+reading.mode.liveOracle	ORACLE EN DIRECT
+inference.match.one	La carte détectée {count} correspond à cette propagation
+inference.match.other	Les cartes détectées {count} correspondent à cette répartition
+vision.unavailable	Vision n'est pas disponible : saisissez vos cartes manuellement.
+astral.summary.natalProfile	Profil natal : {name}.
+astral.summary.bigThree	Trois grands : {placements}.
+astral.summary.availablePlacements	Heure de naissance inconnue ; emplacements disponibles : {placements}.
+astral.summary.dominantElement	Élément dominant : {element}.
+astral.summary.houseSystem	Système domestique : {system}.
+astral.summary.sharpestAspect	Aspect natal le plus net : {a} {glyph} {b} (orbe {orb}°).
+astral.summary.themeMoon	{theme} {moon}.
+astral.summary.horoscopeTitle	Horoscope quotidien pour {name} — {date}.
+astral.summary.moonLine	{glyph} {phase} · {illumination}% allumé · {moon}.
+astral.summary.energy	Énergie : {score}/100. {theme}
+astral.summary.sphere	{title} : {text}
+astral.summary.birthTimeUnknown	Heure de naissance inconnue. Ne déduisez pas les maisons ou les angles.
+astral.summary.closestAt	le plus proche à {date}
+astral.summary.activeFrom	actif à partir de {date}
+astral.summary.activeUntil	actif jusqu'à {date}
+astral.summary.selectedTransit	Transit sélectionné : {label}, orbe {orb}° ; {timing}.
+astral.summary.inHouse	en interne {house}
+astral.summary.moonLocation	Lune{house} ({sign})
+astral.summary.zodiacTitle	Horoscope quotidien pour {sign} {glyph} (pas de thème natal, calculé à {date}).
+astral.summary.zodiacMoon	Lune en {sign}, maison solaire {house}.
+astral.summary.profileA	Profil A
+astral.summary.profileB	Profil B
+astral.summary.synastry	Synastrie : {a} × {b}.
+astral.summary.placements	{name} : {placements}.
+astral.summary.birthTimeUnknownSynastry	L'heure de naissance est inconnue pour au moins un thème. Ne déduisez pas les angles ou les maisons manquants.
+astral.summary.tightestAspects	Aspects croisés les plus serrés :
+astral.summary.aspectLine	- {a} {bodyA} {glyph} {b} {bodyB} (orbe {orb}°).
+astral.summary.describe	{planet} {glyph} {sign} {degree}{house}
+astral.summary.moonIn	Lune en {sign}
+astral.summary.moonUncertain	Signe lunaire incertain
+astral.summary.transitBullet	- {label} · orbe {orb}°.
+astral.summary.zodiacMoonInline	Lune en {sign}, maison solaire {house}
+profile.account.title	Compte et bibliothèque
+profile.account.verified	VÉRIFIÉ
+profile.account.guest	INVITÉ
+profile.account.installedCount	{count} édition(s) de la boutique installée(s)
+profile.account.sync	Synchroniser
+profile.account.synced	Bibliothèque synchronisée
+shop.account.signIn	Connexion
+shop.account.signOut	Déconnexion
+shop.filter.owned	Ma bibliothèque
+shop.badge.owned	Déjà acheté
+shop.badge.gift	Cadeau
+shop.badge.featured	À la une
+shop.price.free	Cadeau
+shop.action.claimGift	Recevoir le cadeau
+shop.action.buyOnWeb	Acheter sur le site
+shop.action.download	Télécharger
+shop.action.equip	Utiliser
+shop.action.active	Actif
+shop.action.retry	Réessayer
+shop.action.checkPayment	Vérifier le paiement
+shop.action.removeLocal	Supprimer les fichiers locaux
+shop.state.processing	Traitement…
+shop.state.downloading	Téléchargement…
+shop.state.verifying	Vérification…
+shop.state.installing	Installation…
+shop.state.awaitingWeb	Finalisez l'achat sur le site puis revenez ici.
+shop.state.offline	Boutique indisponible
+shop.state.offlineHint	Connectez-vous au serveur pour explorer de nouveaux jeux et runes.
+shop.state.empty	Aucune édition dans cette catégorie.
+shop.auth.title	Connexion ou inscription
+shop.auth.hint	Saisissez votre e-mail pour recevoir un code à usage unique.
+shop.auth.emailPlaceholder	reader@example.com
+shop.auth.sendCode	Envoyer le code
+shop.auth.codePlaceholder	Collez le code
+shop.auth.verifyCode	Confirmer
+shop.auth.devCodeHint	Code dev
+shop.auth.back	Changer d'e-mail
+shop.auth.invalidEmail	Veuillez saisir une adresse e-mail valide.
+shop.detail.previews	Aperçus
+shop.detail.license	Licence
+shop.detail.size	Taille
+shop.detail.version	Version
+shop.unit.cards	cartes
+shop.unit.runes	runes
+shop.snack.installed	{title} installé et prêt
+shop.snack.equipped	{title} est maintenant actif sur votre table

@@ -300,15 +300,9 @@ void main() {
         await tester.tap(shopLink);
         await tester.pumpAndSettle();
         expect(find.byType(DeckShopScreen), findsOneWidget);
+        // Built-in packs must never be listed in the digital shop.
+        expect(byKey('shop-card-${pack.id}'), findsNothing);
         expect(external, isNull);
-        await tester.tap(byKey('shop-${pack.id}'));
-        await tester.pumpAndSettle();
-        expect(
-          external?.arguments['url'],
-          deckShopDestination(system, pack.id).toString(),
-        );
-        expect(external?.arguments['useWebView'], false);
-        expect(external?.arguments['useSafariVC'], false);
         await tester.pageBack();
         await tester.pumpAndSettle();
         expect(shopLink.hitTestable(), findsOneWidget);

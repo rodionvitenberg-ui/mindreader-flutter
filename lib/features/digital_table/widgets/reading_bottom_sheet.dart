@@ -6,17 +6,21 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+import '../../../core/data/guide_copy.dart';
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/divination_card.dart';
 import '../../../core/models/divination_system.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/oracle_synthesis_service.dart';
+import '../../../core/services/reading_relationships.dart';
 import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
 import '../../../state/app_settings_controller.dart';
+import '../../../state/guided_reading_controller.dart';
 import '../../../state/spread_controller.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// Glassmorphic bottom sheet with two faces:
 /// * `cardIndex != null` — the CARDS INSPECTOR SHEET for a tapped face-up
@@ -43,15 +47,20 @@ class ReadingBottomSheet extends StatefulWidget {
 }
 
 class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
-  static const _contextChips = [
-    'Love & Relationships',
-    'Inner Crisis',
-    'Career & Path',
-    'Custom Question',
+  static const _resonancePillKeys = [
+    'reading.resonates',
+    'reading.challenging',
+    'reading.unclear',
+  ];
+
+  static final _contextChips = [
+    AppStrings.g('ui.reading_bottom_sheet.love_relationships'),
+    AppStrings.g('ui.reading_bottom_sheet.inner_crisis'),
+    AppStrings.g('ui.reading_bottom_sheet.career_path'),
+    AppStrings.g('ui.reading_bottom_sheet.custom_question'),
   ];
 
   /// The 3 mutually exclusive resonance pills of the Card Inspector.
-  static const _resonancePills = ['Resonates', 'Challenging', 'Unclear'];
 
   String? _contextChip;
   String? _resonance;
@@ -98,6 +107,15 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
     ctrl.updateSlotUserContext(i, text: trimmed.isEmpty ? null : trimmed);
   }
 
+  /// Hands the tapped link to the educational mentor and returns to the table,
+  /// where the guide bar carries the explanation (and, in thorough mode, the
+  /// conflict / tradition lesson). Inert while guidance is off.
+  void _explainRelationship(BuildContext context, ReadingRelationship link) {
+    HapticFeedback.selectionClick();
+    context.read<GuidedReadingController>().explainRelationship(link);
+    Navigator.pop(context);
+  }
+
   Future<void> _toggleNoteMic() async {
     if (_micListening) {
       await _speech?.stop();
@@ -114,9 +132,8 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
     if (!ok) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Voice input is not available here — type your note instead.',
+          SnackBar(
+            content: Text(AppStrings.g('ui.reading_bottom_sheet.voice_input_is_not_available_here_type_your_note'),
             ),
           ),
         );
@@ -204,13 +221,15 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
     HapticFeedback.selectionClick();
     setState(() => _saved = true);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Spread saved on this device')),
+      SnackBar(content: Text(AppStrings.g('ui.reading_bottom_sheet.spread_saved_on_this_device'))),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<SpreadController>();
+    final settings = context.watch<AppSettingsController>();
+    final lang = settings.language;
     final slot = _slotOf(ctrl);
     final card = slot?.card;
     final canSynthesize = ctrl.faceUpCount > 0;
@@ -224,20 +243,23 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
           if (slot != null && card != null) ...[
             // ---- Card Inspector Sheet (tapped face-up card) ----
             _CardInspectorHeader(slot: slot, card: card),
-            if (context.watch<AppSettingsController>().enabled(ReadingAid.guide))
+            if (settings.enabled(ReadingAid.guide))
               Padding(padding: const EdgeInsets.symmetric(vertical:8),
                 child: Text('${slot.role} · ${card.keywords.take(2).join(', ')}\n${card.reflection}')),
 
-            if (context.watch<AppSettingsController>().enabled(ReadingAid.relationships))
+            if (settings.enabled(ReadingAid.relationships))
               for (final link in ctrl.relationships.where((r) => r.includes(slot.index)))
-                Padding(padding: const EdgeInsets.only(top:8),
-                  child: Text('${ctrl.slots[link.from].card!.name} · ${ctrl.slots[link.to].card!.name}\n${link.method}. ${link.explanation}')),
+                _RelationshipRow(
+                  link: link,
+                  lang: lang,
+                  explainable: settings.enabled(ReadingAid.guide),
+                  onExplain: () => _explainRelationship(context, link),
+                ),
 
             const SizedBox(height: 18),
             Text(
               slot.isReversed && card.reversed != null
-                  ? 'REVERSED MEANING'
-                  : 'UPRIGHT MEANING',
+                  ? AppStrings.g('ui.reading_bottom_sheet.reversed_meaning') : AppStrings.g('ui.reading_bottom_sheet.upright_meaning'),
               style: AppTypography.label(
                 fontSize: 9,
                 letterSpacing: 1.1,
@@ -253,6 +275,17 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
                 color: TaroColors.textPrimary,
               ),
             ),
+            if (slot.isReversed && card.reversed != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                GuideCopy.reversalNote(lang, card.system),
+                style: AppTypography.body(
+                  fontSize: 12,
+                  color: TaroColors.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+            ],
             const SizedBox(height: 10),
             Text(
               card.keywords.map((k) => k.toUpperCase()).join(' · '),
@@ -276,19 +309,18 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final pill in _resonancePills)
+                for (final key in _resonancePillKeys)
                   TaroGlassChip(
-                    label: pill,
-                    selected: _resonance == pill,
+                    label: AppStrings.g(key),
+                    selected: _resonance == key,
                     onTap: () => setState(
-                      () => _resonance = _resonance == pill ? null : pill,
+                      () => _resonance = _resonance == key ? null : key,
                     ),
                   ),
               ],
             ),
             const SizedBox(height: 20),
-            Text(
-              'PERSONAL NOTE',
+            Text(AppStrings.g('ui.reading_bottom_sheet.personal_note'),
               style: AppTypography.label(
                 fontSize: 9,
                 letterSpacing: 1.1,
@@ -303,8 +335,7 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
               onMicTap: _toggleNoteMic,
             ),
           ] else ...[
-            Text(
-              'Live Reading',
+            Text(AppStrings.g('ui.reading_bottom_sheet.live_reading'),
               style: Theme.of(context).textTheme.displayMedium,
             ),
             const SizedBox(height: 4),
@@ -317,8 +348,7 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'READING CONTEXT',
+            Text(AppStrings.g('ui.reading_bottom_sheet.reading_context'),
               style: AppTypography.label(
                 fontSize: 9,
                 letterSpacing: 1.1,
@@ -343,8 +373,7 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
               TaroGlassPanel(
                 radius: 16,
                 padding: const EdgeInsets.all(14),
-                child: const Text(
-                  'Flip at least one card on the table to synthesize the spread.',
+                child: Text(AppStrings.g('ui.reading_bottom_sheet.flip_at_least_one_card_on_the_table_to_synthesiz'),
                   style: TextStyle(
                     fontSize: 13,
                     color: TaroColors.textSecondary,
@@ -359,7 +388,7 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
               )
             else if (_revealed.isEmpty)
               TaroGlassButton(
-                label: 'SYNTHESIZE SPREAD',
+                label: AppStrings.g('ui.reading_bottom_sheet.synthesize_spread'),
                 variant: TaroGlassButtonVariant.primary,
                 onPressed: _startSynthesis,
               ),
@@ -380,7 +409,7 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
               const SizedBox(height: 12),
               if (!_synthesizing)
                 TaroGlassButton(
-                  label: _saved ? 'SAVED \u2713' : 'SAVE LOCALLY',
+                  label: _saved ? AppStrings.g('ui.reading_bottom_sheet.saved_u2713') : AppStrings.g('ui.reading_bottom_sheet.save_locally'),
                   variant: _saved
                       ? TaroGlassButtonVariant.secondary
                       : TaroGlassButtonVariant.primary,
@@ -421,8 +450,11 @@ class _CardInspectorHeader extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'SLOT ${slot.index + 1} · ${slot.role.toUpperCase()} · '
-                '${card.categoryLabel}',
+                AppStrings.g('table.slotLabel', {
+                  'n': slot.index + 1,
+                  'role': slot.role.toUpperCase(),
+                  'category': card.categoryLabel,
+                }),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.label(
@@ -484,8 +516,8 @@ class _CardNoteField extends StatelessWidget {
                 color: TaroColors.textPrimary,
               ),
               cursorColor: TaroColors.lavender,
-              decoration: const InputDecoration(
-                hintText: 'Add a personal note or thought for this card...',
+              decoration: InputDecoration(
+                hintText: AppStrings.g('ui.reading_bottom_sheet.add_a_personal_note_or_thought_for_this_card'),
                 hintStyle: TextStyle(
                   fontSize: 13,
                   color: TaroColors.textSecondary,
@@ -509,6 +541,56 @@ class _CardNoteField extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// One relationship line of the Card Inspector. While the mentor is on, the
+/// row is tappable and hands the link over to the Guided Reading guide; the
+/// book glyph is the only affordance, so no extra copy is needed (G4).
+class _RelationshipRow extends StatelessWidget {
+  const _RelationshipRow({
+    required this.link,
+    required this.lang,
+    required this.explainable,
+    required this.onExplain,
+  });
+
+  final ReadingRelationship link;
+  final AppLanguage lang;
+  final bool explainable;
+  final VoidCallback onExplain;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      key: ValueKey('relationship-row-${link.from}-${link.to}'),
+      behavior: HitTestBehavior.opaque,
+      onTap: explainable ? onExplain : null,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                '${link.fromName} · ${link.toName}\n'
+                '${link.localizedExplanation(lang)}'
+                '${link.combination == null ? '' : '\n${link.combination}'}',
+              ),
+            ),
+            if (explainable)
+              const Padding(
+                padding: EdgeInsets.only(left: 8, top: 2),
+                child: Icon(
+                  Icons.menu_book_outlined,
+                  size: 14,
+                  color: TaroColors.lavender,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

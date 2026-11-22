@@ -1,3 +1,4 @@
+import '../l10n/app_strings.dart';
 import '../models/natal_chart.dart';
 import '../models/tarot_card_model.dart' show Element;
 
@@ -5,31 +6,28 @@ import '../models/tarot_card_model.dart' show Element;
 enum ZodiacPolarity { yang, yin }
 
 extension ZodiacPolarityX on ZodiacPolarity {
-  String get label => switch (this) {
-    ZodiacPolarity.yang => 'Yang · Positive',
-    ZodiacPolarity.yin => 'Yin · Receptive',
-  };
+  String get label => AppStrings.g('content.polarity.$name');
 }
 
 /// One fully offline Almanac entry for a zodiac sign.
 class ZodiacSignEntry {
   const ZodiacSignEntry({
     required this.sign,
-    required this.dateRange,
+    required this.dateRangeKey,
     required this.polarity,
     required this.houseAffinity,
-    required this.keywords,
-    required this.archetype,
-    required this.shadow,
-    required this.loveStyle,
-    required this.careerVector,
+    required this.keywordKeys,
+    required this.archetypeKey,
+    required this.shadowKey,
+    required this.loveStyleKey,
+    required this.careerVectorKey,
     this.coRuler,
   });
 
   final ZodiacSign sign;
 
   /// E.g. 'Mar 21 – Apr 19'.
-  final String dateRange;
+  final String dateRangeKey;
 
   final ZodiacPolarity polarity;
 
@@ -37,22 +35,31 @@ class ZodiacSignEntry {
   final int houseAffinity;
 
   /// Three archetype keywords.
-  final List<String> keywords;
+  final List<String> keywordKeys;
 
   /// Core psychological archetype.
-  final String archetype;
+  final String archetypeKey;
 
   /// Shadow / stress tendencies.
-  final String shadow;
+  final String shadowKey;
 
   /// Love and connection style.
-  final String loveStyle;
+  final String loveStyleKey;
 
   /// Career and path vector.
-  final String careerVector;
+  final String careerVectorKey;
 
   /// Traditional co-ruler when it differs from the modern ruler.
   final PlanetId? coRuler;
+
+  String get dateRange => AppStrings.g(dateRangeKey);
+  List<String> get keywords => [
+    for (final key in keywordKeys) AppStrings.g(key),
+  ];
+  String get archetype => AppStrings.g(archetypeKey);
+  String get shadow => AppStrings.g(shadowKey);
+  String get loveStyle => AppStrings.g(loveStyleKey);
+  String get careerVector => AppStrings.g(careerVectorKey);
 
   String get name => sign.title;
   String get glyph => sign.glyph;
@@ -63,248 +70,200 @@ class ZodiacSignEntry {
   PlanetId get ruler => sign.ruler;
 
   /// Human-readable house affinity, e.g. '1st House'.
-  String get houseLabel => '$houseAffinity${_ordinalSuffix(houseAffinity)} House';
+  String get houseLabel => AppStrings.g('content.house.$houseAffinity');
 
   /// Rulers line, e.g. 'Mars' or 'Pluto · trad. Mars'.
   String get rulersLabel => coRuler == null
       ? ruler.title
-      : '${ruler.title} · trad. ${coRuler!.title}';
+      : AppStrings.g('content.rulers.traditional', {
+          'modern': ruler.title,
+          'traditional': coRuler!.title,
+        });
 }
-
-String _ordinalSuffix(int n) => switch (n) {
-  1 => 'st',
-  2 => 'nd',
-  3 => 'rd',
-  _ => 'th',
-};
 
 /// All twelve signs, Aries-first.
 const List<ZodiacSignEntry> zodiacAlmanac = [
   ZodiacSignEntry(
     sign: ZodiacSign.aries,
-    dateRange: 'Mar 21 – Apr 19',
+    dateRangeKey: 'content.zodiac.aries.dateRange',
     polarity: ZodiacPolarity.yang,
     houseAffinity: 1,
-    keywords: ['Initiative', 'Courage', 'Honesty'],
-    archetype:
-        'The Pioneer — the part of you that moves before the plan is ready '
-        'and trusts the first honest impulse.',
-    shadow:
-        'Impatience, starting what it will not finish, and mistaking speed '
-        'for courage when the room asks for listening.',
-    loveStyle:
-        'Direct pursuit and uncomplicated desire; needs the freedom to chase '
-        'and a partner who answers honestly instead of playing games.',
-    careerVector:
-        'Founding, leading and competitive work where the first move counts '
-        'more than the safe move.',
+    keywordKeys: [
+      'content.zodiac.aries.keyword.0',
+      'content.zodiac.aries.keyword.1',
+      'content.zodiac.aries.keyword.2',
+    ],
+    archetypeKey: 'content.zodiac.aries.archetype',
+    shadowKey: 'content.zodiac.aries.shadow',
+    loveStyleKey: 'content.zodiac.aries.loveStyle',
+    careerVectorKey: 'content.zodiac.aries.careerVector',
   ),
   ZodiacSignEntry(
     sign: ZodiacSign.taurus,
-    dateRange: 'Apr 20 – May 20',
+    dateRangeKey: 'content.zodiac.taurus.dateRange',
     polarity: ZodiacPolarity.yin,
     houseAffinity: 2,
-    keywords: ['Steadiness', 'Value', 'Pleasure'],
-    archetype:
-        'The Builder — the part of you that knows what a thing is worth and '
-        'keeps it long enough to grow.',
-    shadow:
-        'Stubbornness, possessiveness and using comfort as a way to avoid the '
-        'change that has already arrived.',
-    loveStyle:
-        'Loyal, sensual and slow to trust; shows love through presence, food '
-        'and reliable hands rather than grand speeches.',
-    careerVector:
-        'Finance, craft, land and long-horizon projects where patience '
-        'compounds into real value.',
+    keywordKeys: [
+      'content.zodiac.taurus.keyword.0',
+      'content.zodiac.taurus.keyword.1',
+      'content.zodiac.taurus.keyword.2',
+    ],
+    archetypeKey: 'content.zodiac.taurus.archetype',
+    shadowKey: 'content.zodiac.taurus.shadow',
+    loveStyleKey: 'content.zodiac.taurus.loveStyle',
+    careerVectorKey: 'content.zodiac.taurus.careerVector',
   ),
   ZodiacSignEntry(
     sign: ZodiacSign.gemini,
-    dateRange: 'May 21 – Jun 20',
+    dateRangeKey: 'content.zodiac.gemini.dateRange',
     polarity: ZodiacPolarity.yang,
     houseAffinity: 3,
-    keywords: ['Curiosity', 'Language', 'Adaptation'],
-    archetype:
-        'The Messenger — the part of you that learns by naming, linking and '
-        'asking the second question.',
-    shadow:
-        'Scatter, restlessness and half-truths told to keep every door open '
-        'at once.',
-    loveStyle:
-        'Playful and conversational; needs a mind that answers back and space '
-        'to change its story without losing the connection.',
-    careerVector:
-        'Media, writing, teaching and trade — anywhere the currency is '
-        'information and the speed of the exchange.',
+    keywordKeys: [
+      'content.zodiac.gemini.keyword.0',
+      'content.zodiac.gemini.keyword.1',
+      'content.zodiac.gemini.keyword.2',
+    ],
+    archetypeKey: 'content.zodiac.gemini.archetype',
+    shadowKey: 'content.zodiac.gemini.shadow',
+    loveStyleKey: 'content.zodiac.gemini.loveStyle',
+    careerVectorKey: 'content.zodiac.gemini.careerVector',
   ),
   ZodiacSignEntry(
     sign: ZodiacSign.cancer,
-    dateRange: 'Jun 21 – Jul 22',
+    dateRangeKey: 'content.zodiac.cancer.dateRange',
     polarity: ZodiacPolarity.yin,
     houseAffinity: 4,
-    keywords: ['Care', 'Memory', 'Belonging'],
-    archetype:
-        'The Guardian — the part of you that remembers who was there and '
-        'builds a home out of that loyalty.',
-    shadow:
-        'Over-attachment, moodiness and expressing needs indirectly so they '
-        'can never be refused out loud.',
-    loveStyle:
-        'Protective and nurturing; bonds through shared history and needs '
-        'reassurance that the home is mutual.',
-    careerVector:
-        'Care, hospitality, family business and heritage work where feeling '
-        'is part of the competence.',
+    keywordKeys: [
+      'content.zodiac.cancer.keyword.0',
+      'content.zodiac.cancer.keyword.1',
+      'content.zodiac.cancer.keyword.2',
+    ],
+    archetypeKey: 'content.zodiac.cancer.archetype',
+    shadowKey: 'content.zodiac.cancer.shadow',
+    loveStyleKey: 'content.zodiac.cancer.loveStyle',
+    careerVectorKey: 'content.zodiac.cancer.careerVector',
   ),
   ZodiacSignEntry(
     sign: ZodiacSign.leo,
-    dateRange: 'Jul 23 – Aug 22',
+    dateRangeKey: 'content.zodiac.leo.dateRange',
     polarity: ZodiacPolarity.yang,
     houseAffinity: 5,
-    keywords: ['Radiance', 'Heart', 'Creation'],
-    archetype:
-        'The Sovereign — the part of you that creates warmth by taking the '
-        'stage and giving it back to the room.',
-    shadow:
-        'Pride, needing applause and becoming rigid when the audience looks '
-        'elsewhere.',
-    loveStyle:
-        'Generous and loyal; wants to be seen and celebrated, and gives the '
-        'same spotlight in return.',
-    careerVector:
-        'Performance, leadership and creative direction where a personal '
-        'signature is the product.',
+    keywordKeys: [
+      'content.zodiac.leo.keyword.0',
+      'content.zodiac.leo.keyword.1',
+      'content.zodiac.leo.keyword.2',
+    ],
+    archetypeKey: 'content.zodiac.leo.archetype',
+    shadowKey: 'content.zodiac.leo.shadow',
+    loveStyleKey: 'content.zodiac.leo.loveStyle',
+    careerVectorKey: 'content.zodiac.leo.careerVector',
   ),
   ZodiacSignEntry(
     sign: ZodiacSign.virgo,
-    dateRange: 'Aug 23 – Sep 22',
+    dateRangeKey: 'content.zodiac.virgo.dateRange',
     polarity: ZodiacPolarity.yin,
     houseAffinity: 6,
-    keywords: ['Discernment', 'Service', 'Craft'],
-    archetype:
-        'The Artisan — the part of you that serves by noticing what can be '
-        'made precise.',
-    shadow:
-        'Perfectionism, self-criticism and control disguised as helpfulness.',
-    loveStyle:
-        'Attentive and practical; shows love through small acts of repair and '
-        'needs appreciation for the invisible work.',
-    careerVector:
-        'Analysis, health, editing and systems where accuracy is the craft.',
+    keywordKeys: [
+      'content.zodiac.virgo.keyword.0',
+      'content.zodiac.virgo.keyword.1',
+      'content.zodiac.virgo.keyword.2',
+    ],
+    archetypeKey: 'content.zodiac.virgo.archetype',
+    shadowKey: 'content.zodiac.virgo.shadow',
+    loveStyleKey: 'content.zodiac.virgo.loveStyle',
+    careerVectorKey: 'content.zodiac.virgo.careerVector',
   ),
   ZodiacSignEntry(
     sign: ZodiacSign.libra,
-    dateRange: 'Sep 23 – Oct 22',
+    dateRangeKey: 'content.zodiac.libra.dateRange',
     polarity: ZodiacPolarity.yang,
     houseAffinity: 7,
-    keywords: ['Balance', 'Relation', 'Beauty'],
-    archetype:
-        'The Diplomat — the part of you that weighs both sides before it '
-        'commits and finds the fair form.',
-    shadow:
-        'Indecision, people-pleasing and avoiding conflict until the choice '
-        'is made by default.',
-    loveStyle:
-        'Romantic and partnership-minded; flourishes with someone who treats '
-        'the relationship as a shared work of art.',
-    careerVector:
-        'Law, design, negotiation and partnership where the human interface '
-        'is the work.',
+    keywordKeys: [
+      'content.zodiac.libra.keyword.0',
+      'content.zodiac.libra.keyword.1',
+      'content.zodiac.libra.keyword.2',
+    ],
+    archetypeKey: 'content.zodiac.libra.archetype',
+    shadowKey: 'content.zodiac.libra.shadow',
+    loveStyleKey: 'content.zodiac.libra.loveStyle',
+    careerVectorKey: 'content.zodiac.libra.careerVector',
   ),
   ZodiacSignEntry(
     sign: ZodiacSign.scorpio,
-    dateRange: 'Oct 23 – Nov 21',
+    dateRangeKey: 'content.zodiac.scorpio.dateRange',
     polarity: ZodiacPolarity.yin,
     houseAffinity: 8,
-    keywords: ['Depth', 'Transformation', 'Intensity'],
-    archetype:
-        'The Alchemist — the part of you that goes all the way down and '
-        'returns with something worth keeping.',
-    shadow:
-        'Control, secrecy and resentment held long past its usefulness.',
-    loveStyle:
-        'All-in and private; tests trust before it gives it, then protects '
-        'the bond with fierce loyalty.',
-    careerVector:
-        'Research, crisis work, finance and psychology where the hidden '
-        'layer is the real subject.',
+    keywordKeys: [
+      'content.zodiac.scorpio.keyword.0',
+      'content.zodiac.scorpio.keyword.1',
+      'content.zodiac.scorpio.keyword.2',
+    ],
+    archetypeKey: 'content.zodiac.scorpio.archetype',
+    shadowKey: 'content.zodiac.scorpio.shadow',
+    loveStyleKey: 'content.zodiac.scorpio.loveStyle',
+    careerVectorKey: 'content.zodiac.scorpio.careerVector',
     coRuler: PlanetId.mars,
   ),
   ZodiacSignEntry(
     sign: ZodiacSign.sagittarius,
-    dateRange: 'Nov 22 – Dec 21',
+    dateRangeKey: 'content.zodiac.sagittarius.dateRange',
     polarity: ZodiacPolarity.yang,
     houseAffinity: 9,
-    keywords: ['Meaning', 'Freedom', 'Horizon'],
-    archetype:
-        'The Seeker — the part of you that needs the bigger story and will '
-        'travel to find the sentence that fits.',
-    shadow:
-        'Dogma, escape and promising more adventure than can be delivered.',
-    loveStyle:
-        'Adventurous and honest; needs room to roam and a partner who is also '
-        'a fellow traveller.',
-    careerVector:
-        'Teaching, travel, publishing and philosophy where the horizon is the '
-        'point.',
+    keywordKeys: [
+      'content.zodiac.sagittarius.keyword.0',
+      'content.zodiac.sagittarius.keyword.1',
+      'content.zodiac.sagittarius.keyword.2',
+    ],
+    archetypeKey: 'content.zodiac.sagittarius.archetype',
+    shadowKey: 'content.zodiac.sagittarius.shadow',
+    loveStyleKey: 'content.zodiac.sagittarius.loveStyle',
+    careerVectorKey: 'content.zodiac.sagittarius.careerVector',
   ),
   ZodiacSignEntry(
     sign: ZodiacSign.capricorn,
-    dateRange: 'Dec 22 – Jan 19',
+    dateRangeKey: 'content.zodiac.capricorn.dateRange',
     polarity: ZodiacPolarity.yin,
     houseAffinity: 10,
-    keywords: ['Mastery', 'Structure', 'Responsibility'],
-    archetype:
-        'The Architect — the part of you that respects limits and builds '
-        'something that outlasts the mood.',
-    shadow:
-        'Coldness, workaholism and a fear of failure that turns discipline '
-        'into self-punishment.',
-    loveStyle:
-        'Committed and slow; shows love through reliability and long-term '
-        'plans rather than sudden declarations.',
-    careerVector:
-        'Management, engineering, institutions and legacy work where the long '
-        'game is the reward.',
+    keywordKeys: [
+      'content.zodiac.capricorn.keyword.0',
+      'content.zodiac.capricorn.keyword.1',
+      'content.zodiac.capricorn.keyword.2',
+    ],
+    archetypeKey: 'content.zodiac.capricorn.archetype',
+    shadowKey: 'content.zodiac.capricorn.shadow',
+    loveStyleKey: 'content.zodiac.capricorn.loveStyle',
+    careerVectorKey: 'content.zodiac.capricorn.careerVector',
   ),
   ZodiacSignEntry(
     sign: ZodiacSign.aquarius,
-    dateRange: 'Jan 20 – Feb 18',
+    dateRangeKey: 'content.zodiac.aquarius.dateRange',
     polarity: ZodiacPolarity.yang,
     houseAffinity: 11,
-    keywords: ['Vision', 'System', 'Independence'],
-    archetype:
-        'The Reformer — the part of you that questions the crowd and rebuilds '
-        'the system for the people outside it.',
-    shadow:
-        'Detachment, contrarianism and keeping everyone at a principled '
-        'distance.',
-    loveStyle:
-        'Friendship-first and unconventional; needs intellectual freedom and '
-        'a partner who is also a comrade.',
-    careerVector:
-        'Technology, science, activism and networks where the future is being '
-        'designed.',
+    keywordKeys: [
+      'content.zodiac.aquarius.keyword.0',
+      'content.zodiac.aquarius.keyword.1',
+      'content.zodiac.aquarius.keyword.2',
+    ],
+    archetypeKey: 'content.zodiac.aquarius.archetype',
+    shadowKey: 'content.zodiac.aquarius.shadow',
+    loveStyleKey: 'content.zodiac.aquarius.loveStyle',
+    careerVectorKey: 'content.zodiac.aquarius.careerVector',
     coRuler: PlanetId.saturn,
   ),
   ZodiacSignEntry(
     sign: ZodiacSign.pisces,
-    dateRange: 'Feb 19 – Mar 20',
+    dateRangeKey: 'content.zodiac.pisces.dateRange',
     polarity: ZodiacPolarity.yin,
     houseAffinity: 12,
-    keywords: ['Imagination', 'Compassion', 'Surrender'],
-    archetype:
-        'The Mystic — the part of you that absorbs the mood and dreams it '
-        'back softer.',
-    shadow:
-        'Escapism, blurred boundaries and a quiet habit of casting yourself as '
-        'the one who can only endure.',
-    loveStyle:
-        'Merging and empathic; loves through atmosphere and imagination, and '
-        'needs boundaries to keep the tenderness real.',
-    careerVector:
-        'Art, healing, music and contemplative work where sensitivity is the '
-        'instrument.',
+    keywordKeys: [
+      'content.zodiac.pisces.keyword.0',
+      'content.zodiac.pisces.keyword.1',
+      'content.zodiac.pisces.keyword.2',
+    ],
+    archetypeKey: 'content.zodiac.pisces.archetype',
+    shadowKey: 'content.zodiac.pisces.shadow',
+    loveStyleKey: 'content.zodiac.pisces.loveStyle',
+    careerVectorKey: 'content.zodiac.pisces.careerVector',
     coRuler: PlanetId.jupiter,
   ),
 ];

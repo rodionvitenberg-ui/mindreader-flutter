@@ -12,6 +12,7 @@ import 'package:mindreader/features/astral/widgets/daily_horoscope_card.dart';
 import 'package:mindreader/features/digital_table/table_workspace.dart';
 import 'package:mindreader/state/app_settings_controller.dart';
 import 'package:mindreader/state/deck_pack_controller.dart';
+import 'package:mindreader/state/guided_reading_controller.dart';
 import 'package:mindreader/state/oracle_session_controller.dart';
 import 'package:mindreader/state/session_history_controller.dart';
 import 'package:mindreader/state/spread_controller.dart';
@@ -314,6 +315,12 @@ void main() {
               create: (_) => SessionHistoryController()..load(),
             ),
             ChangeNotifierProvider(create: (_) => AppSettingsController()),
+            ChangeNotifierProvider(
+              create: (context) => GuidedReadingController(
+                spread: context.read<SpreadController>(),
+                settings: context.read<AppSettingsController>(),
+              ),
+            ),
             ChangeNotifierProvider(create: (_) => UserProfileController()),
           ],
           child: MaterialApp(

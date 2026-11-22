@@ -393,15 +393,13 @@ class _AstralScreenState extends State<AstralScreen>
             AstralGradientButton(
               label: context.astralRussian
                   ? context.astralText('discuss')
-                  : '✦ DISCUSS NATAL CHART WITH ORACLE',
+                  : AppStrings.g('astral.discussNatal'),
               onTap: () => _handoffNatalToOracle(chart),
             ),
             if (astral.profiles.length >= 2) ...[
               const SizedBox(height: 10),
               AstralGradientButton(
-                label: context.astralRussian
-                    ? 'Сравнить карты'
-                    : '⚡ COMPARE 2 PROFILES · SYNASTRY',
+                label: AppStrings.g('ui.astral_astral_screen.compare_2_profiles_synastry'),
                 onTap: () => _openSynastry(astral),
               ),
             ],

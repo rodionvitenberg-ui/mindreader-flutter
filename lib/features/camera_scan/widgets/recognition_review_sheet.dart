@@ -4,6 +4,7 @@ import '../../../core/models/divination_card.dart';
 import '../../../core/services/spread_inference_service.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// The finalized Recognition Review outcome: the reader-confirmed ORDER of
 /// physical cards + the chosen spread. `spread == null` means Freeform — the
@@ -118,18 +119,17 @@ class _RecognitionReviewSheetState extends State<RecognitionReviewSheet> {
     final freeform = inference.isFreeform;
 
     return TaroGlassSheet(
-      title: '${_items.length} RECOGNIZED',
+      title: AppStrings.g('camera.recognizedCount', {'count': _items.length}),
       subtitle: freeform
-          ? 'FREEFORM — no template matches; every card is kept'
-          : 'PROPOSED: ${inference.top!.label}',
+          ? AppStrings.g('camera.freeform')
+          : AppStrings.g('camera.proposed', {'label': inference.top!.label}),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (showCandidates) ...[
-            Text(
-              'CHOOSE SPREAD',
+            Text(AppStrings.g('ui.recognition_review_sheet.choose_spread'),
               style: AppTypography.label(
                 fontSize: 9,
                 letterSpacing: 0.9,
@@ -145,8 +145,7 @@ class _RecognitionReviewSheetState extends State<RecognitionReviewSheet> {
               ),
             const SizedBox(height: 10),
           ],
-          Text(
-            'CONFIRM ORDER & CARDS',
+          Text(AppStrings.g('ui.recognition_review_sheet.confirm_order_cards'),
             style: AppTypography.label(
               fontSize: 9,
               letterSpacing: 0.9,
@@ -166,7 +165,7 @@ class _RecognitionReviewSheetState extends State<RecognitionReviewSheet> {
             ),
           const SizedBox(height: 14),
           TaroGlassButton(
-            label: 'CONFIRM & PLACE ON TABLE',
+            label: AppStrings.g('ui.recognition_review_sheet.confirm_place_on_table'),
             variant: TaroGlassButtonVariant.primary,
             onPressed: _confirm,
           ),
@@ -280,7 +279,7 @@ class _CardRow extends StatelessWidget {
                 ),
                 if (item.reversed)
                   Text(
-                    'REVERSED',
+                    AppStrings.g('common.reversedLabel'),
                     style: AppTypography.label(
                       fontSize: 8.5,
                       letterSpacing: 0.7,
@@ -293,22 +292,22 @@ class _CardRow extends StatelessWidget {
           if (canToggle)
             _IconBtn(
               icon: item.reversed ? Icons.undo : Icons.flip,
-              tooltip: 'Toggle orientation',
+              tooltip: AppStrings.g('ui.recognition_review_sheet.toggle_orientation'),
               onTap: onToggle,
             ),
           _IconBtn(
             icon: Icons.arrow_upward,
-            tooltip: 'Move up',
+            tooltip: AppStrings.g('ui.recognition_review_sheet.move_up'),
             enabled: onUp != null,
             onTap: onUp ?? () {},
           ),
           _IconBtn(
             icon: Icons.arrow_downward,
-            tooltip: 'Move down',
+            tooltip: AppStrings.g('ui.recognition_review_sheet.move_down'),
             enabled: onDown != null,
             onTap: onDown ?? () {},
           ),
-          _IconBtn(icon: Icons.close, tooltip: 'Remove', onTap: onRemove),
+          _IconBtn(icon: Icons.close, tooltip: AppStrings.g('ui.recognition_review_sheet.remove'), onTap: onRemove),
         ],
       ),
     );

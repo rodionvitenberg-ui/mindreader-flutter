@@ -6,6 +6,7 @@ import '../../../core/models/divination_card.dart';
 import '../../../core/models/divination_system.dart';
 import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/services/reading_relationships.dart';
 import '../../../state/spread_controller.dart';
 import 'spread_threads_layer.dart';
 import '../../../state/app_settings_controller.dart';
@@ -117,11 +118,7 @@ class _LenormandPairPill extends StatelessWidget {
     if (a is! LenormandDivinationCard || b is! LenormandDivinationCard) {
       return null;
     }
-    final needle = 'with the ${b.card.name.toLowerCase()}';
-    for (final line in a.card.combinations) {
-      if (line.toLowerCase().startsWith(needle)) return line;
-    }
-    return null;
+    return lenormandCombination(a, b);
   }
 
   @override

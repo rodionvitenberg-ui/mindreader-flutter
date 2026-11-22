@@ -11,6 +11,7 @@ import 'natal_wheel_controls.dart';
 import 'natal_wheel_geometry.dart';
 import 'natal_wheel_painter.dart';
 import 'planet_aspect_inspector_card.dart';
+import '../../../core/l10n/app_strings.dart';
 
 /// Phase 3 — the living natal wheel: 4-stage choreography (ring calibration,
 /// house sweep, planet lock-on, aspect flashes), live house-system morphing,
@@ -291,8 +292,7 @@ class _NatalWheelWidgetState extends State<NatalWheelWidget>
   Widget _buildInspector(NatalChart chart) {
     final selected = _selected;
     if (selected == null) {
-      return Text(
-        'TAP A PLANET TO INSPECT ITS ASPECTS',
+      return Text(AppStrings.g('ui.natal_wheel_widget.tap_a_planet_to_inspect_its_aspects'),
         textAlign: TextAlign.center,
         style: AppTypography.label(
           fontSize: 8,

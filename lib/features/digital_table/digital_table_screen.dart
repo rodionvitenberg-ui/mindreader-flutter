@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/l10n/app_strings.dart';
-import '../../core/models/dealt_card_slot.dart';
 import '../../core/models/divination_system.dart';
 import '../../core/models/rune_stone.dart';
 import '../../core/models/tarot_card_model.dart';
@@ -244,11 +243,6 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     return index;
   }
 
-  void _resetTable() {
-    HapticFeedback.mediumImpact();
-    context.read<SpreadController>().resetTable();
-  }
-
   /// The flight card for the Focus pillar,
   /// positioned in the active body Stack's local coordinates: it flies from
   /// the release pose to the exact slot rect, landing pixel-perfectly on the
@@ -325,8 +319,6 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     }
     final pack = context.watch<DeckPackController>().activePack;
     final flight = _flight;
-    final canReset =
-        ctrl.allDealt && ctrl.dealtCount >= ctrl.initialSpreadCardCount;
     final viewMode = ctrl.isSpreadOverview
         ? TableViewMode.spread
         : TableViewMode.focus;
@@ -350,7 +342,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
           header: header,
           onDeal: _dealOverviewPiece,
           inspect: _inspect,
-          badge: _ResetTableButton(enabled: canReset, onReset: _resetTable),
+          badge: const SizedBox.shrink(),
         ),
       );
     }
@@ -401,20 +393,6 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
                               ),
                               const SizedBox(height: 32),
                             ],
-                          ),
-                        ),
-                        // Reset button hugging the deck's bottom
-                        // edge — lives at the content-Stack level so its
-                        // overlap area stays fully hit-testable.
-                        Positioned(
-                          top: tableTopPad + deckBoxHeight - 11,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: _ResetTableButton(
-                              enabled: canReset,
-                              onReset: _resetTable,
-                            ),
                           ),
                         ),
                         if (flight != null && _flightCtl != null)
@@ -548,6 +526,7 @@ class _CustomSpreadAction extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: TaroGlassLayer(
+          useBackdropGroup: false,
           child: TaroGlassPanel(
             radius: 16,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -670,12 +649,12 @@ class _ViewModeToggle extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               _ModeSegment(
-                label: 'SPREAD VIEW',
+                label: AppStrings.g('ui.digital_table_screen.spread_view'),
                 active: mode == TableViewMode.spread,
                 onTap: () => onChanged(TableViewMode.spread),
               ),
               _ModeSegment(
-                label: 'FOCUS VIEW',
+                label: AppStrings.g('ui.digital_table_screen.focus_view'),
                 active: mode == TableViewMode.focus,
                 onTap: () => onChanged(TableViewMode.focus),
               ),
@@ -777,72 +756,30 @@ class _SystemSegment extends StatelessWidget {
   }
 }
 
-/// Resets the current table after the last card or rune is dealt.
-class _ResetTableButton extends StatelessWidget {
-  const _ResetTableButton({required this.enabled, required this.onReset});
-
-  final bool enabled;
-  final VoidCallback onReset;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      enabled: enabled,
-      label: 'TAP TO RESET',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: enabled ? onReset : null,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: enabled
-                ? TaroColors.lavender.withValues(alpha: 0.16)
-                : TaroColors.surface.withValues(alpha: 0.52),
-            borderRadius: BorderRadius.circular(11),
-            border: Border.all(
-              color: enabled
-                  ? TaroColors.lavender.withValues(alpha: 0.55)
-                  : TaroColors.mist.withValues(alpha: TaroOpacity.border),
-            ),
-          ),
-          child: Text(
-            'TAP TO RESET',
-            style: AppTypography.label(
-              fontSize: 9,
-              letterSpacing: 0.9,
-              color: enabled ? TaroColors.lavender : TaroColors.textDisabled,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// The face-down carved stone used by the rune cast flight overlay.
 class _FlightStone extends StatelessWidget {
   const _FlightStone();
 
   @override
   Widget build(BuildContext context) {
-    return RuneStone3DWidget(
+    return RuneStoneView(
       stone: const RuneStone(
         id: 0,
-        name: 'Fehu',
+        nameKey: 'content.rune.0.name',
         glyph: 'ᚠ',
         phonetic: 'F',
         aett: RuneAett.freyr,
         element: Element.fire,
-        keywords: ['Wealth'],
-        upright: '',
-        lore: '',
+        keywordKeys: ['content.rune.0.keyword.0'],
+        uprightKey: 'content.rune.0.upright',
+        loreKey: 'content.rune.0.lore',
       ),
-      isMerkstave: false,
-      state: SlotState.faceDown,
+      pack: context.watch<DeckPackController>().activeRunePack,
+      faceUp: false,
+      ignite: 0,
+      lift: 1.0,
       width: 150,
       height: 178,
-      interactive: false,
     );
   }
 }

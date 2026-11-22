@@ -6,6 +6,7 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/data/runes_data.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/divination_system.dart';
@@ -15,9 +16,11 @@ import '../../../core/theme/card_motion.dart';
 import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../state/app_settings_controller.dart';
+import '../../../state/deck_pack_controller.dart';
 import '../../../state/spread_controller.dart';
 import '../../profile/widgets/profile_header.dart';
 import 'deal_lock_prompt.dart';
+import 'rune_stone_3d_widget.dart';
 import 'shuffle_physics.dart';
 import 'slotted_divination_card.dart';
 import 'spread_deck_dock.dart';
@@ -65,6 +68,8 @@ class _SpreadBoardState extends State<SpreadBoard>
   late int _revision;
   late _DealPose _from;
   Offset _down = Offset.zero;
+  double _runeSwirl = 0;
+  int _lastRuneSwirlTick = 0;
 
   RenderBox? _box(GlobalKey? key) =>
       key?.currentContext?.findRenderObject() as RenderBox?;
@@ -229,28 +234,25 @@ class _SpreadBoardState extends State<SpreadBoard>
     return _DealPose.flight(_from, end, _motion.value, returning: returning);
   }
 
-  Widget _gestures(Widget deck) {
-    if (context.read<SpreadController>().system == DivinationSystem.runes) {
-      return GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          _motion.duration = const Duration(milliseconds: 420);
-          _motion.forward(from: 0);
-          if (widget.onDeal() == null) {
-            showDealLockPrompt(context, context.read<SpreadController>());
-          } else {
-            HapticFeedback.mediumImpact();
-          }
-        },
-        child: ScaleTransition(
-          scale: TweenSequence<double>([
-            TweenSequenceItem(tween: Tween(begin: 1, end: 1.05), weight: 1),
-            TweenSequenceItem(tween: Tween(begin: 1.05, end: 1), weight: 2),
-          ]).animate(_motion),
-          child: GuideHighlight(child:deck),
-        ),
-      );
+  void _onRuneSwirlUpdate(DragUpdateDetails d) {
+    if (_phase != null) return;
+    setState(() => _runeSwirl += d.delta.dx);
+    final tick = _runeSwirl.abs() ~/ 24.0;
+    if (tick != _lastRuneSwirlTick) {
+      _lastRuneSwirlTick = tick;
+      HapticFeedback.mediumImpact();
+      context.read<SpreadController>().weaveShuffleRemaining();
     }
+  }
+
+  void _onRuneSwirlEnd(DragEndDetails d) {
+    if (_phase != null) return;
+    HapticFeedback.selectionClick();
+  }
+
+  Widget _gestures(Widget deck) {
+    final isRunes =
+        context.read<SpreadController>().system == DivinationSystem.runes;
     return Listener(
       onPointerCancel: (_) => _returnToDeck(),
       child: GestureDetector(
@@ -259,7 +261,9 @@ class _SpreadBoardState extends State<SpreadBoard>
         onLongPressStart: _pickUp,
         onLongPressMoveUpdate: (d) => _move(d.globalPosition),
         onLongPressEnd: _release,
-        child: GuideHighlight(child:deck),
+        onHorizontalDragUpdate: isRunes ? _onRuneSwirlUpdate : null,
+        onHorizontalDragEnd: isRunes ? _onRuneSwirlEnd : null,
+        child: GuideHighlight(child: deck),
       ),
     );
   }
@@ -389,6 +393,7 @@ class _SpreadBoardState extends State<SpreadBoard>
                     held: _phase == _DealPhase.dragging || _phase == _DealPhase.returning,
                     cardLongPx: sizing.cardLongPx,
                     cardShortPx: sizing.cardShortPx,
+                    runeSwirl: _runeSwirl,
                   ),
                 ),
                 Expanded(
@@ -404,14 +409,43 @@ class _SpreadBoardState extends State<SpreadBoard>
                 child: IgnorePointer(
                   child: AnimatedBuilder(
                     animation: Listenable.merge([_motion, _dragDelta]),
-                    child: const RepaintBoundary(
-                      child: SpreadCardBack(
-                        width: deckWidth,
-                        height: deckHeight,
-                      ),
-                    ),
-                    builder: (_, back) =>
-                        _MovingCard(pose: _currentPose(), child: back!),
+                    child: ctrl.system == DivinationSystem.runes
+                        ? null
+                        : const RepaintBoundary(
+                            child: SpreadCardBack(
+                              width: deckWidth,
+                              height: deckHeight,
+                            ),
+                          ),
+                    builder: (_, back) {
+                      final pose = _currentPose();
+                      if (ctrl.system == DivinationSystem.runes) {
+                        final stoneId =
+                            (_heldCard ?? 0).clamp(0, elderFuthark.length - 1);
+                        final stoneW = deckWidth * 0.74;
+                        return _MovingCard(
+                          pose: pose,
+                          showCardShadow: false,
+                          child: Center(
+                            child: RepaintBoundary(
+                              child: RuneStoneView(
+                                stone: elderFuthark[stoneId],
+                                pack: context
+                                    .watch<DeckPackController>()
+                                    .activeRunePack,
+                                faceUp: false,
+                                ignite: 0,
+                                seed: 21 + stoneId,
+                                lift: pose.lift,
+                                width: stoneW,
+                                height: stoneW * 1.18,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      return _MovingCard(pose: pose, child: back!);
+                    },
                   ),
                 ),
               ),
@@ -550,10 +584,48 @@ class _OverviewSlotState extends State<_OverviewSlot>
       if (!widget.basePosition) return const SizedBox.expand();
       final positions = context.watch<AppSettingsController>().enabled(ReadingAid.positions);
       if (!positions && !widget.highlighted) return const SizedBox.expand();
-      final shorts = context.read<SpreadController>().spreadSlotRoleShorts;
+      final ctrl = context.read<SpreadController>();
+      final shorts = ctrl.spreadSlotRoleShorts;
       final shortRole = widget.slotIndex < shorts.length
           ? shorts[widget.slotIndex]
-          : 'Clarifier';
+          : AppStrings.g('table.clarifier');
+      if (ctrl.system == DivinationSystem.runes) {
+        final stoneW = deckWidth * 0.78;
+        final stoneH = stoneW * 1.18;
+        return Center(
+          child: Container(
+            width: stoneW,
+            height: stoneH,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.all(
+                Radius.elliptical(stoneW * 0.5, stoneH * 0.5),
+              ),
+              color: widget.highlighted
+                  ? TaroColors.lavender.withValues(alpha: 0.14)
+                  : TaroColors.surface.withValues(alpha: 0.22),
+              border: Border.all(
+                color: widget.highlighted
+                    ? TaroColors.lavender
+                    : TaroColors.border.withValues(alpha: 0.85),
+                width: widget.highlighted ? 2.6 : 1.1,
+              ),
+            ),
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            child: Text(
+              positions ? '${widget.slotIndex + 1} · $shortRole' : '',
+              textAlign: TextAlign.center,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.label(
+                fontSize: 9,
+                letterSpacing: 0.8,
+                color: TaroColors.textSecondary.withValues(alpha: 0.72),
+              ),
+            ),
+          ),
+        );
+      }
       return Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(deckWidth * 0.06),
@@ -596,25 +668,29 @@ class _OverviewSlotState extends State<_OverviewSlot>
         return Stack(
           fit: StackFit.expand,
           children: [
-            Opacity(
-              opacity: v,
-              child: Transform.scale(scale: 0.88 + 0.12 * v, child: child),
-            ),
-            // Elemental rim shimmer fading out as the card settles.
+            // Soft radial elemental aura pulse when the rune settles.
             if (v < 1)
               IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(deckWidth * 0.06),
-                    border: Border.all(
-                      color: card.element.accent.withValues(
-                        alpha: (1 - v) * 0.85,
+                child: Center(
+                  child: Container(
+                    width: deckWidth * (0.78 + 0.14 * v),
+                    height: deckWidth * (0.90 + 0.14 * v),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          card.element.accent.withValues(alpha: (1 - v) * 0.34),
+                          card.element.accent.withValues(alpha: 0.0),
+                        ],
                       ),
-                      width: 1.6,
                     ),
                   ),
                 ),
               ),
+            Opacity(
+              opacity: v,
+              child: Transform.scale(scale: 0.94 + 0.06 * v, child: child),
+            ),
           ],
         );
       },

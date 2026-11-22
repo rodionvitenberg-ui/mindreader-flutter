@@ -8,6 +8,7 @@ import '../../core/models/deck_pack.dart';
 import '../../core/models/lenormand_pack.dart';
 import '../../core/models/rune_pack.dart';
 import '../../core/models/tarot_deck_pack.dart';
+import '../../core/services/pack_asset_store.dart';
 import '../../design_system/taro_tokens.dart';
 import '../digital_table/widgets/lenormand_card_3d_widget.dart';
 import '../digital_table/widgets/rune_stone_3d_widget.dart';
@@ -27,7 +28,26 @@ class DeckCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fallback = _LocalFallbackPreview(pack: pack);
+    final storeCover =
+        pack.isStorePack && pack.storeCoverPath != null
+            ? PackAssetStore.instance.imageProviderFor(
+                pack.storeKey!,
+                pack.storeCoverPath!,
+              )
+            : null;
+    final fallback = storeCover != null
+        ? Stack(
+            fit: StackFit.expand,
+            children: [
+              _LocalFallbackPreview(pack: pack),
+              Image(
+                image: storeCover,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            ],
+          )
+        : _LocalFallbackPreview(pack: pack);
     final url = promoUrl;
     return ClipRect(
       child: SizedBox.expand(
@@ -62,15 +82,14 @@ class _LocalFallbackPreview extends StatelessWidget {
     final Widget piece;
     if (p is RunePack) {
       accent = Color(p.stoneRimArgb);
-      piece = CustomPaint(
-        size: const Size(120, 150),
-        painter: RuneStonePainter(
-          pack: p,
-          stone: elderFuthark[0],
-          faceUp: true,
-          ignite: 1,
-          seed: 5,
-        ),
+      piece = RuneStoneView(
+        pack: p,
+        stone: elderFuthark[0],
+        faceUp: true,
+        ignite: 1,
+        seed: 5,
+        width: 124,
+        height: 146,
       );
     } else if (p is LenormandPack) {
       accent = Color(p.faceAccentArgb);
