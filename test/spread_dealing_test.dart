@@ -84,7 +84,7 @@ void main() {
       final source = tester.getCenter(back);
       final target = tester.getCenter(slot(0));
       expect((source - tester.getCenter(deck)).distance, lessThan(5));
-      await tester.pump(const Duration(milliseconds: 360));
+      await tester.pump(const Duration(milliseconds: 350));
       final midway = tester.getCenter(back);
       expect(
         (midway - source).distance,
@@ -96,7 +96,7 @@ void main() {
       );
       expect(ctrl.slots.first.state, SlotState.faceDown);
       expect(angle(tester, back), inExclusiveRange(0.1, 1.5));
-      await tester.pump(const Duration(milliseconds: 359));
+      await tester.pump(const Duration(milliseconds: 349));
       expect(
         (tester.getCenter(back) - tester.getCenter(slot(0))).distance,
         lessThan(1),
@@ -152,7 +152,7 @@ void main() {
       expect(ctrl.faceUpCount, 2);
       expect(ctrl.allDealt, isFalse);
       expect(progress(), 0);
-      await tester.pump(const Duration(milliseconds: 750));
+      await tester.pump(const Duration(milliseconds: 1000));
       expect(progress(), .5);
       await tester.tap(find.text('FOCUS VIEW'));
       await tester.pump();
@@ -164,7 +164,7 @@ void main() {
   );
 
   testWidgets(
-    'reduced motion places one card on tap without a flight overlay',
+    'tap flight still plays over 700ms even when system disableAnimations is enabled',
     (tester) async {
       final ctrl = await open(tester);
       tester.platformDispatcher.accessibilityFeaturesTestValue =
@@ -174,6 +174,11 @@ void main() {
       );
       await tester.pump();
       await tester.tap(deck);
+      await tester.pump();
+      expect(moving, findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 350));
+      expect(moving, findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 360));
       await tester.pump();
       expect(moving, findsNothing);
       expect(ctrl.dealtCount, 1);

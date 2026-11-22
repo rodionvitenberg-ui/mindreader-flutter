@@ -50,3 +50,5 @@ app.*.map.json
 
 # Upstream art/QC workspace (separate 2 GB source repo, not part of the app)
 /TarotCards/
+
+/promo-tarottree/

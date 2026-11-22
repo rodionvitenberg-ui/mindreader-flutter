@@ -6,6 +6,9 @@ import '../../../state/app_settings_controller.dart';
 import '../../../state/spread_controller.dart';
 import 'elemental_threads_painter.dart';
 
+/// Duration of one elemental branch sprouting between newly revealed neighbors.
+const branchGrowthDuration = Duration(milliseconds: 2000);
+
 class SpreadThreadsLayer extends StatefulWidget {
   const SpreadThreadsLayer({super.key, required this.rects});
   final Map<int, Rect> rects;
@@ -49,7 +52,6 @@ class _SpreadThreadsLayerState extends State<SpreadThreadsLayer> {
     if (!enabled || !elementalThreadsVisibleFor(ctrl.system)) {
       return const SizedBox.shrink();
     }
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final branches = <Widget>[];
     // The reading engine already requires both endpoints to be face up.
     // Flanking comparisons stay in the inspector, outside the board drawing.
@@ -66,8 +68,8 @@ class _SpreadThreadsLayerState extends State<SpreadThreadsLayer> {
         end: rectEdgeToward(b, a.center, inset: 4),
         element: ctrl.slots[link.from].card!.element,
       );
-      Widget paint(double progress) =>
-          CustomPaint(painter: ElementalBranchPainter([segment], progress));
+      final alreadyOpen =
+          _openOnEntry.contains(start) && _openOnEntry.contains(end);
       branches.add(
         RepaintBoundary(
           key: ValueKey((
@@ -77,15 +79,10 @@ class _SpreadThreadsLayerState extends State<SpreadThreadsLayer> {
             link.fromId,
             link.toId,
           )),
-          child:
-              reduceMotion ||
-                  (_openOnEntry.contains(start) && _openOnEntry.contains(end))
-              ? paint(1)
-              : TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: 1),
-                  duration: const Duration(milliseconds: 1500),
-                  builder: (_, progress, _) => paint(progress),
-                ),
+          child: _GrowingElementalBranch(
+            segment: segment,
+            alreadyOpen: alreadyOpen,
+          ),
         ),
       );
     }
@@ -94,6 +91,54 @@ class _SpreadThreadsLayerState extends State<SpreadThreadsLayer> {
         alignment: Alignment.topLeft,
         fit: StackFit.expand,
         children: branches,
+      ),
+    );
+  }
+}
+
+class _GrowingElementalBranch extends StatefulWidget {
+  const _GrowingElementalBranch({
+    required this.segment,
+    required this.alreadyOpen,
+  });
+
+  final BranchSegment segment;
+  final bool alreadyOpen;
+
+  @override
+  State<_GrowingElementalBranch> createState() =>
+      _GrowingElementalBranchState();
+}
+
+class _GrowingElementalBranchState extends State<_GrowingElementalBranch>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _growth = AnimationController(
+    vsync: this,
+    duration: branchGrowthDuration,
+    value: widget.alreadyOpen ? 1.0 : 0.0,
+    animationBehavior: AnimationBehavior.preserve,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.alreadyOpen) {
+      _growth.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _growth.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _growth,
+      builder: (_, _) => CustomPaint(
+        painter: ElementalBranchPainter([widget.segment], _growth.value),
       ),
     );
   }

@@ -9,7 +9,7 @@ import 'package:mindreader/features/digital_table/widgets/spread_threads_layer.d
 import 'package:mindreader/features/digital_table/widgets/elemental_threads_painter.dart';
 
 void main() {
-  testWidgets('neighbor reveals grow independently during guided dealing', (
+  testWidgets('neighbor reveals grow independently over 2 seconds', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -73,25 +73,39 @@ void main() {
             .segments
             .single;
     expect(firstBranch.start.dx, greaterThan(firstBranch.end.dx));
-    await tester.pump(const Duration(milliseconds: 750));
-    expect(growth(), [.5]);
+    await tester.pump(const Duration(milliseconds: 1000));
+    expect(growth(), [0.5]);
     ctrl.dealNextCard();
     ctrl.flipSlot(2);
     await tester.pump();
-    expect(growth(), [.5, 0]);
-    await tester.pump(const Duration(milliseconds: 750));
-    expect(growth(), [1, .5]);
-    await tester.pump(const Duration(milliseconds: 750));
+    expect(growth(), [0.5, 0]);
+    await tester.pump(const Duration(milliseconds: 1000));
+    expect(growth(), [1, 0.5]);
+    await tester.pump(const Duration(milliseconds: 1000));
     expect(growth(), [1, 1]);
     await tester.tapAt(const Offset(50, 30));
     expect(taps, 1);
     await settings.setAid(ReadingAid.relationships, false);
     await tester.pump();
     expect(branches, findsNothing);
+
+    // Even when system disableAnimations is active, a newly revealed branch
+    // still sprouts over the full 2-second animation.
+    ctrl.resetTable();
     await render(reduced: true);
+    ctrl.dealNextCard();
+    ctrl.dealNextCard();
+    ctrl.flipSlot(0);
     await settings.setAid(ReadingAid.relationships, true);
     await tester.pump();
-    expect(growth(), [1, 1]);
+    ctrl.flipSlot(1);
+    await tester.pump();
+    expect(growth(), [0]);
+    await tester.pump(const Duration(milliseconds: 1000));
+    expect(growth(), [0.5]);
+    await tester.pump(const Duration(milliseconds: 1000));
+    expect(growth(), [1]);
+
     ctrl.resetTable();
     await tester.pump();
     expect(branches, findsNothing);
@@ -112,12 +126,12 @@ void main() {
       ];
     }
 
-    expect(leavesAt(.1), isEmpty);
-    final firstBud = leavesAt(.32).single;
-    final later = leavesAt(.63);
-    expect(later, hasLength(2));
+    expect(leavesAt(0.1), isEmpty);
+    final firstBud = leavesAt(0.35).single;
+    final later = leavesAt(0.55);
+    expect(later.length, greaterThanOrEqualTo(2));
     expect(later.first.width, greaterThan(firstBud.width));
     expect(later.first.height, greaterThan(firstBud.height));
-    expect(leavesAt(1), hasLength(3));
+    expect(leavesAt(1), hasLength(4));
   });
 }

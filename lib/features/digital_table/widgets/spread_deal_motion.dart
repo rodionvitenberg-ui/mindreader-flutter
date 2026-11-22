@@ -48,23 +48,24 @@ class _DealPose {
   /// target and its rotation are measured in the current viewport each frame.
   _DealPose carriedTo(_DealPose target, double time) {
     final travel = const Interval(
-      .08,
-      1,
-      curve: Curves.easeInOut,
+      .06,
+      .96,
+      curve: Curves.easeInOutCubic,
     ).transform(time);
     final lift =
-        const Interval(0, .16, curve: Curves.easeOut).transform(time) *
-        (1 - const Interval(.76, 1, curve: Curves.easeInOut).transform(time));
+        const Interval(0, .14, curve: Curves.easeOut).transform(time) *
+        (1 - const Interval(.78, 1, curve: Curves.easeInOut).transform(time));
     final distance = target.center - center;
     final arc =
-        math.min(24.0, distance.distance * .12) * math.sin(math.pi * travel);
+        math.min(26.0, distance.distance * .13) * math.sin(math.pi * travel);
     final pose = dragged(distance * travel - Offset(0, arc), target, lift);
     return _DealPose(
       pose.center,
       pose.scale,
       pose.angle,
       lift: lift,
-      tilt: slotTiltRadians * const Interval(.76, 1).transform(time),
+      tilt: slotTiltRadians *
+          const Interval(.78, 1, curve: Curves.easeOut).transform(time),
     );
   }
 

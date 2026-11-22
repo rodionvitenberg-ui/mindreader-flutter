@@ -27,6 +27,9 @@ import 'spread_viewport.dart';
 
 part 'spread_deal_motion.dart';
 
+/// Duration of the automatic tap-to-deal card flight in SPREAD VIEW.
+const tapDealFlightDuration = Duration(milliseconds: 700);
+
 class SpreadBoard extends StatefulWidget {
   const SpreadBoard({
     super.key,
@@ -52,7 +55,10 @@ class _SpreadBoardState extends State<SpreadBoard>
   final _viewport = GlobalKey<SpreadViewportState>();
   final _slotKeys = <int, GlobalKey>{};
   final _dragDelta = ValueNotifier(Offset.zero);
-  late final _motion = AnimationController(vsync: this);
+  late final _motion = AnimationController(
+    vsync: this,
+    animationBehavior: AnimationBehavior.preserve,
+  );
   _DealPhase? _phase;
   int? _index;
   int? _heldCard;
@@ -90,7 +96,7 @@ class _SpreadBoardState extends State<SpreadBoard>
     _dragDelta.value = Offset.zero;
     setState(() {
       _index = index;
-      _phase = finger == null ? _DealPhase.landing : _DealPhase.dragging;
+      _phase = finger == null ? _DealPhase.flying : _DealPhase.dragging;
     });
     return true;
   }
@@ -173,13 +179,9 @@ class _SpreadBoardState extends State<SpreadBoard>
       _finish();
       return;
     }
-    if (automatic && MediaQuery.disableAnimationsOf(context)) {
-      _finish();
-      return;
-    }
     setState(() => _phase = automatic ? _DealPhase.flying : _DealPhase.landing);
     _motion.duration = automatic
-        ? const Duration(milliseconds: 720)
+        ? tapDealFlightDuration
         : const Duration(milliseconds: 210);
     _motion.forward(from: 0).then((_) {
       if (!mounted) return;
