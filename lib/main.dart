@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:provider/provider.dart';
@@ -23,8 +25,13 @@ Future<void> main() async {
   // Преддекодируем логотип (~10 КБ) до первого кадра, чтобы переход с
   // нативного сплэша на Flutter-прелоадер прошёл без единого чёрного кадра.
   final preloaderLogo = await TaroPreloader.decodeLogoAsset();
-  // Прогрев шейдеров liquid glass стартует сразу и отслеживается прелоадером.
-  final shaderPrecache = LiquidGlass.precache().catchError((Object _) {});
+  // На Apple (Metal) прогреваем шейдеры liquid glass сразу. На Android не
+  // компилируем Flutter GPU-шейдеры до завершения TaroGlassCapability, чтобы
+  // OpenGLES-устройства не тратили GPU и память на неподдерживаемое стекло.
+  final isApple = !kIsWeb && (Platform.isIOS || Platform.isMacOS);
+  final shaderPrecache = isApple
+      ? LiquidGlass.precache().catchError((Object _) {})
+      : null;
   runApp(
     MindreaderApp(
       preloaderLogo: preloaderLogo,

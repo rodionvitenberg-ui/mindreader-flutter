@@ -8,6 +8,7 @@ import '../../core/models/deck_pack.dart';
 import '../../core/models/divination_system.dart';
 import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
+import '../../state/deck_pack_controller.dart';
 import '../profile/widgets/profile_header.dart';
 import 'deck_cover.dart';
 
@@ -136,7 +137,13 @@ class DeckShopScreen extends StatelessWidget {
             height: 54,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: DeckCover(pack: pack),
+              child: DeckCover(
+                pack: pack,
+                promoUrl: context.watch<DeckPackController>().promoImageUrlFor(
+                  group,
+                  pack,
+                ),
+              ),
             ),
           ),
           title: Text(

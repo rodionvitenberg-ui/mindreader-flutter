@@ -93,5 +93,16 @@ void main() {
       ),
       TaroGlassMode.glass,
     );
+    // Failed/timed-out probe (fail-safe false) => fake even on Apple/Vulkan.
+    expect(
+      TaroGlassCapability.decide(
+        shaderFiltersSupported: true,
+        isAndroid: false,
+        isApple: true,
+        androidVulkanSupported: false,
+        selfTestGlassWorks: false,
+      ),
+      TaroGlassMode.fake,
+    );
   });
 }

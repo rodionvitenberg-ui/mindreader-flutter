@@ -78,7 +78,10 @@ class _AnalyzeReadingButtonState extends State<AnalyzeReadingButton> {
         ? TaroGlassSurface(
             radius: 22,
             tint: TaroColors.lavender.withValues(alpha: 0.16),
-            visibility: _pressed ? 0.84 : 1.0,
+            // Keep visibility at 1.0 on press so tapping or starting a swipe
+            // never spawns a separate SeededBackdropPassLayer (prevents dark
+            // flash on Impeller OpenGLES).
+            visibility: 1.0,
             fillColor: TaroColors.surface,
             borderColor: TaroColors.lavender.withValues(alpha: 0.65),
             glow: TaroGlow.soft(TaroColors.lavender, alpha: 0.24, blur: 14),
@@ -111,10 +114,15 @@ class _AnalyzeReadingButtonState extends State<AnalyzeReadingButton> {
             alignment: Alignment.center,
             children: [
               Positioned.fill(child: pill),
-              AnimatedOpacity(
+              AnimatedScale(
                 duration: TaroMotion.fast,
-                opacity: enabled && _pressed ? .84 : 1,
-                child: content,
+                curve: Curves.easeOutCubic,
+                scale: enabled && _pressed ? 0.97 : 1.0,
+                child: AnimatedOpacity(
+                  duration: TaroMotion.fast,
+                  opacity: enabled && _pressed ? .84 : 1,
+                  child: content,
+                ),
               ),
             ],
           ),

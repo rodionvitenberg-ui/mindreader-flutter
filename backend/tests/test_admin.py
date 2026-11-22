@@ -1,12 +1,16 @@
+import io
 import os
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from django.contrib.auth.models import Permission, User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from PIL import Image
 
 from apps.ai_gateway.models import Provider
+from apps.catalog.models import DeckPromo
 from apps.entitlements.models import Grant
 
 from .test_store import deck_fixture, package_fixture
@@ -58,3 +62,26 @@ class AdminTests(TestCase):
         self.client.force_login(staff)
         self.assertEqual(self.client.post(reverse("admin:entitlements_grant_add"), {}).status_code, 403)
         self.assertFalse(Grant.objects.exists())
+
+    def test_operator_can_assign_promo_image_to_builtin_pack_in_admin(self):
+        temp = self.enterContext(TemporaryDirectory())
+        self.enterContext(override_settings(MEDIA_ROOT=temp))
+        promo = DeckPromo.objects.get(system="runes", pack_id="nordic_bone")
+        buf = io.BytesIO()
+        Image.new("RGB", (160, 80), color=(42, 34, 60)).save(buf, "WEBP")
+        upload = SimpleUploadedFile("nordic.webp", buf.getvalue(), content_type="image/webp")
+        response = self.client.post(
+            reverse("admin:catalog_deckpromo_change", args=[promo.pk]),
+            {
+                "deck": "",
+                "system": "runes",
+                "pack_id": "nordic_bone",
+                "title": promo.title,
+                "image": upload,
+                "_save": "Save",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        promo.refresh_from_db()
+        self.assertTrue(bool(promo.image))
+        self.assertEqual(len(promo.sha256), 64)

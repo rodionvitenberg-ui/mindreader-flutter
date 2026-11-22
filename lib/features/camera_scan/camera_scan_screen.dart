@@ -406,26 +406,33 @@ class _CameraScanScreenState extends State<CameraScanScreen>
         SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: CameraTopHud(
-                  system: ctrl.system,
-                  onSystemChanged: (s) {
-                    HapticFeedback.selectionClick();
-                    context.read<SpreadController>().setSystem(s);
-                  },
-                  flashOn: _flashOn,
-                  onToggleFlash: _toggleFlash,
-                  onPickGallery: _pickFromGallery,
-                  showActions: _mobileCameraAvailable,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: CameraModeSelector(
-                  value: _mode,
-                  onChanged: _onModeSelected,
+              TaroGlassLayer(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: CameraTopHud(
+                        system: ctrl.system,
+                        onSystemChanged: (s) {
+                          HapticFeedback.selectionClick();
+                          context.read<SpreadController>().setSystem(s);
+                        },
+                        flashOn: _flashOn,
+                        onToggleFlash: _toggleFlash,
+                        onPickGallery: _pickFromGallery,
+                        showActions: _mobileCameraAvailable,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: CameraModeSelector(
+                        value: _mode,
+                        onChanged: _onModeSelected,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 14),
@@ -608,22 +615,24 @@ class _ShutterButton extends StatelessWidget {
         child: SizedBox(
           width: 76,
           height: 76,
-          child: TaroGlassSurface(
-            radius: 38,
-            tint: TaroColors.lavender.withValues(alpha: 0.22),
-            fillColor: TaroColors.hudFill,
-            borderColor: TaroColors.lavender,
-            glow: TaroGlow.soft(TaroColors.lavender, alpha: 0.35, blur: 22),
-            child: Center(
-              child: Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: TaroColors.lavender.withValues(alpha: 0.34),
-                  border: Border.all(
-                    color: TaroColors.textPrimary.withValues(alpha: 0.45),
-                    width: 1.2,
+          child: TaroGlassLayer(
+            child: TaroGlassSurface(
+              radius: 38,
+              tint: TaroColors.lavender.withValues(alpha: 0.22),
+              fillColor: TaroColors.hudFill,
+              borderColor: TaroColors.lavender,
+              glow: TaroGlow.soft(TaroColors.lavender, alpha: 0.35, blur: 22),
+              child: Center(
+                child: Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: TaroColors.lavender.withValues(alpha: 0.34),
+                    border: Border.all(
+                      color: TaroColors.textPrimary.withValues(alpha: 0.45),
+                      width: 1.2,
+                    ),
                   ),
                 ),
               ),

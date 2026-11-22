@@ -4,12 +4,31 @@ from pathlib import PurePosixPath
 from django.core.exceptions import ValidationError
 from django.core.files.storage import FileSystemStorage, storages
 from django.core.validators import RegexValidator
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q
 
 from apps.core.cards import SYSTEM_SIZES
 
 VERSION = r"^(0|[1-9]\d{0,5})\.(0|[1-9]\d{0,5})\.(0|[1-9]\d{0,5})\Z"
+
+# Built-in decks and rune sets shipped inside the Flutter app so operators can
+# attach promo artwork to them in Django Admin without uploading a ZIP package.
+BUILTIN_PROMO_PACKS = (
+    ("tarot", "rider_waite", "Rider-Waite"),
+    ("tarot", "marseille", "Tarot de Marseille"),
+    ("tarot", "oswald_wirth", "Oswald Wirth"),
+    ("tarot", "etteilla", "Grand Etteilla"),
+    ("tarot", "visconti_sforza", "Visconti-Sforza"),
+    ("tarot", "vieville", "Jacques Viéville"),
+    ("tarot", "soimoi", "Soimoi"),
+    ("tarot", "obsidian_minimal", "Obsidian Minimal"),
+    ("lenormand", "antique_petit", "Antique Petit Lenormand"),
+    ("lenormand", "obsidian_gilded", "Obsidian Gilded Lenormand"),
+    ("lenormand", "botanical_noir", "Botanical Noir Lenormand"),
+    ("runes", "obsidian_lavender", "Obsidian & Lavender Quartz"),
+    ("runes", "nordic_bone", "Nordic Carved Bone & Gold"),
+    ("runes", "blood_jasper", "Blood Jasper & Runic Fire"),
+)
 
 
 class PrivateFileStorage(FileSystemStorage):
@@ -21,8 +40,17 @@ def package_storage():
     return storages["deck_packages"]
 
 
+def promo_storage():
+    return storages["default"]
+
+
 def package_path(instance, filename):
     return str(PurePosixPath("decks", str(instance.deck_id), str(instance.pk), str(uuid.uuid4()) + ".zip"))
+
+
+def promo_path(instance, filename):
+    ext = PurePosixPath(filename).suffix.lower() or ".webp"
+    return str(PurePosixPath("promos", instance.system, instance.pack_id, f"{uuid.uuid4()}{ext}"))
 
 
 class Deck(models.Model):
@@ -111,3 +139,69 @@ class DeckAsset(models.Model):
             models.UniqueConstraint(fields=("version", "path"), name="unique_deck_asset_path"),
             models.UniqueConstraint(fields=("version", "card_id"), condition=~Q(card_id=""), name="unique_deck_card_asset"),
         ]
+
+
+class DeckPromo(models.Model):
+    """Backend-managed promo artwork for a built-in pack or digital shop Deck."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    deck = models.OneToOneField(Deck, on_delete=models.CASCADE, null=True, blank=True, related_name="promo")
+    system = models.CharField(max_length=10, choices=[(system, system.title()) for system in SYSTEM_SIZES])
+    pack_id = models.SlugField(max_length=80)
+    title = models.CharField(max_length=180, blank=True)
+    image = models.FileField(upload_to=promo_path, storage=promo_storage, blank=True)
+    sha256 = models.CharField(max_length=64, editable=False, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("system", "pack_id")
+        constraints = [
+            models.UniqueConstraint(fields=("system", "pack_id"), name="unique_deck_promo_pack"),
+        ]
+
+    def __str__(self):
+        label = self.title or self.pack_id
+        return f"{label} ({self.system})"
+
+    def _sync_from_deck(self):
+        if self.deck_id:
+            self.system = self.deck.system
+            self.pack_id = self.deck.slug
+            if not self.title:
+                self.title = self.deck.title
+
+    def clean(self):
+        from .packages import PackageError, validate_promo_image
+
+        self._sync_from_deck()
+        if self.image and not self.image._committed:
+            try:
+                self._validated_sha256 = validate_promo_image(self.image)
+            except PackageError as exc:
+                raise ValidationError({"image": str(exc)}) from None
+
+    def save(self, *args, **kwargs):
+        from .packages import PackageError, validate_promo_image
+
+        self._sync_from_deck()
+        old = DeckPromo.objects.filter(pk=self.pk).only("image").first() if self.pk else None
+        old_name = old.image.name if old and old.image else ""
+        if self.image:
+            if not self.image._committed:
+                try:
+                    self.sha256 = getattr(self, "_validated_sha256", None) or validate_promo_image(self.image)
+                except PackageError as exc:
+                    raise ValidationError({"image": str(exc)}) from None
+            elif not self.sha256:
+                try:
+                    with self.image.open("rb") as file:
+                        self.sha256 = validate_promo_image(file)
+                except (FileNotFoundError, PackageError):
+                    pass
+        else:
+            self.sha256 = ""
+        super().save(*args, **kwargs)
+        new_name = self.image.name if self.image else ""
+        if old_name and old_name != new_name:
+            storage = self.image.storage
+            transaction.on_commit(lambda: storage.delete(old_name))

@@ -1,51 +1,59 @@
 import 'package:flutter/material.dart';
 
+import '../../core/data/lenormand_data.dart';
 import '../../core/data/runes_data.dart';
+import '../../core/data/tarot_deck_data.dart';
+import '../../core/models/dealt_card_slot.dart';
 import '../../core/models/deck_pack.dart';
 import '../../core/models/lenormand_pack.dart';
 import '../../core/models/rune_pack.dart';
 import '../../core/models/tarot_deck_pack.dart';
 import '../../design_system/taro_tokens.dart';
+import '../digital_table/widgets/lenormand_card_3d_widget.dart';
 import '../digital_table/widgets/rune_stone_3d_widget.dart';
 import '../digital_table/widgets/tarot_card_3d_widget.dart';
 
-/// Until a pack ships landscape artwork, offer three compositions from its
-/// existing illustrations or engraved pieces. The stored selection is a
-/// stable asset path (or preview name), independent of the picker's order.
-List<String> deckCovers(DeckPack pack) => pack.coverAssets.isEmpty
-    ? const ['preview-1', 'preview-2', 'preview-3']
-    : pack.coverAssets;
-
+/// Renders the backend-managed promo artwork for a deck or rune set inside the
+/// collapsible Almanac banner and digital shop cards. Falls back gracefully to
+/// a local face-up composition (Tarot's The Star, Lenormand's face, or carved
+/// rune stone) until a promo image is assigned on the backend or while offline.
 class DeckCover extends StatelessWidget {
-  const DeckCover({super.key, required this.pack, this.choice});
+  const DeckCover({super.key, required this.pack, this.promoUrl});
 
   final DeckPack pack;
-  final String? choice;
+
+  /// Absolute URL returned by the backend (`/api/v1/store/promos/`).
+  final String? promoUrl;
 
   @override
   Widget build(BuildContext context) {
-    final options = deckCovers(pack);
-    final selected = options.contains(choice) ? choice! : options.first;
-    final index = options.indexOf(selected);
-    final fallback = _Preview(pack: pack, index: index % 3);
+    final fallback = _LocalFallbackPreview(pack: pack);
+    final url = promoUrl;
     return ClipRect(
       child: SizedBox.expand(
-        child: pack.coverAssets.isEmpty
-            ? fallback
-            : Image.asset(
-                selected,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => fallback,
-              ),
+        child: url != null && url.isNotEmpty
+            ? Stack(
+                fit: StackFit.expand,
+                children: [
+                  fallback,
+                  Image.network(
+                    url,
+                    key: ValueKey('deck-promo-image-${pack.id}'),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                ],
+              )
+            : fallback,
       ),
     );
   }
 }
 
-class _Preview extends StatelessWidget {
-  const _Preview({required this.pack, required this.index});
+class _LocalFallbackPreview extends StatelessWidget {
+  const _LocalFallbackPreview({required this.pack});
+
   final DeckPack pack;
-  final int index;
 
   @override
   Widget build(BuildContext context) {
@@ -58,35 +66,37 @@ class _Preview extends StatelessWidget {
         size: const Size(120, 150),
         painter: RuneStonePainter(
           pack: p,
-          stone: elderFuthark[[0, 7, 18][index]],
+          stone: elderFuthark[0],
           faceUp: true,
           ignite: 1,
-          seed: index + 5,
+          seed: 5,
         ),
       );
     } else if (p is LenormandPack) {
       accent = Color(p.faceAccentArgb);
-      piece = CardBack(
+      piece = LenormandCard3DWidget(
+        card: lenormandDeck[0],
+        previewPack: p,
+        isReversed: false,
+        state: SlotState.faceUp,
         width: 120,
         height: 190,
-        styleOverride: p.backStyle,
-        accentOverride: p.backAccentArgb,
-        secondaryOverride: p.backSecondaryArgb,
+        tilt: false,
+        interactive: false,
       );
     } else {
       final tarot = p as TarotDeckPack;
       accent = Color(tarot.faceAccentArgb);
-      final back = CardBack(width: 120, height: 190, pack: tarot);
-      piece = tarot.isIllustrated
-          ? Image.asset(
-              '${tarot.assetFolder}${['02', '17', '19'][index]}.jpg',
-              width: 120,
-              height: 190,
-              fit: BoxFit.cover,
-              cacheWidth: 480,
-              errorBuilder: (_, _, _) => back,
-            )
-          : back;
+      piece = TarotCard3DWidget(
+        card: tarotDeck[17], // XVII · The Star
+        previewPack: tarot,
+        isReversed: false,
+        state: SlotState.faceUp,
+        width: 120,
+        height: 190,
+        tilt: false,
+        interactive: false,
+      );
     }
 
     return DecoratedBox(
@@ -99,15 +109,11 @@ class _Preview extends StatelessWidget {
         ),
       ),
       child: Align(
-        alignment: [
-          const Alignment(0.6, 0),
-          Alignment.center,
-          const Alignment(-0.55, 0),
-        ][index],
+        alignment: const Alignment(0.55, 0),
         child: FractionallySizedBox(
-          heightFactor: 1.45,
+          heightFactor: 1.4,
           child: Transform.rotate(
-            angle: [-0.18, 0.08, 0.2][index],
+            angle: -0.14,
             child: FittedBox(child: piece),
           ),
         ),

@@ -7,7 +7,6 @@ import 'tarot_deck_pack.dart';
 /// the renderer falls back to the procedural face when assets are absent.
 class LenormandPack extends DeckPack {
   const LenormandPack({
-    super.coverAssets,
     required this.id,
     required this.name,
     required this.subtitle,

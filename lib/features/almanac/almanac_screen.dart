@@ -573,7 +573,10 @@ class _DeckBanner extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           ExcludeSemantics(
-            child: DeckCover(pack: pack, choice: packs.coverFor(pack)),
+            child: DeckCover(
+              pack: pack,
+              promoUrl: packs.promoImageUrlFor(system, pack),
+            ),
           ),
           const DecoratedBox(
             decoration: BoxDecoration(

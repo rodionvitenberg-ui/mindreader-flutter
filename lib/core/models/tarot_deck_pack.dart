@@ -21,7 +21,6 @@ enum CardNaming {
 /// licensing metadata and unlock flags.
 class TarotDeckPack extends DeckPack {
   const TarotDeckPack({
-    super.coverAssets,
     required this.id,
     required this.name,
     required this.subtitle,

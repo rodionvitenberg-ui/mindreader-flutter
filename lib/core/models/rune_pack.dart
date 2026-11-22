@@ -7,7 +7,6 @@ import 'deck_pack.dart';
 /// assets are absent.
 class RunePack extends DeckPack {
   const RunePack({
-    super.coverAssets,
     required this.id,
     required this.name,
     required this.subtitle,

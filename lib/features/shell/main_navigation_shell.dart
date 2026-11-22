@@ -68,8 +68,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     return Stack(
       children: [
         const Positioned.fill(child: TaroDuskBackground()),
-        // The dock and the visible tab share a backdrop capture. Their
-        // separate glass layers keep the shape lists independent.
+        // Share one GPU backdrop readback across non-overlapping glass chrome
+        // (tab controls + bottom dock) so Impeller pays for a single screen
+        // capture per frame while each control keeps its own compact bounds.
         BackdropGroup(
           child: Scaffold(
             backgroundColor: Colors.transparent,

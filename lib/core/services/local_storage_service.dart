@@ -10,7 +10,7 @@ class LocalStorageService {
   static const _historyKey = 'spread_history';
   static const _maxEntries = 50;
 
-  static const _coverPrefix = 'almanac_cover.';
+  static const _deckPromoUrlsKey = 'deck_promo_urls_v1';
   static const _deckIdKey = 'active_deck_id';
   static const _lenormandPackKey = 'active_lenormand_pack_id';
   static const _runePackKey = 'active_rune_pack_id';
@@ -110,18 +110,26 @@ class LocalStorageService {
 
   // ---- active deck packs (one per divination system) ----
 
-  Future<Map<String, String>> loadDeckCovers() async {
+  Future<Map<String, String>> loadDeckPromoUrls() async {
     final prefs = await SharedPreferences.getInstance();
-    return {
-      for (final key in prefs.getKeys().where((k) => k.startsWith(_coverPrefix)))
-        if (prefs.get(key) case final String cover)
-          key.substring(_coverPrefix.length): cover,
-    };
+    final raw = prefs.getString(_deckPromoUrlsKey);
+    if (raw == null || raw.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return const {};
+      return {
+        for (final entry in decoded.entries)
+          if (entry.key is String && entry.value is String)
+            entry.key as String: entry.value as String,
+      };
+    } catch (_) {
+      return const {};
+    }
   }
 
-  Future<void> saveDeckCover(String packId, String cover) async {
+  Future<void> saveDeckPromoUrls(Map<String, String> urls) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('$_coverPrefix$packId', cover);
+    await prefs.setString(_deckPromoUrlsKey, jsonEncode(urls));
   }
 
   Future<String?> loadDeckId() async {

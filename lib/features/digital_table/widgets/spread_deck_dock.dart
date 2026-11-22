@@ -17,6 +17,21 @@ import 'tarot_card_3d_widget.dart';
 
 const overviewStackExtent = 20.0;
 
+/// Computes the 3D stepped card-edge metrics for the horizontal deck stack in
+/// `SPREAD VIEW` from the top card's short side (`deckWidth * fit`).
+({double stepX, double stepY, double depthX, double depthY})
+overviewStackMetrics(double cardShort) {
+  final stepY = (cardShort * 0.0115).clamp(0.75, 1.15);
+  final stepX = (cardShort * 0.0055).clamp(0.35, 0.58);
+  const maxUnderlying = fanLayerCount - 1;
+  return (
+    stepX: stepX,
+    stepY: stepY,
+    depthX: stepX * maxUnderlying,
+    depthY: stepY * maxUnderlying,
+  );
+}
+
 /// Fixed frosted surface shared by the mode switch and the horizontal deck.
 class SpreadDeckDock extends StatelessWidget {
   const SpreadDeckDock({
@@ -26,8 +41,8 @@ class SpreadDeckDock extends StatelessWidget {
     required this.wrapDeck,
     required this.topKey,
     required this.held,
-    this.deckWidthPx,
-    this.deckHeightPx,
+    this.cardLongPx,
+    this.cardShortPx,
   });
 
   final Widget header;
@@ -36,9 +51,10 @@ class SpreadDeckDock extends StatelessWidget {
   final GlobalKey topKey;
   final bool held;
 
-  /// Outer size of the horizontal stack in the dock.
-  final double? deckWidthPx;
-  final double? deckHeightPx;
+  /// Rendered dimensions of the horizontal top card in the dock (matched 1:1
+  /// to a card on the spread board: `deckHeight * fit` × `deckWidth * fit`).
+  final double? cardLongPx;
+  final double? cardShortPx;
 
   @override
   Widget build(BuildContext context) {
@@ -57,35 +73,52 @@ class SpreadDeckDock extends StatelessWidget {
             Expanded(
               child: LayoutBuilder(
                 builder: (context, dock) {
-                  final targetH = deckHeightPx ?? overviewDeckHeight;
-                  final targetW = deckWidthPx ?? overviewDeckWidth;
-                  final scale = targetH <= 0 || targetW <= 0
+                  final targetCardW = cardLongPx ?? overviewDeckWidth;
+                  final targetCardH = cardShortPx ?? overviewDeckHeight;
+                  final rawMetrics = overviewStackMetrics(targetCardH);
+                  final targetTotalW = targetCardW + rawMetrics.depthX * 2;
+                  final targetTotalH = targetCardH + rawMetrics.depthY;
+                  final scale = targetTotalH <= 0 || targetTotalW <= 0
                       ? 0.0
                       : math.min(
                           1.0,
                           math.min(
                             (dock.maxHeight - 8).clamp(0.0, double.infinity) /
-                                targetH,
+                                targetTotalH,
                             (dock.maxWidth - 16).clamp(0.0, double.infinity) /
-                                targetW,
+                                targetTotalW,
                           ),
                         );
-                  final height = targetH * scale;
-                  final width = targetW * scale;
+                  final cardW = targetCardW * scale;
+                  final cardH = targetCardH * scale;
+                  final stepX = rawMetrics.stepX * scale;
+                  final stepY = rawMetrics.stepY * scale;
+                  final depthX = rawMetrics.depthX * scale;
+                  final depthY = rawMetrics.depthY * scale;
                   final badgeWidth = math.max(
                     0.0,
-                    (dock.maxWidth - width) / 2 - 8,
+                    (dock.maxWidth - (cardW + depthX * 2)) / 2 - 8,
                   );
                   return Stack(
                     alignment: Alignment.center,
                     children: [
                       Center(
                         child: wrapDeck(
-                          _OverviewDeck(
-                            topKey: topKey,
-                            held: held,
-                            width: width,
-                            height: height,
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              depthX,
+                              2,
+                              depthX,
+                              depthY + 2,
+                            ),
+                            child: _OverviewDeck(
+                              topKey: topKey,
+                              held: held,
+                              cardWidth: cardW,
+                              cardHeight: cardH,
+                              stepX: stepX,
+                              stepY: stepY,
+                            ),
                           ),
                         ),
                       ),
@@ -116,21 +149,25 @@ class SpreadDeckDock extends StatelessWidget {
 
 class _OverviewDeck extends StatelessWidget {
   const _OverviewDeck({
-    required this.width,
-    required this.height,
+    required this.cardWidth,
+    required this.cardHeight,
+    required this.stepX,
+    required this.stepY,
     required this.topKey,
     required this.held,
   });
 
-  final double width;
-  final double height;
+  final double cardWidth;
+  final double cardHeight;
+  final double stepX;
+  final double stepY;
   final GlobalKey topKey;
   final bool held;
 
   @override
   Widget build(BuildContext context) {
-    final w = width;
-    final h = height;
+    final w = cardWidth;
+    final h = cardHeight;
     final ctrl = context.watch<SpreadController>();
     final stackCount = math.max(
       0,
@@ -138,76 +175,123 @@ class _OverviewDeck extends StatelessWidget {
           (ctrl.totalCards - ctrl.remaining) -
           (held ? 1 : 0),
     );
-    if (h <= overviewStackExtent || w <= overviewStackExtent) {
+    if (h <= 4 || w <= 4) {
       return const SizedBox.shrink();
     }
     final label = AppStrings.t(
       context.watch<AppSettingsController>().language,
       'table.deal',
     );
+    final cornerRadius = (h * 0.06).clamp(3.5, 10.0);
+    const maxDepth = fanLayerCount - 1;
     return Semantics(
       button: true,
       label: label,
       value: ctrl.system == DivinationSystem.runes ? null : '$stackCount',
       child: SizedBox(
         key: const ValueKey('overview-deck'),
-        width: w + 12,
-        height: double.infinity,
-        child: Center(
-          child: SizedBox(
-            width: w,
-            height: h,
-            child: ctrl.system == DivinationSystem.runes
-                ? const FittedBox(
-                    child: SizedBox(
-                      width: 76,
-                      height: 68,
-                      child: _OverviewStonePile(),
+        width: w,
+        height: h,
+        child: ctrl.system == DivinationSystem.runes
+            ? const FittedBox(
+                child: SizedBox(
+                  width: 76,
+                  height: 68,
+                  child: _OverviewStonePile(),
+                ),
+              )
+            : Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  for (var depth = stackCount - 1; depth > 0; depth--)
+                    _buildEdgeCard(
+                      depth: depth,
+                      isBottom: depth == stackCount - 1,
+                      maxDepth: maxDepth,
+                      w: w,
+                      h: h,
+                      cornerRadius: cornerRadius,
                     ),
-                  )
-                : Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      for (var depth = stackCount - 1; depth > 0; depth--)
-                        Positioned(
-                          key: ValueKey('overview-deck-edge-$depth'),
-                          left: overviewStackExtent / 2 - depth * .5,
-                          top: overviewStackExtent / 2 + depth * .5,
-                          width: w - overviewStackExtent,
-                          height: h - overviewStackExtent,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: TaroColors.surface,
-                              borderRadius: BorderRadius.circular(5),
-                              border: Border.all(
-                                color: TaroColors.lavender.withValues(
-                                  alpha: .42,
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    width: w,
+                    height: h,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(cornerRadius),
+                        boxShadow: stackCount > 1
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.44),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 1.5),
                                 ),
-                                width: .7,
-                              ),
-                            ),
-                          ),
-                        ),
-                      Positioned(
-                        left: overviewStackExtent / 2,
-                        top: overviewStackExtent / 2,
-                        right: overviewStackExtent / 2,
-                        bottom: overviewStackExtent / 2,
-                        child: RotatedBox(
-                          quarterTurns: 1,
-                          child: Opacity(
-                            key: topKey,
-                            opacity: stackCount == 0 ? 0 : 1,
-                            child: SpreadCardBack(
-                              width: h - overviewStackExtent,
-                              height: w - overviewStackExtent,
-                            ),
-                          ),
+                              ]
+                            : null,
+                      ),
+                      child: RotatedBox(
+                        quarterTurns: 1,
+                        child: Opacity(
+                          key: topKey,
+                          opacity: stackCount == 0 ? 0 : 1,
+                          child: SpreadCardBack(width: h, height: w),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-          ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildEdgeCard({
+    required int depth,
+    required bool isBottom,
+    required int maxDepth,
+    required double w,
+    required double h,
+    required double cornerRadius,
+  }) {
+    // 0.0 at bottom of stack -> 1.0 right underneath the top card.
+    final t = 1.0 - (depth / math.max(1, maxDepth)).clamp(0.0, 1.0);
+    final isLightSheet = depth.isOdd;
+    // Subtle deterministic organic offset so individual card corners peek out.
+    final jitterX = (((depth * 7) % 5) - 2) * 0.28;
+    final jitterY = (((depth * 11) % 3) - 1) * 0.14;
+    final fill = Color.lerp(
+      const Color(0xFF1A1926),
+      isLightSheet ? const Color(0xFF4B4763) : const Color(0xFF333048),
+      0.35 + 0.65 * t,
+    )!;
+    final border = Color.lerp(
+      TaroColors.mist.withValues(alpha: 0.28),
+      isLightSheet
+          ? TaroColors.textPrimary.withValues(alpha: 0.62)
+          : TaroColors.lavender.withValues(alpha: 0.50),
+      0.30 + 0.70 * t,
+    )!;
+    return Positioned(
+      key: ValueKey('overview-deck-edge-$depth'),
+      left: -depth * stepX + jitterX,
+      top: depth * stepY + jitterY,
+      width: w,
+      height: h,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: fill,
+          borderRadius: BorderRadius.circular(cornerRadius),
+          border: Border.all(color: border, width: 0.85),
+          boxShadow: isBottom
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.52),
+                    blurRadius: 10,
+                    offset: const Offset(-2, 5),
+                  ),
+                ]
+              : null,
         ),
       ),
     );

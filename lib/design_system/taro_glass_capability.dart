@@ -111,9 +111,10 @@ abstract final class TaroGlassCapability {
 
   /// Рисует крошечное настоящее стекло над ярким фоном и проверяет пиксели.
   ///
-  /// `false` — настоящий glass выдал чёрный/пустой кадр (устройство рапортует
-  /// GPU, но Impeller на GLES). `true` — стекло отрисовалось (или пакет
-  /// корректно ушёл в FakeGlass, что тоже не чёрное).
+  /// `false` — настоящий glass выдал чёрный/пустой кадр, упал в FakeGlass или
+  /// проба не смогла подтвердить рабочий GPU-рендеринг (fail-safe в FakeGlass).
+  /// `true` — настоящее стекло (`RenderLiquidGlassLayer`) реально отрисовалось
+  /// и дало не-чёрный результат.
   static Future<bool> _selfTestGlass(OverlayState overlay) async {
     final key = GlobalKey();
     final entry = OverlayEntry(
@@ -167,11 +168,19 @@ abstract final class TaroGlassCapability {
 
       final boundary =
           key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) return true;
+      if (boundary == null || !boundary.attached) return false;
+      if (boundary.debugNeedsPaint) {
+        await WidgetsBinding.instance.endOfFrame;
+      }
+      // Если LiquidGlassLayer(fake: false) не смог поднять Flutter GPU и тихо
+      // откатился в FakeGlass — фиксируем fake, чтобы экраны не пытались
+      // инициализировать GPU на каждом монтировании.
+      if (_containsFakeGlassLayer(boundary)) return false;
+
       final image = await boundary.toImage();
       final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
       image.dispose();
-      if (data == null) return true;
+      if (data == null) return false;
       final bytes = data.buffer.asUint8List();
       var sum = 0;
       var count = 0;
@@ -179,12 +188,31 @@ abstract final class TaroGlassCapability {
         sum += (bytes[i] + bytes[i + 1] + bytes[i + 2]) ~/ 3;
         count++;
       }
-      if (count == 0) return true;
-      return (sum / count) > 16; // near-black => broken real glass
+      if (count == 0) return false;
+      final avg = sum / count;
+      // Near-black (<= 16) => сломанный real glass на Impeller GLES;
+      // чистый белый (>= 252) => стекло вообще не отрисовалось поверх фона.
+      return avg > 16 && avg < 252;
     } on Object {
-      return true; // never break the app on a probe failure
+      // Fail-safe: при ошибке пробы остаёмся в безопасном FakeGlass.
+      return false;
     } finally {
       entry.remove();
     }
+  }
+
+  static bool _containsFakeGlassLayer(RenderObject root) {
+    var found = false;
+    void visit(RenderObject node) {
+      if (found) return;
+      if (node.runtimeType.toString().contains('FakeGlass')) {
+        found = true;
+        return;
+      }
+      node.visitChildren(visit);
+    }
+
+    visit(root);
+    return found;
   }
 }

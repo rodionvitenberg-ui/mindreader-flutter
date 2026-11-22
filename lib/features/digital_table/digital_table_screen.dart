@@ -547,61 +547,63 @@ class _CustomSpreadAction extends StatelessWidget {
         key: const ValueKey('custom-spread-button'),
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: TaroGlassPanel(
-          radius: 16,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          tint: TaroColors.lavender.withValues(alpha: 0.10),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: TaroColors.lavender.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(10),
+        child: TaroGlassLayer(
+          child: TaroGlassPanel(
+            radius: 16,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            tint: TaroColors.lavender.withValues(alpha: 0.10),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: TaroColors.lavender.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    size: 18,
+                    color: TaroColors.lavender,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.add_rounded,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AppStrings.t(lang, 'spread.custom'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.display(
+                          fontSize: 18,
+                          height: 1.1,
+                          fontWeight: FontWeight.w700,
+                          color: TaroColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        AppStrings.t(lang, 'spread.customSubtitle'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.body(
+                          fontSize: 11,
+                          color: TaroColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
                   size: 18,
-                  color: TaroColors.lavender,
+                  color: TaroColors.textSecondary,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppStrings.t(lang, 'spread.custom'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.display(
-                        fontSize: 18,
-                        height: 1.1,
-                        fontWeight: FontWeight.w700,
-                        color: TaroColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      AppStrings.t(lang, 'spread.customSubtitle'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.body(
-                        fontSize: 11,
-                        color: TaroColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: TaroColors.textSecondary,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -617,25 +619,27 @@ class _SystemSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TaroGlassSurface(
-      radius: TaroRadii.segment,
-      fillColor: TaroColors.surface,
-      child: Padding(
-        padding: const EdgeInsets.all(2),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final system in DivinationSystem.values)
-              _SystemSegment(
-                key: ValueKey('system-segment-${system.name}'),
-                label: system.label,
-                active: ctrl.system == system,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  context.read<SpreadController>().setSystem(system);
-                },
-              ),
-          ],
+    return TaroGlassLayer(
+      child: TaroGlassSurface(
+        radius: TaroRadii.segment,
+        fillColor: TaroColors.surface,
+        child: Padding(
+          padding: const EdgeInsets.all(2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final system in DivinationSystem.values)
+                _SystemSegment(
+                  key: ValueKey('system-segment-${system.name}'),
+                  label: system.label,
+                  active: ctrl.system == system,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    context.read<SpreadController>().setSystem(system);
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -656,25 +660,27 @@ class _ViewModeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TaroGlassSurface(
-      radius: TaroRadii.segment,
-      fillColor: TaroColors.surface,
-      child: Padding(
-        padding: const EdgeInsets.all(2),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _ModeSegment(
-              label: 'SPREAD VIEW',
-              active: mode == TableViewMode.spread,
-              onTap: () => onChanged(TableViewMode.spread),
-            ),
-            _ModeSegment(
-              label: 'FOCUS VIEW',
-              active: mode == TableViewMode.focus,
-              onTap: () => onChanged(TableViewMode.focus),
-            ),
-          ],
+    return TaroGlassLayer(
+      child: TaroGlassSurface(
+        radius: TaroRadii.segment,
+        fillColor: TaroColors.surface,
+        child: Padding(
+          padding: const EdgeInsets.all(2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ModeSegment(
+                label: 'SPREAD VIEW',
+                active: mode == TableViewMode.spread,
+                onTap: () => onChanged(TableViewMode.spread),
+              ),
+              _ModeSegment(
+                label: 'FOCUS VIEW',
+                active: mode == TableViewMode.focus,
+                onTap: () => onChanged(TableViewMode.focus),
+              ),
+            ],
+          ),
         ),
       ),
     );

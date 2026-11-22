@@ -124,6 +124,29 @@ def validate_asset(archive, info, asset):
         raise PackageError("Invalid asset image.") from None
 
 
+def validate_promo_image(file):
+    if not file:
+        return ""
+    ext = PurePosixPath(file.name).suffix.lower().lstrip(".")
+    if ext not in IMAGE_FORMAT:
+        raise PackageError("Promo image must be a JPG, PNG, or WebP file.")
+    if not 0 < file.size <= MAX_ASSET_BYTES:
+        raise PackageError("Promo image must be at most 8 MiB.")
+    file.seek(0)
+    data = file.read()
+    file.seek(0)
+    from io import BytesIO
+
+    try:
+        with Image.open(BytesIO(data), formats=[IMAGE_FORMAT[ext]]) as image:
+            if not (1 <= image.width <= 4096 and 1 <= image.height <= 4096) or getattr(image, "is_animated", False):
+                raise PackageError("Invalid promo image dimensions or animation.")
+            image.load()
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
+        raise PackageError("Invalid promo image.") from None
+    return hashlib.sha256(data).hexdigest()
+
+
 @transaction.atomic
 def save_validated_version(version):
     from .models import DeckAsset, DeckVersion

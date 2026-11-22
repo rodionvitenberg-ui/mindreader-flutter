@@ -57,8 +57,14 @@ class TaroGlassSegmentedControl<T> extends StatelessWidget {
         builder: (context, constraints) {
           const pad = 3.0;
           const gap = 3.0;
-          final segWidth =
-              (constraints.maxWidth - pad * 2 - gap * (n - 1)) / n;
+          // The device can report a zero-width surface on the very first frame
+          // (or an unbounded width in some hosts); guard so the segment width
+          // never goes negative, which would throw
+          // "BoxConstraints has a negative minimum width".
+          final available = constraints.maxWidth.isFinite
+              ? constraints.maxWidth - pad * 2 - gap * (n - 1)
+              : 0.0;
+          final segWidth = available > 0 ? available / n : 0.0;
           final alignX =
               n <= 1 ? 0.0 : -1.0 + 2.0 * activeIndex / (n - 1);
 

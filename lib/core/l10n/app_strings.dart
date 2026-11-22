@@ -261,7 +261,6 @@ class AppStrings {
       AppLanguage.ru: 'Наборы рун',
     },
     'almanac.deck': {AppLanguage.en: 'DECK', AppLanguage.ru: 'КОЛОДА'},
-    'almanac.cover': {AppLanguage.en: 'Cover', AppLanguage.ru: 'Заставка'},
     'almanac.shop': {
       AppLanguage.en: 'Deck shop',
       AppLanguage.ru: 'Магазин колод',

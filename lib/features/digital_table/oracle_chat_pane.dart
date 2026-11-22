@@ -319,7 +319,9 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                       excluding: waiting,
                       child: IgnorePointer(
                         ignoring: waiting,
-                        child: const ReadingSubjectToggle(),
+                        child: const TaroGlassLayer(
+                          child: ReadingSubjectToggle(),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -334,15 +336,17 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                           ),
                         ),
                       ),
-                    TaroGlassButton(
-                      label: waiting
-                          ? 'CONNECTING TO THE ORACLE…'
-                          : widget.session.initialFailed
-                          ? 'RETRY SYNTHESIS'
-                          : '✦ SYNTHESIZE IN CHAT →',
-                      loading: waiting,
-                      variant: TaroGlassButtonVariant.primary,
-                      onPressed: waiting ? null : widget.onSynthesize,
+                    TaroGlassLayer(
+                      child: TaroGlassButton(
+                        label: waiting
+                            ? 'CONNECTING TO THE ORACLE…'
+                            : widget.session.initialFailed
+                            ? 'RETRY SYNTHESIS'
+                            : '✦ SYNTHESIZE IN CHAT →',
+                        loading: waiting,
+                        variant: TaroGlassButtonVariant.primary,
+                        onPressed: waiting ? null : widget.onSynthesize,
+                      ),
                     ),
                   ],
                 ],

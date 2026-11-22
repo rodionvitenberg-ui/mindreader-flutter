@@ -10,7 +10,7 @@ from django.test import TestCase, override_settings
 from PIL import Image
 from rest_framework.test import APIClient
 
-from apps.catalog.models import Deck, DeckVersion
+from apps.catalog.models import Deck, DeckPromo, DeckVersion
 from apps.catalog.packages import save_validated_version
 from apps.entitlements.models import Grant
 
@@ -97,3 +97,51 @@ class StoreTests(TestCase):
         self.assertEqual(self.client.post(f"/api/v1/store/decks/{deck.pk}/acquire-free/",
                                           HTTP_IDEMPOTENCY_KEY="try").status_code, 403)
         self.assertEqual(Grant.objects.count(), 0)
+
+    def test_builtin_and_shop_deck_promo_images(self):
+        buf = io.BytesIO()
+        Image.new("RGB", (120, 60), color=(24, 32, 64)).save(buf, "WEBP")
+        promo_file = SimpleUploadedFile("promo.webp", buf.getvalue(), content_type="image/webp")
+
+        # Built-in deck/rune packs are pre-seeded by migration 0002.
+        builtin = DeckPromo.objects.get(system="tarot", pack_id="rider_waite")
+        builtin.image = promo_file
+        builtin.full_clean()
+        builtin.save()
+
+        # Draft shop deck promo stays hidden until published.
+        shop_deck = deck_fixture(slug="celestial-shop")
+        shop_buf = io.BytesIO()
+        Image.new("RGB", (120, 60), color=(90, 40, 110)).save(shop_buf, "PNG")
+        shop_promo = DeckPromo(
+            deck=shop_deck,
+            image=SimpleUploadedFile("shop.png", shop_buf.getvalue(), content_type="image/png"),
+        )
+        shop_promo.full_clean()
+        shop_promo.save()
+
+        anonymous = APIClient()
+        before = anonymous.get("/api/v1/store/promos/").json()
+        self.assertEqual(before["count"], 1)
+        self.assertEqual(before["results"][0]["packId"], "rider_waite")
+        self.assertEqual(
+            anonymous.get(before["results"][0]["url"]).headers["Content-Type"],
+            "image/webp",
+        )
+        self.assertEqual(
+            anonymous.get("/api/v1/store/promos/lenormand/celestial-shop/image/").status_code,
+            404,
+        )
+
+        # Publish shop deck -> promo image appears in both /store/promos/ and /store/decks/.
+        self.publish(shop_deck)
+        after = anonymous.get("/api/v1/store/promos/?system=lenormand").json()
+        self.assertEqual(after["count"], 1)
+        self.assertEqual(after["results"][0]["packId"], "celestial-shop")
+        self.assertEqual(after["results"][0]["deckId"], str(shop_deck.pk))
+        self.assertEqual(
+            anonymous.get(after["results"][0]["url"]).headers["Content-Type"],
+            "image/png",
+        )
+        listing = anonymous.get("/api/v1/store/decks/?system=lenormand").json()
+        self.assertEqual(listing["results"][0]["promoImageUrl"], after["results"][0]["url"])

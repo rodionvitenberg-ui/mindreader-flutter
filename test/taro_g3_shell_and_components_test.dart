@@ -206,11 +206,25 @@ void main() {
       final tableState = tester.state(table);
       final cameraState = tester.state(camera);
 
-      final tableLayer = find.descendant(
-        of: table,
-        matching: find.byType(TaroGlassLayer, skipOffstage: false),
+      final tableLayers = tester
+          .elementList(
+            find.descendant(
+              of: table,
+              matching: find.byType(TaroGlassLayer, skipOffstage: false),
+            ),
+          )
+          .toSet();
+      expect(tableLayers, isNotEmpty);
+      // TableWorkspace panes stay outside any pane-wide TaroGlassLayer so
+      // horizontal PageView drags never blur full-screen union rects.
+      expect(
+        find.ancestor(
+          of: find.byType(PageView),
+          matching: find.byType(TaroGlassLayer, skipOffstage: false),
+        ),
+        findsNothing,
       );
-      final layers = [
+      final tabAndDockLayers = [
         camera,
         find.byType(AlmanacScreen, skipOffstage: false),
         find.byType(AstralScreen, skipOffstage: false),
@@ -222,8 +236,8 @@ void main() {
         );
         return tester.element(layer);
       }).toSet();
-      layers.add(tester.element(tableLayer));
-      expect(layers, hasLength(5));
+      expect(tabAndDockLayers, hasLength(4));
+      expect(tabAndDockLayers.intersection(tableLayers), isEmpty);
 
       const shutter = ValueKey('shutter');
       expect(find.byKey(shutter, skipOffstage: false), findsOneWidget);

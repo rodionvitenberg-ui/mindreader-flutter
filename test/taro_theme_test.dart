@@ -67,7 +67,9 @@ void main() {
       expect(materialApp.theme?.extension<TaroOpticsTheme>(), isNotNull);
 
       expect(find.byType(TaroDuskBackground), findsOneWidget);
-      expect(find.byType(TaroGlassLayer), findsNWidgets(2));
+      // Visible local glass layers on Step 1: system selector, custom spread
+      // action, and bottom navigation dock (all sharing one BackdropGroup).
+      expect(find.byType(TaroGlassLayer), findsNWidgets(3));
       expect(find.byType(TaroGlassDock), findsOneWidget);
     });
 

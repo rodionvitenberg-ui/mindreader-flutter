@@ -453,6 +453,7 @@ class TarotCard3DWidget extends StatefulWidget {
     required this.state,
     required this.width,
     required this.height,
+    this.previewPack,
     this.tilt = true,
     this.interactive = true,
     this.onFlip,
@@ -464,6 +465,10 @@ class TarotCard3DWidget extends StatefulWidget {
   final SlotState state;
   final double width;
   final double height;
+
+  /// Optional deck override (used by the Deck Selector to preview every deck's
+  /// Star card face without mutating the globally active deck).
+  final TarotDeckPack? previewPack;
   final bool tilt; // isometric board tilt; false for flat previews
   final bool interactive; // false = pass taps through (e.g. almanac tiles)
   final VoidCallback? onFlip; // fired when the flip animation completes
@@ -521,7 +526,8 @@ class _TarotCard3DWidgetState extends State<TarotCard3DWidget>
 
   @override
   Widget build(BuildContext context) {
-    final pack = context.watch<DeckPackController>().activePack;
+    final pack =
+        widget.previewPack ?? context.watch<DeckPackController>().activePack;
     final content = RepaintBoundary(
       child: AnimatedBuilder(
         animation: _reveal,

@@ -4,6 +4,8 @@ from . import api
 
 urlpatterns = [
     path("decks/", api.Decks.as_view()),
+    path("promos/", api.Promos.as_view()),
+    path("promos/<str:system>/<slug:pack_id>/image/", api.promo_image, name="deck-promo-image"),
     path("library/", api.Library.as_view()),
     path("previews/<int:asset_id>/", api.preview, name="deck-preview"),
     path("decks/<uuid:deck_id>/ownership/", api.ownership),

@@ -2,7 +2,7 @@ from pathlib import PurePosixPath
 from zipfile import BadZipFile, ZipFile
 
 from django.db import transaction
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Q
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -13,7 +13,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from apps.catalog.models import VERSION, Deck, DeckAsset, DeckVersion
+from apps.catalog.models import VERSION, Deck, DeckAsset, DeckPromo, DeckVersion
 from apps.catalog.packages import MIME
 from apps.core.api import IDEMPOTENCY, Problem, checked, finish, operation, replay
 from apps.core.cards import SYSTEM_SIZES
@@ -54,7 +54,22 @@ class DeckInfo(serializers.Serializer):
     priceMinor = serializers.IntegerField()
     currency = serializers.CharField()
     published = serializers.BooleanField()
+    promoImageUrl = serializers.CharField(allow_null=True)
     version = VersionInfo(allow_null=True)
+
+
+class PromoFilter(serializers.Serializer):
+    system = serializers.ChoiceField(SYSTEM_SIZES, required=False)
+
+
+class PromoInfo(serializers.Serializer):
+    system = serializers.CharField()
+    packId = serializers.SlugField()
+    title = serializers.CharField()
+    deckId = serializers.UUIDField(allow_null=True)
+    url = serializers.CharField()
+    sha256 = serializers.CharField()
+    updatedAt = serializers.DateTimeField()
 
 
 class AssetInfo(serializers.Serializer):
@@ -90,13 +105,37 @@ def version_data(version):
     }
 
 
+def promo_image_url(promo):
+    if not promo or not promo.image:
+        return None
+    base = reverse("deck-promo-image", args=[promo.system, promo.pack_id])
+    return f"{base}?v={promo.sha256[:12]}" if promo.sha256 else base
+
+
+def promo_data(promo):
+    return {
+        "system": promo.system,
+        "packId": promo.pack_id,
+        "title": promo.title or promo.pack_id,
+        "deckId": str(promo.deck_id) if promo.deck_id else None,
+        "url": promo_image_url(promo),
+        "sha256": promo.sha256,
+        "updatedAt": promo.updated_at.isoformat(),
+    }
+
+
 def deck_data(deck, *, details=False):
     versions = versions_by_release(deck.released_versions)
+    try:
+        promo = deck.promo
+    except DeckPromo.DoesNotExist:
+        promo = None
     result = {
         "id": str(deck.pk), "slug": deck.slug, "title": deck.title, "description": deck.description,
         "system": deck.system, "artist": deck.artist, "publisher": deck.publisher, "license": deck.license,
         "attribution": deck.attribution, "commercialRights": deck.commercial_rights, "free": deck.price_minor == 0,
         "priceMinor": deck.price_minor, "currency": deck.currency, "published": deck.published,
+        "promoImageUrl": promo_image_url(promo),
         "version": version_data(versions[0]) if versions else None,
     }
     if details:
@@ -109,7 +148,50 @@ def deck_data(deck, *, details=False):
 
 def with_versions(queryset):
     versions = DeckVersion.objects.filter(published=True)
-    return queryset.prefetch_related(Prefetch("versions", queryset=versions, to_attr="released_versions"))
+    return queryset.select_related("promo").prefetch_related(
+        Prefetch("versions", queryset=versions, to_attr="released_versions")
+    )
+
+
+class Promos(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+    serializer_class = PromoInfo
+
+    @extend_schema(parameters=[PromoFilter], responses=PromoInfo(many=True))
+    def get(self, request):
+        filters = checked(PromoFilter, request.query_params)
+        promos = DeckPromo.objects.filter(
+            Q(deck__isnull=True) | Q(deck__published=True),
+        ).exclude(image="")
+        if "system" in filters:
+            promos = promos.filter(system=filters["system"])
+        page = self.paginate_queryset(promos)
+        return self.get_paginated_response([promo_data(promo) for promo in page])
+
+
+@extend_schema(responses=OpenApiTypes.BINARY)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def promo_image(request, system, pack_id):
+    if system not in SYSTEM_SIZES:
+        raise Problem("not_found", 404, "Promo image could not be found.")
+    promo = get_object_or_404(
+        DeckPromo.objects.filter(Q(deck__isnull=True) | Q(deck__published=True)).exclude(image=""),
+        system=system,
+        pack_id=pack_id,
+    )
+    ext = PurePosixPath(promo.image.name).suffix.lower().lstrip(".")
+    content_type = MIME.get(ext, "application/octet-stream")
+    try:
+        with promo.image.open("rb") as file:
+            data = file.read()
+    except FileNotFoundError:
+        raise Problem("asset_unavailable", 503, "Promo image is unavailable.") from None
+    response = HttpResponse(data, content_type=content_type)
+    response["Cache-Control"] = "public, max-age=3600"
+    if promo.sha256:
+        response["ETag"] = f'"{promo.sha256}"'
+    return response
 
 
 class Decks(generics.GenericAPIView):

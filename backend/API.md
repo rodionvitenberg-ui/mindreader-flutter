@@ -111,8 +111,10 @@ A result reports its request ID, session ID, item ID, optional track ID, candida
 
 | Method and path | Contract |
 | --- | --- |
-| GET `store/decks/?system=tarot&pricing=free` | Public published catalog with optional filters |
-| GET `store/decks/{slug}/` | Metadata, versions and preview links |
+| GET `store/decks/?system=tarot&pricing=free` | Public published catalog with optional filters (includes `promoImageUrl`) |
+| GET `store/decks/{slug}/` | Metadata, versions, `promoImageUrl` and preview links |
+| GET `store/promos/?system=tarot` | Public backend-managed promo artwork for built-in decks, rune sets and published shop decks |
+| GET `store/promos/{system}/{packId}/image/` | Public promo banner image (`JPG`/`PNG`/`WebP`, cached with ETag) |
 | GET `store/previews/{assetId}/` | Public cover or preview image |
 | GET `store/library/` | Account or guest library |
 | GET `store/decks/{deckId}/ownership/` | `{"owned":true}` or false |

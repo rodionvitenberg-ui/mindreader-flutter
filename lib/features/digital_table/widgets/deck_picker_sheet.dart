@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/data/deck_packs_registry.dart';
 import '../../../core/data/lenormand_data.dart';
 import '../../../core/data/runes_data.dart';
+import '../../../core/data/tarot_deck_data.dart';
 import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/deck_pack.dart';
 import '../../../core/l10n/app_strings.dart';
@@ -17,7 +18,6 @@ import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
 import '../../../state/deck_pack_controller.dart';
 import '../../../state/spread_controller.dart';
-import '../../almanac/deck_cover_picker.dart';
 import 'lenormand_card_3d_widget.dart';
 import 'rune_stone_3d_widget.dart';
 import 'tarot_card_3d_widget.dart';
@@ -110,15 +110,13 @@ class _DeckPickerSheetState extends State<DeckPickerSheet> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          DeckCoverPicker(system: widget.system),
         ],
       ),
     );
   }
 }
 
-/// One carousel tile — tarot card back, Lenormand engraved face or a
+/// One carousel tile — Tarot Star card face, Lenormand engraved face or a
 /// carved rune stone, selected by the pack of the active system.
 class _PackTile extends StatelessWidget {
   const _PackTile({
@@ -135,13 +133,15 @@ class _PackTile extends StatelessWidget {
     final pack = this.pack;
     final Widget preview;
     if (pack is TarotDeckPack) {
-      preview = CardBack(
+      preview = TarotCard3DWidget(
+        card: tarotDeck[17], // XVII · The Star
+        previewPack: pack,
+        isReversed: false,
+        state: SlotState.faceUp,
         width: 150,
         height: 245,
-        pack: pack,
-        angleY: 0.22,
-        angleX: 0.10,
-        glint: true,
+        tilt: false,
+        interactive: false,
       );
     } else if (pack is LenormandPack) {
       preview = LenormandCard3DWidget(

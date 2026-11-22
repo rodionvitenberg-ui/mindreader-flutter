@@ -516,7 +516,7 @@ void main() {
   );
 
   testWidgets(
-    'SPREAD VIEW deck stays large and centered as additional cards extend the board',
+    'SPREAD VIEW deck matches board card size, stays centered, and keeps scale as clarifiers extend the board',
     (tester) async {
       await openTable(tester);
       final ctrl = table(tester).read<SpreadController>()
@@ -537,7 +537,9 @@ void main() {
       final deckRect = tester.getRect(deckCard);
       final tableRect = tester.getRect(tableCard);
 
-      expect(deckRect.width, greaterThan(tableRect.height));
+      // Horizontal deck top card matches the portrait board card 1:1.
+      expect(deckRect.width, closeTo(tableRect.height, 2.5));
+      expect(deckRect.height, closeTo(tableRect.width, 2.5));
       for (var i = 0; i < ctrl.spreadCardCount; i++) {
         if (i > 0) ctrl.dealNextCard();
         ctrl.flipSlot(i);

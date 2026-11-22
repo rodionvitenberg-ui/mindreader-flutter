@@ -121,49 +121,51 @@ class _OracleMessageViewportState extends State<OracleMessageViewport> {
         .slots
         .where((slot) => slot.card != null)
         .toList();
-    return TaroGlassSurface(
-      radius: 14,
-      fillColor: TaroColors.surface.withValues(alpha: .68),
-      child: LayoutBuilder(
-        builder: (context, bounds) => Column(
-          children: [
-            SizedBox(height: math.min(44, bounds.maxHeight), child: handle),
-            Expanded(
-              child: Scrollbar(
-                key: PageStorageKey(('oracle-rail-scroll', widget.readingKey)),
-                controller: _cards,
-                child: ListView.builder(
-                  key: const ValueKey('oracle-card-rail'),
+    return TaroGlassLayer(
+      child: TaroGlassSurface(
+        radius: 14,
+        fillColor: TaroColors.surface.withValues(alpha: .68),
+        child: LayoutBuilder(
+          builder: (context, bounds) => Column(
+            children: [
+              SizedBox(height: math.min(44, bounds.maxHeight), child: handle),
+              Expanded(
+                child: Scrollbar(
+                  key: PageStorageKey(('oracle-rail-scroll', widget.readingKey)),
                   controller: _cards,
-                  padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
-                  itemCount: slots.length,
-                  itemBuilder: (context, index) {
-                    final slot = slots[index];
-                    final faceUp = slot.state == SlotState.faceUp;
-                    final name = faceUp ? slot.card!.name : 'Face-down card';
-                    final description = faceUp
-                        ? '$name, ${orientationWord(slot)}'
-                        : name;
-                    return Padding(
-                      key: ValueKey('oracle-rail-slot-${slot.index}'),
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Semantics(
-                        button: true,
-                        label: '${slot.index + 1}. ${slot.role}. $description',
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => _preview(context, slot, name),
-                          child: ExcludeSemantics(
-                            child: _OracleCardArt(slot: slot),
+                  child: ListView.builder(
+                    key: const ValueKey('oracle-card-rail'),
+                    controller: _cards,
+                    padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
+                    itemCount: slots.length,
+                    itemBuilder: (context, index) {
+                      final slot = slots[index];
+                      final faceUp = slot.state == SlotState.faceUp;
+                      final name = faceUp ? slot.card!.name : 'Face-down card';
+                      final description = faceUp
+                          ? '$name, ${orientationWord(slot)}'
+                          : name;
+                      return Padding(
+                        key: ValueKey('oracle-rail-slot-${slot.index}'),
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Semantics(
+                          button: true,
+                          label: '${slot.index + 1}. ${slot.role}. $description',
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _preview(context, slot, name),
+                            child: ExcludeSemantics(
+                              child: _OracleCardArt(slot: slot),
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -297,17 +297,54 @@ class _SpreadBoardState extends State<SpreadBoard>
     super.dispose();
   }
 
-  // Size the dock once for the viewport, independently of the spread.
-  static ({double dockHeight, double deckWidthPx, double deckHeightPx})
-  _dockSizingFor(Size area) {
-    const edge = overviewStackExtent;
-    final width = math.min(deckHeight, area.width * .61);
-    final height = math.min(width * deckWidth / deckHeight,
-        math.max(0.0, area.height - ProfileHeader.actionSize) * .33);
+  /// Solves the coupled dock height and viewport fit scale for [baseBoardSize]
+  /// so the horizontal deck's top card matches the exact rendered dimensions
+  /// of a card on the board (`deckHeight * fit` × `deckWidth * fit`) and stays
+  /// stable when clarifier rows extend the scene below.
+  static ({double dockHeight, double cardLongPx, double cardShortPx})
+  _dockSizingFor(Size area, Size baseBoardSize) {
+    const headerH = ProfileHeader.actionSize;
+    const dockPadV = 12.0;
+    if (area.height <= headerH + dockPadV || area.width <= 0) {
+      return (
+        dockHeight: math.min(area.height, headerH),
+        cardLongPx: 0,
+        cardShortPx: 0,
+      );
+    }
+    var inset = 12.0;
+    var fit = 1.0;
+    var stackY = overviewStackMetrics(deckWidth).depthY;
+    for (var i = 0; i < 4; i++) {
+      final availW = math.max(1.0, area.width - 2 * inset);
+      final availH = math.max(
+        1.0,
+        area.height - headerH - dockPadV - stackY - 2 * inset,
+      );
+      final fitW = availW / baseBoardSize.width;
+      final fitH = availH / (baseBoardSize.height + deckWidth);
+      fit = math.min(1.0, math.min(fitW, fitH)).clamp(0.0, 1.0);
+      final metrics = overviewStackMetrics(deckWidth * fit);
+      final maxCardLong = math.max(1.0, area.width - 16.0 - metrics.depthX * 2);
+      if (deckHeight * fit > maxCardLong) {
+        fit = (maxCardLong / deckHeight).clamp(0.0, 1.0);
+      }
+      final refined = overviewStackMetrics(deckWidth * fit);
+      stackY = refined.depthY;
+      final dockH = headerH + dockPadV + deckWidth * fit + stackY;
+      final vpH = math.max(0.0, area.height - dockH);
+      inset = math.min(12.0, math.min(area.width, vpH) / 8);
+    }
+    final cardShort = deckWidth * fit;
+    final cardLong = deckHeight * fit;
+    final metrics = overviewStackMetrics(cardShort);
     return (
-      dockHeight: math.min(area.height, ProfileHeader.actionSize + height + edge + 8),
-      deckWidthPx: height * deckHeight / deckWidth + edge,
-      deckHeightPx: height + edge,
+      dockHeight: math.min(
+        area.height,
+        headerH + dockPadV + cardShort + metrics.depthY,
+      ),
+      cardLongPx: cardLong,
+      cardShortPx: cardShort,
     );
   }
 
@@ -334,7 +371,7 @@ class _SpreadBoardState extends State<SpreadBoard>
     final baseSize = _geometryFor(ctrl, baseOnly: true).canvasSize;
     return LayoutBuilder(
       builder: (context, area) {
-        final sizing = _dockSizingFor(area.biggest);
+        final sizing = _dockSizingFor(area.biggest, baseSize);
         return Stack(
           key: _surface,
           fit: StackFit.expand,
@@ -350,8 +387,8 @@ class _SpreadBoardState extends State<SpreadBoard>
                     wrapDeck: _gestures,
                     topKey: _deck,
                     held: _phase == _DealPhase.dragging || _phase == _DealPhase.returning,
-                    deckWidthPx: sizing.deckWidthPx,
-                    deckHeightPx: sizing.deckHeightPx,
+                    cardLongPx: sizing.cardLongPx,
+                    cardShortPx: sizing.cardShortPx,
                   ),
                 ),
                 Expanded(

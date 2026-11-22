@@ -115,7 +115,10 @@ class _TaroGlassButtonState extends State<TaroGlassButton> {
         child: TaroGlassSurface(
           radius: TaroRadii.button,
           tint: tint,
-          visibility: disabled ? 0.5 : (_pressed ? 0.82 : 1.0),
+          // Keep enabled visibility at 1.0 on press so ConsolidatedFakeGlassLayer
+          // never tears the button out into a separate SeededBackdropPassLayer
+          // (which darkens buttons on Impeller OpenGLES during tap/drag).
+          visibility: disabled ? 0.5 : 1.0,
           fillColor: widget.variant == TaroGlassButtonVariant.ghost
               ? Colors.transparent
               : TaroColors.surface,
@@ -129,10 +132,15 @@ class _TaroGlassButtonState extends State<TaroGlassButton> {
               horizontal: 20,
               vertical: 13,
             ),
-            child: AnimatedOpacity(
+            child: AnimatedScale(
               duration: TaroMotion.fast,
-              opacity: disabled ? 0.55 : (_pressed ? 0.82 : 1.0),
-              child: content,
+              curve: Curves.easeOutCubic,
+              scale: !disabled && _pressed ? 0.97 : 1.0,
+              child: AnimatedOpacity(
+                duration: TaroMotion.fast,
+                opacity: disabled ? 0.55 : (_pressed ? 0.82 : 1.0),
+                child: content,
+              ),
             ),
           ),
         ),

@@ -672,7 +672,9 @@ class _TableWorkspaceState extends State<TableWorkspace>
             HapticFeedback.selectionClick();
             _pane = index;
           },
-          // Each page owns its footer and glass surfaces while it slides.
+          // Keep PageView panes outside any full-screen TaroGlassLayer: each
+          // glass chrome control owns its own tight local layer so sideways
+          // swipes never blur full-screen union bounds or paint ghost shells.
           children: <Widget>[
             Column(
               children: [
@@ -681,14 +683,16 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 if (ctrl.sourceMode == TableSourceMode.physicalCameraSync)
                   const Padding(
                     padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
-                    child: TaroGlassPill(
-                      key: ValueKey('physical-sync-ribbon'),
-                      label: 'PHYSICAL SYNC',
-                      icon: Icons.photo_camera_front_outlined,
-                      accentColor: TaroColors.dawn,
+                    child: TaroGlassLayer(
+                      child: TaroGlassPill(
+                        key: ValueKey('physical-sync-ribbon'),
+                        label: 'PHYSICAL SYNC',
+                        icon: Icons.photo_camera_front_outlined,
+                        accentColor: TaroColors.dawn,
+                      ),
                     ),
                   ),
-                _buildFooter(ctrl, onTable: true),
+                if (ctrl.isSpreadActive) _buildFooter(ctrl, onTable: true),
               ],
             ),
             OracleChatPane(
@@ -711,13 +715,13 @@ class _TableWorkspaceState extends State<TableWorkspace>
               onRestore: _restoreSession,
               onBackToTable: () => _goToPane(tablePane),
             ),
-          ].map((pane) => TaroGlassLayer(child: pane)).toList(),
+          ],
         ),
       ),
     );
   }
 
-  /// The table reserves one row for Analyze Reading throughout the flow.
+  /// Active dealing view (Step 2) anchors Analyze Reading above the dock.
   /// Pane 1 (Oracle Conversation) uses the same anchored capsule
   /// independently of the message viewport.
   Widget _buildFooter(SpreadController ctrl, {required bool onTable}) {
@@ -730,23 +734,27 @@ class _TableWorkspaceState extends State<TableWorkspace>
           mainAxisSize: MainAxisSize.min,
           children: [
             if (onTable) ...[
-              AnalyzeReadingButton(
-                key: const ValueKey('analyze-reading-button'),
-                enabled:
-                    ctrl.isSpreadActive &&
-                    (ctrl.canSynthesize || _session.hasSynthesis) &&
-                    !_session.generatingInitial,
-                onPressed: () => _goToPane(chatPane),
+              TaroGlassLayer(
+                child: AnalyzeReadingButton(
+                  key: const ValueKey('analyze-reading-button'),
+                  enabled:
+                      ctrl.isSpreadActive &&
+                      (ctrl.canSynthesize || _session.hasSynthesis) &&
+                      !_session.generatingInitial,
+                  onPressed: () => _goToPane(chatPane),
+                ),
               ),
             ] else ...[
-              GeminiInputCapsule(
-                fieldKey: const ValueKey('oracle-input'),
-                sendKey: const ValueKey('oracle-send'),
-                controller: _capsuleText,
-                focusNode: _capsuleFocus,
-                hint: 'Ask the Oracle — or type a question for a +1 card...',
-                onSend: _askOracle,
-                onPlus: _openPlusSheet,
+              TaroGlassLayer(
+                child: GeminiInputCapsule(
+                  fieldKey: const ValueKey('oracle-input'),
+                  sendKey: const ValueKey('oracle-send'),
+                  controller: _capsuleText,
+                  focusNode: _capsuleFocus,
+                  hint: 'Ask the Oracle — or type a question for a +1 card...',
+                  onSend: _askOracle,
+                  onPlus: _openPlusSheet,
+                ),
               ),
             ],
           ],

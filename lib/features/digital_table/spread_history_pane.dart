@@ -169,11 +169,13 @@ class _NewSpreadButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: TaroGlassButton(
-        label: 'NEW SPREAD · НОВЫЙ РАСКЛАД',
-        icon: Icons.add,
-        variant: TaroGlassButtonVariant.primary,
-        onPressed: onTap,
+      child: TaroGlassLayer(
+        child: TaroGlassButton(
+          label: 'NEW SPREAD · НОВЫЙ РАСКЛАД',
+          icon: Icons.add,
+          variant: TaroGlassButtonVariant.primary,
+          onPressed: onTap,
+        ),
       ),
     );
   }

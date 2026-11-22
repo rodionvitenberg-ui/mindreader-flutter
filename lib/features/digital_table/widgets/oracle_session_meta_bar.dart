@@ -44,19 +44,21 @@ class OracleSessionMetaBar extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
-      child: Row(
-        children: [
-          if (showBadges) ...[
-            TaroGlassPill(label: session.readingSource.label),
-            const SizedBox(width: 6),
-            TaroGlassPill(label: session.readingMode.label, accent: true),
+    return TaroGlassLayer(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
+        child: Row(
+          children: [
+            if (showBadges) ...[
+              TaroGlassPill(label: session.readingSource.label),
+              const SizedBox(width: 6),
+              TaroGlassPill(label: session.readingMode.label, accent: true),
+            ],
+            const Spacer(),
+            if (ctaLabel != null)
+              _PhysicalCta(label: ctaLabel, onTap: onResumeCamera),
           ],
-          const Spacer(),
-          if (ctaLabel != null)
-            _PhysicalCta(label: ctaLabel, onTap: onResumeCamera),
-        ],
+        ),
       ),
     );
   }

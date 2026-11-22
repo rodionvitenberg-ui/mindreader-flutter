@@ -46,16 +46,21 @@ void main() {
   }
 
   testWidgets(
-    'Analyze Reading reserves the same space on the picker and table',
+    'Analyze Reading is hidden on Choose Spread and appears only on the active dealing table',
     (tester) async {
       await tester.pumpWidget(const MindreaderApp());
       await tester.pump();
-      final pickerRect = tester.getRect(analyzeButton);
+      expect(find.text('Choose Spread'), findsOneWidget);
+      expect(analyzeButton, findsNothing);
+
+      await activateSpread(tester, 'Three Cards');
+      expect(analyzeButton, findsOneWidget);
+      final dormantRect = tester.getRect(analyzeButton);
       expect(
         tester.widget<AnalyzeReadingButton>(analyzeButton).enabled,
         isFalse,
       );
-      await activateSpread(tester, 'Three Cards');
+
       final spread = tester
           .element(find.byType(DigitalTableScreen))
           .read<SpreadController>();
@@ -68,7 +73,13 @@ void main() {
         tester.widget<AnalyzeReadingButton>(analyzeButton).enabled,
         isTrue,
       );
-      expect(tester.getRect(analyzeButton), pickerRect);
+      expect(tester.getRect(analyzeButton), dormantRect);
+
+      // Returning to Choose Spread hides Analyze Reading again.
+      await tester.tap(find.byKey(const ValueKey('table-back-button')));
+      await tester.pump();
+      expect(find.text('Choose Spread'), findsOneWidget);
+      expect(analyzeButton, findsNothing);
     },
   );
 

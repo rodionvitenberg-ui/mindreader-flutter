@@ -1,11 +1,10 @@
-/// A browsable digital deck or rune set. Cover paths are optional until
-/// dedicated landscape illustrations are bundled with the pack.
+/// A browsable digital deck or rune set. Promo banner artwork is managed on
+/// the backend (`/api/v1/store/promos/`) and cached locally by pack ID.
 abstract class DeckPack {
-  const DeckPack({this.coverAssets = const []});
+  const DeckPack();
 
   String get id;
   String get name;
   String get subtitle;
   String get license;
-  final List<String> coverAssets;
 }
