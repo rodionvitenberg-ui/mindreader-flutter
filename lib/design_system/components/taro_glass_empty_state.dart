@@ -10,7 +10,7 @@ import 'taro_glass_panel.dart';
 /// иконкой, заголовок, пояснение и опциональная основная кнопка [TaroGlassButton].
 class TaroGlassEmptyState extends StatelessWidget {
   const TaroGlassEmptyState({
-    required this.icon,
+    this.icon,
     required this.title,
     this.subtitle,
     this.actionLabel,
@@ -19,7 +19,7 @@ class TaroGlassEmptyState extends StatelessWidget {
     super.key,
   });
 
-  final IconData icon;
+  final IconData? icon;
   final String title;
   final String? subtitle;
   final String? actionLabel;
@@ -30,27 +30,38 @@ class TaroGlassEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = TaroPalette.of(context);
     final content = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [
-                TaroColors.lavender.withValues(alpha: 0.24),
-                TaroColors.indigo.withValues(alpha: 0.06),
-              ],
+        if (icon != null) ...[
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  palette.lanternGlow.withValues(alpha: 0.24),
+                  TaroColors.indigo.withValues(alpha: 0.06),
+                ],
+              ),
+              border: Border.all(
+                color: palette.isMoonlit
+                    ? palette.activeOutline
+                    : TaroColors.lavender.withValues(alpha: 0.36),
+              ),
             ),
-            border: Border.all(
-              color: TaroColors.lavender.withValues(alpha: 0.36),
+            child: Icon(
+              icon,
+              size: 22,
+              color: palette.isMoonlit
+                  ? TaroColors.lanternAmberBright
+                  : TaroColors.lavender,
             ),
           ),
-          child: Icon(icon, size: 22, color: TaroColors.lavender),
-        ),
-        const SizedBox(height: 14),
+          const SizedBox(height: 14),
+        ],
         Text(
           title,
           textAlign: TextAlign.center,
@@ -100,7 +111,7 @@ class TaroGlassEmptyState extends StatelessWidget {
     if (framed) {
       return TaroGlassPanel(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-        child: content,
+        child: Center(heightFactor: 1.0, child: content),
       );
     }
     return Padding(

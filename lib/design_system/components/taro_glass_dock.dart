@@ -7,8 +7,17 @@ import '../taro_tokens.dart';
 
 /// Элемент нижнего дока (иконка + подпись).
 class TaroDockItem {
-  const TaroDockItem({required this.icon, required this.label});
-  final IconData icon;
+  const TaroDockItem({
+    this.icon,
+    this.iconBuilder,
+    required this.label,
+  }) : assert(
+         icon != null || iconBuilder != null,
+         'Either icon or iconBuilder must be provided.',
+       );
+
+  final IconData? icon;
+  final Widget Function(Color color, double size)? iconBuilder;
   final String label;
 }
 
@@ -32,15 +41,17 @@ class TaroGlassDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = TaroPalette.of(context);
     final n = items.length;
     final activeIndex = n == 0 ? 0 : index.clamp(0, n - 1);
 
     return TaroGlassSurface(
       radius: TaroRadii.dock,
-      fillColor: TaroColors.surface,
+      fillColor: palette.surface,
+      borderColor: palette.borderHairline,
       glow: TaroGlow.soft(
-        TaroColors.lavender,
-        alpha: 0.20,
+        palette.lanternGlow,
+        alpha: palette.isMoonlit ? 0.20 : 0.20,
         blur: 22,
         offset: const Offset(0, 6),
       ),
@@ -66,15 +77,20 @@ class TaroGlassDock extends StatelessWidget {
                         width: itemWidth,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: TaroColors.lavender.withValues(alpha: 0.16),
+                          color: palette.isMoonlit
+                              ? TaroColors.lanternAmber.withValues(alpha: 0.18)
+                              : TaroColors.lavender.withValues(alpha: 0.16),
                           borderRadius: BorderRadius.circular(
                             TaroRadii.dock - pad,
                           ),
-                          border: Border.all(
-                            color: TaroColors.lavender.withValues(
-                              alpha: TaroOpacity.borderStrong,
-                            ),
-                          ),
+                          border: Border.all(color: palette.activeOutline),
+                          boxShadow: palette.isMoonlit
+                              ? TaroGlow.soft(
+                                  TaroColors.lanternAmber,
+                                  alpha: 0.22,
+                                  blur: 14,
+                                )
+                              : null,
                         ),
                       ),
                     ),
@@ -113,7 +129,11 @@ class _DockItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? TaroColors.lavender : TaroColors.textSecondary;
+    final palette = TaroPalette.of(context);
+    final activeColor = palette.isMoonlit
+        ? TaroColors.lanternAmberBright
+        : TaroColors.lavender;
+    final color = active ? activeColor : TaroColors.textSecondary;
     return Semantics(
       button: true,
       selected: active,
@@ -127,7 +147,10 @@ class _DockItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(item.icon, size: 20, color: color),
+            if (item.iconBuilder != null)
+              item.iconBuilder!(color, 20)
+            else
+              Icon(item.icon, size: 20, color: color),
             const SizedBox(height: 2),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2),

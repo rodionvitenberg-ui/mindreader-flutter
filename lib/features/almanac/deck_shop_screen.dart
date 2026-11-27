@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/config/app_build_config.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/models/divination_system.dart';
 import '../../core/models/store_models.dart';
@@ -143,7 +144,8 @@ class _DeckShopScreenState extends State<DeckShopScreen>
       return;
     }
 
-    // Paid item: require verified email account first, then hand off to promo site /shop/.
+    // Paid item: require verified email account first. In store builds, never
+    // launch external checkout — only sync account entitlements.
     if (!auth.isVerified) {
       final signedIn = await EmailAuthSheet.show(context);
       if (!signedIn || !mounted) return;
@@ -154,6 +156,11 @@ class _DeckShopScreenState extends State<DeckShopScreen>
         await store.downloadAndInstall(product);
         return;
       }
+    }
+
+    if (!showExternalPurchaseUi) {
+      await store.refresh(autoInstallNewlyOwned: true);
+      return;
     }
 
     try {
@@ -198,7 +205,9 @@ class _DeckShopScreenState extends State<DeckShopScreen>
 
     return Stack(
       children: [
-        const Positioned.fill(child: TaroDuskBackground()),
+        const Positioned.fill(
+          child: TaroDuskBackground(imageAsset: TaroBackgroundAssets.forest),
+        ),
         TaroGlassLayer(
           useBackdropGroup: false,
           child: Scaffold(

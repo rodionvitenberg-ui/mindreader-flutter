@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/data/lenormand_data.dart';
+import '../../core/data/runes_data.dart';
+import '../../core/data/tarot_deck_data.dart';
+import '../../core/models/divination_system.dart';
+import '../../core/services/spread_check_in_service.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
 import '../../state/session_history_controller.dart';
 import '../../state/spread_session_snapshot.dart';
 import '../profile/widgets/profile_header.dart';
+import '../share/share_card_payload.dart';
+import '../share/share_card_preview_sheet.dart';
+import 'widgets/spread_check_in_sheet.dart';
 import '../../core/l10n/app_strings.dart';
 
 /// Pane 2 — SPREAD HISTORY & NOTEBOOKS: the local-first archive of saved
@@ -186,10 +194,15 @@ class _EmptyArchive extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(AppStrings.g('ui.spread_history_pane.synthesize_your_first_spread_and_it_will_wait_he'),
-            style: AppTypography.body(
-              fontSize: 11,
-              color: TaroColors.textSecondary.withValues(alpha: 0.8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Text(
+              AppStrings.g('history.emptyHint'),
+              textAlign: TextAlign.center,
+              style: AppTypography.body(
+                fontSize: 11,
+                color: TaroColors.textSecondary.withValues(alpha: 0.8),
+              ),
             ),
           ),
         ],
@@ -199,6 +212,51 @@ class _EmptyArchive extends StatelessWidget {
 }
 
 
+String spreadTitleForSnapshot(SpreadSessionSnapshot session) {
+  if (session.astralSessionTitle != null) return session.astralSessionTitle!;
+  if (session.customSpread != null) {
+    final customCount = session.customQuestions.isNotEmpty
+        ? session.customQuestions.length
+        : session.cards.length;
+    return '$customCount · ${session.customSpread}';
+  }
+  return switch (session.system) {
+    DivinationSystem.tarot => session.spreadType.label,
+    DivinationSystem.lenormand => session.lenormandSpread.label,
+    DivinationSystem.runes => session.runeCast.label,
+  };
+}
+
+String cardNamesSummaryForSnapshot(SpreadSessionSnapshot session) {
+  if (session.cards.isEmpty) return '';
+  final revealed = session.cards.where((c) => !c.faceDown).toList();
+  final source = revealed.isNotEmpty ? revealed : session.cards;
+  final names = <String>[];
+  for (final c in source.take(5)) {
+    final name = switch (session.system) {
+      DivinationSystem.tarot =>
+        c.cardId >= 0 && c.cardId < tarotDeck.length
+            ? tarotDeck[c.cardId].name
+            : null,
+      DivinationSystem.lenormand =>
+        c.cardId >= 0 && c.cardId < lenormandDeck.length
+            ? lenormandDeck[c.cardId].name
+            : null,
+      DivinationSystem.runes =>
+        c.cardId >= 0 && c.cardId < elderFuthark.length
+            ? elderFuthark[c.cardId].name
+            : null,
+    };
+    if (name != null) {
+      names.add(c.reversed ? '$name ↺' : name);
+    }
+  }
+  if (source.length > 5) {
+    names.add('+${source.length - 5}');
+  }
+  return names.join(' · ');
+}
+
 class _SessionTile extends StatelessWidget {
   const _SessionTile({required this.session, required this.onTap});
 
@@ -207,19 +265,25 @@ class _SessionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final snippet = session.synthesis?.narrative ??
+    final cardNames = cardNamesSummaryForSnapshot(session);
+    final hasAi =
+        session.synthesis != null ||
+        session.messages.any((m) => m.role == 'oracle');
+    final snippet =
+        session.synthesis?.narrative ??
         (session.messages.isNotEmpty
             ? session.messages.last.text
+            : session.readingQuestion.trim().isNotEmpty
+            ? (cardNames.isNotEmpty
+                  ? '${session.readingQuestion.trim()} · $cardNames'
+                  : session.readingQuestion.trim())
+            : cardNames.isNotEmpty
+            ? cardNames
             : session.sessionNotes.isEmpty
-                ? AppStrings.g('history.noContextNotes')
-                : session.sessionNotes.join(' · '));
-    final customCount = session.customQuestions.isNotEmpty
-        ? session.customQuestions.length
-        : session.cards.length;
-    final title = session.astralSessionTitle ??
-        (session.customSpread != null
-            ? '$customCount · ${session.customSpread}'
-            : session.spreadType.label);
+            ? AppStrings.g('history.noContextNotes')
+            : session.sessionNotes.join(' · '));
+    final title = spreadTitleForSnapshot(session);
+    final checkInStatus = SpreadCheckInService.statusFor(session);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
@@ -233,61 +297,223 @@ class _SessionTile extends StatelessWidget {
           color: TaroColors.surface.withValues(alpha: 0.72),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
+            color: checkInStatus == CheckInStatus.due
+                ? TaroColors.dawn.withValues(alpha: 0.42)
+                : TaroColors.mist.withValues(alpha: TaroOpacity.border),
           ),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _CardGlyphStack(cards: session.cards),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.label(
-                      fontSize: 10,
-                      letterSpacing: 0.7,
-                      fontWeight: FontWeight.w700,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _CardGlyphStack(cards: session.cards),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.label(
+                                fontSize: 10,
+                                letterSpacing: 0.7,
+                                fontWeight: FontWeight.w700,
+                                color: TaroColors.lavender,
+                              ),
+                            ),
+                          ),
+                          if (hasAi) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              key: const ValueKey('history-ai-badge'),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: TaroColors.lavender.withValues(
+                                  alpha: 0.16,
+                                ),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: TaroColors.lavender.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                AppStrings.g('history.aiBadge'),
+                                style: AppTypography.label(
+                                  fontSize: 7.5,
+                                  letterSpacing: 0.7,
+                                  fontWeight: FontWeight.w700,
+                                  color: TaroColors.lavender,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        session.cards.isNotEmpty
+                            ? '${formatSessionTime(session.timestamp)} · ${AppStrings.cardCount(AppStrings.current, session.cards.length)}'
+                            : formatSessionTime(session.timestamp),
+                        style: AppTypography.label(
+                          fontSize: 8.5,
+                          letterSpacing: 1.0,
+                          color: TaroColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        snippet,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.body(
+                          fontSize: 10.5,
+                          height: 1.35,
+                          color: TaroColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                if (session.kind == SessionKind.divinationSpread &&
+                    session.cards.any((c) => !c.faceDown))
+                  IconButton(
+                    key: ValueKey('history-share-${session.timestamp}'),
+                    tooltip: AppStrings.g('share.button'),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
+                    icon: const Icon(
+                      Icons.ios_share_rounded,
+                      size: 16,
                       color: TaroColors.lavender,
                     ),
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      ShareCardPreviewSheet.show(
+                        context,
+                        payload: ShareCardPayload.fromSnapshot(
+                          snapshot: session,
+                          lang: AppStrings.current,
+                        ),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    formatSessionTime(session.timestamp),
-                    style: AppTypography.label(
-                      fontSize: 8.5,
-                      letterSpacing: 1.0,
-                      color: TaroColors.textSecondary,
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Icon(
+                    Icons.chevron_right,
+                    size: 16,
+                    color: TaroColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            if (checkInStatus == CheckInStatus.due) ...[
+              const SizedBox(height: 10),
+              GestureDetector(
+                key: ValueKey('history-checkin-badge-${session.timestamp}'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  SpreadCheckInSheet.show(context, snapshot: session);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: TaroColors.dawn.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: TaroColors.dawn.withValues(alpha: 0.38),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    snippet,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(
-                      fontSize: 10.5,
-                      height: 1.35,
-                      color: TaroColors.textSecondary,
-                    ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.auto_stories_outlined,
+                        size: 14,
+                        color: TaroColors.dawn,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          SpreadCheckInService.promptFor(
+                            session,
+                            AppStrings.current,
+                          ),
+                          style: AppTypography.body(
+                            fontSize: 11,
+                            height: 1.3,
+                            color: TaroColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 11,
+                        color: TaroColors.dawn,
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Icon(
-                Icons.chevron_right,
-                size: 16,
-                color: TaroColors.textSecondary,
+            ] else if (checkInStatus == CheckInStatus.completed &&
+                session.outcome != null) ...[
+              const SizedBox(height: 8),
+              GestureDetector(
+                key: ValueKey('history-reflected-badge-${session.timestamp}'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  SpreadCheckInSheet.show(context, snapshot: session);
+                },
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle_outline_rounded,
+                      size: 13,
+                      color: TaroColors.emerald.withValues(alpha: 0.85),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        session.reflectionNote != null &&
+                                session.reflectionNote!.trim().isNotEmpty
+                            ? '${SpreadCheckInService.outcomeLabel(session.outcome!, AppStrings.current)} · ${session.reflectionNote!.trim()}'
+                            : SpreadCheckInService.outcomeLabel(
+                                session.outcome!,
+                                AppStrings.current,
+                              ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.body(
+                          fontSize: 10.5,
+                          color: TaroColors.emerald.withValues(alpha: 0.88),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

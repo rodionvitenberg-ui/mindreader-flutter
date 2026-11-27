@@ -33,11 +33,14 @@ void main() {
     spread.dispose();
   });
 
-  test('no hint while the spread is inactive or guidance is off', () async {
-    expect(guide.currentHint, isNull); // Step 1 picker — nothing active yet.
+  test('Step 1 welcomes the reader while guidance is on, and hides when off', () async {
+    // Step 1 picker — Wisp welcomes the reader to choose a spread.
+    expect(guide.currentHint, isNotNull);
+    expect(guide.currentHint!.eventType, GuideEventType.spreadSelected);
 
     spread.activateSpread();
     expect(guide.currentHint, isNotNull);
+    expect(guide.currentHint!.eventType, GuideEventType.dealingStarted);
 
     await settings.setAid(ReadingAid.guide, false);
     expect(guide.currentHint, isNull);
@@ -109,10 +112,11 @@ void main() {
     expect(guide.currentHint!.eventType, GuideEventType.revealingStarted);
   });
 
-  test('RU localises the dealing hint title', () {
+  test('RU localises the dealing hint title and live slot role', () {
     settings.setLanguage(AppLanguage.ru);
     spread.activateSpread();
     expect(guide.currentHint!.title, contains('Выложите 1 из 3'));
+    expect(guide.currentHint!.title, contains('Состояние'));
   });
 
   test('relationship explanation is localized (RU)', () {
@@ -186,6 +190,20 @@ void main() {
 
     await guide.resetLearned();
     expect(guide.currentHint!.lesson, contains('essence of the matter'));
+  });
+
+  test('learned lessons survive a language switch without repeating', () async {
+    await settings.setGuideDetail(GuideDetail.thorough);
+    spread.activateSpread();
+    expect(guide.currentHint!.lessonId, 'slot:tarot:three:1');
+
+    await guide.learnCurrentLesson();
+    expect(guide.currentHint!.lessonId, isNull);
+
+    // Switching language must not reset learned progress.
+    settings.setLanguage(AppLanguage.ru);
+    expect(guide.currentHint!.lessonId, isNull);
+    expect(guide.currentHint!.lesson, isNull);
   });
 
   test('learned lessons survive a controller restart', () async {

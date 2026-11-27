@@ -30,6 +30,18 @@ def api_headers(get_response):
         if not request.path_info.startswith("/api/v1/"):
             return get_response(request)
         request.api_request_id = str(uuid.uuid4())
+        if request.path_info == "/api/v1/oracle/transcribe/":
+            from django.conf import settings
+
+            try:
+                size = int(request.META.get("CONTENT_LENGTH") or 0)
+            except ValueError:
+                size = 0
+            if size > settings.STT_MAX_UPLOAD_BYTES + 256 * 1024:
+                return JsonResponse({
+                    "code": "request_too_large", "detail": "Audio upload exceeds the maximum size.",
+                    "requestId": request.api_request_id,
+                }, status=413, headers={"X-Request-ID": request.api_request_id, "Cache-Control": "no-store"})
         if request.path_info in {"/api/v1/vision/recognize/", "/api/v1/vision/recognize-batch/"}:
             try:
                 size = int(request.META.get("CONTENT_LENGTH") or 0)

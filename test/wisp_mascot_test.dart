@@ -56,7 +56,11 @@ void main() {
       );
     });
 
-    test('a finished spread is the one celebration', () {
+    test('Step 1 welcome and a finished spread bring the smile', () {
+      expect(
+        wispMoodFor(hint(GuideEventType.spreadSelected)),
+        WispMood.greeting,
+      );
       expect(
         wispMoodFor(hint(GuideEventType.spreadCompleted)),
         WispMood.greeting,
@@ -144,17 +148,22 @@ void main() {
         (provider as AssetImage).assetName,
         'assets/images/wisp_body.png',
       );
+      // Never apply a BlendMode.screen ColorFilter over the sprite — it paints
+      // a visible translucent square box across transparent padding.
+      expect(sprite.color, isNull);
+      expect(sprite.colorBlendMode, isNull);
       expect(
         find.descendant(of: mascot, matching: find.byType(CustomPaint)),
         findsWidgets,
       );
     });
 
-    testWidgets('rides along with the hint and reacts to tension', (
+    testWidgets('rides along from Step 1 through completion and reacts to tension', (
       tester,
     ) async {
       await pumpBar(tester);
-      expect(find.byType(WispMascot), findsNothing); // Step 1 — no table yet.
+      // Step 1 — Wisp welcomes the reader on Choose Spread.
+      expect(moodOf(tester), WispMood.greeting);
 
       spread.activateSpread();
       await tester.pump();
@@ -188,6 +197,29 @@ void main() {
       await settings.setAid(ReadingAid.guide, false);
       await tester.pump();
       expect(find.byType(WispMascot), findsNothing);
+    });
+
+    testWidgets('speech bubble collapses to a compact corner pill and re-expands', (
+      tester,
+    ) async {
+      await pumpBar(tester);
+      spread.activateSpread();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 260));
+
+      expect(find.byKey(const ValueKey('reading-guide')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('guide-bubble-collapse')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 260));
+
+      expect(find.byKey(const ValueKey('guide-bubble-expand')), findsOneWidget);
+      expect(find.byKey(const ValueKey('reading-guide')), findsNothing);
+
+      // Tapping the minimized Wisp pill pops the speech bubble right back open.
+      await tester.tap(find.byKey(const ValueKey('guide-bubble-expand')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 260));
+      expect(find.byKey(const ValueKey('reading-guide')), findsOneWidget);
     });
 
     testWidgets('reduce motion keeps the companion still', (tester) async {

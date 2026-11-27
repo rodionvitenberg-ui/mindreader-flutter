@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
 
-import '../astral_copy.dart';
 import '../../../core/models/natal_chart.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
 
-/// Phase 3 slot — the animated CustomPainter natal wheel will live here.
-/// For now it renders the ring silhouette and, once a profile exists, the
-/// three luminaries (Sun · Moon · Ascendant) plus birth metadata.
+/// Empty-state placeholder for the natal wheel slot before a profile exists.
+/// Renders the natal chart blueprint artwork (`assets/icons/natmap.png`) tinted
+/// to match the Dark Obsidian Sanctuary palette.
 class AstralWheelPlaceholder extends StatelessWidget {
   const AstralWheelPlaceholder({required this.chart, super.key});
 
   final NatalChart? chart;
+
+  static const String wheelAssetPath = 'assets/icons/natmap.png';
 
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
       child: Container(
         key: const ValueKey('natal-wheel-placeholder'),
-        padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
         decoration: BoxDecoration(
           gradient: RadialGradient(
             colors: [
@@ -34,32 +35,22 @@ class AstralWheelPlaceholder extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Container(
-              width: 116,
-              height: 116,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: TaroColors.mist.withValues(
-                    alpha: TaroOpacity.borderStrong,
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 216,
+                  maxHeight: 216,
+                ),
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: Image.asset(
+                    wheelAssetPath,
+                    fit: BoxFit.contain,
+                    color: TaroColors.lavender.withValues(alpha: 0.86),
+                    colorBlendMode: BlendMode.srcIn,
+                    filterQuality: FilterQuality.medium,
                   ),
-                  width: 1,
                 ),
-              ),
-              child: const Center(
-                child: Text(
-                  '✦',
-                  style: TextStyle(fontSize: 26, color: TaroColors.lavender),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              context.astralText('natalWheel'),
-              style: AppTypography.label(
-                fontSize: 10,
-                letterSpacing: 1.0,
-                color: TaroColors.textPrimary,
               ),
             ),
             if (chart != null) ...[

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/l10n/app_strings.dart';
 import 'package:mindreader/core/models/custom_spread.dart';
@@ -20,8 +19,11 @@ import 'package:mindreader/state/oracle_session_controller.dart';
 import 'package:mindreader/state/session_history_controller.dart';
 import 'package:mindreader/state/spread_controller.dart';
 import 'package:mindreader/state/spread_session_snapshot.dart';
+import 'package:mindreader/state/voice_input_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'fakes/fake_voice_pipeline.dart';
 
 void main() {
   setUp(() {
@@ -187,26 +189,23 @@ void main() {
   testWidgets(
       'Custom Spread builder: write, dictate, edit, reorder, delete questions and open Table',
       (tester) async {
-    const channel = MethodChannel('plugin.csdcorp.com/speech_to_text');
-    final messenger = tester.binding.defaultBinaryMessenger;
-    messenger.setMockMethodCallHandler(channel, (_) async => true);
-    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
-
-    Future<void> fromRecognizer(String method, String data) async {
-      await messenger.handlePlatformMessage(
-        channel.name,
-        channel.codec.encodeMethodCall(MethodCall(method, data)),
-        (_) {},
-      );
-      await tester.pump();
-    }
+    var now = DateTime(2026, 11, 24, 19, 30, 0);
+    final voice = VoiceInputController(
+      recorder: FakeAudioRecorderEngine(),
+      transcriber: FakeAudioTranscriber(nextTranscript: 'Where is my focus?'),
+      tempStore: FakeVoiceTempFileStore(),
+      clock: () => now,
+      hapticConfirm: () async {},
+      preRollDelay: Duration.zero,
+    );
+    addTearDown(voice.dispose);
 
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(const MindreaderApp());
+    await tester.pumpWidget(MindreaderApp(voiceInput: voice));
     await tester.pump();
 
     final gridBottom =
@@ -238,15 +237,12 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('custom-question-add')));
     await tester.pump();
 
-    // Add question 2 by dictating.
+    // Add question 2 by dictating via the upgraded voice pipeline.
     await tester.tap(find.byKey(const ValueKey('custom-question-mic')));
     await tester.pump();
-    await fromRecognizer('notifyStatus', 'listening');
-    await fromRecognizer(
-      'textRecognition',
-      '{"alternates":[{"recognizedWords":"Where is my focus?","confidence":0.95}],"resultType":2}',
-    );
-    await fromRecognizer('notifyStatus', 'done');
+    now = now.add(const Duration(seconds: 2));
+    await tester.tap(find.byKey(const ValueKey('custom-question-mic')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('custom-question-add')));
     await tester.pump();
 

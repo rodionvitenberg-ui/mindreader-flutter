@@ -22,8 +22,9 @@ IDEMPOTENCY = OpenApiParameter("Idempotency-Key", str, OpenApiParameter.HEADER, 
 
 
 class Problem(APIException):
-    def __init__(self, code, status, detail):
+    def __init__(self, code, status, detail, extra=None):
         self.status_code = status
+        self.extra = extra or {}
         super().__init__(detail, code)
 
 
@@ -40,6 +41,8 @@ def error_response(exc, context):
             "detail": detail or "The request could not be accepted.",
             "requestId": getattr(context.get("request"), "api_request_id", None) or str(uuid.uuid4()),
         }
+        if isinstance(exc, Problem) and exc.extra:
+            response.data.update(exc.extra)
         if detail is None:
             response.data["fields"] = data
     return response
@@ -51,9 +54,14 @@ def checked(serializer_class, data):
     return serializer.validated_data
 
 
-def rate_limit(key, limit, seconds=60):
+def _window_bounds(seconds=60):
     now = timezone.now()
     window = now.replace(microsecond=0) - timedelta(seconds=int(now.timestamp()) % seconds)
+    return window, window + timedelta(seconds=seconds)
+
+
+def rate_limit(key, limit, seconds=60):
+    window, _ = _window_bounds(seconds)
     with transaction.atomic():
         row, _ = Counter.objects.select_for_update().get_or_create(key=key, window=window)
         if row.count >= limit:
@@ -62,8 +70,60 @@ def rate_limit(key, limit, seconds=60):
         row.save(update_fields=["count"])
 
 
+def quota_peek(key, limit, seconds=86400):
+    window, reset_at = _window_bounds(seconds)
+    row = Counter.objects.filter(key=key, window=window).first()
+    used = row.count if row else 0
+    return {
+        "used": used,
+        "limit": limit,
+        "remaining": max(0, limit - used),
+        "resetAt": reset_at.isoformat(),
+    }
+
+
+def consume_quota(key, limit, seconds=86400, *, code="quota_exceeded", detail="Daily quota reached."):
+    window, reset_at = _window_bounds(seconds)
+    with transaction.atomic():
+        row, _ = Counter.objects.select_for_update().get_or_create(key=key, window=window)
+        if row.count >= limit:
+            raise Problem(
+                code,
+                429,
+                detail,
+                extra={
+                    "used": row.count,
+                    "limit": limit,
+                    "remaining": 0,
+                    "resetAt": reset_at.isoformat(),
+                },
+            )
+        row.count += 1
+        row.save(update_fields=["count"])
+        return {
+            "used": row.count,
+            "limit": limit,
+            "remaining": max(0, limit - row.count),
+            "resetAt": reset_at.isoformat(),
+        }
+
+
+def _client_ip(request):
+    import os
+    if os.getenv("TRUST_PROXY_HTTPS") == "true":
+        real_ip = (request.META.get("HTTP_X_REAL_IP") or "").strip()
+        if real_ip:
+            return real_ip
+        forwarded = (request.META.get("HTTP_X_FORWARDED_FOR") or "").strip()
+        if forwarded:
+            parts = [p.strip() for p in forwarded.split(",") if p.strip()]
+            if parts:
+                return parts[-1]
+    return request.META.get("REMOTE_ADDR", "unknown")
+
+
 def ip_limit(request, scope, limit):
-    address = request.META.get("REMOTE_ADDR", "unknown")
+    address = _client_ip(request)
     digest = hashlib.sha256(address.encode()).hexdigest()[:32]
     rate_limit(f"ip:{scope}:{digest}", limit)
 
@@ -116,6 +176,7 @@ class PublicConfigSerializer(serializers.Serializer):
     guestAccess = serializers.BooleanField()
     emailVerification = serializers.BooleanField()
     devPayments = serializers.BooleanField()
+    proOffer = serializers.DictField()
 
 
 @extend_schema(responses=PublicConfigSerializer)
@@ -124,6 +185,7 @@ class PublicConfigSerializer(serializers.Serializer):
 def public_config(request):
     import os
     from django.conf import settings
+    from apps.payments.pro_service import pro_offer_snapshot
 
     dev_payments = (
         not settings.PRODUCTION
@@ -135,4 +197,5 @@ def public_config(request):
         "guestAccess": True,
         "emailVerification": settings.EMAIL_VERIFICATION_ENABLED,
         "devPayments": dev_payments,
+        "proOffer": pro_offer_snapshot(),
     })

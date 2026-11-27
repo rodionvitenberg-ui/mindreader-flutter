@@ -3,17 +3,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/models/custom_spread.dart';
 import '../../../core/models/divination_system.dart';
+import '../../../core/services/oracle_voice_service.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/spread_controller.dart';
+import '../../../state/voice_input_controller.dart';
 import 'shuffle_physics.dart';
 import 'spread_blueprint_grid.dart';
+import 'voice_mic_button.dart';
 
 /// Builder bottom sheet for "Свой расклад" / "Custom Spread":
 /// * User writes or dictates questions (1 question = 1 position, 1..12).
@@ -65,15 +67,17 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
   final List<_QuestionEntry> _entries = [];
   int _nextId = 0;
   bool _compareNeighbors = false;
+  VoiceInputController? _providedVoice;
+  VoiceInputController? _ownedVoice;
 
-  final SpeechToText _speech = SpeechToText();
-  int _speechRequest = 0;
-  bool _dictating = false;
-  bool _stopping = false;
-  Completer<void>? _speechDone;
-  SpeechStatusListener? _previousStatus;
-  SpeechErrorListener? _previousError;
-  SpeechStatusListener? _statusListener;
+  VoiceInputController _resolveVoice(BuildContext context) {
+    final provided = context.read<VoiceInputController?>();
+    if (provided != null) {
+      _providedVoice = provided;
+      return provided;
+    }
+    return _ownedVoice ??= VoiceInputController();
+  }
 
   @override
   void initState() {
@@ -90,8 +94,16 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _providedVoice = context.read<VoiceInputController?>();
+  }
+
+  @override
   void dispose() {
     _cancelDictation();
+    unawaited(_ownedVoice?.cancel());
+    _ownedVoice?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     _nameController.dispose();
     _composerController.dispose();
@@ -103,152 +115,47 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (_dictating &&
-        (state == AppLifecycleState.paused ||
-            state == AppLifecycleState.detached)) {
-      setState(_cancelDictation);
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _cancelDictation();
     }
-  }
-
-  bool _isCurrentSpeech(int request) =>
-      mounted && _dictating && request == _speechRequest;
-
-  void _releaseDictation() {
-    if (_statusListener != null &&
-        identical(_speech.statusListener, _statusListener)) {
-      _speech.statusListener = _previousStatus;
-      _speech.errorListener = _previousError;
-    }
-    _statusListener = null;
-    _speechDone?.complete();
-    _speechDone = null;
-    _stopping = false;
-    _dictating = false;
-    _speechRequest++;
   }
 
   void _cancelDictation() {
-    if (!_dictating) return;
-    final ownsMic =
-        _statusListener != null &&
-        identical(_speech.statusListener, _statusListener);
-    _releaseDictation();
-    if (ownsMic) unawaited(_speech.cancel().catchError((Object _) {}));
-  }
-
-  void _finishDictation({bool unavailable = false, AppLanguage? lang}) {
-    if (!mounted) return;
-    setState(_releaseDictation);
-    if (unavailable) {
-      final resolvedLang =
-          lang ?? context.read<AppSettingsController>().language;
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text(AppStrings.t(resolvedLang, 'table.noDictation')),
-        ),
-      );
+    final voice = _providedVoice ?? _ownedVoice;
+    if (voice != null && voice.isOwnedBy(this)) {
+      unawaited(voice.cancel(owner: this));
     }
-  }
-
-  Future<void> _stopDictation() async {
-    final done = _speechDone;
-    if (done == null) return;
-    if (_statusListener == null) {
-      setState(_cancelDictation);
-      return;
-    }
-    final request = _speechRequest;
-    if (!_stopping) {
-      _stopping = true;
-      try {
-        await _speech.stop();
-      } catch (_) {
-        if (_isCurrentSpeech(request)) _finishDictation(unavailable: true);
-      }
-    }
-    await done.future.timeout(
-      SpeechToText.defaultFinalTimeout + const Duration(milliseconds: 300),
-      onTimeout: () {
-        if (_isCurrentSpeech(request)) _finishDictation();
-      },
-    );
   }
 
   Future<void> _toggleDictation(AppLanguage lang) async {
-    if (_dictating) {
-      await _stopDictation();
+    final voice = _resolveVoice(context);
+    if (voice.isRecordingFor(this)) {
+      final result = await voice.stopAndTranscribe(owner: this);
+      if (!mounted) return;
+      if (result.isSuccess) {
+        setState(() {
+          insertVoiceTranscript(_composerController, result.text!);
+        });
+      } else {
+        showVoiceInputFeedback(context, result, language: lang);
+      }
       return;
     }
     if (_entries.length >= CustomSpreadConfig.maxPositions) return;
-    final request = ++_speechRequest;
-    final base = _composerController.value;
-    final selection = base.selection.isValid
-        ? base.selection
-        : TextSelection.collapsed(offset: base.text.length);
-    _speechDone = Completer<void>();
-    setState(() => _dictating = true);
-    try {
-      if (_speech.isListening || !await _speech.initialize()) {
-        if (_isCurrentSpeech(request)) {
-          _finishDictation(unavailable: true, lang: lang);
-        }
-        return;
-      }
-      if (!_isCurrentSpeech(request)) return;
-      _previousStatus = _speech.statusListener;
-      _previousError = _speech.errorListener;
-      _statusListener = (status) {
-        if (_isCurrentSpeech(request) && status == SpeechToText.doneStatus) {
-          _finishDictation();
-        }
-      };
-      _speech.statusListener = _statusListener;
-      _speech.errorListener = (_) {
-        if (_isCurrentSpeech(request)) {
-          _finishDictation(unavailable: true, lang: lang);
-        }
-      };
-      await _speech.listen(
-        listenOptions: SpeechListenOptions(
-          listenMode: ListenMode.dictation,
-          cancelOnError: true,
-          localeId: lang == AppLanguage.ru ? AppStrings.g('ui.custom_spread_sheet.ru_ru') : AppStrings.g('ui.custom_spread_sheet.en_us'),
-        ),
-        onResult: (result) {
-          if (!_isCurrentSpeech(request)) return;
-          final words = result.recognizedWords.trim();
-          if (words.isNotEmpty) {
-            final before = base.text.substring(0, selection.start);
-            final after = base.text.substring(selection.end);
-            final prefix = before.isEmpty || before.trimRight() != before
-                ? before
-                : '$before ';
-            final suffix = after.isEmpty || after.trimLeft() != after
-                ? after
-                : ' $after';
-            final text = '$prefix$words$suffix';
-            setState(() {
-              _composerController.value = TextEditingValue(
-                text: text,
-                selection: TextSelection.collapsed(
-                  offset: prefix.length + words.length,
-                ),
-              );
-            });
-          }
-          if (result.finalResult) _finishDictation();
-        },
-      );
-    } catch (_) {
-      if (_isCurrentSpeech(request)) {
-        _finishDictation(unavailable: true, lang: lang);
-      }
-    }
+
+    unawaited(context.read<OracleVoiceService?>()?.stop());
+    final early = await voice.startRecording(
+      owner: this,
+      onAutoStop: () => unawaited(_toggleDictation(lang)),
+    );
+    if (!mounted || early == null) return;
+    showVoiceInputFeedback(context, early, language: lang);
   }
 
   /// Splits non-empty lines from the composer into positions (up to 12).
   void _addFromComposer() {
-    if (_dictating) _cancelDictation();
+    _cancelDictation();
     final lines = _composerController.text
         .split('\n')
         .map((line) => line.trim())
@@ -304,7 +211,9 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
   }
 
   Future<void> _openTable(AppLanguage lang) async {
-    if (_dictating) await _stopDictation();
+    if (_resolveVoice(context).isRecordingFor(this)) {
+      await _toggleDictation(lang);
+    }
     if (!mounted) return;
     final questions = _collectQuestions();
     if (questions.isEmpty) return;
@@ -449,7 +358,7 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
                     textInputAction: TextInputAction.done,
                     cursorColor: TaroColors.lavender,
                     onChanged: (_) {
-                      if (_dictating) setState(_cancelDictation);
+                      _cancelDictation();
                       setState(() {});
                     },
                     onSubmitted: (_) => _addFromComposer(),
@@ -461,27 +370,30 @@ class _CustomSpreadSheetState extends State<CustomSpreadSheet>
                       atLimit
                           ? AppStrings.t(lang, 'spread.customLimitReached')
                           : AppStrings.t(lang, 'spread.customQuestionInput'),
-                      suffixIcon: IconButton(
-                        key: const ValueKey('custom-question-mic'),
-                        tooltip: AppStrings.t(
-                          lang,
-                          _dictating ? 'table.stopDictation' : 'table.dictate',
-                        ),
-                        visualDensity: VisualDensity.compact,
-                        onPressed:
-                            atLimit ? null : () => _toggleDictation(lang),
-                        icon: Icon(
-                          _dictating
-                              ? Icons.stop_circle_outlined
-                              : Icons.mic_none,
-                          size: 19,
-                          color: atLimit
-                              ? TaroColors.textSecondary
-                              : (_dictating
-                                  ? TaroColors.rose
-                                  : TaroColors.lavender),
-                        ),
-                      ),
+                      suffixIcon: atLimit
+                          ? const Padding(
+                              padding: EdgeInsets.all(10),
+                              child: Icon(
+                                Icons.mic_none,
+                                size: 19,
+                                color: TaroColors.textSecondary,
+                              ),
+                            )
+                          : VoiceMicButton(
+                              key: const ValueKey('custom-question-mic'),
+                              controller:
+                                  context.watch<VoiceInputController?>() ??
+                                  (_ownedVoice ??= VoiceInputController()),
+                              owner: this,
+                              variant: VoiceMicButtonVariant.inline,
+                              language: lang,
+                              idleTooltip: AppStrings.t(lang, 'table.dictate'),
+                              recordingTooltip: AppStrings.t(
+                                lang,
+                                'table.stopDictation',
+                              ),
+                              onTap: () => _toggleDictation(lang),
+                            ),
                     ),
                   ),
                 ),

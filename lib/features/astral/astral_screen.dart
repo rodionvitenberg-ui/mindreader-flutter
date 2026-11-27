@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/config/app_build_config.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/models/natal_chart.dart';
 import '../../core/models/oracle_handoff.dart';
@@ -16,6 +17,7 @@ import '../../design_system/taro.dart';
 import '../../state/app_settings_controller.dart';
 import '../../state/astral_controller.dart';
 import '../profile/widgets/profile_header.dart';
+import '../shell/widgets/pro_subscription_sheet.dart';
 import 'natal_profile_detail_sheet.dart';
 import 'astral_copy.dart';
 import 'widgets/synastry_window.dart';
@@ -284,6 +286,10 @@ class _AstralScreenState extends State<AstralScreen>
   }
 
   void _openSynastry(AstralController astral) {
+    if (!astral.isProUnlocked) {
+      ProSubscriptionSheet.show(context, reason: ProGateReason.synastry);
+      return;
+    }
     if (astral.profiles.length < 2) return;
     _selectWindow(AstralWindow.synastry);
   }
@@ -335,6 +341,7 @@ class _AstralScreenState extends State<AstralScreen>
                   TaroGlassLayer(
                     child: _AstralWindowSwitcher(
                       window: _window,
+                      synastryLocked: !astral.isProUnlocked,
                       onChanged: _selectWindow,
                     ),
                   ),
@@ -403,6 +410,52 @@ class _AstralScreenState extends State<AstralScreen>
                 onTap: () => _openSynastry(astral),
               ),
             ],
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: TaroGlassLayer(
+                    useBackdropGroup: false,
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: TaroGlassButton(
+                        key: const ValueKey('astral-edit-chart'),
+                        label: context.astralText('editChart'),
+                        icon: Icons.edit_outlined,
+                        variant: TaroGlassButtonVariant.secondary,
+                        onPressed: () => BirthDataFormSheet.show(
+                          context,
+                          chart: chart,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TaroGlassLayer(
+                    useBackdropGroup: false,
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: TaroGlassButton(
+                        key: const ValueKey('astral-delete-chart'),
+                        label: context.astralText('deleteChart'),
+                        icon: Icons.delete_outline_rounded,
+                        variant: TaroGlassButtonVariant.secondary,
+                        onPressed: () {
+                          final index = astral.profiles.indexWhere(
+                            (p) => p.id == chart.id,
+                          );
+                          if (index >= 0) {
+                            astral.deleteProfile(index);
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ],
       ),
@@ -442,6 +495,65 @@ class _AstralScreenState extends State<AstralScreen>
   }
 
   Widget _buildSynastryWindow(AstralController astral) {
+    if (!astral.isProUnlocked) {
+      final lang = context.watch<AppSettingsController>().language;
+      return SingleChildScrollView(
+        key: const PageStorageKey<String>('astral-synastry-scroll'),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        child: TaroGlassPanel(
+          key: const ValueKey('synastry-pro-gate'),
+          radius: 22,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Center(
+                child: Icon(
+                  Icons.lock_outline_rounded,
+                  size: 32,
+                  color: TaroColors.lavender,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                AppStrings.t(lang, 'astral.synastry'),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.displayMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                AppStrings.t(lang, 'pro.reason.synastry'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.45,
+                  color: TaroColors.textSecondary.withValues(alpha: 0.95),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TaroGlassLayer(
+                useBackdropGroup: false,
+                child: TaroGlassButton(
+                  key: const ValueKey('synastry-unlock-pro-button'),
+                  icon: isReaderStoreMode
+                      ? Icons.account_circle_outlined
+                      : Icons.auto_awesome_rounded,
+                  label: AppStrings.t(
+                    lang,
+                    isReaderStoreMode ? 'pro.reader.title' : 'pro.checkoutCta',
+                  ),
+                  variant: TaroGlassButtonVariant.primary,
+                  onPressed: () => ProSubscriptionSheet.show(
+                    context,
+                    reason: ProGateReason.synastry,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return SingleChildScrollView(
       key: const PageStorageKey<String>('astral-synastry-scroll'),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -458,10 +570,15 @@ class _AstralScreenState extends State<AstralScreen>
 /// The `[ NATAL CHART | HOROSCOPE | SYNASTRY ]` window switcher (Phase G5:
 /// migrated to [TaroGlassSegmentedControl]).
 class _AstralWindowSwitcher extends StatelessWidget {
-  const _AstralWindowSwitcher({required this.window, required this.onChanged});
+  const _AstralWindowSwitcher({
+    required this.window,
+    required this.onChanged,
+    this.synastryLocked = false,
+  });
 
   final AstralWindow window;
   final ValueChanged<AstralWindow> onChanged;
+  final bool synastryLocked;
 
   @override
   Widget build(BuildContext context) {
@@ -478,6 +595,9 @@ class _AstralWindowSwitcher extends StatelessWidget {
             key: ValueKey('astral-window-${w.name}'),
             value: w,
             label: labels[w]!,
+            icon: w == AstralWindow.synastry && synastryLocked
+                ? Icons.lock_outline_rounded
+                : null,
           ),
       ],
       value: window,

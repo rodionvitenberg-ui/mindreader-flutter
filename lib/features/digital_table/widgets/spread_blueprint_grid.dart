@@ -375,7 +375,9 @@ class SpreadMiniaturePainter extends CustomPainter {
         canvas.drawOval(pebble, fill);
         canvas.drawOval(pebble, stroke);
       } else {
-        final radius = Radius.circular((rect.width * 0.18).clamp(1.2, 3.2));
+        final radius = Radius.circular(
+          (math.min(rect.width, rect.height) * 0.18).clamp(1.2, 3.2),
+        );
         final rrect = RRect.fromRectAndRadius(rect, radius);
         canvas.drawRRect(rrect, backing);
         canvas.drawRRect(rrect, fill);
@@ -388,6 +390,7 @@ class SpreadMiniaturePainter extends CustomPainter {
   bool shouldRepaint(covariant SpreadMiniaturePainter oldDelegate) =>
       oldDelegate.geometry.canvasSize != geometry.canvasSize ||
       oldDelegate.geometry.slotRects.length != geometry.slotRects.length ||
+      oldDelegate.geometry.crossingSlotIndex != geometry.crossingSlotIndex ||
       oldDelegate.isRune != isRune ||
       oldDelegate.active != active;
 }

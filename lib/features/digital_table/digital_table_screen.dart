@@ -17,8 +17,8 @@ import '../../state/app_settings_controller.dart';
 import '../../state/deck_pack_controller.dart';
 import '../../state/spread_controller.dart';
 import '../profile/widgets/profile_header.dart';
+import '../training/micro_learning_screen.dart';
 import 'widgets/board_pillar_view.dart';
-import 'widgets/reading_guide.dart';
 import 'widgets/custom_spread_sheet.dart';
 import 'widgets/deal_lock_prompt.dart';
 import 'widgets/foil_glint.dart';
@@ -63,12 +63,14 @@ class DigitalTableScreen extends StatefulWidget {
 /// slot rectangle in the active body Stack's local coordinates.
 class _CardFlight {
   const _CardFlight({
+    required this.slotIndex,
     required this.start,
     required this.target,
     required this.pose,
     required this.velocity,
   });
 
+  final int slotIndex;
   final Offset start; // release point, body-local coordinates
   final Offset target; // slot top-left, body-local coordinates
   final FanLayerPose pose;
@@ -204,16 +206,21 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     final distance = math.max(1.0, (target - start).distance);
 
     HapticFeedback.mediumImpact();
+    final prevCtl = _flightCtl;
+    _flightCtl = null;
+    prevCtl?.dispose();
+    final ctl = AnimationController(vsync: this);
     setState(() {
-      _flightCtl = AnimationController(vsync: this);
+      _flightCtl = ctl;
       _flight = _CardFlight(
+        slotIndex: slotIndex,
         start: start,
         target: target,
         pose: pose,
         velocity: velocity,
       );
     });
-    _flightCtl!
+    ctl
         .animateWith(
           SpringSimulation(
             spring,
@@ -223,10 +230,10 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
           ),
         )
         .whenCompleteOrCancel(() {
-          if (!mounted) return;
+          if (!mounted || _flightCtl != ctl) return;
           setState(() => _flight = null);
-          _flightCtl?.dispose();
           _flightCtl = null;
+          ctl.dispose();
         });
   }
 
@@ -336,6 +343,7 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
     );
     if (ctrl.isSpreadOverview) {
       return SafeArea(
+        top: false,
         bottom: false,
         child: SpreadBoard(
           key: ValueKey(ctrl.readingRevision),
@@ -364,35 +372,53 @@ class _DigitalTableScreenState extends State<DigitalTableScreen>
                       key: _contentKey,
                       clipBehavior: Clip.none,
                       children: [
-                        // The whole table column is centered on the
-                        // screen's central vertical axis.
-                        Center(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const SizedBox(height: tableTopPad),
-                              // Clean space above the deck — the decluttered
-                              // table (no BEFORE YOU DRAW box). Runes swap
-                              // the paper deck for the 3D stone cluster.
-                              SizedBox(
-                                width: deckWidth,
-                                height: deckBoxHeight,
-                                child: GuideHighlight(child: ctrl.system == DivinationSystem.runes
-                                    ? InteractiveRuneStonesWidget(
-                                        key: _deckKey,
-                                        onCastRelease: _onRuneCastRelease,
-                                      )
-                                    : InteractiveDeckWidget(
-                                        key: _deckKey,
-                                        onDealRelease: _onDealRelease,
-                                      )),
+                        // Dealt cards paint below the deck so a card dragged
+                        // out of the deck passes OVER cards already lying on
+                        // the table, never underneath them.
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            minHeight:
+                                tableTopPad +
+                                deckBoxHeight +
+                                deckToPillarGap +
+                                32,
+                          ),
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                top:
+                                    tableTopPad +
+                                    deckBoxHeight +
+                                    deckToPillarGap,
+                                bottom: 32,
                               ),
-                              const SizedBox(height: deckToPillarGap),
-                              BoardPillarView(
+                              child: BoardPillarView(
                                 onTapFaceUp: _inspect,
+                                hiddenSlotIndex: flight?.slotIndex,
                               ),
-                              const SizedBox(height: 32),
-                            ],
+                            ),
+                          ),
+                        ),
+                        // The deck sits above the dealt pillar in z-order at
+                        // the exact top slot of the scroll canvas.
+                        Positioned(
+                          top: tableTopPad,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: SizedBox(
+                              width: deckWidth,
+                              height: deckBoxHeight,
+                              child: ctrl.system == DivinationSystem.runes
+                                  ? InteractiveRuneStonesWidget(
+                                      key: _deckKey,
+                                      onCastRelease: _onRuneCastRelease,
+                                    )
+                                  : InteractiveDeckWidget(
+                                      key: _deckKey,
+                                      onDealRelease: _onDealRelease,
+                                    ),
+                            ),
                           ),
                         ),
                         if (flight != null && _flightCtl != null)
@@ -500,6 +526,16 @@ class _SpreadSelectionView extends StatelessWidget {
                       onTap: () => CustomSpreadSheet.show(context),
                     ),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                    child: _MicroLearningAction(
+                      lang: lang,
+                      onTap: () => MicroLearningScreen.open(
+                        context,
+                        system: context.read<SpreadController>().system,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -574,6 +610,71 @@ class _CustomSpreadAction extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: TaroColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MicroLearningAction extends StatelessWidget {
+  const _MicroLearningAction({required this.lang, required this.onTap});
+
+  final AppLanguage lang;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: AppStrings.t(lang, 'training.title'),
+      child: GestureDetector(
+        key: const ValueKey('table-training-button'),
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: TaroGlassLayer(
+          useBackdropGroup: false,
+          child: TaroGlassPanel(
+            radius: 16,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            tint: TaroColors.dawn.withValues(alpha: 0.08),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: TaroColors.dawn.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.school_outlined,
+                    size: 17,
+                    color: TaroColors.dawn,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    AppStrings.t(lang, 'training.title'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.label(
+                      fontSize: 11.5,
+                      letterSpacing: 1.1,
+                      fontWeight: FontWeight.w700,
+                      color: TaroColors.textPrimary,
+                    ),
                   ),
                 ),
                 const Icon(

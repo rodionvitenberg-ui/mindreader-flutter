@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mindreader/core/models/dealt_card_slot.dart';
 import 'package:mindreader/core/models/divination_system.dart';
@@ -16,8 +15,10 @@ import 'package:mindreader/state/session_history_controller.dart';
 import 'package:mindreader/state/spread_controller.dart';
 import 'package:mindreader/state/spread_session_snapshot.dart';
 import 'package:mindreader/state/user_profile_controller.dart';
+import 'package:mindreader/state/voice_input_controller.dart';
 import 'package:provider/provider.dart';
 
+import 'fakes/fake_voice_pipeline.dart';
 import 'helpers/table_test_helpers.dart';
 
 void main() {
@@ -29,12 +30,13 @@ void main() {
   Future<void> openTable(
     WidgetTester tester, {
     Size size = const Size(390, 844),
+    VoiceInputController? voiceInput,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(const MindreaderApp());
+    await tester.pumpWidget(MindreaderApp(voiceInput: voiceInput));
     await tester.pump();
     await activateSpread(tester, 'Daily Anchor');
   }
@@ -273,16 +275,20 @@ void main() {
   testWidgets('typing stays available when microphone permission is denied', (
     tester,
   ) async {
-    const channel = MethodChannel('plugin.csdcorp.com/speech_to_text');
-    final messenger = tester.binding.defaultBinaryMessenger;
-    messenger.setMockMethodCallHandler(channel, (_) async => false);
-    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
-    await openTable(tester);
+    final voice = VoiceInputController(
+      recorder: FakeAudioRecorderEngine(permissionGranted: false),
+      transcriber: FakeAudioTranscriber(),
+      tempStore: FakeVoiceTempFileStore(),
+      hapticConfirm: () async {},
+      preRollDelay: Duration.zero,
+    );
+    addTearDown(voice.dispose);
+    await openTable(tester, voiceInput: voice);
     await dealRevealAndOpenOracle(tester);
     await tester.tap(find.byTooltip('Dictate question'));
     await tester.pump();
     expect(
-      find.text('Voice input is unavailable. You can type your question.'),
+      find.text('Microphone permission is needed for voice input.'),
       findsOneWidget,
     );
     await tester.enterText(field, 'Written question');
@@ -293,60 +299,50 @@ void main() {
   });
 
   testWidgets(
-    'dictation updates the current draft without duplicating partial speech',
+    'dictation appends clean punctuated transcript and synthesis waits for active transcription',
     (tester) async {
-      const channel = MethodChannel('plugin.csdcorp.com/speech_to_text');
-      final messenger = tester.binding.defaultBinaryMessenger;
-      final calls = <String>[];
-      messenger.setMockMethodCallHandler(channel, (call) async {
-        calls.add(call.method);
-        return true;
-      });
-      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
-      Future<void> fromRecognizer(String method, String data) async {
-        await messenger.handlePlatformMessage(
-          channel.name,
-          channel.codec.encodeMethodCall(MethodCall(method, data)),
-          (_) {},
-        );
-        await tester.pump();
-      }
-
-      Future<void> words(String text, int type) => fromRecognizer(
-        'textRecognition',
-        '{"alternates":[{"recognizedWords":"$text","confidence":0.9}],"resultType":$type}',
+      var now = DateTime(2026, 11, 24, 19, 30, 0);
+      final recorder = FakeAudioRecorderEngine();
+      final transcriber = FakeAudioTranscriber(nextTranscript: 'next week?');
+      final voice = VoiceInputController(
+        recorder: recorder,
+        transcriber: transcriber,
+        tempStore: FakeVoiceTempFileStore(),
+        clock: () => now,
+        hapticConfirm: () async {},
+        preRollDelay: Duration.zero,
       );
-
-      await openTable(tester);
+      addTearDown(voice.dispose);
+      await openTable(tester, voiceInput: voice);
       final ctrl = table(tester).read<SpreadController>();
       await dealRevealAndOpenOracle(tester);
       await tester.enterText(field, 'Job change');
       await tester.tap(find.byTooltip('Dictate question'));
       await tester.pump();
-      expect(calls, contains('listen'));
-      await fromRecognizer('notifyStatus', 'listening');
-      await words('next', 0);
-      await words('next week', 0);
-      await words('next week?', 2);
+      expect(voice.isRecording, isTrue);
+      now = now.add(const Duration(seconds: 2));
+      await tester.tap(find.byTooltip('Stop dictation'));
+      await tester.pumpAndSettle();
       expect(ctrl.readingQuestion, 'Job change next week?');
-      // Complete the platform session and verify that the text stays editable.
-      await fromRecognizer('notifyStatus', 'done');
       expect(find.byTooltip('Dictate question'), findsOneWidget);
       await tester.enterText(field, 'A different question');
       expect(ctrl.readingQuestion, 'A different question');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
+
+      // Start another dictation, then tap SYNTHESIZE while recording:
+      // ReadingDictation.finish() stops the mic, waits for transcription, and
+      // weaves the final transcript into the synthesis.
+      transcriber.nextTranscript = 'about changing jobs';
       await tester.tap(find.byTooltip('Dictate question').hitTestable());
       await tester.pump();
-      await fromRecognizer('notifyStatus', 'listening');
-      await words('about', 0);
+      expect(voice.isRecording, isTrue);
+      now = now.add(const Duration(seconds: 2));
       final oracle = tester.element(field).read<OracleSessionController>();
       await tester.tap(find.text('✦ SYNTHESIZE IN CHAT →'));
       await tester.pump();
-      expect(calls, contains('stop'));
-      expect(oracle.hasSynthesis, isFalse);
-      await words('about changing jobs', 2);
       await tester.pump(const Duration(seconds: 1));
+      expect(recorder.stopCount, 2);
       expect(
         oracle.initial!.narrative,
         contains('A different question about changing jobs'),

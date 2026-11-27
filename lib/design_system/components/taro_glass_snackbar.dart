@@ -77,6 +77,7 @@ class TaroGlassToast extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = TaroPalette.of(context);
     final accent = _accent;
     return Semantics(
       liveRegion: true,
@@ -84,11 +85,15 @@ class TaroGlassToast extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: TaroColors.surface.withValues(alpha: 0.94),
+          color: palette.surface.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(TaroRadii.button),
-          border: Border.all(color: accent.withValues(alpha: 0.55)),
+          border: Border.all(
+            color: palette.isMoonlit
+                ? palette.borderHairline
+                : accent.withValues(alpha: 0.55),
+          ),
           boxShadow: TaroGlow.soft(
-            accent,
+            palette.isMoonlit ? palette.lanternGlow : accent,
             alpha: 0.22,
             blur: 20,
             offset: const Offset(0, 6),

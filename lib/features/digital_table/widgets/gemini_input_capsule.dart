@@ -1,18 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:speech_to_text/speech_to_text.dart';
+import 'package:provider/provider.dart';
 
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/services/oracle_voice_service.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../design_system/taro.dart';
-import '../../../core/l10n/app_strings.dart';
+import '../../../state/voice_input_controller.dart';
+import 'voice_mic_button.dart';
 
 /// The shared Gemini-style floating input capsule docked directly above
 /// the bottom navigation dock — ONE component used by the Digital Table
 /// (Pane 0) and the Oracle AI Chat (Pane 1).
 ///
 /// Visual: rounded dark obsidian pill (`radius 28`, hairline border) with
-/// `+` on the left, an expandable text field in the middle, and the mic +
-/// circular accent send (`↑`) on the right.
+/// `+` on the left, an expandable text field in the middle, and the live
+/// amplitude mic + circular accent send (`↑`) on the right.
 class GeminiInputCapsule extends StatefulWidget {
   const GeminiInputCapsule({
     super.key,
@@ -27,6 +32,7 @@ class GeminiInputCapsule extends StatefulWidget {
 
   final ValueChanged<String> onSend;
   final VoidCallback onPlus;
+
   /// Optional override; when null the shared dictionary hint is used.
   final String? hint;
   final Key? sendKey;
@@ -49,8 +55,17 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
     with WidgetsBindingObserver {
   late final TextEditingController _text =
       widget.controller ?? TextEditingController();
-  bool _micListening = false;
-  SpeechToText? _speech;
+  VoiceInputController? _providedVoice;
+  VoiceInputController? _ownedVoice;
+
+  VoiceInputController _resolveVoice(BuildContext context) {
+    final provided = context.read<VoiceInputController?>();
+    if (provided != null) {
+      _providedVoice = provided;
+      return provided;
+    }
+    return _ownedVoice ??= VoiceInputController();
+  }
 
   @override
   void initState() {
@@ -59,9 +74,20 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _providedVoice = context.read<VoiceInputController?>();
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _speech?.stop();
+    final voice = _providedVoice ?? _ownedVoice;
+    if (voice != null && voice.isOwnedBy(this)) {
+      unawaited(voice.cancel(owner: this));
+    }
+    unawaited(_ownedVoice?.cancel());
+    _ownedVoice?.dispose();
     if (widget.controller == null) _text.dispose();
     super.dispose();
   }
@@ -73,14 +99,11 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.hidden) {
-      _stopMic();
+      final voice = _providedVoice ?? _ownedVoice;
+      if (voice != null && voice.isOwnedBy(this)) {
+        unawaited(voice.cancel(owner: this));
+      }
     }
-  }
-
-  Future<void> _stopMic() async {
-    if (!_micListening) return;
-    setState(() => _micListening = false);
-    await _speech?.stop();
   }
 
   void _submit() {
@@ -92,44 +115,32 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
   }
 
   Future<void> _toggleMic() async {
-    if (_micListening) {
-      await _stopMic();
-      return;
-    }
-    _speech ??= SpeechToText();
-    bool ok;
-    try {
-      ok = await _speech!.initialize();
-    } catch (_) {
-      ok = false;
-    }
-    if (!ok) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppStrings.g('ui.gemini_input_capsule.voice_input_is_not_available_here_type_your_thou'),
-            ),
-          ),
-        );
+    final voice = _resolveVoice(context);
+    if (voice.isRecordingFor(this)) {
+      final result = await voice.stopAndTranscribe(owner: this);
+      if (!mounted) return;
+      if (result.isSuccess) {
+        insertVoiceTranscript(_text, result.text!);
+      } else {
+        showVoiceInputFeedback(context, result);
       }
       return;
     }
-    setState(() => _micListening = true);
-    await _speech!.listen(
-      onResult: (r) {
-        _text.text = r.recognizedWords;
-        _text.selection =
-            TextSelection.collapsed(offset: _text.text.length);
-      },
-      listenOptions: SpeechListenOptions(
-        listenFor: const Duration(seconds: 20),
-      ),
+
+    // Half-duplex: silence TTS before opening the mic.
+    unawaited(context.read<OracleVoiceService?>()?.stop());
+    final early = await voice.startRecording(
+      owner: this,
+      onAutoStop: () => unawaited(_toggleMic()),
     );
-    if (mounted) setState(() => _micListening = false);
+    if (!mounted || early == null) return;
+    showVoiceInputFeedback(context, early);
   }
 
   @override
   Widget build(BuildContext context) {
+    final voice = context.watch<VoiceInputController?>() ??
+        (_ownedVoice ??= VoiceInputController());
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
       child: TaroGlassSurface(
@@ -171,7 +182,8 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
                     color: TaroColors.textPrimary,
                   ),
                   decoration: InputDecoration(
-                    hintText: widget.hint ?? AppStrings.g('table.addContextHint'),
+                    hintText:
+                        widget.hint ?? AppStrings.g('table.addContextHint'),
                     hintStyle: AppTypography.chatUser(
                       fontSize: 14.5,
                       height: 1.4,
@@ -185,10 +197,12 @@ class _GeminiInputCapsuleState extends State<GeminiInputCapsule>
                   ),
                 ),
               ),
-              _CapsuleIconButton(
-                icon: _micListening ? Icons.graphic_eq : Icons.mic_none,
-                tooltip: AppStrings.g('ui.gemini_input_capsule.voice'),
-                tint: _micListening ? TaroColors.rose : null,
+              VoiceMicButton(
+                key: const ValueKey('capsule-voice-mic'),
+                controller: voice,
+                owner: this,
+                variant: VoiceMicButtonVariant.capsule,
+                idleTooltip: AppStrings.g('ui.gemini_input_capsule.voice'),
                 onTap: _toggleMic,
               ),
               const SizedBox(width: 6),
@@ -236,13 +250,11 @@ class _CapsuleIconButton extends StatelessWidget {
     required this.icon,
     required this.onTap,
     this.tooltip,
-    this.tint,
   });
 
   final IconData icon;
   final VoidCallback onTap;
   final String? tooltip;
-  final Color? tint;
 
   @override
   Widget build(BuildContext context) {
@@ -267,7 +279,7 @@ class _CapsuleIconButton extends StatelessWidget {
             child: Icon(
               icon,
               size: 18,
-              color: tint ?? TaroColors.textSecondary,
+              color: TaroColors.textSecondary,
             ),
           ),
         ),
@@ -275,4 +287,3 @@ class _CapsuleIconButton extends StatelessWidget {
     );
   }
 }
-

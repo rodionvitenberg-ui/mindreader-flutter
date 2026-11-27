@@ -8,6 +8,7 @@ import '../../../core/models/dealt_card_slot.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/models/tarot_deck_pack.dart';
 import '../../../core/services/pack_asset_store.dart';
+import '../../../design_system/components/element_icon.dart';
 import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/card_motion.dart';
@@ -852,14 +853,21 @@ class _CardFace extends StatelessWidget {
                     ),
                   ),
                 ),
-                Text(
-                  '${card.element.glyph} ${card.element.label.toUpperCase()}',
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.label(
-                    fontSize: width * 0.055,
-                    letterSpacing: 0.7,
-                    color: card.element.accent,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElementIcon(card.element, size: width * 0.075),
+                    SizedBox(width: width * 0.025),
+                    Text(
+                      card.element.label.toUpperCase(),
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.label(
+                        fontSize: width * 0.055,
+                        letterSpacing: 0.7,
+                        color: card.element.accent,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -895,16 +903,12 @@ class _TypographicFace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = Color(pack.faceAccentArgb);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            card.element.glyph,
-            style: TextStyle(fontSize: width * 0.16, color: accent),
-          ),
-          const SizedBox(height: 4),
+          ElementIcon(card.element, size: width * 0.22),
+          const SizedBox(height: 6),
           Text(
             card.name,
             textAlign: TextAlign.center,

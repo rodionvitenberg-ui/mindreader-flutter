@@ -21,10 +21,14 @@ Validation can include a `fields` object. Use `code` for client behavior and kee
 | GET `health/` | Database readiness |
 | GET `config/public/` | Systems, guest support and availability of email verification |
 | POST `auth/guest/` | A server-issued guest identity and bearer token |
+| POST `auth/register/` | Password-based registration (`name`, `email`, `password`, optional `receiptNumber`); migrates guest grants |
+| POST `auth/login/` | Email + password sign-in; returns bearer token and live PRO status |
 | POST `auth/email/start/` | Request a single-use proof with `{"email":"reader@example.org"}` |
 | POST `auth/email/verify/` | Submit `{"token":"<one-time code>"}` to obtain a verified identity and bearer token |
+| POST `auth/handoff/` | Issue a short-lived one-time handoff code for the promo web shop |
+| POST `auth/handoff/exchange/` | Exchange a handoff code for a bearer session |
 | POST `auth/logout/` | Revoke the bearer token |
-| GET `account/me/` | Current ID and verified flag |
+| GET, DELETE `account/me/` | Current profile, verified flag, live PRO status (`isPro`, `proPlan`, `proExpiresAt`), or account deletion |
 
 Token responses include `id`, `verified`, `token`, and `expiresAt`. A guest token is valid for seven days and an account token for 30 days unless revoked. Store the bearer token in the device's secure credential storage. Email verification creates or restores the verified account. Guest history and grants remain tied to the guest identity in v1. Recovering a library on another device means signing into the same verified account.
 
@@ -33,6 +37,9 @@ Token responses include `id`, `verified`, `token`, and `expiresAt`. A guest toke
 | Method and path | Contract |
 | --- | --- |
 | GET `oracle/personalities/` | Enabled public names and descriptions |
+| GET `oracle/quota/` | Live server-enforced daily quotas (`isPro`, `oracle`, `stt`, `vision` with `used`/`limit`/`remaining`/`resetAt`) |
+| POST `oracle/complete/` | Stateless server-side Oracle LLM proxy (`prompt`, optional `systemPrompt`, `kind`, `temperature`); returns `text`, `provider`, `quota` (`429 quota_exceeded` on Free/PRO cap) |
+| POST `oracle/transcribe/` | Multipart voice transcription proxy (`file` ≤5 MiB, optional `mimeType`; zero disk retention; DeepSeek ASR `/v1/tools/asr`, Whisper, or Gemini) |
 | GET, POST `oracle/sessions/` | List owned sessions or create a session **key** |
 | GET, PATCH, DELETE `oracle/sessions/{id}/` | Restore, update pre-reading context or delete an owned session |
 | POST `oracle/sessions/{id}/cards/` | Submit one revealed digital card **key** |
@@ -85,6 +92,7 @@ A future SSE API may emit `started`, `delta`, then `completed` or `error` with a
 
 | Method and path | Contract |
 | --- | --- |
+| POST `vision/scan-spread/` | End-to-end physical spread scanner (`image`, `mode`: `quick_scan`/`guided_single`/`live_oracle`, optional `expectedCount`): `enginetaro` OpenCV crops → Cloud VLM (`deepseek-flash`) |
 | POST `vision/recognize/` | One extracted image **key** |
 | POST `vision/recognize-batch/` | Up to 12 extracted images **key** |
 | GET `vision/results/{requestId}/` | Retrieve one's own recognition result |
@@ -151,6 +159,18 @@ In Admin, create `Deck version` for the draft, set its version, minimum app vers
 | POST `payments/checkout/` | Create an order for a verified account with `{"deckId":"…","provider":"…"}` **key** |
 | GET `payments/orders/{id}/` | Poll the order as its owner |
 | POST `payments/webhooks/{provider}/` | Receive a signed and verified payment state from the provider |
+| GET `payments/pro/offer/` | Public Early Supporter PRO pricing & remaining slot count |
+| POST `payments/pro/checkout/` | Create a PRO subscription order (`email`, `plan`, `asset`: `USDC`/`SOL`) |
+| POST `payments/pro/solana/verify/` | Verify an on-chain Solana transfer (`orderId`, `txSignature`), issue receipt, and activate PRO |
+
+## Telegram Mini App & Reminder Bot
+
+| Method and path | Contract |
+| --- | --- |
+| POST `telegram/webhook/` | Telegram Bot API webhook (verified via `X-Telegram-Bot-Api-Secret-Token`): handles `/start`, `/daily`, `/lunar`, `/checkin [3\|7\|14] [topic]`, `/stop` with inline Mini App launch buttons |
+| POST `telegram/checkin/` | Schedule a 3 / 7 / 14-day Zeigarnik spread check-in reminder directly from Telegram Mini App (`initData` verified via HMAC-SHA256, `days`, `spreadTitle`) |
+
+Run `python manage.py send_telegram_reminders` on a 15–30 minute cron to idempotently dispatch due check-ins, daily card anchors, and New/Full Moon ritual alerts.
 
 Price and currency come from the server product and are fixed on the order. The development adapter is disabled by default and unavailable in production. For a local simulation set `PAYMENTS_ENABLE_DEV=true` and a random `PAYMENTS_DEV_WEBHOOK_SECRET` of at least 32 characters. Use the verified identity flow and checkout with provider `dev`. It returns a reference with prefix `dev-` and a null `checkoutUrl`. Use the order snapshot to simulate a signed `paid` or `refunded` event. Headers are `X-Tarot-Webhook-Timestamp` (Unix seconds, five-minute tolerance) and `X-Tarot-Webhook-Signature` (lowercase hex HMAC-SHA256 of timestamp, a period, and the exact raw body). Body fields are `eventId`, `orderId`, `reference`, `status`, `priceMinor` and `currency`. Only verified server events create or revoke a purchase grant.
 

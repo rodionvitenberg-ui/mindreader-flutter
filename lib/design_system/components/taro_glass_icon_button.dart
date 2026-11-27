@@ -60,6 +60,7 @@ class _TaroGlassIconButtonState extends State<TaroGlassIconButton> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = TaroPalette.of(context);
     final disabled = _disabled;
     final dimension = math.max(widget.size, 44.0);
     final isPrimary =
@@ -67,19 +68,26 @@ class _TaroGlassIconButtonState extends State<TaroGlassIconButton> {
 
     final tint = widget.tint ??
         (isPrimary
-            ? TaroColors.lavender.withValues(alpha: 0.24)
+            ? (palette.isMoonlit
+                ? TaroColors.lanternAmber.withValues(alpha: 0.22)
+                : TaroColors.lavender.withValues(alpha: 0.24))
             : switch (widget.variant) {
                 TaroGlassButtonVariant.primary =>
                   TaroColors.lavender.withValues(alpha: 0.22),
-                TaroGlassButtonVariant.secondary =>
-                  TaroColors.mist.withValues(alpha: 0.12),
+                TaroGlassButtonVariant.secondary => palette.isMoonlit
+                    ? palette.glassTint
+                    : TaroColors.mist.withValues(alpha: 0.12),
                 TaroGlassButtonVariant.ghost => null,
               });
 
     final resolvedIconColor = disabled
         ? TaroColors.textSecondary.withValues(alpha: 0.5)
         : widget.iconColor ??
-            (isPrimary ? TaroColors.lavender : TaroColors.textPrimary);
+            (isPrimary
+                ? (palette.isMoonlit
+                    ? TaroColors.lanternAmberBright
+                    : TaroColors.lavender)
+                : TaroColors.textPrimary);
 
     return Semantics(
       button: true,
@@ -108,15 +116,15 @@ class _TaroGlassIconButtonState extends State<TaroGlassIconButton> {
                     (widget.variant == TaroGlassButtonVariant.ghost &&
                             !widget.active
                         ? Colors.transparent
-                        : TaroColors.surface),
+                        : palette.surface),
                 borderColor: widget.borderColor ??
-                    (isPrimary
-                        ? TaroColors.lavender.withValues(
-                            alpha: TaroOpacity.borderStrong,
-                          )
-                        : null),
+                    (isPrimary ? palette.activeOutline : palette.borderHairline),
                 glow: widget.active
-                    ? TaroGlow.soft(TaroColors.lavender, alpha: 0.35, blur: 16)
+                    ? TaroGlow.soft(
+                        palette.lanternGlow,
+                        alpha: palette.isMoonlit ? 0.28 : 0.35,
+                        blur: 16,
+                      )
                     : null,
                 child: Center(
                   child: Icon(

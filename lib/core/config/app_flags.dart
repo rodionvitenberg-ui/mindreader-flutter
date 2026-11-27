@@ -8,6 +8,6 @@
 /// touching the individual call sites.
 library;
 
-/// True → PRO gates are enforced (free tier caps, paywall; preset spreads stay open).
+/// True → PRO gates are enforced (free tier caps, soft paywall; preset spreads stay open).
 /// False → all PRO-gated content is available (pre-launch build).
-const bool kProRestrictionsEnabled = false;
+const bool kProRestrictionsEnabled = true;

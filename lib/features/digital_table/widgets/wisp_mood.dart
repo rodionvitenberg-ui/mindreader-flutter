@@ -1,10 +1,10 @@
 import '../../../core/models/guide_event.dart';
 import '../../../core/models/guide_hint.dart';
 
-/// The companion's facial moods — the wisp's mimicry is the point, so every
-/// expression has a meaning the mentor can actually reach.
+/// Wisp's facial moods — mimicry is the heart of the companion, so every
+/// expression maps to a real reading moment.
 enum WispMood {
-  /// Soft smile `^ ^` — meeting the reader, and the one celebration.
+  /// Soft smile `^ ^` — meeting the reader, Step 1 welcome, and celebration.
   greeting,
 
   /// Wide-eyed `o o` — a card is being dealt, revealed or read.
@@ -17,18 +17,19 @@ enum WispMood {
   /// Flowing contemplation — an answer is being composed.
   thinking,
 
-  /// Closed eyes `– –` — the companion is resting.
+  /// Closed eyes `– –` — Wisp is resting.
   sleeping,
 }
 
-/// Maps the mentor's single current hint onto the companion's expression.
+/// Maps the mentor's single current hint onto Wisp's expression.
 ///
 /// Pure (no Flutter imports), so every branch is unit-tested without pumping
-/// widgets. A finished spread is the only celebration; an opposing pair is the
-/// only moment that asks for sympathy instead of curiosity.
+/// widgets. Step 1 greeting and a finished spread bring the smile; an opposing
+/// pair asks for sympathy instead of curiosity.
 WispMood wispMoodFor(GuideHint? hint, {bool tension = false}) {
   if (hint == null) return WispMood.sleeping;
-  if (hint.eventType == GuideEventType.spreadCompleted) {
+  if (hint.eventType == GuideEventType.spreadCompleted ||
+      hint.eventType == GuideEventType.spreadSelected) {
     return WispMood.greeting;
   }
   if (tension) return WispMood.empathetic;

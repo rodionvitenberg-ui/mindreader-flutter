@@ -8,13 +8,14 @@ import '../../../design_system/taro_tokens.dart';
 import 'wisp_face_painter.dart';
 import 'wisp_mood.dart';
 
-/// The Tarot Tree companion — the real look (G2.2).
+/// Wisp — the Tarot Tree companion (G2.2/G2.3).
 ///
-/// The authored sprite supplies the body and veil; the face is painted
-/// procedurally on top, so mimicry stays crisp at any size with no extra
-/// assets. It floats on an isolated [RepaintBoundary], blinks on its own
-/// schedule, follows [gazeTarget], honours reduce-motion (and then schedules
-/// no frames at all) and fires one medium haptic when it starts celebrating.
+/// The cleaned, mirrored transparent sprite (`assets/images/wisp_body.png`)
+/// supplies the luminous orb and swirling cosmic veil; the face is painted
+/// procedurally dead-center on the orb so mimicry stays crisp at any size.
+/// Wisp floats on an isolated [RepaintBoundary], blinks on its own schedule,
+/// follows [gazeTarget], honours reduce-motion (scheduling zero frames), and
+/// fires one medium haptic when transitioning into celebration.
 class WispMascot extends StatefulWidget {
   const WispMascot({
     super.key,
@@ -22,6 +23,7 @@ class WispMascot extends StatefulWidget {
     this.mood = WispMood.greeting,
     this.gazeTarget = Offset.zero,
     this.glowColor = TaroColors.lavender,
+    this.flipX = false,
     this.onTap,
   });
 
@@ -31,6 +33,10 @@ class WispMascot extends StatefulWidget {
   /// Normalised look direction, each axis in -1..1.
   final Offset gazeTarget;
   final Color glowColor;
+
+  /// Mirrors the sprite horizontally when Wisp sits on the right side facing
+  /// left. Defaults to `false` (orb leans right toward a speech bubble).
+  final bool flipX;
   final VoidCallback? onTap;
 
   @override
@@ -93,8 +99,8 @@ class _WispMascotState extends State<WispMascot> with TickerProviderStateMixin {
   void didUpdateWidget(WispMascot oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.mood == widget.mood) return;
-    // Celebration is the one physical moment worth a haptic; onboarding sets
-    // the mood once, so it never vibrates on its own.
+    // Celebration is the one physical moment worth a haptic; onboarding and
+    // Step 1 set the mood once, so they never vibrate on mount.
     if (widget.mood == WispMood.greeting) HapticFeedback.mediumImpact();
     if (!_reduced && widget.mood != WispMood.sleeping) _scheduleBlink();
   }
@@ -119,6 +125,21 @@ class _WispMascotState extends State<WispMascot> with TickerProviderStateMixin {
       (widget.size * MediaQuery.devicePixelRatioOf(context)).round(),
     );
 
+    final orbCenterX = widget.flipX
+        ? 1.0 - WispFacePainter.defaultOrbCenterX
+        : WispFacePainter.defaultOrbCenterX;
+    final orbAlignX = orbCenterX * 2.0 - 1.0;
+    final orbAlignY = WispFacePainter.defaultOrbCenterY * 2.0 - 1.0;
+
+    final sprite = Image.asset(
+      'assets/images/wisp_body.png',
+      width: widget.size,
+      height: widget.size,
+      fit: BoxFit.contain,
+      cacheWidth: cacheWidth,
+      filterQuality: FilterQuality.medium,
+    );
+
     return ExcludeSemantics(
       child: GestureDetector(
         onTap: widget.onTap,
@@ -131,38 +152,37 @@ class _WispMascotState extends State<WispMascot> with TickerProviderStateMixin {
               builder: (context, _) {
                 final t = Curves.easeInOutSine.transform(_float.value);
                 return Transform.translate(
-                  offset: Offset(0, (t - .5) * (widget.size * .08)),
+                  offset: Offset(0, (t - .5) * (widget.size * .07)),
                   child: Transform.rotate(
-                    angle: reduce ? 0 : (t - .5) * .07,
+                    angle: reduce ? 0 : (t - .5) * .055,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // The only light the companion emits, tinted per moment.
-                        Container(
-                          width: widget.size * .72,
-                          height: widget.size * .72,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: widget.glowColor.withValues(alpha: .28),
-                                blurRadius: widget.size * .28,
-                                spreadRadius: widget.size * .02,
+                        // Soft radial aura centered behind Wisp's orb — zero
+                        // rectangular edge, zero color-filter box artifact.
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: RadialGradient(
+                                center: Alignment(orbAlignX, orbAlignY),
+                                radius: 0.48,
+                                colors: [
+                                  widget.glowColor.withValues(alpha: .28),
+                                  widget.glowColor.withValues(alpha: .08),
+                                  widget.glowColor.withValues(alpha: 0),
+                                ],
+                                stops: const [0.0, 0.55, 1.0],
                               ),
-                            ],
+                            ),
                           ),
                         ),
-                        // The authored sprite: transparent PNG, tinted with a
-                        // screen blend so a dark backing cannot show through.
-                        Image.asset(
-                          'assets/images/wisp_body.png',
-                          width: widget.size,
-                          height: widget.size,
-                          fit: BoxFit.contain,
-                          cacheWidth: cacheWidth,
-                          color: widget.glowColor.withValues(alpha: .15),
-                          colorBlendMode: BlendMode.screen,
-                        ),
+                        // Pure transparent RGBA sprite — never use a
+                        // BlendMode.screen ColorFilter (that fills alpha=0
+                        // corners with a visible square box).
+                        if (widget.flipX)
+                          Transform.flip(flipX: true, child: sprite)
+                        else
+                          sprite,
                         TweenAnimationBuilder<Offset>(
                           tween: Tween<Offset>(
                             begin: Offset.zero,
@@ -179,6 +199,7 @@ class _WispMascotState extends State<WispMascot> with TickerProviderStateMixin {
                               blinkProgress: _blink.value,
                               gaze: smoothGaze,
                               pulse: t,
+                              orbCenterX: orbCenterX,
                             ),
                           ),
                         ),

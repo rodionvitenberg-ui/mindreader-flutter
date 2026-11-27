@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- Outer zodiac ring & inner ecliptic ring -->
+  <circle cx="12" cy="12" r="9.75" stroke="currentColor" stroke-width="1.35"/>
+  <circle cx="12" cy="12" r="6.25" stroke="currentColor" stroke-width="0.95"/>
+  <!-- 12 zodiac sign divisions -->
+  <line x1="18.25" y1="12.00" x2="21.75" y2="12.00" stroke="currentColor" stroke-width="1.05"/>
+  <line x1="17.41" y1="15.12" x2="20.44" y2="16.88" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.72"/>
+  <line x1="15.12" y1="17.41" x2="16.88" y2="20.44" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.72"/>
+  <line x1="12.00" y1="18.25" x2="12.00" y2="21.75" stroke="currentColor" stroke-width="1.05"/>
+  <line x1="8.88" y1="17.41" x2="7.13" y2="20.44" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.72"/>
+  <line x1="6.59" y1="15.12" x2="3.56" y2="16.88" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.72"/>
+  <line x1="5.75" y1="12.00" x2="2.25" y2="12.00" stroke="currentColor" stroke-width="1.05"/>
+  <line x1="6.59" y1="8.88" x2="3.56" y2="7.12" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.72"/>
+  <line x1="8.87" y1="6.59" x2="7.12" y2="3.56" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.72"/>
+  <line x1="12.00" y1="5.75" x2="12.00" y2="2.25" stroke="currentColor" stroke-width="1.05"/>
+  <line x1="15.12" y1="6.59" x2="16.88" y2="3.56" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.72"/>
+  <line x1="17.41" y1="8.87" x2="20.44" y2="7.12" stroke="currentColor" stroke-width="0.8" stroke-opacity="0.72"/>
+  <!-- Celestial crescent & star -->
+  <path d="M 14.641 13.423 A 3.25 3.25 0 1 1 11.533 8.902 A 2.75 2.75 0 0 0 14.641 13.423 Z" fill="currentColor"/>
+  <circle cx="13.75" cy="10.55" r="0.9" fill="currentColor"/>
+</svg>

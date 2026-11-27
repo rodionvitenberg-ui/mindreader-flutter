@@ -238,14 +238,24 @@ class _ElementBar extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 66,
-            child: Text(
-              '${element.glyph} ${element.label.toUpperCase()}',
-              style: AppTypography.label(
-                fontSize: 9,
-                letterSpacing: 0.7,
-                color: element.accent,
-              ),
+            width: 72,
+            child: Row(
+              children: [
+                ElementIcon(element, size: 12),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    element.label.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.label(
+                      fontSize: 9,
+                      letterSpacing: 0.7,
+                      color: element.accent,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(

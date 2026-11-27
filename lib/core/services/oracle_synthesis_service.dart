@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:http/http.dart' as http;
 
 import '../models/chat_message.dart';
@@ -397,14 +397,45 @@ String synthesizeSpreadFor(
 
 /// Remote synthesis with the same dual AI pipeline as vision:
 ///
-/// 1. PRIMARY — local/tunneled RTX 3080 worker (chat endpoint,
-///    `PRIMARY_WORKER_URL`, 3500 ms timeout).
-/// 2. FALLBACK — Gemini Flash cloud (`ORACLE_API_URL` / Gemini key).
+/// Thrown when the Django backend enforces a daily Free/PRO Oracle AI quota (HTTP 429).
+class OracleQuotaExceededException implements Exception {
+  const OracleQuotaExceededException({
+    required this.message,
+    this.limit,
+    this.resetAt,
+  });
+
+  final String message;
+  final int? limit;
+  final DateTime? resetAt;
+
+  @override
+  String toString() => 'OracleQuotaExceededException($message)';
+}
+
+/// Resolves `(backendBaseUrl, bearerToken)` for server-proxied AI requests.
+typedef BackendAuthResolver = Future<(String?, String?)> Function();
+
+/// 0. SERVER PROXY (preferred) — Django `/api/v1/oracle/complete/`, which keeps
+///    all AI keys 100% off the client/PWA and enforces Free/PRO daily quotas.
+/// 1. PRIMARY — local/tunneled worker (`PRIMARY_WORKER_URL`, 3500 ms timeout).
+/// 2. FALLBACK — direct cloud endpoint (non-Web dev builds only when keys are supplied).
 /// 3. OFFLINE SAFETY NET — the deterministic local [synthesizeSpread]
 ///    engine, so the reading sheet never fails without network.
 class OracleSynthesisService {
-  OracleSynthesisService({http.Client? client})
-      : _client = client ?? http.Client();
+  OracleSynthesisService({
+    http.Client? client,
+    BackendAuthResolver? backendAuthResolver,
+  })  : _client = client ?? http.Client(),
+        backendAuthResolverOverride = backendAuthResolver;
+
+  static BackendAuthResolver? _globalBackendAuthResolver;
+
+  /// Registers the app-wide Django auth resolver once at startup so every
+  /// Oracle call routes through the server proxy without exposing API keys.
+  static void registerBackendAuth(BackendAuthResolver? resolver) {
+    _globalBackendAuthResolver = resolver;
+  }
 
   static const primaryWorkerUrl = String.fromEnvironment('PRIMARY_WORKER_URL');
   static const primaryWorkerKey = String.fromEnvironment('PRIMARY_WORKER_KEY');
@@ -428,19 +459,26 @@ class OracleSynthesisService {
     return String.fromEnvironment('VISION_API_KEY');
   }
 
+  static const serverTimeout = Duration(seconds: 26);
   static const primaryTimeout = Duration(milliseconds: 3500);
   static const cloudTimeout = Duration(seconds: 20);
 
   final http.Client _client;
+  final BackendAuthResolver? backendAuthResolverOverride;
 
-  bool get hasPrimary => primaryWorkerUrl.isNotEmpty;
-  bool get hasCloud => cloudUrl.isNotEmpty && cloudKey.isNotEmpty;
+  BackendAuthResolver? get _effectiveBackendAuth =>
+      backendAuthResolverOverride ?? _globalBackendAuthResolver;
+
+  bool get hasBackendProxy => _effectiveBackendAuth != null;
+  bool get hasPrimary => !kIsWeb && primaryWorkerUrl.isNotEmpty;
+  bool get hasCloud => !kIsWeb && cloudUrl.isNotEmpty && cloudKey.isNotEmpty;
+  bool get hasAnyRemote => hasBackendProxy || hasPrimary || hasCloud;
 
   /// The Oracle's voice (4.8): calm, restrained, contextual and symbolic —
   /// grounded psychology, never kitsch or mysticism, and NEVER categorical
   /// medical / financial / legal predictions. Spoken answers stay shorter than
   /// written ones. Shared by every prompt builder so the tone is one place.
-  static const oraclePersona = 'You are the mindreader.quest oracle: calm, '
+  static const oraclePersona = 'You are the Tarot Tree oracle: calm, '
       'restrained, contextual and symbolic. You speak in grounded psychological '
       'language — reflective insight, never fortune-teller kitsch, never '
       'mysticism, never hard predictions. You NEVER give categorical medical, '
@@ -491,38 +529,11 @@ class OracleSynthesisService {
       relationships: relationships,
     );
     if (prompt == null) return fallback;
-
-    if (hasPrimary) {
-      try {
-        final text = await _chat(
-          url: primaryWorkerUrl,
-          key: primaryWorkerKey,
-          model: primaryChatModel,
-          timeout: primaryTimeout,
-          prompt: prompt,
-        );
-        if (text.isNotEmpty) return text;
-      } catch (e) {
-        debugPrint('oracle: primary worker unreachable '
-            '(${e.runtimeType}), falling back to cloud');
-      }
-    }
-    if (hasCloud) {
-      try {
-        final text = await _chat(
-          url: cloudUrl,
-          key: cloudKey,
-          model: cloudModel,
-          timeout: cloudTimeout,
-          prompt: prompt,
-        );
-        if (text.isNotEmpty) return text;
-      } catch (e) {
-        debugPrint('oracle: cloud endpoint failed '
-            '(${e.runtimeType}), local synthesis');
-      }
-    }
-    return fallback;
+    return _completeWithFallback(
+      prompt: prompt,
+      kind: 'synthesis',
+      fallback: fallback,
+    );
   }
 
   /// The ceremonial SYNTHESIZE READING pipeline: the narrative runs through
@@ -576,7 +587,7 @@ class OracleSynthesisService {
     final c = newSlot.card;
     if (c == null) return '';
     final fallback = _clarifierFallback(question, newSlot, previous);
-    if (!hasPrimary && !hasCloud) return fallback;
+    if (!hasAnyRemote) return fallback;
     final b = StringBuffer();
     b.writeln(oraclePersona);
     b.writeln('The reader already has this reading on the table:');
@@ -599,32 +610,11 @@ class OracleSynthesisService {
         'follow-up question through this ${c.system.unit} IN THE CONTEXT of '
         'the cards already on the table, and close with one concrete step. '
         'Plain text only: no markdown, no lists.');
-    try {
-      if (hasPrimary) {
-        final text = await _chat(
-          url: primaryWorkerUrl,
-          key: primaryWorkerKey,
-          model: primaryChatModel,
-          timeout: primaryTimeout,
-          prompt: b.toString(),
-        );
-        if (text.isNotEmpty) return text;
-      }
-      if (hasCloud) {
-        final text = await _chat(
-          url: cloudUrl,
-          key: cloudKey,
-          model: cloudModel,
-          timeout: cloudTimeout,
-          prompt: b.toString(),
-        );
-        if (text.isNotEmpty) return text;
-      }
-    } catch (e) {
-      debugPrint('oracle: clarifier endpoints failed '
-          '(${e.runtimeType}), local synthesis');
-    }
-    return fallback;
+    return _completeWithFallback(
+      prompt: b.toString(),
+      kind: 'clarifier',
+      fallback: fallback,
+    );
   }
 
   /// Offline clarifier chapter: the question + the card + the context of
@@ -752,7 +742,7 @@ class OracleSynthesisService {
     String? profileContext,
   }) async {
     final fallback = _chatFallback(question, slots);
-    if (!hasPrimary && !hasCloud) return fallback;
+    if (!hasAnyRemote) return fallback;
     final b = StringBuffer();
     b.writeln(oraclePersona);
     b.writeln('Spread: ${spreadLabel ?? (type ?? SpreadType.three).label}.');
@@ -774,32 +764,11 @@ class OracleSynthesisService {
     b.writeln('The reader asks: $question');
     b.writeln('Answer in 2-4 short sentences grounded in the cards on the '
         'table. Plain text only: no markdown, no lists.');
-    try {
-      if (hasPrimary) {
-        final text = await _chat(
-          url: primaryWorkerUrl,
-          key: primaryWorkerKey,
-          model: primaryChatModel,
-          timeout: primaryTimeout,
-          prompt: b.toString(),
-        );
-        if (text.isNotEmpty) return text;
-      }
-      if (hasCloud) {
-        final text = await _chat(
-          url: cloudUrl,
-          key: cloudKey,
-          model: cloudModel,
-          timeout: cloudTimeout,
-          prompt: b.toString(),
-        );
-        if (text.isNotEmpty) return text;
-      }
-    } catch (e) {
-      debugPrint(
-          'oracle: chat endpoints failed (${e.runtimeType}), local answer');
-    }
-    return fallback;
+    return _completeWithFallback(
+      prompt: b.toString(),
+      kind: 'chat',
+      fallback: fallback,
+    );
   }
 
   /// G4 — ONE deeper explanation of the mentor moment the reader explicitly
@@ -824,7 +793,7 @@ class OracleSynthesisService {
       link: link,
       focusSlot: focusSlot,
     );
-    if (!hasPrimary && !hasCloud) return fallback;
+    if (!hasAnyRemote) return fallback;
 
     final b = StringBuffer();
     b.writeln(oraclePersona);
@@ -846,34 +815,11 @@ class OracleSynthesisService {
       'together for the focus of this spread, then one concrete question the '
       'reader can sit with. Plain text only: no markdown, no lists.',
     );
-    try {
-      if (hasPrimary) {
-        final text = await _chat(
-          url: primaryWorkerUrl,
-          key: primaryWorkerKey,
-          model: primaryChatModel,
-          timeout: primaryTimeout,
-          prompt: b.toString(),
-        );
-        if (text.isNotEmpty) return text;
-      }
-      if (hasCloud) {
-        final text = await _chat(
-          url: cloudUrl,
-          key: cloudKey,
-          model: cloudModel,
-          timeout: cloudTimeout,
-          prompt: b.toString(),
-        );
-        if (text.isNotEmpty) return text;
-      }
-    } catch (e) {
-      debugPrint(
-        'oracle: guide-moment endpoints failed (${e.runtimeType}), '
-        'local answer',
-      );
-    }
-    return fallback;
+    return _completeWithFallback(
+      prompt: b.toString(),
+      kind: 'guide',
+      fallback: fallback,
+    );
   }
 
   /// A Live Oracle FREEFORM turn (4.5): interprets the freely-laid cards in
@@ -889,7 +835,7 @@ class OracleSynthesisService {
     String? profileContext,
   }) async {
     final fallbackText = _freeformFallback(intention, slots);
-    if (!hasPrimary && !hasCloud) {
+    if (!hasAnyRemote) {
       return OracleActionCommand(
         action: OracleAction.respond,
         text: fallbackText,
@@ -932,31 +878,8 @@ class OracleSynthesisService {
         'identity or orientation, or bypass limits, PRO or history. When no '
         'action is needed, use "respond".');
 
-    try {
-      if (hasPrimary) {
-        final raw = await _chat(
-          url: primaryWorkerUrl,
-          key: primaryWorkerKey,
-          model: primaryChatModel,
-          timeout: primaryTimeout,
-          prompt: b.toString(),
-        );
-        if (raw.isNotEmpty) return parseOracleActionResponse(raw);
-      }
-      if (hasCloud) {
-        final raw = await _chat(
-          url: cloudUrl,
-          key: cloudKey,
-          model: cloudModel,
-          timeout: cloudTimeout,
-          prompt: b.toString(),
-        );
-        if (raw.isNotEmpty) return parseOracleActionResponse(raw);
-      }
-    } catch (e) {
-      debugPrint(
-          'oracle: freeform endpoints failed (${e.runtimeType}), local reading');
-    }
+    final raw = await _completeRemote(prompt: b.toString(), kind: 'freeform');
+    if (raw != null && raw.isNotEmpty) return parseOracleActionResponse(raw);
     return OracleActionCommand(action: OracleAction.respond, text: fallbackText);
   }
 
@@ -1032,6 +955,138 @@ class OracleSynthesisService {
         'question': focusCard.card!.reflection,
       }),
     ].join('\n\n');
+  }
+
+  /// Unified completion pipeline: Django server proxy -> local worker -> direct cloud.
+  /// Propagates [OracleQuotaExceededException] so the UI can present the PRO sheet.
+  Future<String?> _completeRemote({
+    required String prompt,
+    required String kind,
+    String? systemPrompt,
+  }) async {
+    if (hasBackendProxy) {
+      final serverText = await _completeViaBackend(
+        prompt: prompt,
+        kind: kind,
+        systemPrompt: systemPrompt,
+      );
+      if (serverText != null && serverText.isNotEmpty) return serverText;
+    }
+    if (hasPrimary) {
+      try {
+        final text = await _chat(
+          url: primaryWorkerUrl,
+          key: primaryWorkerKey,
+          model: primaryChatModel,
+          timeout: primaryTimeout,
+          prompt: prompt,
+        );
+        if (text.isNotEmpty) return text;
+      } catch (e) {
+        debugPrint(
+          'oracle: primary worker unreachable (${e.runtimeType}), falling back',
+        );
+      }
+    }
+    if (hasCloud) {
+      try {
+        final text = await _chat(
+          url: cloudUrl,
+          key: cloudKey,
+          model: cloudModel,
+          timeout: cloudTimeout,
+          prompt: prompt,
+        );
+        if (text.isNotEmpty) return text;
+      } catch (e) {
+        debugPrint(
+          'oracle: cloud endpoint failed (${e.runtimeType}), falling back',
+        );
+      }
+    }
+    return null;
+  }
+
+  Future<String> _completeWithFallback({
+    required String prompt,
+    required String kind,
+    required String fallback,
+    String? systemPrompt,
+  }) async {
+    final text = await _completeRemote(
+      prompt: prompt,
+      kind: kind,
+      systemPrompt: systemPrompt,
+    );
+    return (text != null && text.isNotEmpty) ? text : fallback;
+  }
+
+  /// Route 0 (preferred): Django `/api/v1/oracle/complete/` proxy.
+  Future<String?> _completeViaBackend({
+    required String prompt,
+    required String kind,
+    String? systemPrompt,
+  }) async {
+    final resolver = _effectiveBackendAuth;
+    if (resolver == null) return null;
+    try {
+      final (baseUrl, token) = await resolver();
+      final cleanBase = baseUrl?.trim() ?? '';
+      final cleanToken = token?.trim() ?? '';
+      if (cleanBase.isEmpty || cleanToken.isEmpty) return null;
+
+      final uri = Uri.parse(cleanBase).resolve('/api/v1/oracle/complete/');
+      final response = await _client
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': 'Bearer $cleanToken',
+            },
+            body: jsonEncode({
+              'prompt': prompt,
+              'kind': kind,
+              if (systemPrompt != null && systemPrompt.isNotEmpty)
+                'systemPrompt': systemPrompt,
+            }),
+          )
+          .timeout(serverTimeout);
+
+      if (response.statusCode == 429) {
+        Map<String, dynamic>? body;
+        try {
+          final parsed = jsonDecode(utf8.decode(response.bodyBytes));
+          if (parsed is Map<String, dynamic>) body = parsed;
+        } catch (_) {}
+        if (body?['code'] == 'quota_exceeded') {
+          throw OracleQuotaExceededException(
+            message: (body?['detail'] as String?) ?? 'Daily Oracle quota reached.',
+            limit: body?['limit'] is int ? body!['limit'] as int : null,
+            resetAt: body?['resetAt'] is String
+                ? DateTime.tryParse(body!['resetAt'] as String)
+                : null,
+          );
+        }
+        return null;
+      }
+      if (response.statusCode != 200) {
+        debugPrint('oracle: backend proxy responded ${response.statusCode}');
+        return null;
+      }
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      if (data is Map<String, dynamic> && data['text'] is String) {
+        return (data['text'] as String).replaceAll('```', '').trim();
+      }
+      return null;
+    } on OracleQuotaExceededException {
+      rethrow;
+    } catch (e) {
+      debugPrint(
+        'oracle: backend proxy unavailable (${e.runtimeType}), falling back',
+      );
+      return null;
+    }
   }
 
   /// OpenAI/Ollama-compatible chat request. No keys or prompts are logged.
@@ -1387,10 +1442,10 @@ class OracleSynthesisService {
       zodiacForecast,
       transit,
     );
-    if (!hasPrimary && !hasCloud) return fallback;
+    if (!hasAnyRemote) return fallback;
     final buf = StringBuffer();
     buf.writeln(
-      'You are the mindreader.quest oracle: grounded, psychological, modern. '
+      'You are the Tarot Tree oracle: grounded, psychological, modern. '
       'No kitsch, no mysticism.',
     );
     buf.writeln(
@@ -1410,33 +1465,11 @@ class OracleSynthesisService {
       'transits. Answer in 3-5 short sentences. Plain text only: no markdown, '
       'no lists.',
     );
-    try {
-      if (hasPrimary) {
-        final text = await _chat(
-          url: primaryWorkerUrl,
-          key: primaryWorkerKey,
-          model: primaryChatModel,
-          timeout: primaryTimeout,
-          prompt: buf.toString(),
-        );
-        if (text.isNotEmpty) return text;
-      }
-      if (hasCloud) {
-        final text = await _chat(
-          url: cloudUrl,
-          key: cloudKey,
-          model: cloudModel,
-          timeout: cloudTimeout,
-          prompt: buf.toString(),
-        );
-        if (text.isNotEmpty) return text;
-      }
-    } catch (e) {
-      debugPrint(
-        'oracle: natal endpoints failed (${e.runtimeType}), local reading',
-      );
-    }
-    return fallback;
+    return _completeWithFallback(
+      prompt: buf.toString(),
+      kind: 'astral',
+      fallback: fallback,
+    );
   }
 
   /// Offline natal or synastry reading: the Big Three, the sharpest aspect

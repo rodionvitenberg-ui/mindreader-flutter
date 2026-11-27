@@ -16,8 +16,15 @@ class LocalStorageService {
   static const _ritualEnabledKey = 'ritual_enabled';
   static const _ritualMorningKey = 'ritual_morning_minutes';
   static const _ritualEveningKey = 'ritual_evening_minutes';
+  static const _ritualWeekdaysKey = 'ritual_weekdays_v1';
+  static const _lunarNewMoonKey = 'ritual_lunar_new_moon_v1';
+  static const _lunarFullMoonKey = 'ritual_lunar_full_moon_v1';
+  static const _newsNotificationsKey = 'ritual_news_notifications_v1';
   static const _readingDaysKey = 'reading_days';
+  static const _dailyCardKey = 'daily_card_v1';
+  static const _trainingStatsKey = 'training_stats_v1';
   static const _sessionsKey = 'spread_sessions_v2';
+  static const _checkInDefaultDaysKey = 'checkin_default_days_v1';
 
   static const _astralProfilesKey = 'astral_profiles';
   static const _astralTotalChartsKey = 'astral_total_charts_generated';
@@ -45,6 +52,7 @@ class LocalStorageService {
   static const _cameraModeKey = 'camera_mode';
 
   static const _userProfileKey = 'user_profile_v1';
+  static const _sanctuaryThemeModeKey = 'sanctuary_theme_mode_v1';
   static const _backendAuthSessionKey = 'backend_auth_session_v1';
   static const _installedStorePacksKey = 'installed_store_packs_v1';
   static const _storeOwnedIdsKey = 'store_owned_ids_v1';
@@ -135,6 +143,25 @@ class LocalStorageService {
     sessions.removeWhere((s) => s['timestamp'] == ts);
     sessions.insert(0, entry);
     await prefs.setString(_sessionsKey, jsonEncode(sessions));
+  }
+
+  Future<void> deleteSession(String timestamp) async {
+    final prefs = await SharedPreferences.getInstance();
+    final sessions = await loadSessions();
+    sessions.removeWhere((s) => s['timestamp'] == timestamp);
+    await prefs.setString(_sessionsKey, jsonEncode(sessions));
+  }
+
+  Future<int> loadCheckInDefaultDays() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getInt(_checkInDefaultDaysKey);
+    return (raw == 3 || raw == 7 || raw == 14) ? raw! : 7;
+  }
+
+  Future<void> saveCheckInDefaultDays(int days) async {
+    final normalized = (days == 3 || days == 7 || days == 14) ? days : 7;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_checkInDefaultDaysKey, normalized);
   }
 
   Future<void> deleteAllSessions() async {
@@ -300,6 +327,58 @@ class LocalStorageService {
   Future<void> saveEveningMinutes(int minutes) =>
       saveRitualMinutes(_ritualEveningKey, minutes);
 
+  static const Set<int> allWeekdays = {1, 2, 3, 4, 5, 6, 7};
+
+  Future<Set<int>> loadRitualWeekdays() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList(_ritualWeekdaysKey);
+    if (raw == null) return Set<int>.from(allWeekdays);
+    final parsed = <int>{
+      for (final s in raw)
+        if (int.tryParse(s) case final day? when day >= 1 && day <= 7) day,
+    };
+    return parsed.isEmpty ? Set<int>.from(allWeekdays) : parsed;
+  }
+
+  Future<void> saveRitualWeekdays(Set<int> weekdays) async {
+    final prefs = await SharedPreferences.getInstance();
+    final sorted = weekdays.where((d) => d >= 1 && d <= 7).toList()..sort();
+    await prefs.setStringList(
+      _ritualWeekdaysKey,
+      [for (final d in sorted) '$d'],
+    );
+  }
+
+  Future<bool> loadLunarNewMoonEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_lunarNewMoonKey) ?? false;
+  }
+
+  Future<void> saveLunarNewMoonEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_lunarNewMoonKey, enabled);
+  }
+
+  Future<bool> loadLunarFullMoonEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_lunarFullMoonKey) ?? false;
+  }
+
+  Future<void> saveLunarFullMoonEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_lunarFullMoonKey, enabled);
+  }
+
+  Future<bool> loadNewsNotificationsEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_newsNotificationsKey) ?? false;
+  }
+
+  Future<void> saveNewsNotificationsEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_newsNotificationsKey, enabled);
+  }
+
   /// Records today as a day with a completed reading (streak counter).
   Future<void> recordReadingDay({DateTime? now}) async {
     final prefs = await SharedPreferences.getInstance();
@@ -314,6 +393,40 @@ class LocalStorageService {
   Future<List<String>> loadReadingDays() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getStringList(_readingDaysKey) ?? const <String>[];
+  }
+
+  Future<Map<String, dynamic>?> loadDailyCard() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_dailyCardKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveDailyCard(Map<String, dynamic> json) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_dailyCardKey, jsonEncode(json));
+  }
+
+  Future<Map<String, dynamic>?> loadTrainingStats() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_trainingStatsKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveTrainingStats(Map<String, dynamic> json) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_trainingStatsKey, jsonEncode(json));
   }
 
   // ---- ASTRAL natal profiles (Phase 2) ----
@@ -413,6 +526,17 @@ class LocalStorageService {
   Future<void> saveUserProfile(Map<String, dynamic> json) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userProfileKey, jsonEncode(json));
+  }
+
+  /// Persisted dual dark sanctuary theme (`twilight` or `moonlit`).
+  Future<String?> loadSanctuaryThemeMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_sanctuaryThemeModeKey);
+  }
+
+  Future<void> saveSanctuaryThemeMode(String mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_sanctuaryThemeModeKey, mode);
   }
 }
 

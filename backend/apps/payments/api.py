@@ -3,6 +3,7 @@ import hashlib
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import api_view, permission_classes
@@ -10,11 +11,13 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.catalog.models import Deck
-from apps.core.api import IDEMPOTENCY, Problem, checked, finish, operation, rate_limit, replay
+from apps.core.api import IDEMPOTENCY, Problem, checked, finish, ip_limit, operation, rate_limit, replay
 from apps.entitlements.models import Grant, active_grants
 
-from .models import Event, Order
+from .models import Event, Order, ProOrder
+from .pro_service import activate_pro_order, create_pro_order, pro_offer_snapshot
 from .providers import get_provider
+from .solana import verify_solana_transfer
 
 
 class CheckoutInput(serializers.Serializer):
@@ -152,3 +155,138 @@ def webhook(request, provider):
             seen.applied = apply_event(row, event.status)
             seen.save(update_fields=["applied"])
         return Response({"accepted": True, "applied": seen.applied})
+
+
+# --- PRO Subscription Checkout & Solana Verification ---
+
+
+class ProCheckoutInput(serializers.Serializer):
+    email = serializers.EmailField(max_length=254)
+    plan = serializers.ChoiceField(choices=ProOrder.Plan.values)
+    asset = serializers.ChoiceField(choices=ProOrder.Asset.values, default=ProOrder.Asset.USDC)
+    locale = serializers.CharField(max_length=10, required=False, default="en")
+
+
+class ProSolanaVerifyInput(serializers.Serializer):
+    orderId = serializers.UUIDField()
+    txSignature = serializers.CharField(min_length=64, max_length=256, trim_whitespace=True)
+
+
+class ProDevConfirmInput(serializers.Serializer):
+    orderId = serializers.UUIDField()
+
+
+def _mask_email(email: str) -> str:
+    parts = email.split("@", 1)
+    if len(parts) != 2 or not parts[0]:
+        return "***"
+    local, domain = parts
+    visible = local[:2] if len(local) > 2 else local[:1]
+    return f"{visible}***@{domain}"
+
+
+def _pro_order_data(order: ProOrder, *, mask_email: bool = False) -> dict:
+    receipt = getattr(order, "receipt", None)
+    return {
+        "id": str(order.pk),
+        "email": _mask_email(order.email) if mask_email else order.email,
+        "plan": order.plan,
+        "provider": order.provider,
+        "asset": order.asset,
+        "status": order.status,
+        "priceMinorUsd": order.price_minor_usd,
+        "expectedAmountAtomic": order.expected_amount_atomic,
+        "amountDisplay": order.amount_display,
+        "destinationWallet": order.destination_wallet,
+        "referenceMemo": order.reference_memo,
+        "txSignature": order.solana_tx_signature or None,
+        "expiresAt": order.expires_at.isoformat(),
+        "receipt": (
+            {
+                "receiptNumber": receipt.receipt_number,
+                "earlySupporterSlot": receipt.early_supporter_slot,
+                "periodEnd": receipt.period_end.isoformat() if receipt.period_end else None,
+                "amountDisplay": receipt.amount_display,
+                "txSignature": receipt.tx_signature or None,
+                "emailSent": receipt.user_email_sent_at is not None,
+            }
+            if receipt is not None
+            else None
+        ),
+    }
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def pro_offer(request):
+    return Response(pro_offer_snapshot())
+
+
+@extend_schema(request=ProCheckoutInput, responses={201: OpenApiTypes.OBJECT})
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def pro_checkout(request):
+    ip_limit(request, "pro_checkout", 20)
+    data = checked(ProCheckoutInput, request.data)
+    order_row = create_pro_order(
+        email=data["email"],
+        plan=data["plan"],
+        asset=data["asset"],
+        locale=data.get("locale", "en"),
+    )
+    return Response(_pro_order_data(order_row), status=201)
+
+
+@extend_schema(request=ProSolanaVerifyInput, responses={200: OpenApiTypes.OBJECT})
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def pro_solana_verify(request):
+    ip_limit(request, "pro_solana_verify", 20)
+    data = checked(ProSolanaVerifyInput, request.data)
+    order_row = get_object_or_404(ProOrder, pk=data["orderId"])
+    if order_row.status == ProOrder.Status.PAID and hasattr(order_row, "receipt"):
+        return Response(_pro_order_data(order_row), status=200)
+    if order_row.provider != "solana":
+        raise Problem("invalid_provider", 400, "Order is not a Solana order.")
+    # Allow late verification clicks up to 24h after expiry if the on-chain blockTime itself
+    # landed inside the order window (enforced inside verify_solana_transfer).
+    if order_row.expires_at + timezone.timedelta(hours=24) < timezone.now():
+        order_row.status = ProOrder.Status.EXPIRED
+        order_row.save(update_fields=["status", "updated_at"])
+        raise Problem("order_expired", 410, "This order expired. Please start a fresh checkout.")
+
+    transfer = verify_solana_transfer(order_row, data["txSignature"])
+    activate_pro_order(
+        order_row,
+        tx_signature=transfer.tx_signature,
+        payer_wallet=transfer.payer_wallet,
+        block_time=transfer.block_time,
+    )
+    order_row.refresh_from_db()
+    return Response(_pro_order_data(order_row), status=200)
+
+
+@extend_schema(request=ProDevConfirmInput, responses={200: OpenApiTypes.OBJECT})
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def pro_dev_confirm(request):
+    import os
+    from django.conf import settings
+
+    if settings.PRODUCTION or os.getenv("PAYMENTS_ENABLE_DEV") != "true":
+        raise Problem("payment_provider_unavailable", 503, "Sandbox payments are disabled.")
+    data = checked(ProDevConfirmInput, request.data)
+    order_row = get_object_or_404(ProOrder, pk=data["orderId"], provider="dev")
+    activate_pro_order(order_row, tx_signature=f"dev-pro-{order_row.pk}")
+    order_row.refresh_from_db()
+    return Response(_pro_order_data(order_row), status=200)
+
+
+@extend_schema(responses={200: OpenApiTypes.OBJECT})
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def pro_order_detail(request, order_id):
+    order_row = get_object_or_404(ProOrder.objects.select_related("receipt"), pk=order_id)
+    is_owner = bool(request.auth and order_row.owner_id == request.auth.principal_id)
+    return Response(_pro_order_data(order_row, mask_email=not is_owner), status=200)

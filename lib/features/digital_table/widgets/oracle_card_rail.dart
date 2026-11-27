@@ -131,9 +131,11 @@ class _OracleMessageViewportState extends State<OracleMessageViewport> {
             children: [
               SizedBox(height: math.min(44, bounds.maxHeight), child: handle),
               Expanded(
-                child: Scrollbar(
+                child: ScrollConfiguration(
                   key: PageStorageKey(('oracle-rail-scroll', widget.readingKey)),
-                  controller: _cards,
+                  behavior: ScrollConfiguration.of(
+                    context,
+                  ).copyWith(scrollbars: false),
                   child: ListView.builder(
                     key: const ValueKey('oracle-card-rail'),
                     controller: _cards,

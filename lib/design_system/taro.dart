@@ -1,6 +1,9 @@
 /// Tarot Tree design system — единый barrel-экспорт.
 library;
 
+export 'components/astral_zodiac_icon.dart';
+export 'components/element_icon.dart';
+export 'components/seer_eye_icon.dart';
 export 'components/taro_dusk_background.dart';
 export 'components/taro_glass_button.dart';
 export 'components/taro_glass_chip.dart';

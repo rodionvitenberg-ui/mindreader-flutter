@@ -110,6 +110,10 @@ class AppSettingsController extends ChangeNotifier {
           (l) => l.name == code,
           orElse: () => AppLanguage.fromCode(code),
         );
+      } else if (kIsWeb || Platform.environment['FLUTTER_TEST'] != 'true') {
+        final deviceCode =
+            PlatformDispatcher.instance.locale.languageCode.toLowerCase();
+        _language = AppLanguage.fromCode(deviceCode);
       }
     } catch (_) {
       // Storage unavailable — keep the default language.
@@ -192,5 +196,16 @@ class AppSettingsController extends ChangeNotifier {
     _isProUnlocked = true;
     notifyListeners();
     _storage.saveProUnlocked(true).then((_) {}, onError: (Object _) {});
+  }
+
+  /// Syncs the locally cached PRO flag with the backend account status.
+  void setProUnlocked(bool unlocked) {
+    if (_isProUnlocked == unlocked) return;
+    _isProUnlocked = unlocked;
+    notifyListeners();
+    _storage.saveProUnlocked(unlocked).then((_) {}, onError: (Object _) {});
+    if (!unlocked) {
+      _storage.saveAstralProUnlocked(false).then((_) {}, onError: (Object _) {});
+    }
   }
 }

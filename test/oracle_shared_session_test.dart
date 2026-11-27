@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:mindreader/design_system/taro.dart';
 import 'package:mindreader/features/shell/main_navigation_shell.dart';
 import 'package:mindreader/main.dart';
 import 'package:mindreader/state/oracle_session_controller.dart';
@@ -44,7 +45,7 @@ void main() {
       expect(sessionOf(tester).sessionId, 'shared-4-1');
       expect(sessionOf(tester).messages.single.text, 'hello oracle');
 
-      await tester.tap(find.byIcon(Icons.auto_awesome_outlined)); // -> ASTRAL
+      await tester.tap(find.byType(AstralZodiacIcon)); // -> ASTRAL
       await tester.pump();
       expect(identical(sessionOf(tester), session), isTrue);
       expect(sessionOf(tester).sessionId, 'shared-4-1');

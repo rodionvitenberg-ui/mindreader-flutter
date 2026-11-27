@@ -111,6 +111,9 @@ class TaroGlassSheet extends StatelessWidget {
           : Padding(padding: padding, child: body),
     );
 
+    final palette = TaroPalette.of(context);
+    final sheetFill = palette.isMoonlit ? palette.surface : TaroColors.background;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(8, 0, 8, bottomInset + 8),
       child: TaroGlassLayer(
@@ -122,23 +125,29 @@ class TaroGlassSheet extends StatelessWidget {
               Positioned.fill(
                 child: TaroGlassSurface(
                   radius: TaroRadii.pill,
-                  tint: TaroColors.background.withValues(alpha: 0.62),
-                  fillColor: TaroColors.background,
-                  borderColor: TaroColors.mist.withValues(
-                    alpha: TaroOpacity.borderStrong,
-                  ),
+                  tint: palette.isMoonlit
+                      ? palette.glassTint
+                      : TaroColors.background.withValues(alpha: 0.62),
+                  fillColor: sheetFill,
+                  borderColor: palette.isMoonlit
+                      ? palette.borderHairline
+                      : TaroColors.mist.withValues(
+                          alpha: TaroOpacity.borderStrong,
+                        ),
                   glow: TaroGlow.soft(
-                    TaroColors.lavender,
+                    palette.lanternGlow,
                     alpha: 0.22,
                     blur: 32,
                     offset: const Offset(0, -6),
                   ),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: TaroColors.background.withValues(alpha: 0.72),
-                      borderRadius: BorderRadius.circular(TaroRadii.pill),
-                    ),
-                  ),
+                  child: palette.isMoonlit
+                      ? const SizedBox.expand()
+                      : DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: TaroColors.background.withValues(alpha: 0.72),
+                            borderRadius: BorderRadius.circular(TaroRadii.pill),
+                          ),
+                        ),
                 ),
               ),
               content,

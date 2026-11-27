@@ -197,7 +197,7 @@ class GuidedSpreadHud extends StatelessWidget {
                     key: ValueKey('guided-primary-$primary'),
                     label: primary,
                     variant: TaroGlassButtonVariant.primary,
-                    onPressed: primary == 'RESUME' ? onResume : onConfirm,
+                    onPressed: isPaused ? onResume : onConfirm,
                   ),
                 ),
                 const SizedBox(width: 6),

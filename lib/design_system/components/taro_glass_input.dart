@@ -61,13 +61,14 @@ class _TaroGlassInputState extends State<TaroGlassInput> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = TaroPalette.of(context);
     final hasError =
         widget.errorText != null && widget.errorText!.isNotEmpty;
     final borderColor = hasError
         ? TaroColors.error.withValues(alpha: TaroOpacity.borderStrong)
         : _focused
-        ? TaroColors.lavender.withValues(alpha: TaroOpacity.borderStrong)
-        : TaroColors.mist.withValues(alpha: TaroOpacity.border);
+        ? palette.activeOutline
+        : palette.borderHairline;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +88,7 @@ class _TaroGlassInputState extends State<TaroGlassInput> {
         ],
         TaroGlassSurface(
           radius: TaroRadii.input,
-          fillColor: TaroColors.surface,
+          fillColor: palette.surface,
           borderColor: borderColor,
           child: TextField(
             controller: widget.controller,

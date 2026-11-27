@@ -3,6 +3,7 @@ import json
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
 from rest_framework.decorators import api_view, parser_classes
@@ -17,6 +18,7 @@ from apps.oracle.service import owned, place, position_data, require_idle
 from .images import MAX_BATCH_BYTES, normalize_image
 from .models import Recognition
 from .serializers import BatchOutput, Decision, DecisionOutput, Metadata, ProviderResult, Result, Upload
+from .vlm_service import recognize_spread_with_vlm
 
 
 def result_data(row):
@@ -147,3 +149,58 @@ def confirm(request):
             row.decision, row.confirmed_position = action, position
             row.save(update_fields=["decision", "confirmed_position"])
         return finish(op, {"decision": action, "position": position_data(position) if position else None})
+
+
+class ScanSpreadInput(serializers.Serializer):
+    image = serializers.FileField()
+    mode = serializers.ChoiceField(
+        ("quick_scan", "guided_single", "live_oracle"),
+        default="quick_scan",
+    )
+    expectedCount = serializers.IntegerField(min_value=1, max_value=12, required=False, allow_null=True)
+    rotationDegrees = serializers.ChoiceField((0, 90, 180, 270), default=0)
+
+
+@extend_schema(request={"multipart/form-data": ScanSpreadInput}, responses={200: OpenApiTypes.OBJECT})
+@api_view(["POST"])
+@parser_classes([MultiPartParser])
+def scan_spread(request):
+    """End-to-end physical spread scanner: enginetaro crops (reading order) -> Cloud VLM."""
+    if getattr(request, "vision_upload_too_large", False):
+        raise Problem("request_too_large", 413, "Request exceeds the upload limit.")
+    data = checked(ScanSpreadInput, {**request.data.dict(), "image": request.FILES.get("image")})
+    principal = request.auth.principal
+    with transaction.atomic():
+        rate_limit(f"vision-scan-min:{principal.pk}", 20 if principal.has_active_pro else 8, 60)
+        rate_limit(f"vision-scan-day:{principal.pk}", 200 if principal.has_active_pro else 20, 86400)
+
+    jpeg = normalize_image(data["image"], data["rotationDegrees"])
+    scan = recognize_spread_with_vlm(
+        jpeg,
+        mode=data["mode"],
+        expected_count=data.get("expectedCount"),
+    )
+    return Response(
+        {
+            "mode": scan.mode,
+            "strategy": scan.strategy,
+            "provider": scan.provider,
+            "cropCount": scan.crop_count,
+            "cards": [
+                {
+                    "index": c.index,
+                    "cardId": c.card_id,
+                    "deckIndex": c.deck_index,
+                    "name": c.name,
+                    "reversed": c.orientation == "reversed",
+                    "orientation": c.orientation,
+                    "confidence": c.confidence,
+                    "centerNorm": c.center_norm,
+                    "isLandscape": c.is_landscape,
+                }
+                for c in scan.cards
+            ],
+            "warnings": scan.warnings,
+        },
+        status=200,
+    )

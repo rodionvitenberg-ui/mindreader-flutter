@@ -127,13 +127,17 @@ class _LocalFallbackPreview extends StatelessWidget {
           ],
         ),
       ),
-      child: Align(
-        alignment: const Alignment(0.55, 0),
-        child: FractionallySizedBox(
-          heightFactor: 1.4,
-          child: Transform.rotate(
-            angle: -0.14,
-            child: FittedBox(child: piece),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Align(
+          alignment: const Alignment(0.55, -1.0),
+          child: FractionallySizedBox(
+            heightFactor: 1.15,
+            child: Transform.rotate(
+              angle: -0.12,
+              alignment: Alignment.topCenter,
+              child: FittedBox(child: piece),
+            ),
           ),
         ),
       ),

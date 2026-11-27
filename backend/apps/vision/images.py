@@ -13,7 +13,11 @@ def normalize_image(upload, rotation):
         raise serializers.ValidationError({"images": "Each image must be at most 4 MiB."})
     try:
         with Image.open(upload, formats=list(MIME)) as image:
-            if upload.content_type != MIME[image.format] or getattr(image, "is_animated", False):
+            expected_mime = MIME[image.format]
+            if (
+                upload.content_type not in {expected_mime, "application/octet-stream", None, ""}
+                or getattr(image, "is_animated", False)
+            ):
                 raise ValueError
             if not (32 <= image.width <= 4096 and 32 <= image.height <= 4096):
                 raise ValueError

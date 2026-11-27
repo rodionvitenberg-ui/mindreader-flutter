@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_build_config.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/models/divination_system.dart';
 import '../../../core/models/store_models.dart';
@@ -429,6 +430,32 @@ class _CardFooter extends StatelessWidget {
             icon: Icons.refresh,
             primary: true,
             onTap: onCheckCheckout ?? onPrimaryAction,
+          ),
+        ],
+      );
+    }
+
+    if (!product.free && !showExternalPurchaseUi) {
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              AppStrings.t(language, 'shop.reader.managedNote'),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: TaroColors.textSecondary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _CompactActionChip(
+            key: ValueKey('shop-sync-${product.slug}'),
+            label: AppStrings.t(language, 'shop.action.checkPayment'),
+            icon: Icons.sync_rounded,
+            primary: false,
+            onTap: onPrimaryAction,
           ),
         ],
       );

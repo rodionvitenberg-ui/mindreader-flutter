@@ -36,6 +36,7 @@ class TaroGlassToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = TaroPalette.of(context);
     final duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : TaroMotion.fast;
@@ -46,15 +47,24 @@ class TaroGlassToggle extends StatelessWidget {
       decoration: BoxDecoration(
         color: value
             ? Color.alphaBlend(
-                TaroColors.lavender.withValues(alpha: .38),
-                TaroColors.surface,
+                (palette.isMoonlit
+                        ? TaroColors.lanternAmber
+                        : TaroColors.lavender)
+                    .withValues(alpha: palette.isMoonlit ? 0.32 : 0.38),
+                palette.surface,
               )
-            : const Color(0xFF3B3B43),
+            : (palette.isMoonlit
+                  ? const Color(0xFF141722)
+                  : const Color(0xFF3B3B43)),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: value
-              ? TaroColors.lavender.withValues(alpha: .65)
-              : TaroColors.mist.withValues(alpha: .34),
+              ? (palette.isMoonlit
+                    ? palette.activeOutline
+                    : TaroColors.lavender.withValues(alpha: .65))
+              : (palette.isMoonlit
+                    ? palette.borderHairline
+                    : TaroColors.mist.withValues(alpha: .34)),
         ),
       ),
       child: Padding(

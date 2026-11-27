@@ -26,6 +26,7 @@ class OnboardingFlow extends StatefulWidget {
 class _OnboardingFlowState extends State<OnboardingFlow> {
   int _step = 0;
   bool? _tarotFamiliar;
+  bool _wasCompleted = false;
 
   void _goTo(int step) => setState(() => _step = step);
 
@@ -33,7 +34,13 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   Widget build(BuildContext context) {
     final onboarding = context.watch<OnboardingController>();
     if (!onboarding.loaded || onboarding.completed) {
+      if (onboarding.completed) _wasCompleted = true;
       return const SizedBox.shrink();
+    }
+    if (_wasCompleted) {
+      _wasCompleted = false;
+      _step = 0;
+      _tarotFamiliar = null;
     }
     final lang = context.watch<AppSettingsController>().language;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);

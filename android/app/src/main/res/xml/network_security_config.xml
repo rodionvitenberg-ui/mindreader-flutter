@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Cleartext HTTP is allowed so the app can reach the local/tunneled
-     RTX 3080 worker (LAN Ollama or ssh tunnel over http://).
-     Switch base-config cleartextTrafficPermitted to "false" once the
-     worker is served over HTTPS. -->
+<!-- Release builds enforce HTTPS-only transport. Cleartext HTTP for local LAN
+     workers is enabled exclusively in android/app/src/debug/res/xml/. -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true">
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>

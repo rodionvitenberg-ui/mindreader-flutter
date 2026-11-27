@@ -26,30 +26,61 @@ void main() {
     await showProfile(tester);
   }
 
+  Future<void> openDataTab(WidgetTester tester) async {
+    await tester.tap(find.byKey(const ValueKey('profile-tab-data')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+  }
+
   Finder section(SettingsSection section) => find.byKey(ValueKey(section));
 
-  testWidgets('settings show the five collapsible sections in order', (
+  testWidgets('settings split the six collapsible sections across two tabs in order', (
     tester,
   ) async {
     await openProfile(tester);
-    final headers = [for (final item in SettingsSection.values) section(item)];
-    final positions = headers.map((f) => tester.getTopLeft(f).dy).toList();
-    expect(positions, orderedEquals([...positions]..sort()));
+
+    const profileTabSections = [
+      SettingsSection.personalContext,
+      SettingsSection.subscription,
+      SettingsSection.readingExperience,
+    ];
+    const dataTabSections = [
+      SettingsSection.language,
+      SettingsSection.account,
+      SettingsSection.deviceMigration,
+    ];
+
+    final profilePositions = profileTabSections
+        .map((item) => tester.getTopLeft(section(item)).dy)
+        .toList();
+    expect(profilePositions, orderedEquals([...profilePositions]..sort()));
     expect(find.text('DAILY RITUALS'), findsNothing);
     expect(find.text('DAILY RITUAL REMINDERS'), findsNothing);
 
-    for (final header in headers) {
-      await tester.tap(header);
+    for (final item in profileTabSections) {
+      await tester.tap(section(item));
       await tester.pump();
     }
+    expect(find.byType(TextField), findsNothing);
+    expect(find.byType(TaroGlassToggle), findsNothing);
+    expect(find.text('PRO MONTHLY'), findsNothing);
+
+    await openDataTab(tester);
+    final dataPositions = dataTabSections
+        .map((item) => tester.getTopLeft(section(item)).dy)
+        .toList();
+    expect(dataPositions, orderedEquals([...dataPositions]..sort()));
+
+    for (final item in dataTabSections) {
+      await tester.tap(section(item));
+      await tester.pump();
+    }
+
     final settings = tester
         .element(find.byType(ProfileScreen))
         .read<AppSettingsController>();
     expect(SettingsSection.values.any(settings.sectionExpanded), isFalse);
-    expect(find.byType(TextField), findsNothing);
-    expect(find.byType(TaroGlassToggle), findsNothing);
     expect(find.text('IMPORT DATA'), findsNothing);
-    expect(find.text('PRO MONTHLY'), findsNothing);
     expect(find.text('ENGLISH'), findsNothing);
   });
 
@@ -57,19 +88,19 @@ void main() {
     'collapsed sections survive reopening settings and restarting the app',
     (tester) async {
       await openProfile(tester);
-      for (final item in [
-        SettingsSection.personalContext,
-        SettingsSection.language,
-      ]) {
-        await tester.tap(section(item));
-        await tester.pump();
-      }
+      await tester.tap(section(SettingsSection.personalContext));
+      await tester.pump();
+      await openDataTab(tester);
+      await tester.tap(section(SettingsSection.language));
+      await tester.pump();
+
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       await showProfile(tester);
       expect(find.byType(TextField), findsNothing);
-      expect(find.text('ENGLISH'), findsNothing);
       expect(find.byType(TaroGlassToggle), findsNWidgets(3));
+      await openDataTab(tester);
+      expect(find.text('ENGLISH'), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(const MindreaderApp());
@@ -80,11 +111,11 @@ void main() {
       await settings.initialLoad;
       await showProfile(tester);
       expect(find.byType(TextField), findsNothing);
+      await openDataTab(tester);
       expect(find.text('ENGLISH'), findsNothing);
       await tester.tap(section(SettingsSection.language));
       await tester.pump();
       expect(find.text('ENGLISH'), findsOneWidget);
-      expect(find.byType(TextField), findsNothing);
     },
   );
 
@@ -154,9 +185,9 @@ void main() {
     expect(find.text('DAILY RITUALS'), findsOneWidget);
     expect(tester.widget<TaroGlassDock>(dock).index, 4);
 
-    await tester.tap(find.byType(TaroGlassToggle).hitTestable());
-    await tester.pump();
-    await tester.tap(find.text('SAVE RITUAL TIMES'));
+    final dailyToggle = find.byKey(const ValueKey('ritual-daily-toggle'));
+    expect(find.text('DISABLE RITUALS'), findsNothing);
+    await tester.tap(dailyToggle);
     await tester.pumpAndSettle();
     expect(
       (await SharedPreferences.getInstance()).getBool('ritual_enabled'),
@@ -168,41 +199,44 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(bell);
     await tester.pumpAndSettle();
-    expect(
-      tester
-          .widget<TaroGlassToggle>(find.byType(TaroGlassToggle).hitTestable())
-          .value,
-      isTrue,
-    );
+    expect(tester.widget<TaroGlassToggle>(dailyToggle).value, isTrue);
   });
 
-  testWidgets('PROFILE page carries the language selector + PRO cards', (
+  testWidgets('PROFILE tabs carry PRO cards on tab 1 and language selector on tab 2', (
     tester,
   ) async {
     await openProfile(tester);
 
-    expect(find.text('ENGLISH'), findsOneWidget);
-    expect(find.text('РУССКИЙ'), findsOneWidget);
     expect(find.text('PRO MONTHLY'), findsOneWidget);
     expect(find.text('PRO ANNUAL'), findsOneWidget);
+    expect(find.byKey(const ValueKey('profile-terms-link')), findsOneWidget);
+    expect(find.byKey(const ValueKey('profile-privacy-link')), findsOneWidget);
+
+    await openDataTab(tester);
+    expect(find.text('ENGLISH'), findsOneWidget);
+    expect(find.text('РУССКИЙ'), findsOneWidget);
+    expect(find.byKey(const ValueKey('profile-migration-warning')), findsOneWidget);
   });
 
-  testWidgets('language toggle relabels the dock EN <-> RU', (tester) async {
+  testWidgets('language toggle on DATA & LANGUAGE tab relabels the dock EN <-> RU', (
+    tester,
+  ) async {
     await openProfile(tester);
-    expect(find.text('TABLE'), findsOneWidget);
+    await openDataTab(tester);
+    expect(find.text('TABLE', skipOffstage: false), findsOneWidget);
 
     await tester.tap(find.text('РУССКИЙ'));
     await tester.pump();
-    expect(find.text('СТОЛ'), findsOneWidget);
-    expect(find.text('TABLE'), findsNothing);
+    expect(find.text('СТОЛ', skipOffstage: false), findsOneWidget);
+    expect(find.text('TABLE', skipOffstage: false), findsNothing);
 
     await tester.tap(find.text('ENGLISH'));
     await tester.pump();
-    expect(find.text('TABLE'), findsOneWidget);
-    expect(find.text('СТОЛ'), findsNothing);
+    expect(find.text('TABLE', skipOffstage: false), findsOneWidget);
+    expect(find.text('СТОЛ', skipOffstage: false), findsNothing);
   });
 
-  testWidgets('PRO sheet reports PRO ACTIVE (restrictions disabled)', (
+  testWidgets('PRO sheet displays Early Supporter offer (\$4.99 vs \$6.99) and status check', (
     tester,
   ) async {
     await openProfile(tester);
@@ -211,14 +245,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    // PRO restrictions are disabled centrally (kProRestrictionsEnabled=false),
-    // so the sheet shows the ACTIVE state instead of an ACTIVATE CTA.
-    expect(find.text('PRO ACTIVE'), findsWidgets);
-    expect(find.text('ACTIVATE PRO'), findsNothing);
-
-    final settings = tester
-        .element(find.byType(ProfileScreen))
-        .read<AppSettingsController>();
-    expect(settings.isProUnlocked, isTrue);
+    expect(find.byKey(const ValueKey('pro-subscription-sheet')), findsOneWidget);
+    expect(find.byKey(const ValueKey('pro-early-supporter-banner')), findsOneWidget);
+    expect(find.byKey(const ValueKey('pro-checkout-button')), findsOneWidget);
+    expect(find.byKey(const ValueKey('pro-check-status-button')), findsOneWidget);
+    expect(find.byKey(const ValueKey('pro-support-project-button')), findsOneWidget);
+    expect(find.text('\$4.99'), findsWidgets);
+    expect(find.text('\$6.99'), findsWidgets);
+    expect(find.text('\$39.99'), findsWidgets);
   });
 }

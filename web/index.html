@@ -7,7 +7,19 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0C101B">
-  <meta name="description" content="Tarot Tree — your personal space for Tarot, Runes, Lenormand, and Astral insights.">
+  <meta name="description" content="Tarot Tree — AI Tarot, Runes, Lenormand, physical spread scanner, and Natal Charts. Private & free to start.">
+
+  <!-- Open Graph / Social preview -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Tarot Tree">
+  <meta property="og:title" content="Tarot Tree — AI Tarot, Runes, Lenormand &amp; Astral">
+  <meta property="og:description" content="Scan real Tarot spreads with your camera, explore tactile 3D digital readings, chat with the AI Oracle, and map natal charts &amp; synastry.">
+  <meta property="og:image" content="https://app.soshallitbe.cyou/og-image.png">
+  <meta property="og:url" content="https://app.soshallitbe.cyou/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tarot Tree — AI Tarot, Runes, Lenormand &amp; Astral">
+  <meta name="twitter:description" content="AI Tarot, Runes, Lenormand, physical spread scanner &amp; Natal Charts. Free to start — no registration required.">
+  <meta name="twitter:image" content="https://app.soshallitbe.cyou/og-image.png">
 
   <!-- iOS / PWA meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -27,10 +39,220 @@
       padding: 0;
       background-color: #0C101B;
       height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    #tarot-html-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(167, 139, 250, 0.16) 0%, rgba(21, 23, 37, 0.85) 48%, #0C101B 100%);
+      transition: opacity 320ms ease-out, visibility 320ms ease-out;
+    }
+
+    #tarot-html-splash.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .tt-splash-emblem {
+      position: relative;
+      width: 92px;
+      height: 92px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tt-splash-ring {
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 1.2px solid rgba(167, 139, 250, 0.38);
+      animation: tt-pulse 2.2s ease-in-out infinite;
+    }
+
+    .tt-splash-emblem img {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      box-shadow: 0 0 36px rgba(167, 139, 250, 0.25);
+    }
+
+    .tt-splash-title {
+      margin-top: 22px;
+      color: #F3F0FF;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+    }
+
+    .tt-splash-bar {
+      margin-top: 18px;
+      width: 112px;
+      height: 2px;
+      border-radius: 2px;
+      background: rgba(167, 139, 250, 0.16);
+      overflow: hidden;
+    }
+
+    .tt-splash-bar::after {
+      content: "";
+      display: block;
+      width: 44%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, #A78BFA, transparent);
+      animation: tt-slide 1.3s ease-in-out infinite;
+    }
+
+    @keyframes tt-pulse {
+      0%, 100% { transform: scale(0.96); opacity: 0.45; }
+      50% { transform: scale(1.06); opacity: 0.95; }
+    }
+
+    @keyframes tt-slide {
+      0% { transform: translateX(-120%); }
+      100% { transform: translateX(300%); }
     }
   </style>
 </head>
 <body>
+  <div id="tarot-html-splash" aria-label="Loading Tarot Tree">
+    <div class="tt-splash-emblem">
+      <div class="tt-splash-ring"></div>
+      <img src="icons/Icon-192.png" alt="Tarot Tree" width="84" height="84">
+    </div>
+    <div class="tt-splash-title">TAROT TREE</div>
+    <div class="tt-splash-bar"></div>
+  </div>
+
+  <script>
+    (function () {
+      // 1. Instant splash teardown on Flutter first frame.
+      var splashHidden = false;
+      function hideSplash() {
+        if (splashHidden) return;
+        splashHidden = true;
+        var el = document.getElementById('tarot-html-splash');
+        if (!el) return;
+        el.classList.add('is-hidden');
+        setTimeout(function () {
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+        }, 380);
+      }
+      window.addEventListener('flutter-first-frame', hideSplash, { once: true });
+      // Safety net in case the event fired early or browser delayed dispatch.
+      var splashObserver = new MutationObserver(function () {
+        if (document.querySelector('flutter-view, flt-glass-pane')) {
+          setTimeout(hideSplash, 120);
+          splashObserver.disconnect();
+        }
+      });
+      splashObserver.observe(document.body, { childList: true, subtree: true });
+
+      // 2. PWA Add-to-Home-Screen (beforeinstallprompt + iOS Safari detection).
+      var deferredPrompt = null;
+      function isStandalone() {
+        return (
+          (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+          window.navigator.standalone === true
+        );
+      }
+      function isIosSafari() {
+        var ua = window.navigator.userAgent || '';
+        var isIos = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var isWebkit = /WebKit/i.test(ua);
+        var isCriOS = /CriOS|FxiOS|EdgiOS/i.test(ua);
+        return isIos && isWebkit && !isCriOS;
+      }
+
+      window.__tarotPwa = {
+        canPrompt: function () { return !!deferredPrompt && !isStandalone(); },
+        isStandalone: isStandalone,
+        isIosSafari: function () { return isIosSafari() && !isStandalone(); },
+        promptInstall: function () {
+          if (!deferredPrompt) return Promise.resolve('unavailable');
+          var p = deferredPrompt;
+          deferredPrompt = null;
+          p.prompt();
+          return p.userChoice.then(function (choice) {
+            return (choice && choice.outcome) ? choice.outcome : 'dismissed';
+          }).catch(function () { return 'dismissed'; });
+        }
+      };
+
+      window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault();
+        deferredPrompt = event;
+        window.dispatchEvent(new CustomEvent('tarot-pwa-installable'));
+      });
+
+      window.addEventListener('appinstalled', function () {
+        deferredPrompt = null;
+        window.dispatchEvent(new CustomEvent('tarot-pwa-installed'));
+      });
+
+      // 3. Telegram Mini App (TMA) bridge — zero-blocking async init.
+      function getTgWebApp() {
+        return (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+      }
+      function isTelegramMiniApp() {
+        var tg = getTgWebApp();
+        return !!(tg && typeof tg.initData === 'string' && tg.initData.length > 0);
+      }
+      function initTelegramMiniApp() {
+        var tg = getTgWebApp();
+        if (!tg || !isTelegramMiniApp()) return false;
+        try { tg.ready(); } catch (_) {}
+        try { tg.expand(); } catch (_) {}
+        try { if (typeof tg.setHeaderColor === 'function') tg.setHeaderColor('#0C101B'); } catch (_) {}
+        try { if (typeof tg.setBackgroundColor === 'function') tg.setBackgroundColor('#0C101B'); } catch (_) {}
+        return true;
+      }
+      function readStartParam() {
+        var tg = getTgWebApp();
+        if (tg && tg.initDataUnsafe && typeof tg.initDataUnsafe.start_param === 'string' && tg.initDataUnsafe.start_param) {
+          return tg.initDataUnsafe.start_param;
+        }
+        try {
+          var params = new URLSearchParams(window.location.search);
+          return params.get('startapp') || params.get('tgWebAppStartParam') || '';
+        } catch (_) {
+          return '';
+        }
+      }
+      window.__tarotTma = {
+        isTelegram: isTelegramMiniApp,
+        init: initTelegramMiniApp,
+        initData: function () {
+          var tg = getTgWebApp();
+          return (tg && typeof tg.initData === 'string') ? tg.initData : '';
+        },
+        startParam: readStartParam
+      };
+      // Load Telegram WebApp SDK asynchronously so offline PWA never blocks.
+      var tgScript = document.createElement('script');
+      tgScript.src = 'https://telegram.org/js/telegram-web-app.js';
+      tgScript.async = true;
+      tgScript.onload = initTelegramMiniApp;
+      document.head.appendChild(tgScript);
+
+      // 4. Register lightweight custom Service Worker for offline shell + lazy deck cache.
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(function () {});
+        });
+      }
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

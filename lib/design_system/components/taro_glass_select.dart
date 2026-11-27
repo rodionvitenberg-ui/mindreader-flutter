@@ -70,7 +70,8 @@ class TaroGlassSelect<T> extends StatelessWidget {
             },
             child: TaroGlassSurface(
               radius: TaroRadii.input,
-              fillColor: TaroColors.surface,
+              fillColor: TaroPalette.of(context).surface,
+              borderColor: TaroPalette.of(context).borderHairline,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,

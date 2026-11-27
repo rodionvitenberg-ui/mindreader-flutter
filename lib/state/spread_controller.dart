@@ -169,6 +169,11 @@ class SpreadController extends ChangeNotifier {
     return guidePurposeLine(_system, _spreadKey)?.forLanguage(lang);
   }
 
+  /// The active spread's stable, language-independent key (enum `name`, or
+  /// `'custom'` for reader-authored spreads). Used by Guided Reading to
+  /// remember learned lessons across language switches.
+  String get spreadKey => _customSpread != null ? 'custom' : _spreadKey;
+
   /// The active preset spread's stable content key (enum `name`).
   String get _spreadKey => switch (_system) {
         DivinationSystem.tarot => _spreadType.name,

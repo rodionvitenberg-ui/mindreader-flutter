@@ -319,6 +319,12 @@ class SpreadBoardGeometry {
   final int? crossingSlotIndex;
 }
 
+/// Horizontal gap between the Celtic Cross horizontal crossing card and Past / Future.
+const _celticArmGapPx = 44.0;
+
+/// Horizontal gap separating the 6-card Cross from the 4-card Staff.
+const _celticStaffGapPx = 76.0;
+
 /// Design-space size of the spread canvas for a spread of [count] cards —
 /// [deckWidth] × [deckHeight] cards with [slotGapPx] gaps.
 /// Layout is derived from the schema / count: 1 → single, 2 → pair row,
@@ -342,7 +348,10 @@ Size spreadCanvasDesignSizeForCount(int count, {int? totalSlots}) {
     7 => Size(3 * w + 2 * g, 3 * h + 2 * g),
     8 => Size(3 * w + 2 * g, 3 * h + 2 * g),
     9 => Size(3 * w + 2 * g, 3 * h + 2 * g),
-    10 => Size(4 * w + 3 * g, 4 * h + 3 * g),
+    10 => Size(
+        3 * w + h + 2 * _celticArmGapPx + _celticStaffGapPx,
+        4 * h + 3 * g,
+      ),
     _ => Size(3 * w + 2 * g, 3 * h + 2 * g),
   };
   final extra = (totalSlots ?? count) - count;
@@ -414,22 +423,24 @@ Offset spreadSlotDesignTopLeftForCount(
         return Offset((index - 5) * (w + g), 2 * (h + g));
       case 9: // 3×3 portrait box — reading order left→right, top→bottom
         return Offset((index % 3) * (w + g), (index ~/ 3) * (h + g));
-      case 10: // Celtic Cross — 6-card cross + 4-card staff on the right
-        const cells = [
-          [1, 1], // 0 significator (center)
-          [1, 1], // 1 crossing (offset below, laid across the center)
-          [1, 0], // 2 crown
-          [1, 2], // 3 foundation
-          [0, 1], // 4 past
-          [2, 1], // 5 future
-          [3, 0], // 6 staff 1
-          [3, 1], // 7 staff 2
-          [3, 2], // 8 staff 3
-          [3, 3], // 9 staff 4
-        ];
-        final cell = cells[index];
-        final crossingOffset = index == 1 ? Offset(w * 0.35, h * 0.28) : Offset.zero;
-        return Offset(cell[0] * (w + g), cell[1] * (h + g)) + crossingOffset;
+      case 10: // Celtic Cross — 6-card cross (centered vertically) + 4-card staff
+        final crossLeft = w + _celticArmGapPx;
+        final crossCenterX = crossLeft + h / 2;
+        final crossColX = crossCenterX - w / 2;
+        final crossTopY = 0.5 * (h + g);
+        final crossMidY = crossTopY + h + g;
+        final crossCenterY = crossMidY + h / 2;
+        final futureX = crossLeft + h + _celticArmGapPx;
+        final staffX = futureX + w + _celticStaffGapPx;
+        return switch (index) {
+          0 => Offset(crossColX, crossMidY), // significator (center)
+          1 => Offset(crossLeft, crossCenterY - w / 2), // crossing (horizontal, centered on 0)
+          2 => Offset(crossColX, crossTopY), // crown
+          3 => Offset(crossColX, crossMidY + h + g), // foundation
+          4 => Offset(0, crossMidY), // past
+          5 => Offset(futureX, crossMidY), // future
+          _ => Offset(staffX, (index - 6) * (h + g)), // staff 6..9
+        };
       default:
         return Offset((index % 3) * (w + g), (index ~/ 3) * (h + g));
     }
@@ -454,6 +465,7 @@ SpreadBoardGeometry spreadBoardGeometryForCount(
 }) {
   final slots = totalSlots ?? count;
   final size = spreadCanvasDesignSizeForCount(count, totalSlots: slots);
+  final crossingIndex = count == 10 ? 1 : null;
   final rects = [
     for (var i = 0; i < slots; i++)
       spreadSlotDesignTopLeftForCount(
@@ -462,12 +474,14 @@ SpreadBoardGeometry spreadBoardGeometryForCount(
             totalSlots: slots,
             loveBridge: loveBridge,
           ) &
-          const Size(deckWidth, deckHeight),
+          (i == crossingIndex
+              ? const Size(deckHeight, deckWidth)
+              : const Size(deckWidth, deckHeight)),
   ];
   return SpreadBoardGeometry(
     canvasSize: size,
     slotRects: rects,
-    crossingSlotIndex: count == 10 ? 1 : null,
+    crossingSlotIndex: crossingIndex,
   );
 }
 

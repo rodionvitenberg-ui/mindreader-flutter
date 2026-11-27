@@ -117,9 +117,12 @@ class AstralController extends ChangeNotifier {
   }
 
   /// Unlocks ASTRAL PRO (unlimited profiles, synastry, regeneration).
-  void unlockPro() {
-    if (_isProUnlocked) return;
-    _isProUnlocked = true;
+  void unlockPro() => setProUnlocked(true);
+
+  /// Synchronizes the locally cached ASTRAL PRO flag with backend status.
+  void setProUnlocked(bool unlocked) {
+    if (_isProUnlocked == unlocked) return;
+    _isProUnlocked = unlocked;
     notifyListeners();
     _persistPro();
   }

@@ -144,7 +144,6 @@ class AstralEmptyState extends StatelessWidget {
     return TaroGlassLayer(
       useBackdropGroup: false,
       child: TaroGlassEmptyState(
-        icon: Icons.auto_awesome_outlined,
         title: AppStrings.g('ui.astral_astral_summary_card.no_natal_profile_yet'),
         subtitle: AppStrings.g('ui.astral_astral_summary_card.enter_your_birth_date_time_and_city'),
         actionLabel: AppStrings.g('astral.addFirstProfile'),

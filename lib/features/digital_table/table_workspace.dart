@@ -8,17 +8,26 @@ import '../../core/models/oracle_handoff.dart';
 import '../../core/models/natal_chart.dart' show ZodiacSignX;
 import '../../core/models/reading_mode.dart';
 import '../../core/models/reading_source.dart';
+import '../../core/services/local_storage_service.dart';
 import '../../core/services/natal_calculator_service.dart';
 import '../../core/services/oracle_synthesis_service.dart';
+import '../../core/services/ritual_notification_service.dart';
+import '../../core/services/spread_check_in_service.dart';
 import '../../core/theme/app_typography.dart';
 import '../../design_system/taro.dart';
+import '../../state/app_settings_controller.dart';
 import '../../state/astral_controller.dart';
+import '../../state/daily_quota_controller.dart';
+import '../../state/daily_ritual_controller.dart';
 import '../../state/oracle_session_controller.dart';
 import '../../state/session_history_controller.dart';
 import '../../state/spread_controller.dart';
 import '../../state/spread_session_snapshot.dart';
 import '../../state/synthesis_session.dart';
 import '../../state/user_profile_controller.dart';
+import '../share/share_card_payload.dart';
+import '../share/share_card_preview_sheet.dart';
+import '../shell/widgets/pro_subscription_sheet.dart';
 import 'digital_table_screen.dart';
 import 'oracle_chat_pane.dart';
 import 'spread_history_pane.dart';
@@ -79,7 +88,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
   // started or restored by this table belongs to its current spread.
   int? _tableSessionEpoch;
   bool _restoringSpread = false;
-  (int, int)? _archivedCardCounts;
+  String? _archivedSpreadSignature;
+  bool _recordedReadingDay = false;
   final _dictation = ReadingDictation();
   bool _finishingDraft = false;
 
@@ -141,11 +151,41 @@ class _TableWorkspaceState extends State<TableWorkspace>
     }
   }
 
+  String _currentSpreadSignature() {
+    final buf = StringBuffer()
+      ..write(_ctrl.system.name)
+      ..write('|')
+      ..write(_ctrl.spreadKey)
+      ..write('|')
+      ..write(_ctrl.readingQuestion)
+      ..write('|')
+      ..write(_ctrl.readingForSelf)
+      ..write('|')
+      ..write(_ctrl.sessionContextNotes.join('\x1f'))
+      ..write('|');
+    for (final s in _ctrl.slots) {
+      buf
+        ..write(s.index)
+        ..write(':')
+        ..write(s.card?.id ?? -1)
+        ..write(':')
+        ..write(s.state.name)
+        ..write(':')
+        ..write(s.isReversed ? 'r' : 'u')
+        ..write(':')
+        ..write(s.userContext ?? '')
+        ..write(';');
+    }
+    return buf.toString();
+  }
+
   void _onSpreadChanged() {
     if (!mounted) return;
     if (_readingRevision != _ctrl.readingRevision) {
       _readingRevision = _ctrl.readingRevision;
       if (_restoringSpread) return;
+      _archivedSpreadSignature = null;
+      _recordedReadingDay = false;
       if (_sessionKind == SessionKind.divinationSpread) {
         if (_session.epoch == _tableSessionEpoch) _session.reset();
         _tableSessionEpoch = null;
@@ -154,9 +194,34 @@ class _TableWorkspaceState extends State<TableWorkspace>
     }
     setState(() {});
     _maybeExpandClarifiers();
-    if (_session.hasSynthesis && _session.epoch == _tableSessionEpoch &&
-        _archivedCardCounts != (_ctrl.dealtCount, _ctrl.faceUpCount)) {
-      _captureSession();
+    // Auto-save spreads dynamically as soon as all base cards are revealed
+    // (no AI chat required), and re-upsert whenever extra cards, flips, notes,
+    // or questions update the same spread.
+    if (_ctrl.isSpreadActive &&
+        _ctrl.dealtCount > 0 &&
+        (_ctrl.initialSpreadAllFaceUp ||
+            (_sessionKind == SessionKind.divinationSpread &&
+                _sessionTimestamp != null))) {
+      final signature = _currentSpreadSignature();
+      if (signature != _archivedSpreadSignature) {
+        if (_sessionKind != SessionKind.divinationSpread) {
+          _sessionKind = SessionKind.divinationSpread;
+          _sessionTimestamp = null;
+          _clearAstralContext();
+        }
+        _captureSession();
+        if (!_recordedReadingDay && _ctrl.initialSpreadAllFaceUp) {
+          _recordedReadingDay = true;
+          final daily = context.read<DailyRitualController?>();
+          if (daily != null) {
+            daily.recordReadingDayNow();
+          } else {
+            LocalStorageService()
+                .recordReadingDay()
+                .then((_) {}, onError: (Object _) {});
+          }
+        }
+      }
     }
   }
 
@@ -186,10 +251,21 @@ class _TableWorkspaceState extends State<TableWorkspace>
     final epoch = _session.epoch;
     await _captureSession(); // persist the moment the CTA is tapped
     if (!mounted || !_session.isCurrentSession(epoch)) return;
-    final answer = await OracleSynthesisService().answerAstral(
-      context: handoff,
-      history: const [],
-    );
+    String answer;
+    try {
+      answer = await OracleSynthesisService().answerAstral(
+        context: handoff,
+        history: const [],
+      );
+    } on OracleQuotaExceededException {
+      if (!mounted || !_session.isCurrentSession(epoch)) return;
+      _session.finishAnswer();
+      await ProSubscriptionSheet.show(
+        context,
+        reason: ProGateReason.oracleMessages,
+      );
+      return;
+    }
     if (!mounted || !_session.isCurrentSession(epoch)) return;
     _session.addOracleMessage(answer);
     _session.finishAnswer();
@@ -263,6 +339,17 @@ class _TableWorkspaceState extends State<TableWorkspace>
         previous: previous,
         profileContext: _tableSubject,
       );
+    } on OracleQuotaExceededException {
+      if (!mounted || !_session.isCurrentSession(epoch)) return;
+      _session.completeChapter(
+        chapter.slotIndex,
+        AppStrings.g('oracle.quota.softClosing'),
+      );
+      await ProSubscriptionSheet.show(
+        context,
+        reason: ProGateReason.oracleMessages,
+      );
+      return;
     } catch (_) {
       text = AppStrings.g('table.oracleFailed');
     }
@@ -329,6 +416,15 @@ class _TableWorkspaceState extends State<TableWorkspace>
         positionQuestions: _ctrl.customSpread?.questions,
         relationships: _ctrl.relationships,
       );
+    } on OracleQuotaExceededException {
+      if (mounted && _session.isCurrentSession(epoch)) {
+        _session.failInitial();
+        await ProSubscriptionSheet.show(
+          context,
+          reason: ProGateReason.oracleMessages,
+        );
+      }
+      return;
     } catch (_) {
       if (mounted && _session.isCurrentSession(epoch)) _session.failInitial();
       return;
@@ -371,23 +467,62 @@ class _TableWorkspaceState extends State<TableWorkspace>
       );
       return;
     }
-    if (!_session.hasSynthesis) return;
-    _archivedCardCounts = (_ctrl.dealtCount, _ctrl.faceUpCount);
+    if (_ctrl.dealtCount == 0) return;
+    if (!_ctrl.initialSpreadAllFaceUp &&
+        _sessionTimestamp == null &&
+        !_session.hasSynthesis) {
+      return;
+    }
+    _archivedSpreadSignature = _currentSpreadSignature();
+    final isNewEntry = _sessionTimestamp == null;
     final timestamp = _sessionTimestamp ?? DateTime.now().toIso8601String();
     _sessionTimestamp = timestamp;
-    await _history.upsert(
-      SpreadSessionSnapshot.capture(
-        ctrl: _ctrl,
-        session: _session,
-        timestamp: timestamp,
-        notebook: SessionHistoryController.notebookFor(_ctrl),
-        readingForSelf: _forSelf,
-        sessionId: _session.sessionId,
-        readingSource: _session.readingSource,
-        readingMode: _session.readingMode,
-        readingStatus: _session.readingStatus,
-      ),
+    final existing = _history.findByTimestamp(timestamp);
+    final checkInDays = existing?.checkInDays ?? _history.defaultCheckInDays;
+    final createdAt = DateTime.tryParse(timestamp) ?? DateTime.now();
+    final dueAt =
+        existing?.checkInDueAt ??
+        createdAt.add(Duration(days: checkInDays)).toIso8601String();
+    final ownsDialogue = _session.epoch == _tableSessionEpoch;
+    final dialogueSession = ownsDialogue ? _session : SynthesisSession();
+    final source = ownsDialogue && _session.sessionId != null
+        ? _session.readingSource
+        : ReadingSourceX.fromTableSourceMode(_ctrl.sourceMode);
+    final mode = ownsDialogue && _session.sessionId != null
+        ? _session.readingMode
+        : ReadingMode.standard;
+    final snapshot = SpreadSessionSnapshot.capture(
+      ctrl: _ctrl,
+      session: dialogueSession,
+      timestamp: timestamp,
+      notebook: SessionHistoryController.notebookFor(_ctrl),
+      readingForSelf: _forSelf,
+      sessionId: ownsDialogue ? (_session.sessionId ?? timestamp) : timestamp,
+      readingSource: source,
+      readingMode: mode,
+      readingStatus: ownsDialogue ? _session.readingStatus : null,
+      checkInDays: checkInDays,
+      checkInDueAt: dueAt,
+      outcome: existing?.outcome,
+      reflectionNote: existing?.reflectionNote,
+      reflectedAt: existing?.reflectedAt,
+      checkInDismissed: existing?.checkInDismissed ?? false,
     );
+    await _history.upsert(snapshot);
+    if (isNewEntry) {
+      final dueDate = DateTime.tryParse(dueAt);
+      if (dueDate != null) {
+        RitualNotificationService.scheduleSpreadCheckIn(
+          sessionTimestamp: timestamp,
+          dueAt: dueDate,
+          prompt: SpreadCheckInService.promptFor(
+            snapshot,
+            AppStrings.current,
+            now: dueDate,
+          ),
+        ).then((_) {}, onError: (Object _) {});
+      }
+    }
   }
 
   // ---- Oracle AI Chat (Pane 1) ----
@@ -400,6 +535,42 @@ class _TableWorkspaceState extends State<TableWorkspace>
       );
       return;
     }
+    final isPro =
+        context.read<AppSettingsController?>()?.isProUnlocked ?? false;
+    final quota = context.read<DailyQuotaController?>();
+    final skipSyntheticFirst =
+        _sessionKind != SessionKind.divinationSpread &&
+        _session.messages.isNotEmpty &&
+        _session.messages.first.role == 'user';
+    final sentByUser = _session.messages
+        .skip(skipSyntheticFirst ? 1 : 0)
+        .where((m) => m.role == 'user')
+        .length;
+    if (quota != null &&
+        !quota.canSendOracleMessage(sentByUser, isPro: isPro)) {
+      final closing = AppStrings.g('oracle.quota.softClosing');
+      final alreadyClosed = _session.messages.isNotEmpty &&
+          _session.messages.last.role == 'oracle' &&
+          _session.messages.last.text == closing;
+      if (!alreadyClosed) {
+        _session.addOracleMessage(closing);
+      }
+      // Preserve the user's typed prompt across GeminiInputCapsule's clear()
+      // so they don't lose their question after unlocking PRO.
+      Future<void>.microtask(() {
+        if (mounted && _capsuleText.text.isEmpty) {
+          _capsuleText.value = TextEditingValue(
+            text: question,
+            selection: TextSelection.collapsed(offset: question.length),
+          );
+        }
+      });
+      await ProSubscriptionSheet.show(
+        context,
+        reason: ProGateReason.oracleMessages,
+      );
+      return;
+    }
     _session.addUserMessage(question);
     _session.beginAnswer();
     final isSpread = _sessionKind == SessionKind.divinationSpread;
@@ -408,20 +579,31 @@ class _TableWorkspaceState extends State<TableWorkspace>
     await _captureSession(); // persist the turn immediately
     if (!mounted || !_session.isCurrentSession(epoch)) return;
     final oracle = OracleSynthesisService();
-    final answer = isSpread
-        ? await oracle.answerChat(
-            question: question,
-            slots: _ctrl.slots,
-            type: _ctrl.spreadType,
-            spreadLabel: _ctrl.spreadLabel,
-            history: _session.messages,
-            profileContext: profileContext,
-          )
-        : await oracle.answerAstral(
-            context: _astralContext,
-            question: question,
-            history: _session.messages.skip(1).toList(),
-          );
+    String answer;
+    try {
+      answer = isSpread
+          ? await oracle.answerChat(
+              question: question,
+              slots: _ctrl.slots,
+              type: _ctrl.spreadType,
+              spreadLabel: _ctrl.spreadLabel,
+              history: _session.messages,
+              profileContext: profileContext,
+            )
+          : await oracle.answerAstral(
+              context: _astralContext,
+              question: question,
+              history: _session.messages.skip(1).toList(),
+            );
+    } on OracleQuotaExceededException {
+      if (!mounted || !_session.isCurrentSession(epoch)) return;
+      _session.finishAnswer();
+      await ProSubscriptionSheet.show(
+        context,
+        reason: ProGateReason.oracleMessages,
+      );
+      return;
+    }
     if (!mounted || !_session.isCurrentSession(epoch)) return;
     _session.addOracleMessage(answer);
     _session.finishAnswer();
@@ -483,6 +665,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
   Future<void> _newSpread() async {
     await _captureSession(); // persist the current reading before leaving
     _sessionTimestamp = null;
+    _archivedSpreadSignature = null;
+    _recordedReadingDay = false;
     _sessionKind = SessionKind.divinationSpread;
     _clearAstralContext();
     _session.reset();
@@ -540,7 +724,8 @@ class _TableWorkspaceState extends State<TableWorkspace>
         readingStatus: snapshot.readingStatus,
       );
       _tableSessionEpoch = _session.epoch;
-      _archivedCardCounts = (_ctrl.dealtCount, _ctrl.faceUpCount);
+      _archivedSpreadSignature = _currentSpreadSignature();
+      _recordedReadingDay = true;
       _maybeExpandClarifiers();
     } else {
       _clearAstralContext();
@@ -582,9 +767,26 @@ class _TableWorkspaceState extends State<TableWorkspace>
       );
     }
     HapticFeedback.mediumImpact();
-    // Land on the Oracle Chat: the restored conversation is the first thing
-    // the reader sees (not a jarring jump to the raw table).
-    _goToPane(chatPane);
+    // Spreads with AI dialogue (or Astral readings) open on Oracle Chat;
+    // standalone spreads saved without AI open directly on the Digital Table.
+    final hasAiDialogue =
+        snapshot.kind != SessionKind.divinationSpread ||
+        snapshot.synthesis != null ||
+        snapshot.messages.isNotEmpty;
+    _goToPane(hasAiDialogue ? chatPane : tablePane);
+  }
+
+  void _openShareCurrentSpread() {
+    if (!_ctrl.initialSpreadAllFaceUp) return;
+    final lang =
+        context.read<AppSettingsController?>()?.language ?? AppStrings.current;
+    final ownsDialogue = _session.epoch == _tableSessionEpoch;
+    final payload = ShareCardPayload.fromTable(
+      ctrl: _ctrl,
+      session: ownsDialogue ? _session : null,
+      lang: lang,
+    );
+    ShareCardPreviewSheet.show(context, payload: payload);
   }
 
   void _goToPane(int pane) {
@@ -667,6 +869,7 @@ class _TableWorkspaceState extends State<TableWorkspace>
     return Provider.value(
       value: _dictation,
       child: SafeArea(
+        top: false,
         bottom: false,
         child: PageView(
           controller: _paneController,
@@ -710,6 +913,9 @@ class _TableWorkspaceState extends State<TableWorkspace>
               onFocusInput: () => _capsuleFocus.requestFocus(),
               onScanClarifier: _scanClarifier,
               onResumeCamera: () => widget.onResumeCamera?.call(),
+              onShareSpread: ctrl.initialSpreadAllFaceUp
+                  ? _openShareCurrentSpread
+                  : null,
             ),
             SpreadHistoryPane(
               history: _history,
@@ -740,21 +946,16 @@ class _TableWorkspaceState extends State<TableWorkspace>
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                 child: Row(
                   children: [
-                    Expanded(
-                      flex: 4,
-                      child: TaroGlassLayer(
-                        child: ResetTableButton(
-                          key: const ValueKey('reset-table-button'),
-                          enabled:
-                              ctrl.allDealt &&
-                              ctrl.dealtCount >= ctrl.initialSpreadCardCount,
-                          onPressed: ctrl.resetTable,
-                        ),
+                    TaroGlassLayer(
+                      child: ShareSpreadButton(
+                        key: const ValueKey('share-spread-button'),
+                        enabled:
+                            ctrl.isSpreadActive && ctrl.initialSpreadAllFaceUp,
+                        onPressed: _openShareCurrentSpread,
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      flex: 6,
                       child: TaroGlassLayer(
                         child: AnalyzeReadingButton(
                           key: const ValueKey('analyze-reading-button'),
@@ -765,6 +966,16 @@ class _TableWorkspaceState extends State<TableWorkspace>
                               !_session.generatingInitial,
                           onPressed: () => _goToPane(chatPane),
                         ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    TaroGlassLayer(
+                      child: ResetTableButton(
+                        key: const ValueKey('reset-table-button'),
+                        enabled:
+                            ctrl.allDealt &&
+                            ctrl.dealtCount >= ctrl.initialSpreadCardCount,
+                        onPressed: ctrl.resetTable,
                       ),
                     ),
                   ],

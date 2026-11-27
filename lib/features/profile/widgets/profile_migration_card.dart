@@ -18,7 +18,7 @@ class ProfileMigrationCard extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: TaroColors.surface,
+        backgroundColor: TaroPalette.of(dialogContext).surface,
         title: Text(AppStrings.g('ui.profile_migration_card.export_data'),
           style: TextStyle(
             fontSize: 14,
@@ -54,7 +54,7 @@ class ProfileMigrationCard extends StatelessWidget {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: TaroColors.surface,
+        backgroundColor: TaroPalette.of(dialogContext).surface,
         title: Text(AppStrings.g('ui.profile_migration_card.snapshot_ready'),
           style: TextStyle(
             fontSize: 14,
@@ -91,7 +91,7 @@ class ProfileMigrationCard extends StatelessWidget {
     final payload = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: TaroColors.surface,
+        backgroundColor: TaroPalette.of(dialogContext).surface,
         title: Text(AppStrings.g('ui.profile_migration_card.import_data'),
           style: TextStyle(
             fontSize: 14,
@@ -135,22 +135,62 @@ class ProfileMigrationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.watch<AppSettingsController>().language;
     return ProfileCard(
       section: SettingsSection.deviceMigration,
-      title: AppStrings.t(context.watch<AppSettingsController>().language, 'profile.card.migration'),
+      title: AppStrings.t(lang, 'profile.card.migration'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Container(
+            key: const ValueKey('profile-migration-warning'),
+            padding: const EdgeInsets.all(11),
+            decoration: BoxDecoration(
+              color: TaroColors.dawn.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: TaroColors.dawn.withValues(alpha: 0.34),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(top: 1),
+                  child: Icon(
+                    Icons.shield_outlined,
+                    size: 16,
+                    color: TaroColors.dawn,
+                  ),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    AppStrings.t(lang, 'profile.migration.warning'),
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      height: 1.4,
+                      color: TaroColors.textSecondary.withValues(alpha: 0.95),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
           TaroGlassButton(
             icon: Icons.cloud_upload_outlined,
-            label: AppStrings.g('ui.profile_migration_card.export_data_for_new_device'),
+            label: AppStrings.t(
+              lang,
+              'ui.profile_migration_card.export_data_for_new_device',
+            ),
             variant: TaroGlassButtonVariant.secondary,
             onPressed: () => _export(context),
           ),
           const SizedBox(height: 10),
           TaroGlassButton(
             icon: Icons.download_outlined,
-            label: AppStrings.g('ui.profile_migration_card.import_data'),
+            label: AppStrings.t(lang, 'ui.profile_migration_card.import_data'),
             variant: TaroGlassButtonVariant.secondary,
             onPressed: () => _import(context),
           ),

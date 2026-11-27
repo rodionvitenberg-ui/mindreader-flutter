@@ -34,11 +34,14 @@ class _GlassPlaygroundState extends State<GlassPlayground> {
     'Visconti–Sforza',
   ];
 
+  static Widget _astralDockIcon(Color color, double size) =>
+      AstralZodiacIcon(size: size, color: color);
+
   static const _dock = <TaroDockItem>[
     TaroDockItem(icon: Icons.camera_alt_outlined, label: 'Camera'),
     TaroDockItem(icon: Icons.style_outlined, label: 'Table'),
     TaroDockItem(icon: Icons.menu_book_outlined, label: 'Almanac'),
-    TaroDockItem(icon: Icons.auto_awesome_outlined, label: 'Astral'),
+    TaroDockItem(iconBuilder: _astralDockIcon, label: 'Astral'),
   ];
 
   @override

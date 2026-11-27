@@ -32,3 +32,54 @@ class CoreTests(TestCase):
             accounts.append(response.json()["id"])
             self.assertEqual(self.client.post("/api/v1/auth/email/verify/", {"token": token}).status_code, 400)
         self.assertEqual(accounts[0], accounts[1])
+
+    @override_settings(EMAIL_VERIFICATION_ENABLED=True)
+    def test_password_register_login_and_optional_email_confirm(self):
+        reg = self.client.post(
+            "/api/v1/auth/register/",
+            {"name": "Luna", "email": "luna@example.org", "password": "strongpassword123"},
+            format="json",
+        )
+        self.assertEqual(reg.status_code, 201)
+        body = reg.json()
+        self.assertTrue(body["verified"])
+        self.assertFalse(body["emailConfirmed"])
+        self.assertEqual(body["email"], "luna@example.org")
+        self.assertEqual(body["name"], "Luna")
+
+        # Duplicate email is rejected with 409.
+        dup = self.client.post(
+            "/api/v1/auth/register/",
+            {"name": "Luna 2", "email": "LUNA@example.org", "password": "strongpassword123"},
+            format="json",
+        )
+        self.assertEqual(dup.status_code, 409)
+
+        # Wrong password fails with 401.
+        bad = self.client.post(
+            "/api/v1/auth/login/",
+            {"email": "luna@example.org", "password": "wrongpassword"},
+            format="json",
+        )
+        self.assertEqual(bad.status_code, 401)
+
+        # Correct password returns same account id.
+        ok = self.client.post(
+            "/api/v1/auth/login/",
+            {"email": "luna@example.org", "password": "strongpassword123"},
+            format="json",
+        )
+        self.assertEqual(ok.status_code, 200)
+        self.assertEqual(ok.json()["id"], body["id"])
+        self.assertEqual(ok.json()["name"], "Luna")
+
+        # Post-factum optional email confirmation flips emailConfirmed to True.
+        self.assertEqual(
+            self.client.post("/api/v1/auth/email/start/", {"email": "luna@example.org"}).status_code,
+            202,
+        )
+        code = mail.outbox[-1].body.split()[-1]
+        confirmed = self.client.post("/api/v1/auth/email/verify/", {"token": code})
+        self.assertEqual(confirmed.status_code, 200)
+        self.assertEqual(confirmed.json()["id"], body["id"])
+        self.assertTrue(confirmed.json()["emailConfirmed"])

@@ -31,6 +31,7 @@ class OracleChatPane extends StatefulWidget {
     required this.onFocusInput,
     required this.onScanClarifier,
     required this.onResumeCamera,
+    this.onShareSpread,
   });
 
   final OracleSessionController session;
@@ -57,6 +58,9 @@ class OracleChatPane extends StatefulWidget {
   /// Switches back to the Camera tab for the physical flows (Resume Camera /
   /// Return to Physical Spread / Continue Guided Session).
   final VoidCallback onResumeCamera;
+
+  /// Opens the 9:16 editorial Story card sheet for the current spread.
+  final VoidCallback? onShareSpread;
 
   @override
   State<OracleChatPane> createState() => _OracleChatPaneState();
@@ -142,6 +146,21 @@ class _OracleChatPaneState extends State<OracleChatPane> {
               color: TaroColors.lavender,
               onPressed: widget.onBackToTable,
             ),
+            trailing: widget.showReadingCards && widget.onShareSpread != null
+                ? IconButton(
+                    key: const ValueKey('oracle-share-button'),
+                    tooltip: AppStrings.g('share.button'),
+                    icon: const Icon(
+                      Icons.ios_share_rounded,
+                      size: 19,
+                      color: TaroColors.lavender,
+                    ),
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      widget.onShareSpread!();
+                    },
+                  )
+                : null,
             child: const ProfileHeaderTitle('header.oracle'),
           ),
           OracleSessionMetaBar(
@@ -165,18 +184,20 @@ class _OracleChatPaneState extends State<OracleChatPane> {
           // buried inside the lazy stream.
           if (session.hasSynthesis && !session.generatingInitial)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Flexible(
+                  Expanded(
+                    flex: 6,
                     child: _ChatActionChip(
                       label: AppStrings.g('ui.oracle_chat_pane.1_card_for_my_question'),
                       onTap: _onCustomClarifierQuestion,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Flexible(
+                  const SizedBox(width: 6),
+                  Expanded(
+                    flex: 5,
                     child: _ChatActionChip(
                       label: AppStrings.g('ui.oracle_chat_pane.camera_clarifier'),
                       onTap: widget.onScanClarifier,
@@ -264,10 +285,16 @@ class _OracleChatPaneState extends State<OracleChatPane> {
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              child: Container(
+                key: const ValueKey('oracle-prep-backdrop'),
+                width: double.infinity,
+                constraints: const BoxConstraints(maxWidth: 420),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+                decoration: _oracleTextBackdropDecoration(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                   Container(
                     width: 52,
                     height: 52,
@@ -283,10 +310,12 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                         color: TaroColors.lavender.withValues(alpha: 0.32),
                       ),
                     ),
-                    child: const Icon(
-                      Icons.auto_awesome,
-                      size: 26,
-                      color: TaroColors.lavender,
+                    child: const Center(
+                      child: SeerEyeIcon(
+                        key: ValueKey('oracle-prep-seer-icon'),
+                        size: 28,
+                        color: TaroColors.lavender,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -354,8 +383,9 @@ class _OracleChatPaneState extends State<OracleChatPane> {
                         onPressed: waiting ? null : widget.onSynthesize,
                       ),
                     ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -365,57 +395,13 @@ class _OracleChatPaneState extends State<OracleChatPane> {
   }
 }
 
-/// Gemini-style subtle sparkle header shared by Oracle answers and synthesis.
-class _OracleSpeakerHeader extends StatelessWidget {
-  const _OracleSpeakerHeader({this.label});
-
-  final String? label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 22,
-          height: 22,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                TaroColors.lavender.withValues(alpha: 0.28),
-                TaroColors.indigo.withValues(alpha: 0.18),
-              ],
-            ),
-          ),
-          child: const Text(
-            '✦',
-            style: TextStyle(
-              fontSize: 12,
-              height: 1,
-              color: TaroColors.lavender,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            label ?? AppStrings.g('common.oracle'),
-            style: AppTypography.label(
-              fontSize: 11,
-              letterSpacing: 1.0,
-              fontWeight: FontWeight.w700,
-              color: TaroColors.lavender,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
+/// Shared translucent backdrop matching the clarifier suggestion cards so
+/// Oracle copy remains crisp over the Digital Table background artwork.
+BoxDecoration _oracleTextBackdropDecoration() => BoxDecoration(
+  color: TaroColors.surface.withValues(alpha: 0.82),
+  borderRadius: BorderRadius.circular(16),
+  border: Border.all(color: TaroColors.lavender.withValues(alpha: 0.36)),
+);
 
 /// Gemini-style user prompt bubble: right-aligned soft pill with asymmetric
 /// bottom-right corner and larger readable copy.
@@ -461,8 +447,8 @@ class _UserBubble extends StatelessWidget {
   }
 }
 
-/// Gemini-style open full-width Oracle response — no enclosing card box,
-/// allowing long-form readings to breathe cleanly across the canvas.
+/// Oracle response rendered on a translucent backdrop matching the clarifier
+/// suggestion cards so long-form copy stays readable over background artwork.
 class _OracleResponse extends StatelessWidget {
   const _OracleResponse({required this.text, this.typing = false, this.header});
 
@@ -476,24 +462,40 @@ class _OracleResponse extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 6, bottom: 18, left: 2, right: 2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _OracleSpeakerHeader(label: header ?? AppStrings.g('common.oracle')),
-          const SizedBox(height: 10),
-          if (typing)
-            TaroGlassProgress(label: '$text · · ·')
-          else
-            Text(
-              text,
-              style: AppTypography.chatOracle(
-                fontSize: 15.5,
-                height: 1.62,
-                color: TaroColors.textPrimary,
+      padding: const EdgeInsets.only(top: 6, bottom: 16),
+      child: Container(
+        key: const ValueKey('oracle-response-backdrop'),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+        decoration: _oracleTextBackdropDecoration(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (header != null) ...[
+              Text(
+                header!,
+                style: AppTypography.label(
+                  fontSize: 11,
+                  letterSpacing: 1.0,
+                  fontWeight: FontWeight.w700,
+                  color: TaroColors.lavender,
+                ),
               ),
-            ),
-        ],
+              const SizedBox(height: 8),
+            ],
+            if (typing)
+              TaroGlassProgress(label: '$text · · ·')
+            else
+              Text(
+                text,
+                style: AppTypography.chatOracle(
+                  fontSize: 15.5,
+                  height: 1.62,
+                  color: TaroColors.textPrimary,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -507,17 +509,21 @@ class _SystemBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       child: Align(
         alignment: Alignment.center,
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: AppTypography.body(
-            fontSize: 12.5,
-            fontStyle: FontStyle.italic,
-            height: 1.4,
-            color: TaroColors.textSecondary.withValues(alpha: 0.85),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: _oracleTextBackdropDecoration(),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: AppTypography.body(
+              fontSize: 12.5,
+              fontStyle: FontStyle.italic,
+              height: 1.4,
+              color: TaroColors.textSecondary.withValues(alpha: 0.92),
+            ),
           ),
         ),
       ),
@@ -546,14 +552,18 @@ class _ClarifierSuggestions extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Align(
           alignment: Alignment.center,
-          child: Text(
-            AppStrings.g('table.maxCards', {'max': maxCards}),
-            textAlign: TextAlign.center,
-            style: AppTypography.label(
-              fontSize: 10,
-              letterSpacing: 0.8,
-              fontWeight: FontWeight.w700,
-              color: TaroColors.textSecondary,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: _oracleTextBackdropDecoration(),
+            child: Text(
+              AppStrings.g('table.maxCards', {'max': maxCards}),
+              textAlign: TextAlign.center,
+              style: AppTypography.label(
+                fontSize: 10,
+                letterSpacing: 0.8,
+                fontWeight: FontWeight.w700,
+                color: TaroColors.textSecondary,
+              ),
             ),
           ),
         ),
@@ -566,12 +576,18 @@ class _ClarifierSuggestions extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(AppStrings.g('ui.oracle_chat_pane.would_you_like_to_draw_a_1_clarifier_card_to_unc'),
-            style: AppTypography.label(
-              fontSize: 10.5,
-              letterSpacing: 0.8,
-              fontWeight: FontWeight.w700,
-              color: TaroColors.lavender,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            decoration: _oracleTextBackdropDecoration(),
+            child: Text(
+              AppStrings.g('ui.oracle_chat_pane.would_you_like_to_draw_a_1_clarifier_card_to_unc'),
+              style: AppTypography.label(
+                fontSize: 10.5,
+                letterSpacing: 0.8,
+                fontWeight: FontWeight.w700,
+                color: TaroColors.lavender,
+              ),
             ),
           ),
           const SizedBox(height: 10),
@@ -605,11 +621,7 @@ class _SuggestionCard extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-        decoration: BoxDecoration(
-          color: TaroColors.surface.withValues(alpha: 0.82),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: TaroColors.lavender.withValues(alpha: 0.36)),
-        ),
+        decoration: _oracleTextBackdropDecoration(),
         child: Text(
           label,
           style: AppTypography.chatUser(
@@ -623,7 +635,7 @@ class _SuggestionCard extends StatelessWidget {
   }
 }
 
-/// The structured AI synthesis rendered as a full-width Gemini-style answer.
+/// The structured AI synthesis rendered on a matching translucent backdrop.
 class _SynthesisResponse extends StatelessWidget {
   const _SynthesisResponse({required this.synthesis});
 
@@ -632,48 +644,52 @@ class _SynthesisResponse extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 18, left: 2, right: 2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _OracleSpeakerHeader(label: AppStrings.g('common.oracle')),
-          const SizedBox(height: 14),
-          _SynthesisSection(
-            title: AppStrings.g('ui.oracle_chat_pane.1_core_narrative_synthesis'),
-            body: synthesis.narrative,
-          ),
-          _SynthesisSection(
-            title: AppStrings.g('ui.oracle_chat_pane.2_elemental_alchemy'),
-            body: synthesis.elementalAlchemy,
-          ),
-          _SynthesisSection(
-            title: AppStrings.g('ui.oracle_chat_pane.3_actionable_verdict'),
-            body: synthesis.verdict,
-          ),
-          Container(
-            margin: const EdgeInsets.only(top: 4),
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-            decoration: BoxDecoration(
-              color: TaroColors.lavender.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(12),
-              border: Border(
-                left: BorderSide(
-                  color: TaroColors.lavender.withValues(alpha: 0.7),
-                  width: 2.5,
+      padding: const EdgeInsets.only(top: 4, bottom: 16),
+      child: Container(
+        key: const ValueKey('oracle-synthesis-backdrop'),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+        decoration: _oracleTextBackdropDecoration(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SynthesisSection(
+              title: AppStrings.g('ui.oracle_chat_pane.1_core_narrative_synthesis'),
+              body: synthesis.narrative,
+            ),
+            _SynthesisSection(
+              title: AppStrings.g('ui.oracle_chat_pane.2_elemental_alchemy'),
+              body: synthesis.elementalAlchemy,
+            ),
+            _SynthesisSection(
+              title: AppStrings.g('ui.oracle_chat_pane.3_actionable_verdict'),
+              body: synthesis.verdict,
+            ),
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+              decoration: BoxDecoration(
+                color: TaroColors.lavender.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(12),
+                border: Border(
+                  left: BorderSide(
+                    color: TaroColors.lavender.withValues(alpha: 0.7),
+                    width: 2.5,
+                  ),
+                ),
+              ),
+              child: Text(
+                AppStrings.g('table.questionToSit', {'question': synthesis.followUp}),
+                style: AppTypography.chatOracle(
+                  fontSize: 14.5,
+                  height: 1.5,
+                  fontStyle: FontStyle.italic,
+                  color: TaroColors.textPrimary.withValues(alpha: 0.88),
                 ),
               ),
             ),
-            child: Text(
-              AppStrings.g('table.questionToSit', {'question': synthesis.followUp}),
-              style: AppTypography.chatOracle(
-                fontSize: 14.5,
-                height: 1.5,
-                fontStyle: FontStyle.italic,
-                color: TaroColors.textPrimary.withValues(alpha: 0.88),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -725,6 +741,7 @@ class _ChatActionChip extends StatelessWidget {
     return TaroGlassChip(
       label: label,
       selected: true,
+      expanded: true,
       compact: true,
       onTap: onTap,
     );

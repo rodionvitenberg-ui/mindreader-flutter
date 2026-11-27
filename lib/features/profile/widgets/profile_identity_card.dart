@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/data/astro_cities_data.dart';
@@ -40,6 +42,35 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
     _city.dispose();
     _bio.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAvatar() async {
+    final profile = context.read<UserProfileController>();
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 320,
+        maxHeight: 320,
+        imageQuality: 85,
+      );
+      if (picked == null || !mounted) return;
+      final raw = await picked.readAsBytes();
+      if (raw.isEmpty || !mounted) return;
+      Uint8List encoded = raw;
+      try {
+        final decoded = img.decodeImage(raw);
+        if (decoded != null) {
+          final square = img.copyResizeCropSquare(decoded, size: 256);
+          encoded = Uint8List.fromList(img.encodeJpg(square, quality: 82));
+        }
+      } catch (_) {
+        // Keep the original bytes if re-encoding is unavailable for the format.
+      }
+      HapticFeedback.selectionClick();
+      profile.setAvatarBytes(encoded);
+    } catch (_) {
+      // Ignore picker cancellation / unavailable platform channel.
+    }
   }
 
   Future<void> _pickDate() async {
@@ -92,12 +123,93 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
   @override
   Widget build(BuildContext context) {
     final profile = context.watch<UserProfileController>();
+    if (_name.text != profile.displayName &&
+        !FocusScope.of(context).hasFocus) {
+      _name.text = profile.displayName;
+    }
+    final lang = context.watch<AppSettingsController>().language;
+    final avatarBytes = profile.avatarBytes;
+    final name = profile.displayName.trim();
+    final initial = name.isEmpty
+        ? '✦'
+        : String.fromCharCode(name.runes.first).toUpperCase();
     return ProfileCard(
       section: SettingsSection.personalContext,
-      title: AppStrings.t(context.watch<AppSettingsController>().language, 'profile.card.identity'),
+      title: AppStrings.t(lang, 'profile.card.identity'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            children: [
+              GestureDetector(
+                onTap: _pickAvatar,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: TaroPalette.of(context).background.withValues(alpha: 0.72),
+                    border: Border.all(
+                      color: TaroColors.lavender.withValues(alpha: 0.65),
+                      width: 1.4,
+                    ),
+                  ),
+                  child: avatarBytes != null
+                      ? ClipOval(
+                          child: Image.memory(
+                            avatarBytes,
+                            key: const ValueKey('profile-identity-avatar-image'),
+                            width: 58,
+                            height: 58,
+                            fit: BoxFit.cover,
+                            gaplessPlayback: true,
+                          ),
+                        )
+                      : Text(
+                          initial,
+                          style: AppTypography.display(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            color: TaroColors.lavender,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    ProfilePill(
+                      key: const ValueKey('profile-pick-avatar'),
+                      label: AppStrings.t(
+                        lang,
+                        avatarBytes == null
+                            ? 'profile.avatar.add'
+                            : 'profile.avatar.change',
+                      ),
+                      active: true,
+                      icon: Icons.photo_camera_outlined,
+                      onTap: _pickAvatar,
+                    ),
+                    if (avatarBytes != null)
+                      ProfilePill(
+                        key: const ValueKey('profile-remove-avatar'),
+                        label: AppStrings.t(lang, 'profile.avatar.remove'),
+                        icon: Icons.delete_outline,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          profile.clearAvatar();
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
           ProfileFieldLabel(AppStrings.g('common.name')),
           _field(
             controller: _name,
@@ -181,11 +293,10 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
     required ValueChanged<String> onChanged,
     int maxLines = 1,
   }) {
+    final palette = TaroPalette.of(context);
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(
-        color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
-      ),
+      borderSide: BorderSide(color: palette.borderHairline),
     );
     return TextField(
       controller: controller,
@@ -200,12 +311,16 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
           color: TaroColors.textSecondary.withValues(alpha: 0.72),
         ),
         filled: true,
-        fillColor: TaroColors.background.withValues(alpha: 0.56),
+        fillColor: palette.background.withValues(alpha: 0.56),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         border: border,
         enabledBorder: border,
         focusedBorder: border.copyWith(
-          borderSide: const BorderSide(color: TaroColors.lavender),
+          borderSide: BorderSide(
+            color: palette.isMoonlit
+                ? palette.activeOutline
+                : TaroColors.lavender,
+          ),
         ),
       ),
     );
@@ -217,17 +332,16 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    final palette = TaroPalette.of(context);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: TaroColors.background.withValues(alpha: 0.56),
+          color: palette.background.withValues(alpha: 0.56),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: TaroColors.mist.withValues(alpha: TaroOpacity.border),
-          ),
+          border: Border.all(color: palette.borderHairline),
         ),
         child: Row(
           children: [
@@ -239,6 +353,8 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
                 children: [
                   Text(
                     label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.label(
                       fontSize: 8.5,
                       letterSpacing: 0.8,
@@ -248,6 +364,8 @@ class _ProfileIdentityCardState extends State<ProfileIdentityCard> {
                   const SizedBox(height: 2),
                   Text(
                     value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTypography.label(
                       fontSize: 11,
                       color: TaroColors.textPrimary,

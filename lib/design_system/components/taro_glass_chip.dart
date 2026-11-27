@@ -46,7 +46,12 @@ class TaroGlassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = accentColor ?? TaroColors.lavender;
+    final palette = TaroPalette.of(context);
+    final accent =
+        accentColor ??
+        (palette.isMoonlit
+            ? TaroColors.lanternAmberBright
+            : TaroColors.lavender);
     final interactive = onTap != null;
     final fg = selected ? accent : TaroColors.textSecondary;
     final display = uppercase ? label.toUpperCase() : label;
@@ -94,23 +99,29 @@ class TaroGlassChip extends StatelessWidget {
             radius: TaroRadii.chip,
             tint: selected
                 ? accent.withValues(alpha: 0.22)
-                : TaroColors.mist.withValues(alpha: 0.08),
-            fillColor: TaroColors.surface,
+                : (palette.isMoonlit
+                      ? palette.glassTint
+                      : TaroColors.mist.withValues(alpha: 0.08)),
+            fillColor: palette.surface,
             borderColor: selected
-                ? accent.withValues(alpha: TaroOpacity.borderStrong)
-                : TaroColors.mist.withValues(alpha: TaroOpacity.border),
+                ? accent.withValues(
+                    alpha: palette.isMoonlit ? 0.35 : TaroOpacity.borderStrong,
+                  )
+                : palette.borderHairline,
             child: body,
           )
         : DecoratedBox(
             decoration: BoxDecoration(
               color: selected
-                  ? accent.withValues(alpha: 0.20)
-                  : TaroColors.surface.withValues(alpha: 0.68),
+                  ? accent.withValues(alpha: palette.isMoonlit ? 0.18 : 0.20)
+                  : palette.surface.withValues(
+                      alpha: palette.isMoonlit ? palette.surfaceAlpha : 0.68,
+                    ),
               borderRadius: BorderRadius.circular(TaroRadii.chip),
               border: Border.all(
                 color: selected
-                    ? accent.withValues(alpha: 0.85)
-                    : TaroColors.mist.withValues(alpha: TaroOpacity.border),
+                    ? accent.withValues(alpha: palette.isMoonlit ? 0.35 : 0.85)
+                    : palette.borderHairline,
                 width: selected ? 1.2 : 1.0,
               ),
               boxShadow: selected
@@ -149,6 +160,8 @@ class TaroGlassPill extends StatelessWidget {
   const TaroGlassPill({
     required this.label,
     this.icon,
+    this.leading,
+    this.trailing,
     this.accentColor,
     this.accent = false,
     super.key,
@@ -156,25 +169,42 @@ class TaroGlassPill extends StatelessWidget {
 
   final String label;
   final IconData? icon;
+  final Widget? leading;
+  final Widget? trailing;
   final Color? accentColor;
   final bool accent;
 
   @override
   Widget build(BuildContext context) {
+    final palette = TaroPalette.of(context);
+    final defaultAccent = palette.isMoonlit
+        ? TaroColors.lanternAmberBright
+        : TaroColors.lavender;
     final color =
-        accentColor ?? (accent ? TaroColors.lavender : TaroColors.textSecondary);
+        accentColor ?? (accent ? defaultAccent : TaroColors.textSecondary);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: accent || accentColor != null ? 0.14 : 0.10),
+        color: color.withValues(
+          alpha: accent || accentColor != null
+              ? (palette.isMoonlit ? 0.18 : 0.14)
+              : 0.10,
+        ),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.45)),
+        border: Border.all(
+          color: accent || accentColor != null
+              ? color.withValues(alpha: palette.isMoonlit ? 0.35 : 0.45)
+              : palette.borderHairline,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon != null) ...[
+            if (leading != null) ...[
+              leading!,
+              const SizedBox(width: 5),
+            ] else if (icon != null) ...[
               Icon(icon, size: 12, color: color),
               const SizedBox(width: 5),
             ],
@@ -189,6 +219,10 @@ class TaroGlassPill extends StatelessWidget {
                 color: color,
               ),
             ),
+            if (trailing != null) ...[
+              const SizedBox(width: 5),
+              trailing!,
+            ],
           ],
         ),
       ),

@@ -2,20 +2,22 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/services/oracle_voice_service.dart';
 import '../../../design_system/taro.dart';
+import '../../../state/voice_input_controller.dart';
+import 'voice_mic_button.dart';
 
 /// The table and its chat pane can both edit the same draft. Wait for the
-/// active editor's final speech result before starting the first synthesis.
+/// active editor's cloud transcription before starting the first synthesis.
 class ReadingDictation {
   Future<void> Function()? _stop;
   Future<void> finish() async => await _stop?.call();
 }
 
-/// One editable draft. Each partial dictation result replaces the same
-/// selection in the original text, so partial words are never duplicated.
+/// Editable spread-question draft powered by language-independent audio capture
+/// and cloud transcription with natural punctuation.
 class ReadingContextField extends StatefulWidget {
   const ReadingContextField({
     super.key,
@@ -35,15 +37,19 @@ class ReadingContextField extends StatefulWidget {
 class _ReadingContextFieldState extends State<ReadingContextField>
     with WidgetsBindingObserver {
   late final _text = TextEditingController(text: widget.value);
-  final _speech = SpeechToText();
-  int _request = 0;
-  bool _dictating = false;
-  SpeechStatusListener? _previousStatus;
-  SpeechErrorListener? _previousError;
-  SpeechStatusListener? _status;
-  late final _session = context.read<ReadingDictation>();
-  Completer<void>? _done;
-  bool _stopping = false;
+  ReadingDictation? _session;
+  VoiceInputController? _providedVoice;
+  VoiceInputController? _ownedVoice;
+  Future<void>? _pendingStop;
+
+  VoiceInputController _resolveVoice(BuildContext context) {
+    final provided = context.read<VoiceInputController?>();
+    if (provided != null) {
+      _providedVoice = provided;
+      return provided;
+    }
+    return _ownedVoice ??= VoiceInputController();
+  }
 
   String _label(String key) => AppStrings.t(widget.language, key);
 
@@ -54,10 +60,17 @@ class _ReadingContextFieldState extends State<ReadingContextField>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _session = context.read<ReadingDictation>();
+    _providedVoice = context.read<VoiceInputController?>();
+  }
+
+  @override
   void didUpdateWidget(ReadingContextField oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.value != _text.text) {
-      _cancel();
+      _cancelActiveVoice();
       _text.value = TextEditingValue(
         text: widget.value,
         selection: TextSelection.collapsed(offset: widget.value.length),
@@ -65,142 +78,71 @@ class _ReadingContextFieldState extends State<ReadingContextField>
     }
   }
 
-  bool _current(int request) => mounted && _dictating && request == _request;
-
-  // The speech plugin is shared with chat and card notes. Return its
-  // listeners to their owner when this dictation ends.
-  void _release() {
-    if (_status != null && identical(_speech.statusListener, _status)) {
-      _speech.statusListener = _previousStatus;
-      _speech.errorListener = _previousError;
-    }
-    _status = null;
-    if (_session._stop == _stopWithFinalResult) _session._stop = null;
-    _done?.complete();
-    _done = null;
-    _stopping = false;
-    _dictating = false;
-    _request++;
-  }
-
-  void _cancel() {
-    if (!_dictating) return;
-    final ownsMic =
-        _status != null && identical(_speech.statusListener, _status);
-    _release();
-    if (ownsMic) unawaited(_speech.cancel().catchError((Object _) {}));
-  }
-
-  void _finish({bool unavailable = false}) {
-    setState(_release);
-    if (unavailable) {
-      ScaffoldMessenger.maybeOf(context)
-          ?.showSnackBar(SnackBar(content: Text(_label('table.noDictation'))));
+  void _cancelActiveVoice() {
+    if (_session?._stop == _stopAndApply) _session?._stop = null;
+    final voice = _providedVoice ?? _ownedVoice;
+    if (voice != null && voice.isOwnedBy(this)) {
+      unawaited(voice.cancel(owner: this));
     }
   }
 
-  Future<void> _stopWithFinalResult() async {
-    final done = _done;
-    if (done == null) return;
-    if (_status == null) {
-      // Permission is still being requested. Recording has not started.
-      setState(_cancel);
-      return;
+  Future<void> _stopAndApply() {
+    final inFlight = _pendingStop;
+    if (inFlight != null) return inFlight;
+    final future = _runStopAndApply();
+    _pendingStop = future;
+    return future.whenComplete(() {
+      if (identical(_pendingStop, future)) _pendingStop = null;
+      if (_session?._stop == _stopAndApply) _session?._stop = null;
+    });
+  }
+
+  Future<void> _runStopAndApply() async {
+    final voice = _resolveVoice(context);
+    if (!voice.isRecordingFor(this)) return;
+    final result = await voice.stopAndTranscribe(owner: this);
+    if (!mounted) return;
+    if (result.isSuccess) {
+      final updated = insertVoiceTranscript(_text, result.text!);
+      widget.onChanged(updated);
+    } else {
+      showVoiceInputFeedback(context, result, language: widget.language);
     }
-    final request = _request;
-    if (!_stopping) {
-      _stopping = true;
-      try {
-        await _speech.stop();
-      } catch (_) {
-        if (_current(request)) _finish(unavailable: true);
-      }
-    }
-    // Some recognizers send no final event after silence or disconnection.
-    // Keep the last visible transcript in that case.
-    await done.future.timeout(
-      SpeechToText.defaultFinalTimeout + const Duration(milliseconds: 300),
-      onTimeout: () {
-        if (_current(request)) _finish();
-      },
-    );
   }
 
   Future<void> _toggleDictation() async {
-    if (_dictating) {
-      await _stopWithFinalResult();
+    final voice = _resolveVoice(context);
+    if (voice.isRecordingFor(this)) {
+      await _stopAndApply();
       return;
     }
-    final request = ++_request;
-    final base = _text.value;
-    final selection = base.selection.isValid
-        ? base.selection
-        : TextSelection.collapsed(offset: base.text.length);
-    _done = Completer<void>();
-    _session._stop = _stopWithFinalResult;
-    setState(() => _dictating = true);
-    try {
-      if (_speech.isListening || !await _speech.initialize()) {
-        if (_current(request)) _finish(unavailable: true);
-        return;
-      }
-      if (!_current(request)) return;
-      _previousStatus = _speech.statusListener;
-      _previousError = _speech.errorListener;
-      _status = (status) {
-        if (_current(request) && status == SpeechToText.doneStatus) _finish();
-      };
-      _speech.statusListener = _status;
-      _speech.errorListener = (_) {
-        if (_current(request)) _finish(unavailable: true);
-      };
-      await _speech.listen(
-        listenOptions: SpeechListenOptions(
-          listenMode: ListenMode.dictation,
-          cancelOnError: true,
-          localeId: widget.language == AppLanguage.ru ? AppStrings.g('ui.reading_context_field.ru_ru') : AppStrings.g('ui.reading_context_field.en_us'),
-        ),
-        onResult: (result) {
-          if (!_current(request)) return;
-          final words = result.recognizedWords.trim();
-          if (words.isNotEmpty) {
-            final before = base.text.substring(0, selection.start);
-            final after = base.text.substring(selection.end);
-            final prefix = before.isEmpty || before.trimRight() != before
-                ? before
-                : '$before ';
-            final suffix = after.isEmpty || after.trimLeft() != after
-                ? after
-                : ' $after';
-            final text = '$prefix$words$suffix';
-            _text.value = TextEditingValue(
-              text: text,
-              selection: TextSelection.collapsed(
-                offset: prefix.length + words.length,
-              ),
-            );
-            widget.onChanged(text);
-          }
-          if (result.finalResult) _finish();
-        },
-      );
-    } catch (_) {
-      if (_current(request)) _finish(unavailable: true);
+
+    unawaited(context.read<OracleVoiceService?>()?.stop());
+    _session?._stop = _stopAndApply;
+    final early = await voice.startRecording(
+      owner: this,
+      onAutoStop: () => unawaited(_stopAndApply()),
+    );
+    if (!mounted) return;
+    if (early != null) {
+      if (_session?._stop == _stopAndApply) _session?._stop = null;
+      showVoiceInputFeedback(context, early, language: widget.language);
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (_dictating &&
-        (state == AppLifecycleState.paused ||
-            state == AppLifecycleState.detached)) {
-      setState(_cancel);
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _cancelActiveVoice();
     }
   }
 
   @override
   void dispose() {
-    _cancel();
+    _cancelActiveVoice();
+    unawaited(_ownedVoice?.cancel());
+    _ownedVoice?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     _text.dispose();
     super.dispose();
@@ -208,9 +150,8 @@ class _ReadingContextFieldState extends State<ReadingContextField>
 
   @override
   Widget build(BuildContext context) {
-    final micLabel = _label(
-      _dictating ? 'table.stopDictation' : 'table.dictate',
-    );
+    final voice = context.watch<VoiceInputController?>() ??
+        (_ownedVoice ??= VoiceInputController());
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(TaroRadii.input),
       borderSide: BorderSide(
@@ -219,13 +160,13 @@ class _ReadingContextFieldState extends State<ReadingContextField>
     );
     return TapRegion(
       onTapOutside: (_) {
-        if (_dictating) unawaited(_stopWithFinalResult());
+        if (voice.isRecordingFor(this)) unawaited(_stopAndApply());
       },
       child: TextField(
         key: const ValueKey('reading-context'),
         controller: _text,
         onChanged: (value) {
-          if (_dictating) setState(_cancel);
+          if (voice.isRecordingFor(this)) _cancelActiveVoice();
           widget.onChanged(value);
         },
         textInputAction: TextInputAction.done,
@@ -253,15 +194,15 @@ class _ReadingContextFieldState extends State<ReadingContextField>
             minWidth: 44,
             minHeight: 40,
           ),
-          suffixIcon: IconButton(
-            tooltip: micLabel,
-            visualDensity: VisualDensity.compact,
-            onPressed: _toggleDictation,
-            icon: Icon(
-              _dictating ? Icons.stop_circle_outlined : Icons.mic_none,
-              size: 19,
-              color: _dictating ? TaroColors.rose : TaroColors.lavender,
-            ),
+          suffixIcon: VoiceMicButton(
+            key: const ValueKey('reading-context-mic'),
+            controller: voice,
+            owner: this,
+            variant: VoiceMicButtonVariant.inline,
+            language: widget.language,
+            idleTooltip: _label('table.dictate'),
+            recordingTooltip: _label('table.stopDictation'),
+            onTap: _toggleDictation,
           ),
         ),
       ),

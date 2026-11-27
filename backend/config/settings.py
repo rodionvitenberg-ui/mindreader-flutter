@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "rest_framework", "drf_spectacular", "corsheaders",
     "apps.core", "apps.accounts", "apps.ai_gateway", "apps.oracle", "apps.vision",
-    "apps.catalog", "apps.store", "apps.entitlements", "apps.payments",
+    "apps.catalog", "apps.store", "apps.entitlements", "apps.payments", "apps.telegram_bot",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -83,6 +83,7 @@ from corsheaders.defaults import default_headers
 
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
 CORS_ALLOW_HEADERS = (*default_headers, "idempotency-key")
+CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 if ENVIRONMENT == "development" and not CORS_ALLOWED_ORIGINS:
     CORS_ALLOWED_ORIGIN_REGEXES = [r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"]
 AUTH_DEV_SHOW_CODE = (not PRODUCTION) and os.getenv("AUTH_DEV_SHOW_CODE") == "true"
@@ -113,11 +114,92 @@ EMAIL_HOST = os.getenv("EMAIL_HOST", "")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-EMAIL_USE_TLS = True
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL") == "true"
+EMAIL_USE_TLS = (not EMAIL_USE_SSL) and os.getenv("EMAIL_USE_TLS", "true") == "true"
 EMAIL_TIMEOUT = 5
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "tarot@example.invalid")
 if PRODUCTION and EMAIL_VERIFICATION_ENABLED and (not EMAIL_HOST or DEFAULT_FROM_EMAIL.endswith(".invalid")):
     raise ImproperlyConfigured("Set SMTP configuration before enabling email verification.")
+if PRODUCTION and (not EMAIL_HOST or DEFAULT_FROM_EMAIL.endswith(".invalid")):
+    import logging as _logging
+    _logging.getLogger("tarottree.config").warning(
+        "SMTP is not configured (EMAIL_HOST/DEFAULT_FROM_EMAIL) — PRO receipt emails will not be delivered."
+    )
+
+# --- PRO subscription, Solana verification, receipts & durable subscriber backup ---
+PRO_SOLANA_WALLET = os.getenv("PRO_SOLANA_WALLET", "7oF9eiHf9vYAeEPyQsVoMYhvoq4tt7cuLM2yMXt9yWpu")
+PRO_REQUIRE_SOLANA_MEMO = os.getenv("PRO_REQUIRE_SOLANA_MEMO") == "true"
+SOLANA_RPC_URL = os.getenv("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
+SOLANA_USDC_MINT = os.getenv("SOLANA_USDC_MINT", "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v")
+SOLANA_FALLBACK_SOL_USD = float(os.getenv("SOLANA_FALLBACK_SOL_USD", "180.0"))
+PRO_EARLY_SUPPORTER_LIMIT = int(os.getenv("PRO_EARLY_SUPPORTER_LIMIT", "100"))
+PRO_EARLY_MONTHLY_MINOR = 499
+PRO_STANDARD_MONTHLY_MINOR = 699
+PRO_ANNUAL_MINOR = 3999
+PRO_STANDARD_ANNUAL_MINOR = 5999
+PRO_OWNER_NOTIFY_EMAIL = os.getenv("PRO_OWNER_NOTIFY_EMAIL", "")
+PRO_OWNER_TELEGRAM_BOT_TOKEN = os.getenv("PRO_OWNER_TELEGRAM_BOT_TOKEN", "")
+PRO_OWNER_TELEGRAM_CHAT_ID = os.getenv("PRO_OWNER_TELEGRAM_CHAT_ID", "")
+PRO_LEDGER_BACKUP_PATH = Path(
+    os.getenv("PRO_LEDGER_BACKUP_PATH", str(MEDIA_ROOT / "pro_subscribers_ledger.jsonl"))
+)
+
+# --- Unified DeepSeek / OpenAI-compatible AI keys (100% server-side, never in PWA) ---
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+
+# --- Cloud VLM card recognition (DeepSeek-V4.1-Flash supports image_url natively) ---
+VISION_VLM_URL = os.getenv("VISION_VLM_URL", "https://api.deepseek.com/v1/chat/completions")
+VISION_VLM_API_KEY = (
+    os.getenv("VISION_VLM_API_KEY")
+    or DEEPSEEK_API_KEY
+    or os.getenv("ORACLE_LLM_API_KEY", "")
+)
+VISION_VLM_MODEL = os.getenv("VISION_VLM_MODEL", "deepseek-flash")
+VISION_VLM_TIMEOUT = float(os.getenv("VISION_VLM_TIMEOUT", "25.0"))
+VISION_MAX_CARDS_PER_SCAN = int(os.getenv("VISION_MAX_CARDS_PER_SCAN", "12"))
+
+# --- Oracle LLM & Cloud STT server proxy (defaults to DeepSeek; supports Gemini / OpenAI / Whisper) ---
+_ONLY_GEMINI_KEY = bool(os.getenv("GEMINI_API_KEY")) and not (
+    DEEPSEEK_API_KEY or os.getenv("ORACLE_LLM_API_KEY") or os.getenv("VISION_VLM_API_KEY")
+)
+ORACLE_LLM_URL = os.getenv(
+    "ORACLE_LLM_URL",
+    "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+    if _ONLY_GEMINI_KEY
+    else "https://api.deepseek.com/v1/chat/completions",
+)
+ORACLE_LLM_API_KEY = (
+    os.getenv("ORACLE_LLM_API_KEY")
+    or DEEPSEEK_API_KEY
+    or os.getenv("VISION_VLM_API_KEY")
+    or os.getenv("GEMINI_API_KEY", "")
+)
+ORACLE_LLM_MODEL = os.getenv(
+    "ORACLE_LLM_MODEL",
+    "gemini-2.5-flash" if _ONLY_GEMINI_KEY else "deepseek-chat",
+)
+ORACLE_LLM_TIMEOUT = float(os.getenv("ORACLE_LLM_TIMEOUT", "25.0"))
+
+STT_API_URL = os.getenv("STT_API_URL", "")
+STT_API_KEY = (
+    os.getenv("STT_API_KEY")
+    or DEEPSEEK_API_KEY
+    or ORACLE_LLM_API_KEY
+)
+STT_API_MODEL = os.getenv("STT_API_MODEL", "whisper-large-v3")
+STT_TIMEOUT = float(os.getenv("STT_TIMEOUT", "25.0"))
+STT_MAX_UPLOAD_BYTES = int(os.getenv("STT_MAX_UPLOAD_BYTES", str(5 * 1024 * 1024)))
+
+# --- Server-enforced daily AI quotas (Free vs PRO) ---
+ORACLE_FREE_DAILY_LIMIT = int(os.getenv("ORACLE_FREE_DAILY_LIMIT", "15"))
+ORACLE_PRO_DAILY_LIMIT = int(os.getenv("ORACLE_PRO_DAILY_LIMIT", "300"))
+STT_FREE_DAILY_LIMIT = int(os.getenv("STT_FREE_DAILY_LIMIT", "25"))
+STT_PRO_DAILY_LIMIT = int(os.getenv("STT_PRO_DAILY_LIMIT", "300"))
+
+# --- Telegram Mini App & Reminder Bot (Phase E) ---
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
+TELEGRAM_MINIAPP_URL = os.getenv("TELEGRAM_MINIAPP_URL", "https://app.soshallitbe.cyou/")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["apps.accounts.authentication.AccessTokenAuthentication"],

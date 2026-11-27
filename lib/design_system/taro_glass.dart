@@ -21,12 +21,16 @@ LiquidGlassSettings taroSettings(Brightness brightness) =>
       tintAmount: TaroOptics.tintAmount,
     );
 
-/// Дефолтный appearance: тёплый лавандовый tint поверх iOS 27 material.
-LiquidGlassAppearance taroAppearance(Brightness brightness, {Color? tint}) =>
-    LiquidGlassAppearance.ios27Regular(
-      brightness: brightness,
-      tint: tint ?? TaroColors.lavender.withValues(alpha: 0.14),
-    );
+/// Дефолтный appearance: тёплый лавандовый tint в Twilight или глубокий
+/// charcoal-obsidian tint в Moonlit Night поверх iOS 27 material.
+LiquidGlassAppearance taroAppearance(
+  Brightness brightness, {
+  Color? tint,
+  TaroPalette? palette,
+}) => LiquidGlassAppearance.ios27Regular(
+  brightness: brightness,
+  tint: tint ?? (palette ?? TaroPalette.twilight).glassTint,
+);
 
 /// Inherited scope, который [TaroGlassLayer] даёт поддереву.
 ///
@@ -36,6 +40,7 @@ class _TaroGlassScope extends InheritedWidget {
   const _TaroGlassScope({
     required this.mode,
     required this.brightness,
+    required this.palette,
     required this.settings,
     required this.appearance,
     required super.child,
@@ -43,6 +48,7 @@ class _TaroGlassScope extends InheritedWidget {
 
   final TaroGlassMode mode;
   final Brightness brightness;
+  final TaroPalette palette;
   final LiquidGlassSettings settings;
   final LiquidGlassAppearance appearance;
 
@@ -53,6 +59,7 @@ class _TaroGlassScope extends InheritedWidget {
   bool updateShouldNotify(_TaroGlassScope old) =>
       mode != old.mode ||
       brightness != old.brightness ||
+      palette != old.palette ||
       settings != old.settings ||
       appearance != old.appearance;
 }
@@ -104,8 +111,9 @@ class TaroGlassLayer extends StatelessWidget {
 
   Widget _buildResolved(BuildContext context, TaroGlassMode resolved) {
     final brightness = MediaQuery.platformBrightnessOf(context);
+    final palette = TaroPalette.of(context);
     final settings = taroSettings(brightness);
-    final appearance = taroAppearance(brightness);
+    final appearance = taroAppearance(brightness, palette: palette);
 
     // Настоящий LiquidGlassLayer создаётся только для TaroGlassMode.glass
     // (Apple Metal / проверенный Android Vulkan). В TaroGlassMode.fake каждая
@@ -117,6 +125,7 @@ class TaroGlassLayer extends StatelessWidget {
       return _TaroGlassScope(
         mode: resolved,
         brightness: brightness,
+        palette: palette,
         settings: settings,
         appearance: appearance,
         child: child,
@@ -126,6 +135,7 @@ class TaroGlassLayer extends StatelessWidget {
     return _TaroGlassScope(
       mode: resolved,
       brightness: brightness,
+      palette: palette,
       settings: settings,
       appearance: appearance,
       child: LiquidGlassLayer(
@@ -185,21 +195,34 @@ class TaroGlassSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = _TaroGlassScope.maybeOf(context);
+    final palette = scope?.palette ?? TaroPalette.of(context);
     final brightness =
         scope?.brightness ?? MediaQuery.platformBrightnessOf(context);
     final mode = scope?.mode ?? TaroGlassMode.auto;
     final liquidShape =
         shape ?? LiquidRoundedSuperellipse(borderRadius: radius);
     final baseAppearance = tint != null
-        ? taroAppearance(brightness, tint: tint)
+        ? taroAppearance(brightness, tint: tint, palette: palette)
         : scope?.appearance;
     final clampedVisibility = visibility.clamp(0.0, 1.0);
     final appearance = clampedVisibility < 1.0
-        ? (baseAppearance ?? taroAppearance(brightness)).copyWith(
-            visibility: clampedVisibility,
-          )
+        ? (baseAppearance ?? taroAppearance(brightness, palette: palette))
+              .copyWith(visibility: clampedVisibility)
         : baseAppearance;
     final shadows = glow ?? const <BoxShadow>[];
+    final effectiveFill = fillColor ?? palette.surface;
+    final effectiveBorder = borderColor ?? palette.borderHairline;
+    final nocturnalChild =
+        palette.isMoonlit && fillColor != Colors.transparent
+            ? DecoratedBox(
+                decoration: BoxDecoration(
+                  color: effectiveFill.withValues(alpha: palette.surfaceAlpha),
+                  borderRadius: BorderRadius.circular(radius),
+                  border: Border.all(color: effectiveBorder),
+                ),
+                child: child,
+              )
+            : child;
 
     switch (mode) {
       case TaroGlassMode.glass:
@@ -208,7 +231,7 @@ class TaroGlassSurface extends StatelessWidget {
             shape: liquidShape,
             appearance: appearance,
             shadows: shadows,
-            child: child,
+            child: nocturnalChild,
           );
         }
         // Standalone: собственный слой (без родительского LiquidGlassLayer).
@@ -218,7 +241,7 @@ class TaroGlassSurface extends StatelessWidget {
           fake: false,
           appearance: appearance,
           shadows: shadows,
-          child: child,
+          child: nocturnalChild,
         );
       case TaroGlassMode.auto:
       case TaroGlassMode.fake:
@@ -230,26 +253,23 @@ class TaroGlassSurface extends StatelessWidget {
           shape: liquidShape,
           settings: scope?.settings ?? taroSettings(brightness),
           appearance:
-              appearance ?? baseAppearance ?? taroAppearance(brightness),
+              appearance ??
+              baseAppearance ??
+              taroAppearance(brightness, palette: palette),
           shadows: shadows,
           useBackdropGroup: false,
-          child: child,
+          child: nocturnalChild,
         );
       case TaroGlassMode.simple:
       case TaroGlassMode.opaque:
         final isOpaque = mode == TaroGlassMode.opaque;
-        final fill = fillColor ?? TaroColors.surface;
         final box = Container(
           decoration: BoxDecoration(
             color: isOpaque
-                ? fill
-                : fill.withValues(alpha: TaroOpacity.surfaceStrong),
+                ? effectiveFill
+                : effectiveFill.withValues(alpha: palette.surfaceAlpha),
             borderRadius: BorderRadius.circular(radius),
-            border: Border.all(
-              color:
-                  borderColor ??
-                  TaroColors.mist.withValues(alpha: TaroOpacity.border),
-            ),
+            border: Border.all(color: effectiveBorder),
             boxShadow: glow,
           ),
           child: child,

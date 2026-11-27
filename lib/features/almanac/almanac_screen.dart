@@ -26,6 +26,7 @@ import '../digital_table/widgets/lenormand_card_3d_widget.dart';
 import '../digital_table/widgets/rune_stone_3d_widget.dart';
 import '../digital_table/widgets/tarot_card_3d_widget.dart';
 import '../profile/widgets/profile_header.dart';
+import '../training/micro_learning_screen.dart';
 import 'card_detail_sheet.dart';
 import 'deck_cover.dart';
 import 'deck_shop_screen.dart';
@@ -38,10 +39,18 @@ enum AlmanacTab { tarot, lenormand, runes, zodiac }
 /// Pillar 4: the offline encyclopedia of FOUR systems — 78 tarot cards,
 /// 36 Petit Lenormand cards, 24 Elder Futhark runes and the 12 zodiac signs.
 class AlmanacScreen extends StatefulWidget {
-  const AlmanacScreen({super.key, this.onOpenZodiacHoroscope});
+  const AlmanacScreen({
+    super.key,
+    this.onOpenZodiacHoroscope,
+    this.onTabChanged,
+  });
 
   /// Shell callback: opens the sign's Horoscope in the ASTRAL window.
   final ValueChanged<ZodiacSign>? onOpenZodiacHoroscope;
+
+  /// Shell callback: notifies when the active Almanac tab changes so the shell
+  /// background stays synced (forest on divination tabs, sky atlas on Zodiac).
+  final ValueChanged<AlmanacTab>? onTabChanged;
 
   @override
   State<AlmanacScreen> createState() => _AlmanacScreenState();
@@ -72,7 +81,6 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
   RuneAett? _runeAettFilter;
 
   ZodiacSign? _selectedSign;
-  Future<void>? _profileReady;
 
   /// The divination system of the current tab (null on the ZODIAC tab).
   DivinationSystem? get _system => switch (_tab) {
@@ -164,11 +172,9 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
     if (tab == _tab) return;
     HapticFeedback.selectionClick();
     if (_scroll.hasClients) _scroll.jumpTo(0);
-    if (tab == AlmanacTab.zodiac && _selectedSign == null) {
-      _profileReady = context.read<UserProfileController?>()?.initialLoad;
-    }
     _search.clear();
     setState(() => _tab = tab);
+    widget.onTabChanged?.call(tab);
     final system = _system;
     if (system != null) context.read<SpreadController>().setSystem(system);
   }
@@ -177,160 +183,204 @@ class _AlmanacScreenState extends State<AlmanacScreen> {
   Widget build(BuildContext context) {
     final language = context.watch<AppSettingsController>().language;
     final system = _system;
+    final topInset = MediaQuery.paddingOf(context).top;
     return SafeArea(
+      top: false,
       bottom: false,
-      child: LayoutBuilder(
-        builder: (context, bounds) {
-          final bannerHeight = (bounds.maxHeight * 0.22).clamp(88.0, 166.0);
-          final tabs = _AlmanacSystemSwitcher(
-            tab: _tab,
-            onChanged: _selectTab,
-            language: language,
-          );
-          if (_tab == AlmanacTab.zodiac) {
-            final header = ProfileHeader(child: tabs);
-            return FutureBuilder<void>(
-              future: _profileReady,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Align(alignment: Alignment.topCenter, child: header);
-                }
-                final birthDate = context
-                    .read<UserProfileController?>()
-                    ?.birthDate;
-                final sign = _selectedSign ??= birthDate == null
-                    ? ZodiacSign.aries
-                    : almanacBirthSign(birthDate);
-                return ZodiacSkyPlanetarium(
-                  sign: sign,
-                  header: header,
-                  language: language,
-                  onChanged: (next) => setState(() => _selectedSign = next),
-                  onExplore: () => ZodiacDetailSheet.show(
-                    context,
-                    zodiacEntryFor(sign),
-                    onOpenHoroscope: widget.onOpenZodiacHoroscope,
-                  ),
-                );
-              },
+      child: MediaQuery.removePadding(
+        context: context,
+        removeTop: true,
+        child: LayoutBuilder(
+          builder: (context, bounds) {
+            final contentHeight = (bounds.maxHeight - topInset).clamp(
+              0.0,
+              double.infinity,
             );
-          }
-          final navigation = ColoredBox(
-            color: TaroColors.background.withValues(alpha: 0.92),
-            child: Column(
+            final bannerHeight = (contentHeight * 0.22).clamp(88.0, 166.0);
+            final tabs = _AlmanacSystemSwitcher(
+              tab: _tab,
+              onChanged: _selectTab,
+              language: language,
+            );
+            final topBarContent = Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                if (bounds.maxHeight < 450)
+                if (contentHeight < 450)
                   ProfileHeader(child: tabs)
                 else ...[
-                  const ProfileHeader(
-                    child: ProfileHeaderTitle('header.almanac'),
+                  ProfileHeader(
+                    trailing: system != null
+                        ? TaroGlassChip(
+                            key: const ValueKey('almanac-training-button'),
+                            label: AppStrings.t(language, 'training.entryChip'),
+                            icon: Icons.school_outlined,
+                            selected: true,
+                            compact: true,
+                            onTap: () => MicroLearningScreen.open(
+                              context,
+                              system: system,
+                            ),
+                          )
+                        : null,
+                    child: const ProfileHeaderTitle('header.almanac'),
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                     child: tabs,
                   ),
                 ],
-                if (system != null)
-                  _DeckSelector(system: system, language: language),
               ],
-            ),
-          );
-          return CustomScrollView(
-            key: const ValueKey('almanac-scroll'),
-            controller: _scroll,
-            slivers: [
-              PinnedHeaderSliver(child: navigation),
-              if (system != null)
-                SliverToBoxAdapter(
-                  child: _DeckBanner(
-                    system: system,
-                    height: bannerHeight,
-                    language: language,
+            );
+            final topBar = _tab == AlmanacTab.zodiac
+                ? Padding(
+                    padding: EdgeInsets.only(top: topInset),
+                    child: ColoredBox(
+                      key: const ValueKey('almanac-top-bar'),
+                      color: TaroColors.background.withValues(alpha: 0.92),
+                      child: topBarContent,
+                    ),
+                  )
+                : ColoredBox(
+                    key: const ValueKey('almanac-top-bar'),
+                    color: TaroColors.background.withValues(alpha: 0.64),
+                    child: Padding(
+                      padding: EdgeInsets.only(top: topInset),
+                      child: topBarContent,
+                    ),
+                  );
+          final Widget body;
+          if (_tab == AlmanacTab.zodiac) {
+            final birthDate = context
+                .read<UserProfileController?>()
+                ?.birthDate;
+            final sign = _selectedSign ??= birthDate == null
+                ? ZodiacSign.aries
+                : almanacBirthSign(birthDate);
+            body = ZodiacSkyPlanetarium(
+              sign: sign,
+              header: const SizedBox.shrink(),
+              language: language,
+              onChanged: (next) => setState(() => _selectedSign = next),
+              onExplore: () => ZodiacDetailSheet.show(
+                context,
+                zodiacEntryFor(sign),
+                onOpenHoroscope: widget.onOpenZodiacHoroscope,
+              ),
+            );
+          } else {
+            body = CustomScrollView(
+              key: const ValueKey('almanac-scroll'),
+              controller: _scroll,
+              slivers: [
+                if (system != null)
+                  PinnedHeaderSliver(
+                    child: ColoredBox(
+                      color: TaroColors.background.withValues(alpha: 0.64),
+                      child: _DeckSelector(system: system, language: language),
+                    ),
                   ),
-                ),
-              PinnedHeaderSliver(
-                child: ColoredBox(
-                  key: const ValueKey('almanac-filters'),
-                  color: TaroColors.background.withValues(alpha: 0.92),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                        child: TextField(
-                          key: const ValueKey('almanac-search'),
-                          controller: _search,
-                          onChanged: (_) => setState(() {}),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: TaroColors.textPrimary,
-                          ),
-                          cursorColor: TaroColors.lavender,
-                          decoration: InputDecoration(
-                            hintText: AppStrings.t(
-                              language,
-                              'almanac.searchCards',
+                if (system != null)
+                  SliverToBoxAdapter(
+                    child: _DeckBanner(
+                      system: system,
+                      height: bannerHeight,
+                      language: language,
+                    ),
+                  ),
+                PinnedHeaderSliver(
+                  child: ColoredBox(
+                    key: const ValueKey('almanac-filters'),
+                    color: TaroColors.background.withValues(alpha: 0.64),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                          child: TextField(
+                            key: const ValueKey('almanac-search'),
+                            controller: _search,
+                            onChanged: (_) => setState(() {}),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: TaroColors.textPrimary,
                             ),
-                            hintStyle: const TextStyle(
-                              fontSize: 13,
-                              color: TaroColors.textSecondary,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.search_outlined,
-                              size: 18,
-                              color: TaroColors.textSecondary,
-                            ),
-                            isDense: true,
-                            filled: true,
-                            fillColor: TaroColors.surface.withValues(
-                              alpha: 0.78,
-                            ),
-                            prefixIconConstraints: const BoxConstraints(
-                              minWidth: 40,
-                              minHeight: 40,
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 9,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: TaroColors.mist.withValues(
-                                  alpha: TaroOpacity.border,
+                            cursorColor: TaroColors.lavender,
+                            decoration: InputDecoration(
+                              hintText: AppStrings.t(
+                                language,
+                                'almanac.searchCards',
+                              ),
+                              hintStyle: const TextStyle(
+                                fontSize: 13,
+                                color: TaroColors.textSecondary,
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.search_outlined,
+                                size: 18,
+                                color: TaroColors.textSecondary,
+                              ),
+                              isDense: true,
+                              filled: true,
+                              fillColor: TaroColors.surface.withValues(
+                                alpha: 0.78,
+                              ),
+                              prefixIconConstraints: const BoxConstraints(
+                                minWidth: 40,
+                                minHeight: 40,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 9,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: TaroColors.mist.withValues(
+                                    alpha: TaroOpacity.border,
+                                  ),
                                 ),
                               ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: TaroColors.lavender,
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: TaroColors.lavender,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      ..._filterBars(language, compact: bounds.maxHeight < 500),
-                      const SizedBox(height: 4),
-                    ],
+                        ..._filterBars(
+                          language,
+                          compact: contentHeight < 500,
+                        ),
+                        const SizedBox(height: 4),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              _catalog(language, bounds.maxWidth),
-              if (system != null)
-                // Even a one-card search can scroll the banner fully offscreen.
-                SliverLayoutBuilder(
-                  builder: (_, constraints) {
-                    final fill =
-                        constraints.viewportMainAxisExtent +
-                        bannerHeight -
-                        constraints.precedingScrollExtent;
-                    return SliverToBoxAdapter(
-                      child: SizedBox(height: fill > 0 ? fill : 0),
-                    );
-                  },
-                ),
+                _catalog(language, bounds.maxWidth),
+                if (system != null)
+                  // Even a one-card search can scroll the banner fully offscreen.
+                  SliverLayoutBuilder(
+                    builder: (_, constraints) {
+                      final fill =
+                          constraints.viewportMainAxisExtent +
+                          bannerHeight -
+                          constraints.precedingScrollExtent;
+                      return SliverToBoxAdapter(
+                        child: SizedBox(height: fill > 0 ? fill : 0),
+                      );
+                    },
+                  ),
+              ],
+            );
+          }
+          return Column(
+            children: [
+              topBar,
+              Expanded(child: body),
             ],
           );
         },
+      ),
       ),
     );
   }
@@ -718,13 +768,9 @@ class _ElementFilterBar extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                Element.values[i].glyph,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Element.values[i].accent,
-                                ),
+                              ElementIcon(
+                                Element.values[i],
+                                size: 14,
                               ),
                               const SizedBox(width: 5),
                               Text(

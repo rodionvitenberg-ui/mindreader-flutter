@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/config/app_build_config.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/models/store_models.dart';
 import '../../../core/theme/app_typography.dart';
@@ -300,6 +301,22 @@ class _StoreProductDetailSheetState extends State<StoreProductDetailSheet> {
                     ),
                   ),
                 ],
+              ] else if (!product.free && !showExternalPurchaseUi) ...[
+                Text(
+                  AppStrings.t(lang, 'pro.reader.body'),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.45,
+                    color: TaroColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TaroGlassButton(
+                  icon: Icons.sync_rounded,
+                  label: AppStrings.t(lang, 'shop.action.checkPayment'),
+                  variant: TaroGlassButtonVariant.secondary,
+                  onPressed: () => widget.onPrimaryAction(product),
+                ),
               ] else
                 TaroGlassButton(
                   icon: product.free

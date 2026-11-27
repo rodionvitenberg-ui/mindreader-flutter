@@ -72,33 +72,36 @@ class TaroOpticsTheme extends ThemeExtension<TaroOpticsTheme> {
 
 /// Основная тема дизайн-системы **Tarot Tree**.
 ///
-/// Построена на токенах [TaroColors], [TaroOpacity], [TaroRadii], [TaroOptics]
-/// и типографике [AppTypography] (шрифт Allo 1.0.3).
-ThemeData buildTaroTheme() {
-  final borderHairline = TaroColors.mist.withValues(alpha: TaroOpacity.border);
-  final borderStrong = TaroColors.mist.withValues(
-    alpha: TaroOpacity.borderStrong,
-  );
+/// Построена на токенах [TaroColors], [TaroPalette], [TaroOpacity],
+/// [TaroRadii], [TaroOptics] и типографике [AppTypography] (шрифт Allo 1.0.3).
+/// Supports [SanctuaryThemeMode.twilight] (default) and
+/// [SanctuaryThemeMode.moonlit].
+ThemeData buildTaroTheme({
+  SanctuaryThemeMode mode = SanctuaryThemeMode.twilight,
+}) {
+  final palette = TaroPalette.forMode(mode);
+  final borderHairline = palette.borderHairline;
+  final borderStrong = palette.borderStrong;
 
   final base = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
     fontFamily: AppTypography.familyStatic,
     fontFamilyFallback: AppTypography.fallback,
-    scaffoldBackgroundColor: TaroColors.background,
+    scaffoldBackgroundColor: palette.background,
     colorScheme: ColorScheme.dark(
       primary: TaroColors.lavender,
       secondary: TaroColors.indigo,
-      tertiary: TaroColors.dawn,
-      surface: TaroColors.surface,
-      surfaceContainerHighest: TaroColors.canvas,
+      tertiary: palette.lanternAccent,
+      surface: palette.surface,
+      surfaceContainerHighest: palette.canvas,
       error: TaroColors.error,
-      onPrimary: TaroColors.background,
+      onPrimary: palette.background,
       onSecondary: TaroColors.textPrimary,
-      onTertiary: TaroColors.background,
+      onTertiary: palette.background,
       onSurface: TaroColors.textPrimary,
       onSurfaceVariant: TaroColors.textSecondary,
-      onError: TaroColors.background,
+      onError: palette.background,
       outline: borderStrong,
       outlineVariant: borderHairline,
     ),
@@ -210,7 +213,7 @@ ThemeData buildTaroTheme() {
       elevation: 0,
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: TaroColors.surface,
+      backgroundColor: palette.surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(TaroRadii.panel),
@@ -218,7 +221,7 @@ ThemeData buildTaroTheme() {
       ),
     ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: TaroColors.surface,
+      backgroundColor: palette.surface,
       contentTextStyle: AppTypography.body(
         fontSize: 13.5,
         color: TaroColors.textPrimary,
@@ -229,6 +232,6 @@ ThemeData buildTaroTheme() {
         side: BorderSide(color: borderHairline),
       ),
     ),
-    extensions: const <ThemeExtension<dynamic>>[TaroOpticsTheme()],
+    extensions: <ThemeExtension<dynamic>>[const TaroOpticsTheme(), palette],
   );
 }

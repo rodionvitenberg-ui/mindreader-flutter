@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
 import '../core/models/natal_chart.dart';
 import '../core/l10n/app_strings.dart';
 import '../core/services/local_storage_service.dart';
+import '../design_system/taro_tokens.dart';
 import 'astral_controller.dart';
 import 'session_history_controller.dart';
 import 'spread_session_snapshot.dart';
@@ -43,6 +45,10 @@ class UserProfileController extends ChangeNotifier {
   bool _readingForSelf = true;
   String _targetPersonNote = '';
   bool _isGoogleLinked = false;
+  String? _avatarBase64;
+  Uint8List? _avatarBytes;
+  SanctuaryThemeMode _themeMode = SanctuaryThemeMode.twilight;
+  bool _themeModeDirty = false;
 
   String get displayName => _displayName;
   DateTime? get birthDate => _birthDate;
@@ -56,6 +62,9 @@ class UserProfileController extends ChangeNotifier {
   bool get readingForSelf => _readingForSelf;
   String get targetPersonNote => _targetPersonNote;
   bool get isGoogleLinked => _isGoogleLinked;
+  String? get avatarBase64 => _avatarBase64;
+  Uint8List? get avatarBytes => _avatarBytes;
+  SanctuaryThemeMode get themeMode => _themeMode;
 
   /// Birth data is usable by ASTRAL only when a date AND coordinates exist.
   bool get hasBirthData =>
@@ -101,10 +110,29 @@ class UserProfileController extends ChangeNotifier {
     try {
       final json = await _storage.loadUserProfile();
       if (json != null) _applyJson(json, notify: false);
+      if (!_themeModeDirty) {
+        final savedTheme = await _storage.loadSanctuaryThemeMode();
+        if (savedTheme != null) {
+          _themeMode = SanctuaryThemeMode.fromName(savedTheme);
+        }
+      }
     } catch (_) {
       // Corrupt JSON / unavailable storage — keep in-memory defaults.
     }
     notifyListeners();
+  }
+
+  /// Switches the sanctuary dark theme UI-first (synchronous state update +
+  /// [notifyListeners]), persisting to `SharedPreferences` in the background.
+  void setThemeMode(SanctuaryThemeMode mode) {
+    _themeModeDirty = true;
+    if (_themeMode == mode) return;
+    _themeMode = mode;
+    notifyListeners();
+    _storage
+        .saveSanctuaryThemeMode(mode.name)
+        .then((_) {}, onError: (Object _) {});
+    _persist();
   }
 
   void setDisplayName(String value) => _mutate(() => _displayName = value);
@@ -140,6 +168,20 @@ class UserProfileController extends ChangeNotifier {
   /// 1-Click sign-in state. Used strictly to verify PRO ownership and to
   /// unlock optional device migration — no account is required to read.
   void setGoogleLinked(bool value) => _mutate(() => _isGoogleLinked = value);
+
+  void setAvatarBytes(Uint8List? bytes) {
+    _mutate(() {
+      if (bytes == null || bytes.isEmpty) {
+        _avatarBytes = null;
+        _avatarBase64 = null;
+      } else {
+        _avatarBytes = bytes;
+        _avatarBase64 = base64Encode(bytes);
+      }
+    });
+  }
+
+  void clearAvatar() => setAvatarBytes(null);
 
   // ---- device migration ------------------------------------------------
 
@@ -207,6 +249,8 @@ class UserProfileController extends ChangeNotifier {
         'readingForSelf': _readingForSelf,
         'targetPersonNote': _targetPersonNote,
         'isGoogleLinked': _isGoogleLinked,
+        'themeMode': _themeMode.name,
+        if (_avatarBase64 != null) 'avatarBase64': _avatarBase64,
       };
 
   void _applyJson(Map<String, dynamic> json, {required bool notify}) {
@@ -222,6 +266,29 @@ class UserProfileController extends ChangeNotifier {
     _readingForSelf = json['readingForSelf'] as bool? ?? true;
     _targetPersonNote = _str(json['targetPersonNote']);
     _isGoogleLinked = json['isGoogleLinked'] as bool? ?? false;
+    final rawTheme = json['themeMode'];
+    if (rawTheme is String && (notify || !_themeModeDirty)) {
+      _themeMode = SanctuaryThemeMode.fromName(rawTheme);
+      if (notify) {
+        _themeModeDirty = true;
+        _storage
+            .saveSanctuaryThemeMode(_themeMode.name)
+            .then((_) {}, onError: (Object _) {});
+      }
+    }
+    final rawAvatar = json['avatarBase64'];
+    if (rawAvatar is String && rawAvatar.isNotEmpty) {
+      try {
+        _avatarBytes = base64Decode(rawAvatar);
+        _avatarBase64 = rawAvatar;
+      } catch (_) {
+        _avatarBytes = null;
+        _avatarBase64 = null;
+      }
+    } else {
+      _avatarBytes = null;
+      _avatarBase64 = null;
+    }
     if (notify) {
       notifyListeners();
       _persist();

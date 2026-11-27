@@ -4,6 +4,9 @@ from . import api
 
 urlpatterns = [
     path("personalities/", api.personalities),
+    path("quota/", api.quota),
+    path("complete/", api.complete),
+    path("transcribe/", api.transcribe),
     path("sessions/", api.Sessions.as_view()),
     path("sessions/<uuid:session_id>/", api.session),
     path("sessions/<uuid:session_id>/cards/", api.cards),

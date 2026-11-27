@@ -44,7 +44,9 @@ class _SkyCamera extends ChangeNotifier {
   Size extent;
   _Aim aim;
   ZodiacSign focus;
+  ZodiacSign? previousFocus;
   double glow = 0;
+  double previousGlow = 0;
   Rect aperture = Rect.zero;
   ui.Image? image;
   void repaint() => notifyListeners();
@@ -73,18 +75,27 @@ class _ZodiacSkyPlanetariumState extends State<ZodiacSkyPlanetarium>
   late final _camera = _SkyCamera(_Aim.at(widget.sign), widget.sign);
   late final _flight = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 700),
+    duration: const Duration(milliseconds: 850),
   );
   late final _reveal = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 550),
+    duration: const Duration(milliseconds: 680),
   );
   late _Aim _from, _to;
   late Size _fromExtent, _toExtent;
+  double _startGlow = 0;
   late ZodiacSign _dragSign;
   double _dragPixels = 0;
   final _chips = {for (final entry in zodiacAlmanac) entry.sign: GlobalKey()};
-  final _strip = ScrollController();
+  late final _strip = ScrollController(
+    initialScrollOffset: _initialChipOffset(widget.sign),
+  );
+
+  static double _initialChipOffset(ZodiacSign sign) {
+    final idx = zodiacAlmanac.indexWhere((e) => e.sign == sign);
+    if (idx <= 1) return 0;
+    return math.max(0.0, idx * 88.0 - 110.0);
+  }
   ImageStream? _stream;
   late final _listener = ImageStreamListener(_onImage, onError: _onImageError);
   ImageInfo? _imageInfo;
@@ -96,16 +107,21 @@ class _ZodiacSkyPlanetariumState extends State<ZodiacSkyPlanetarium>
       final t = Curves.easeInOutCubic.transform(_flight.value);
       _camera.aim = _from.travel(_to, t);
       _camera.extent = Size.lerp(_fromExtent, _toExtent, t)!;
+      _camera.previousGlow =
+          _startGlow * (1.0 - (t / 0.30).clamp(0.0, 1.0));
       _camera.repaint();
     });
     _flight.addStatusListener((s) {
-      if (s == AnimationStatus.completed) _ignite();
+      if (s == AnimationStatus.completed) {
+        _camera.previousFocus = null;
+        _camera.previousGlow = 0;
+        _ignite();
+      }
     });
     _reveal.addListener(() {
-      _camera.glow = Curves.easeOut.transform(_reveal.value);
+      _camera.glow = Curves.easeOutCubic.transform(_reveal.value);
       _camera.repaint();
     });
-    _centerChip(animate: false);
   }
 
   @override
@@ -167,34 +183,37 @@ class _ZodiacSkyPlanetariumState extends State<ZodiacSkyPlanetarium>
   void _onImageError(Object error, StackTrace? stack) => _clearArt();
 
   void _ignite() {
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _reveal.value = 1;
-    } else {
-      _reveal.forward(from: 0);
-    }
+    _reveal.forward(from: 0);
   }
 
   void _interrupt() {
     _flight.stop();
     _reveal.stop();
+    _startGlow = 0;
+    _camera.previousFocus = null;
+    _camera.previousGlow = 0;
     _camera.glow = 0;
     _camera.repaint();
   }
 
   void animateToSign(ZodiacSign sign) {
-    _interrupt();
+    _flight.stop();
+    _reveal.stop();
+    final prevFocus = _camera.focus != sign ? _camera.focus : null;
+    _startGlow = prevFocus != null ? _camera.glow : 0;
+    _camera.previousFocus = prevFocus;
+    _camera.previousGlow = _startGlow;
     _camera.focus = sign;
+    _camera.glow = 0;
     _from = _camera.aim;
     _fromExtent = _camera.extent;
     _to = _Aim.at(sign);
     _toExtent = _SkyPainter._extents[sign]!;
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _camera.aim = _to;
-      _camera.extent = _toExtent;
-      _ignite();
-    } else {
-      _flight.forward(from: 0);
-    }
+    final deg = _delta(_from.ra, _to.ra).abs();
+    final ms = (750 + (deg / 180) * 450).round().clamp(750, 1200);
+    _flight.duration = Duration(milliseconds: ms);
+    _camera.repaint();
+    _flight.forward(from: 0);
   }
 
   ZodiacSign _neighbor(int direction) {
@@ -281,47 +300,60 @@ class _ZodiacSkyPlanetariumState extends State<ZodiacSkyPlanetarium>
               ),
               LayoutId(
                 id: _Layer.header,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    widget.header,
-                    SingleChildScrollView(
-                      controller: _strip,
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: [
-                          for (final sign in zodiacAlmanac)
-                            Padding(
-                              key: _chips[sign.sign],
-                              padding: const EdgeInsets.only(right: 6),
-                              child: ChoiceChip(
-                                key: ValueKey('zodiac-sign-${sign.sign.name}'),
-                                label: _symbolLabel(
-                                  sign.glyph,
-                                  sign.name,
+                child: ColoredBox(
+                  color: TaroColors.background.withValues(alpha: 0.92),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      widget.header,
+                      SingleChildScrollView(
+                        controller: _strip,
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
+                        child: Row(
+                          children: [
+                            for (final sign in zodiacAlmanac)
+                              Padding(
+                                key: _chips[sign.sign],
+                                padding: const EdgeInsets.only(right: 6),
+                                child: ChoiceChip(
+                                  key: ValueKey('zodiac-sign-${sign.sign.name}'),
+                                  label: _symbolLabel(
+                                    sign.glyph,
+                                    sign.name,
+                                  ),
+                                  selected: widget.sign == sign.sign,
+                                  showCheckmark: false,
+                                  visualDensity: VisualDensity.compact,
+                                  backgroundColor: _ink.withValues(alpha: .80),
+                                  selectedColor: const Color(0xff504160),
+                                  onSelected: (_) => _choose(sign.sign),
                                 ),
-                                selected: widget.sign == sign.sign,
-                                showCheckmark: false,
-                                visualDensity: VisualDensity.compact,
-                                backgroundColor: _ink.withValues(alpha: .80),
-                                selectedColor: const Color(0xff504160),
-                                onSelected: (_) => _choose(sign.sign),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               LayoutId(
                 id: _Layer.info,
-                child: _SkyInfo(
-                  entry: entry,
-                  language: widget.language,
-                  compact: compact,
-                  onExplore: widget.onExplore,
+                child: ColoredBox(
+                  color: TaroColors.background.withValues(alpha: 0.92),
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    heightFactor: 1,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 472),
+                      child: _SkyInfo(
+                        entry: entry,
+                        language: widget.language,
+                        compact: compact,
+                        onExplore: widget.onExplore,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -358,14 +390,15 @@ class _AtlasLayout extends MultiChildLayoutDelegate {
     final bottom = layoutChild(
       _Layer.info,
       BoxConstraints(
-        maxWidth: math.min(472, size.width),
+        minWidth: size.width,
+        maxWidth: size.width,
         maxHeight: size.height * 0.46,
       ),
     );
     positionChild(_Layer.header, Offset.zero);
     positionChild(
       _Layer.info,
-      Offset((size.width - bottom.width) / 2, size.height - bottom.height),
+      Offset(0, size.height - bottom.height),
     );
     camera.aperture = Rect.fromLTWH(
       0,
@@ -574,7 +607,7 @@ class _SkyPainter extends CustomPainter {
     ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.5);
   final _art = Paint()
     ..blendMode = BlendMode.screen
-    ..filterQuality = FilterQuality.low;
+    ..filterQuality = FilterQuality.medium;
   static const _night = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
@@ -619,8 +652,11 @@ class _SkyPainter extends CustomPainter {
         for (final star in c.stars) p.project(_directions[star.hip]!),
       ];
       if (!points.any((at) => at != null && visible.contains(at))) continue;
-      final light = entry.key == camera.focus ? camera.glow : 0.0;
-      if (light > 0) _figure(canvas, c, points, light);
+      final isFocus = entry.key == camera.focus;
+      final light = isFocus
+          ? camera.glow
+          : (entry.key == camera.previousFocus ? camera.previousGlow : 0.0);
+      if (isFocus && light > 0) _figure(canvas, c, points, light);
       _line
         ..color = _lavender.withValues(alpha: .22 + .5 * light)
         ..strokeWidth = .8 + light * .42;
@@ -631,7 +667,14 @@ class _SkyPainter extends CustomPainter {
       for (var i = 0; i < points.length; i++) {
         final at = points[i];
         if (at != null && visible.contains(at)) {
-          _star(canvas, at, c.stars[i], .22 + .78 * light, light);
+          _star(
+            canvas,
+            at,
+            c.stars[i],
+            .22 + .78 * light,
+            light,
+            flaring: isFocus,
+          );
         }
       }
     }
@@ -642,9 +685,14 @@ class _SkyPainter extends CustomPainter {
     Offset at,
     SkyStar s,
     double opacity,
-    double light,
-  ) {
-    final r = (1.85 - s.magnitude * .27).clamp(.47, 2.4) + light * .52;
+    double light, {
+    bool flaring = false,
+  }) {
+    final flare = flaring && light > 0.01 ? math.sin(light * math.pi) : 0.0;
+    final r =
+        (1.85 - s.magnitude * .27).clamp(.47, 2.4) +
+        light * .55 +
+        flare * .35;
     final tint = s.bv < .25
         ? const Color(0xffcbdfff)
         : s.bv > .72
@@ -654,9 +702,9 @@ class _SkyPainter extends CustomPainter {
       _glow.color = Color.lerp(
         tint,
         _lavender,
-        .35,
-      )!.withValues(alpha: light * .65);
-      canvas.drawCircle(at, r * 2.4, _glow);
+        .30,
+      )!.withValues(alpha: (light * .72 + flare * .25).clamp(0.0, 1.0));
+      canvas.drawCircle(at, r * (2.6 + flare * 1.0), _glow);
     }
     _dot.color = tint.withValues(alpha: opacity);
     canvas.drawCircle(at, r, _dot);
@@ -701,7 +749,7 @@ class _SkyPainter extends CustomPainter {
     );
     final image = camera.image;
     if (image != null) {
-      _art.color = Colors.white.withValues(alpha: .34 * light);
+      _art.color = Colors.white.withValues(alpha: (0.96 * light).clamp(0.0, 1.0));
       canvas.drawImageRect(
         image,
         Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
@@ -710,7 +758,7 @@ class _SkyPainter extends CustomPainter {
       );
     } else {
       _line
-        ..color = _lavender.withValues(alpha: .34 * light)
+        ..color = _lavender.withValues(alpha: (0.78 * light).clamp(0.0, 1.0))
         ..strokeWidth = .004;
       final path = Path();
       for (final outline in c.outlines) {

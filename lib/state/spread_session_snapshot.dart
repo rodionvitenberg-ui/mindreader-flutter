@@ -23,6 +23,14 @@ enum SessionKind {
   zodiacReading,
 }
 
+/// Reader's reality check-in outcome for a past spread (Zeigarnik journal).
+enum SpreadOutcome {
+  unfolded,
+  partly,
+  shifted,
+  stillUnfolding,
+}
+
 /// One saved card of a session: exact identity, orientation, slot role and
 /// the pre-draw intention it carried.
 class RestoredSpreadCard {
@@ -107,6 +115,12 @@ class SpreadSessionSnapshot {
     this.customQuestions = const [],
     this.compareNeighbors = false,
     this.pendingGuidedPosition,
+    this.checkInDays,
+    this.checkInDueAt,
+    this.outcome,
+    this.reflectionNote,
+    this.reflectedAt,
+    this.checkInDismissed = false,
   });
 
   /// An Astral (natal / horoscope / synastry / zodiac) conversation with no
@@ -207,6 +221,68 @@ class SpreadSessionSnapshot {
   /// guided reading can resume there (null when not a paused guided session).
   final int? pendingGuidedPosition;
 
+  /// Chosen check-in horizon in days (3, 7, or 14; null = default 7 days).
+  final int? checkInDays;
+
+  /// ISO-8601 timestamp when the calm Zeigarnik reality check-in becomes due.
+  final String? checkInDueAt;
+
+  /// How the spread resonated in reality when the reader checked back in.
+  final SpreadOutcome? outcome;
+
+  /// Reader's short reflection note recorded during reality check-in.
+  final String? reflectionNote;
+
+  /// ISO-8601 timestamp when the reader closed the loop with a reflection.
+  final String? reflectedAt;
+
+  /// True when the reader explicitly skipped the check-in for this spread.
+  final bool checkInDismissed;
+
+  SpreadSessionSnapshot copyWith({
+    int? checkInDays,
+    String? checkInDueAt,
+    SpreadOutcome? outcome,
+    String? reflectionNote,
+    String? reflectedAt,
+    bool clearReflectedAt = false,
+    bool? checkInDismissed,
+  }) => SpreadSessionSnapshot(
+    timestamp: timestamp,
+    system: system,
+    spreadType: spreadType,
+    lenormandSpread: lenormandSpread,
+    runeCast: runeCast,
+    notebook: notebook,
+    cards: cards,
+    sessionNotes: sessionNotes,
+    readingQuestion: readingQuestion,
+    readingForSelf: readingForSelf,
+    synthesis: synthesis,
+    chapters: chapters,
+    messages: messages,
+    kind: kind,
+    astralSessionTitle: astralSessionTitle,
+    natalChartId: natalChartId,
+    astralContext: astralContext,
+    sessionId: sessionId,
+    readingSource: readingSource,
+    readingMode: readingMode,
+    readingStatus: readingStatus,
+    completionStatus: completionStatus,
+    voiceUsed: voiceUsed,
+    customSpread: customSpread,
+    customQuestions: customQuestions,
+    compareNeighbors: compareNeighbors,
+    pendingGuidedPosition: pendingGuidedPosition,
+    checkInDays: checkInDays ?? this.checkInDays,
+    checkInDueAt: checkInDueAt ?? this.checkInDueAt,
+    outcome: outcome ?? this.outcome,
+    reflectionNote: reflectionNote ?? this.reflectionNote,
+    reflectedAt: clearReflectedAt ? null : (reflectedAt ?? this.reflectedAt),
+    checkInDismissed: checkInDismissed ?? this.checkInDismissed,
+  );
+
   /// Runtime identity: the stable [sessionId] when present, else the legacy
   /// [timestamp] — old and new snapshots share one fallback.
   String get effectiveSessionId => sessionId ?? timestamp;
@@ -225,6 +301,12 @@ class SpreadSessionSnapshot {
     ReadingSource? readingSource,
     ReadingMode? readingMode,
     ReadingStatus? readingStatus,
+    int? checkInDays,
+    String? checkInDueAt,
+    SpreadOutcome? outcome,
+    String? reflectionNote,
+    String? reflectedAt,
+    bool checkInDismissed = false,
   }) {
     return SpreadSessionSnapshot(
       timestamp: timestamp,
@@ -268,6 +350,12 @@ class SpreadSessionSnapshot {
       customSpread: ctrl.customSpread?.name,
       compareNeighbors: ctrl.customSpread?.compareNeighbors ?? false,
       customQuestions: ctrl.customSpread?.questions ?? const [],
+      checkInDays: checkInDays,
+      checkInDueAt: checkInDueAt,
+      outcome: outcome,
+      reflectionNote: reflectionNote,
+      reflectedAt: reflectedAt,
+      checkInDismissed: checkInDismissed,
     );
   }
 
@@ -342,6 +430,13 @@ class SpreadSessionSnapshot {
     if (customQuestions.isNotEmpty) 'customQuestions': customQuestions,
     if (pendingGuidedPosition != null)
       'pendingGuidedPosition': pendingGuidedPosition,
+    if (checkInDays != null) 'checkInDays': checkInDays,
+    if (checkInDueAt != null) 'checkInDueAt': checkInDueAt,
+    if (outcome != null) 'outcome': outcome!.name,
+    if (reflectionNote != null && reflectionNote!.isNotEmpty)
+      'reflectionNote': reflectionNote,
+    if (reflectedAt != null) 'reflectedAt': reflectedAt,
+    if (checkInDismissed) 'checkInDismissed': true,
   };
 
   static SpreadSessionSnapshot fromJson(Map<String, dynamic> json) {
@@ -429,6 +524,15 @@ class SpreadSessionSnapshot {
       customQuestions:
           (json['customQuestions'] as List? ?? const []).cast<String>(),
       pendingGuidedPosition: json['pendingGuidedPosition'] as int?,
+      checkInDays: json['checkInDays'] as int?,
+      checkInDueAt: json['checkInDueAt'] as String?,
+      outcome: _enumOrNullable<SpreadOutcome>(
+        SpreadOutcome.values,
+        json['outcome'] as String?,
+      ),
+      reflectionNote: json['reflectionNote'] as String?,
+      reflectedAt: json['reflectedAt'] as String?,
+      checkInDismissed: json['checkInDismissed'] == true,
     );
   }
 

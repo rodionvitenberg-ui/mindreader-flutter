@@ -1,7 +1,7 @@
 import '../l10n/app_strings.dart';
 import '../models/divination_system.dart';
 
-/// Localized copy for the Guided Reading mentor.
+/// Localized copy for Wisp — the Guided Reading companion.
 ///
 /// Every sentence lives in the shared dictionaries; this class only chooses
 /// the key and fills its placeholders, so all six languages stay in sync.
@@ -11,7 +11,24 @@ class GuideCopy {
   static String _t(AppLanguage lang, String key, [Map<String, Object?>? p]) =>
       AppStrings.t(lang, 'guide.$key', p);
 
-  /// `Deal 2 of 3 · Shadow` ([slot] is 1-based).
+  static String mascotName(AppLanguage lang) => _t(lang, 'mascotName');
+
+  static String moreAction(AppLanguage lang) => _t(lang, 'more');
+
+  static String chooseTitle(AppLanguage lang) => _t(lang, 'chooseTitle');
+
+  static String chooseBody(AppLanguage lang, DivinationSystem system) =>
+      _t(lang, 'chooseBody.${system.name}');
+
+  /// First card of a fresh spread (`slot` is 1-based).
+  static String dealFirstTitle(
+    AppLanguage lang, {
+    required int slot,
+    required int total,
+    required String role,
+  }) => _t(lang, 'dealFirstTitle', {'slot': slot, 'total': total, 'role': role});
+
+  /// Subsequent dealt cards (`slot` is 1-based).
   static String dealTitle(
     AppLanguage lang, {
     required int slot,
@@ -19,7 +36,14 @@ class GuideCopy {
     required String role,
   }) => _t(lang, 'dealTitle', {'slot': slot, 'total': total, 'role': role});
 
-  /// `Try revealing 2 · Shadow` (1-based).
+  /// First reveal once every card has been laid down (`slot` is 1-based).
+  static String revealFirstTitle(
+    AppLanguage lang, {
+    required int slot,
+    required String role,
+  }) => _t(lang, 'revealFirstTitle', {'slot': slot, 'role': role});
+
+  /// Subsequent reveals (`slot` is 1-based).
   static String revealTitle(
     AppLanguage lang, {
     required int slot,
@@ -27,6 +51,16 @@ class GuideCopy {
   }) => _t(lang, 'revealTitle', {'slot': slot, 'role': role});
 
   static String completeTitle(AppLanguage lang) => _t(lang, 'completeTitle');
+
+  /// How to shuffle and deal the very first card/stone.
+  static String dealFirstTip(
+    AppLanguage lang, {
+    required bool overview,
+    required bool runes,
+  }) {
+    if (!overview) return _t(lang, 'dealFirstTip.stack');
+    return _t(lang, runes ? 'dealFirstTip.runes' : 'dealFirstTip.cards');
+  }
 
   /// How to physically deal the next card/stone, depending on the view and
   /// divination system.
@@ -40,6 +74,8 @@ class GuideCopy {
   }
 
   static String revealBody(AppLanguage lang) => _t(lang, 'revealBody');
+
+  static String revealNextBody(AppLanguage lang) => _t(lang, 'revealNextBody');
 
   static String completeBody(AppLanguage lang) => _t(lang, 'completeBody');
 
@@ -88,4 +124,12 @@ class GuideCopy {
       _t(lang, 'oracle.thinking');
 
   static String oracleLabel(AppLanguage lang) => _t(lang, 'oracle.label');
+
+  static String sectionPosition(AppLanguage lang) => _t(lang, 'section.position');
+
+  static String sectionLesson(AppLanguage lang) => _t(lang, 'section.lesson');
+
+  static String sectionMethod(AppLanguage lang) => _t(lang, 'section.method');
+
+  static String sectionLink(AppLanguage lang) => _t(lang, 'section.link');
 }

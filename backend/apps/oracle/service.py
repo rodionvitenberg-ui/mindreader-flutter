@@ -179,7 +179,13 @@ def run_turn(request, session_id, turn, payload, index=None):
             position = get_object_or_404(reading.positions, index=index, clarifier=True)
             if not position.card_id or position.clarification:
                 raise Problem("clarifier_unavailable", 409, "This clarifier is empty or already interpreted.")
-        rate_limit(f"oracle:{reading.owner_id}", 100 if request.auth.principal.is_verified else 20, 86400)
+        from django.conf import settings
+        daily_cap = (
+            settings.ORACLE_PRO_DAILY_LIMIT
+            if request.auth.principal.has_active_pro
+            else settings.ORACLE_FREE_DAILY_LIMIT
+        )
+        rate_limit(f"oracle:{reading.owner_id}", daily_cap, 86400)
         messages = prompt(reading, turn, text)
         reading.active_operation = op
         reading.save(update_fields=["active_operation", "updated_at"])

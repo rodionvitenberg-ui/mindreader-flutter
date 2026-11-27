@@ -80,8 +80,12 @@ class _ProfileAvatarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = TaroPalette.of(context);
     final name = context.select(
       (UserProfileController? profile) => profile?.displayName.trim() ?? '',
+    );
+    final avatarBytes = context.select(
+      (UserProfileController? profile) => profile?.avatarBytes,
     );
     final settings = context.watch<AppSettingsController>();
     final initial = name.isEmpty
@@ -112,29 +116,42 @@ class _ProfileAvatarButton extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: TaroColors.surface.withValues(alpha: 0.86),
+          color: palette.surface.withValues(alpha: 0.86),
           border: Border.all(
             color: settings.isProUnlocked
-                ? TaroColors.lavender
-                : TaroColors.mist.withValues(alpha: TaroOpacity.borderStrong),
+                ? (palette.isMoonlit
+                      ? TaroColors.lanternAmberBright
+                      : TaroColors.lavender)
+                : palette.borderStrong,
             width: settings.isProUnlocked ? 1.6 : 1,
           ),
           boxShadow: settings.isProUnlocked
-              ? TaroGlow.soft(TaroColors.lavender, alpha: 0.25, blur: 12)
+              ? TaroGlow.soft(palette.lanternGlow, alpha: 0.25, blur: 12)
               : null,
         ),
-        child: ExcludeSemantics(
-          child: Text(
-            initial,
-            maxLines: 1,
-            overflow: TextOverflow.clip,
-            style: AppTypography.display(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: TaroColors.lavender,
-            ),
-          ),
-        ),
+        child: avatarBytes != null
+            ? ClipOval(
+                child: Image.memory(
+                  avatarBytes,
+                  key: const ValueKey('profile-header-avatar-image'),
+                  width: 34,
+                  height: 34,
+                  fit: BoxFit.cover,
+                  gaplessPlayback: true,
+                ),
+              )
+            : ExcludeSemantics(
+                child: Text(
+                  initial,
+                  maxLines: 1,
+                  overflow: TextOverflow.clip,
+                  style: AppTypography.display(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: TaroColors.lavender,
+                  ),
+                ),
+              ),
       ),
     );
   }

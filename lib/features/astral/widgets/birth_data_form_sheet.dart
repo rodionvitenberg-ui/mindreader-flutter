@@ -280,8 +280,11 @@ class _BirthDataFormSheetState extends State<BirthDataFormSheet> {
         ? const <AstroCity>[]
         : searchAstroCities(query, limit: 5);
 
+    final editTitle = widget.chart?.profileName.trim();
     return TaroGlassSheet(
-      title: context.astralText(widget.chart == null ? 'newChart' : 'edit'),
+      title: (editTitle != null && editTitle.isNotEmpty)
+          ? editTitle
+          : context.astralText('newChart'),
       padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,

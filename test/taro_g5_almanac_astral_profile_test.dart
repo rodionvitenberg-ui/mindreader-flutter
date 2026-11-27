@@ -10,6 +10,8 @@ import 'package:mindreader/features/almanac/zodiac_detail_sheet.dart';
 import 'package:mindreader/features/astral/widgets/astral_gradient_button.dart';
 import 'package:mindreader/features/astral/widgets/astral_house_selector.dart';
 import 'package:mindreader/features/astral/widgets/astral_pro_paywall_sheet.dart';
+import 'package:mindreader/features/astral/widgets/astral_summary_card.dart';
+import 'package:mindreader/features/astral/widgets/astral_wheel_placeholder.dart';
 import 'package:mindreader/features/astral/widgets/birth_data_form_sheet.dart';
 import 'package:mindreader/features/profile/profile_screen.dart';
 import 'package:mindreader/main.dart';
@@ -88,6 +90,62 @@ void main() {
       await tester.pump();
       expect(tapped, 1);
     });
+
+    testWidgets(
+      'AstralEmptyState centers content without medallion icon or diamond, '
+      'and AstralWheelPlaceholder renders natmap.png',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: buildTaroTheme(),
+            home: Scaffold(
+              body: SizedBox(
+                width: 400,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const AstralWheelPlaceholder(chart: null),
+                    const SizedBox(height: 16),
+                    AstralEmptyState(onGenerate: () {}),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // First section: natmap.png image, no diamond circle or NATAL WHEEL label.
+        final placeholder = find.byKey(const ValueKey('natal-wheel-placeholder'));
+        expect(placeholder, findsOneWidget);
+        expect(
+          find.descendant(of: placeholder, matching: find.byType(Image)),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: placeholder, matching: find.text('✦')),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: placeholder, matching: find.text('NATAL WHEEL')),
+          findsNothing,
+        );
+
+        // Second section: no icon medallion, no diamond in button, horizontally centered.
+        final emptyState = find.byType(AstralEmptyState);
+        expect(
+          find.descendant(of: emptyState, matching: find.byType(Icon)),
+          findsNothing,
+        );
+        expect(find.text('ADD FIRST PROFILE'), findsOneWidget);
+        expect(find.textContaining('✦'), findsNothing);
+
+        final panelCenterX = tester.getCenter(find.byType(TaroGlassPanel)).dx;
+        final titleCenterX = tester.getCenter(find.text('NO NATAL PROFILE YET')).dx;
+        final buttonCenterX = tester.getCenter(find.byType(TaroGlassButton)).dx;
+        expect((titleCenterX - panelCenterX).abs(), lessThan(1.0));
+        expect((buttonCenterX - panelCenterX).abs(), lessThan(1.0));
+      },
+    );
   });
 
   group('G5 Almanac, Astral & Profile migration', () {
@@ -129,7 +187,8 @@ void main() {
 
       await tester.tap(find.text('CARD'));
       await tester.pumpAndSettle();
-      expect(find.byType(TaroGlassSheet), findsOneWidget);
+      expect(find.byType(CardDetailSheet), findsOneWidget);
+      expect(find.byType(TaroDuskBackground), findsOneWidget);
       expect(find.byType(TaroGlassPanel), findsOneWidget);
       expect(find.byType(TaroGlassSegmentedControl<bool>), findsOneWidget);
       Navigator.of(tester.element(find.byType(CardDetailSheet))).pop();
@@ -137,7 +196,8 @@ void main() {
 
       await tester.tap(find.text('ZODIAC'));
       await tester.pumpAndSettle();
-      expect(find.byType(TaroGlassSheet), findsOneWidget);
+      expect(find.byType(ZodiacDetailSheet), findsOneWidget);
+      expect(find.byType(TaroDuskBackground), findsOneWidget);
       expect(find.byType(TaroGlassPanel), findsOneWidget);
       expect(find.byType(TaroGlassButton), findsOneWidget);
     });
@@ -201,8 +261,8 @@ void main() {
       await tester.tap(find.text('OPEN PAYWALL'));
       await tester.pumpAndSettle();
       expect(find.byType(TaroGlassSheet), findsOneWidget);
-      expect(find.byType(TaroGlassPanel), findsOneWidget);
-      expect(find.text('UNLOCK PRO'), findsOneWidget);
+      expect(find.byKey(const ValueKey('pro-subscription-sheet')), findsOneWidget);
+      expect(find.byKey(const ValueKey('pro-checkout-button')), findsOneWidget);
     });
 
     testWidgets('ProfileScreen mounts TaroDuskBackground, TaroGlassPanel cards and TaroGlassButtons', (
@@ -231,7 +291,26 @@ void main() {
           of: find.byType(ProfileScreen),
           matching: find.byType(TaroGlassPanel),
         ),
-        findsNWidgets(6),
+        findsNWidgets(3),
+      );
+      expect(
+        find.descendant(
+          of: find.byType(ProfileScreen),
+          matching: find.byType(TaroGlassButton),
+        ),
+        findsAtLeastNWidgets(2),
+      );
+
+      // Switch to Tab 2 (DATA & LANGUAGE): 3 panels + action buttons.
+      await tester.tap(find.byKey(const ValueKey('profile-tab-data')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        find.descendant(
+          of: find.byType(ProfileScreen),
+          matching: find.byType(TaroGlassPanel),
+        ),
+        findsNWidgets(3),
       );
       expect(
         find.descendant(

@@ -354,4 +354,55 @@ void main() {
       expect(tester.getRect(composer), composerRect);
     },
   );
+
+  testWidgets(
+    'Oracle chat omits diamond and ORACLE speaker header and uses SeerEyeIcon',
+    (tester) async {
+      final spread = SpreadController();
+      spread.activateSpread();
+      final service = _DeferredOracle();
+      await open(tester, spread, service);
+
+      // Step 2 Analyze button carries SeerEyeIcon.
+      await openPane(tester, tablePane);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('analyze-reading-button')),
+          matching: find.byType(SeerEyeIcon),
+        ),
+        findsOneWidget,
+      );
+
+      // Empty chat preparation state ("No reading yet") renders SeerEyeIcon.
+      await openPane(tester, chatPane);
+      expect(
+        find.byKey(const ValueKey('oracle-prep-seer-icon')),
+        findsOneWidget,
+      );
+
+      // Deal & flip all cards, synthesize, and verify chat starts cleanly
+      // without the old diamond (✦) + ORACLE speaker header.
+      for (var i = 0; i < spread.initialSpreadCardCount; i++) {
+        spread.dealNextCard();
+        spread.flipSlot(i);
+      }
+      await tester.pump();
+      await tester.tap(start);
+      await tester.pump();
+      service.requests.single.complete(_reading);
+      await tester.pump();
+
+      final viewport = find.byKey(const ValueKey('oracle-message-viewport'));
+      expect(viewport, findsOneWidget);
+      expect(
+        find.descendant(of: viewport, matching: find.text('✦')),
+        findsNothing,
+      );
+      expect(
+        find.descendant(of: viewport, matching: find.text('ORACLE')),
+        findsNothing,
+      );
+      expect(find.text(_reading.narrative), findsOneWidget);
+    },
+  );
 }

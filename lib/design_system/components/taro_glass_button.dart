@@ -52,14 +52,15 @@ class _TaroGlassButtonState extends State<TaroGlassButton> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = TaroPalette.of(context);
     final disabled = _disabled;
     final tint = switch (widget.variant) {
-      TaroGlassButtonVariant.primary => TaroColors.lavender.withValues(
-        alpha: 0.18,
-      ),
-      TaroGlassButtonVariant.secondary => TaroColors.mist.withValues(
-        alpha: 0.12,
-      ),
+      TaroGlassButtonVariant.primary => palette.isMoonlit
+          ? TaroColors.lanternAmber.withValues(alpha: 0.18)
+          : TaroColors.lavender.withValues(alpha: 0.18),
+      TaroGlassButtonVariant.secondary => palette.isMoonlit
+          ? palette.glassTint
+          : TaroColors.mist.withValues(alpha: 0.12),
       TaroGlassButtonVariant.ghost => null,
     };
     final labelColor = disabled
@@ -121,12 +122,10 @@ class _TaroGlassButtonState extends State<TaroGlassButton> {
           visibility: disabled ? 0.5 : 1.0,
           fillColor: widget.variant == TaroGlassButtonVariant.ghost
               ? Colors.transparent
-              : TaroColors.surface,
+              : palette.surface,
           borderColor: widget.variant == TaroGlassButtonVariant.primary
-              ? TaroColors.lavender.withValues(
-                  alpha: TaroOpacity.borderStrong,
-                )
-              : null,
+              ? palette.activeOutline
+              : palette.borderHairline,
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 20,

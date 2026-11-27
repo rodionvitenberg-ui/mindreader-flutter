@@ -44,6 +44,7 @@ class TaroGlassSegmentedControl<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = TaroPalette.of(context);
     final n = segments.length;
     final rawIndex = segments.indexWhere((s) => s.value == value);
     final activeIndex = rawIndex < 0 ? 0 : rawIndex;
@@ -51,8 +52,8 @@ class TaroGlassSegmentedControl<T> extends StatelessWidget {
     return TaroGlassSurface(
       radius: TaroRadii.segment,
       tint: tint,
-      fillColor: fillColor ?? TaroColors.surface,
-      borderColor: borderColor,
+      fillColor: fillColor ?? palette.surface,
+      borderColor: borderColor ?? palette.borderHairline,
       child: LayoutBuilder(
         builder: (context, constraints) {
           const pad = 3.0;
@@ -82,15 +83,18 @@ class TaroGlassSegmentedControl<T> extends StatelessWidget {
                       width: segWidth,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: TaroColors.lavender.withValues(alpha: 0.24),
+                        color: palette.activeFill,
                         borderRadius: BorderRadius.circular(
                           TaroRadii.segment - 3,
                         ),
-                        border: Border.all(
-                          color: TaroColors.lavender.withValues(
-                            alpha: TaroOpacity.borderStrong,
-                          ),
-                        ),
+                        border: Border.all(color: palette.activeOutline),
+                        boxShadow: palette.isMoonlit
+                            ? TaroGlow.soft(
+                                TaroColors.lanternAmber,
+                                alpha: 0.20,
+                                blur: 12,
+                              )
+                            : null,
                       ),
                     ),
                   ),

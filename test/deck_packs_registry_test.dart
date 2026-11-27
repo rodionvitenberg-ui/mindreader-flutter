@@ -4,22 +4,22 @@ import 'package:mindreader/core/data/tarot_deck_data.dart';
 import 'package:mindreader/core/models/tarot_deck_pack.dart';
 
 void main() {
-  test('registry ships exactly 7 built-in decks with unique ids (soimoi lives in the store)', () {
-    expect(deckPacksRegistry.length, 7);
+  test('registry ships exactly 4 built-in decks with unique ids (soimoi lives in the store)', () {
+    expect(deckPacksRegistry.length, 4);
     final ids = deckPacksRegistry.map((p) => p.id).toList();
-    expect(ids.toSet().length, 7);
+    expect(ids.toSet().length, 4);
     expect(deckPackById('rider_waite')!.name, 'Rider-Waite');
+    expect(deckPackById('oswald_wirth'), isNull);
+    expect(deckPackById('etteilla'), isNull);
+    expect(deckPackById('visconti_sforza'), isNull);
     expect(deckPackById('soimoi'), isNull);
     expect(deckPackById('unknown_id'), isNull);
   });
 
-  test('the 6 built-in real open-source decks are registered with their license', () {
+  test('the 3 built-in real open-source decks are registered with their license', () {
     const realIds = [
       'rider_waite',
       'marseille',
-      'oswald_wirth',
-      'etteilla',
-      'visconti_sforza',
       'vieville',
     ];
     for (final id in realIds) {

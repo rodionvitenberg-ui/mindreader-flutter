@@ -306,8 +306,8 @@ class _SpreadBoardState extends State<SpreadBoard>
   /// of a card on the board (`deckHeight * fit` × `deckWidth * fit`) and stays
   /// stable when clarifier rows extend the scene below.
   static ({double dockHeight, double cardLongPx, double cardShortPx})
-  _dockSizingFor(Size area, Size baseBoardSize) {
-    const headerH = ProfileHeader.actionSize;
+  _dockSizingFor(Size area, Size baseBoardSize, {double topInset = 0}) {
+    final headerH = topInset + ProfileHeader.actionSize;
     const dockPadV = 12.0;
     if (area.height <= headerH + dockPadV || area.width <= 0) {
       return (
@@ -373,85 +373,96 @@ class _SpreadBoardState extends State<SpreadBoard>
     final ctrl = context.watch<SpreadController>();
     final geometry = _geometryFor(ctrl);
     final baseSize = _geometryFor(ctrl, baseOnly: true).canvasSize;
-    return LayoutBuilder(
-      builder: (context, area) {
-        final sizing = _dockSizingFor(area.biggest, baseSize);
-        return Stack(
-          key: _surface,
-          fit: StackFit.expand,
-          children: [
-            Column(
-              children: [
-                SizedBox(
-                  height: sizing.dockHeight,
-                  width: double.infinity,
-                  child: SpreadDeckDock(
-                    header: widget.header,
-                    badge: widget.badge,
-                    wrapDeck: _gestures,
-                    topKey: _deck,
-                    held: _phase == _DealPhase.dragging || _phase == _DealPhase.returning,
-                    cardLongPx: sizing.cardLongPx,
-                    cardShortPx: sizing.cardShortPx,
-                    runeSwirl: _runeSwirl,
+    final topInset = MediaQuery.paddingOf(context).top;
+    return MediaQuery.removePadding(
+      context: context,
+      removeTop: true,
+      child: LayoutBuilder(
+        builder: (context, area) {
+          final sizing = _dockSizingFor(
+            area.biggest,
+            baseSize,
+            topInset: topInset,
+          );
+          return Stack(
+            key: _surface,
+            fit: StackFit.expand,
+            children: [
+              Column(
+                children: [
+                  SizedBox(
+                    height: sizing.dockHeight,
+                    width: double.infinity,
+                    child: SpreadDeckDock(
+                      key: const ValueKey('spread-deck-dock'),
+                      topInset: topInset,
+                      header: widget.header,
+                      badge: widget.badge,
+                      wrapDeck: _gestures,
+                      topKey: _deck,
+                      held: _phase == _DealPhase.dragging || _phase == _DealPhase.returning,
+                      cardLongPx: sizing.cardLongPx,
+                      cardShortPx: sizing.cardShortPx,
+                      runeSwirl: _runeSwirl,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, c) =>
-                        _canvas(context, ctrl, geometry, baseSize, c.biggest),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, c) =>
+                          _canvas(context, ctrl, geometry, baseSize, c.biggest),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            if (_phase != null)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: AnimatedBuilder(
-                    animation: Listenable.merge([_motion, _dragDelta]),
-                    child: ctrl.system == DivinationSystem.runes
-                        ? null
-                        : const RepaintBoundary(
-                            child: SpreadCardBack(
-                              width: deckWidth,
-                              height: deckHeight,
-                            ),
-                          ),
-                    builder: (_, back) {
-                      final pose = _currentPose();
-                      if (ctrl.system == DivinationSystem.runes) {
-                        final stoneId =
-                            (_heldCard ?? 0).clamp(0, elderFuthark.length - 1);
-                        final stoneW = deckWidth * 0.74;
-                        return _MovingCard(
-                          pose: pose,
-                          showCardShadow: false,
-                          child: Center(
-                            child: RepaintBoundary(
-                              child: RuneStoneView(
-                                stone: elderFuthark[stoneId],
-                                pack: context
-                                    .watch<DeckPackController>()
-                                    .activeRunePack,
-                                faceUp: false,
-                                ignite: 0,
-                                seed: 21 + stoneId,
-                                lift: pose.lift,
-                                width: stoneW,
-                                height: stoneW * 1.18,
+                ],
+              ),
+              if (_phase != null)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: AnimatedBuilder(
+                      animation: Listenable.merge([_motion, _dragDelta]),
+                      child: ctrl.system == DivinationSystem.runes
+                          ? null
+                          : const RepaintBoundary(
+                              child: SpreadCardBack(
+                                width: deckWidth,
+                                height: deckHeight,
                               ),
                             ),
-                          ),
-                        );
-                      }
-                      return _MovingCard(pose: pose, child: back!);
-                    },
+                      builder: (_, back) {
+                        final pose = _currentPose();
+                        if (ctrl.system == DivinationSystem.runes) {
+                          final stoneId =
+                              (_heldCard ?? 0).clamp(0, elderFuthark.length - 1);
+                          final stoneW = deckWidth * 0.74;
+                          return _MovingCard(
+                            pose: pose,
+                            showCardShadow: false,
+                            child: Center(
+                              child: RepaintBoundary(
+                                child: RuneStoneView(
+                                  stone: elderFuthark[stoneId],
+                                  pack: context
+                                      .watch<DeckPackController>()
+                                      .activeRunePack,
+                                  faceUp: false,
+                                  ignite: 0,
+                                  seed: 21 + stoneId,
+                                  lift: pose.lift,
+                                  width: stoneW,
+                                  height: stoneW * 1.18,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        return _MovingCard(pose: pose, child: back!);
+                      },
+                    ),
                   ),
                 ),
-              ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -474,13 +485,7 @@ class _SpreadBoardState extends State<SpreadBoard>
           Positioned.fill(child: SpreadThreadsLayer(rects: rects.asMap())),
           for (var i = 0; i < rects.length; i++)
             Positioned.fromRect(
-              rect: geometry.crossingSlotIndex == i
-                  ? Rect.fromCenter(
-                      center: rects[i].center,
-                      width: deckHeight,
-                      height: deckWidth,
-                    )
-                  : rects[i],
+              rect: rects[i],
               child: RotatedBox(
                 quarterTurns: geometry.crossingSlotIndex == i ? 1 : 0,
                 child: SizedBox.expand(

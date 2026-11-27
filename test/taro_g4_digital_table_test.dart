@@ -263,8 +263,8 @@ void main() {
 
       await openAndVerify(tester, RitualSettingsSheet.show, RitualSettingsSheet);
       await tester.pumpAndSettle();
-      expect(find.byType(TaroGlassToggle), findsOneWidget);
-      expect(find.byType(TaroGlassButton), findsOneWidget);
+      expect(find.byKey(const ValueKey('ritual-daily-toggle')), findsOneWidget);
+      expect(find.text('DISABLE RITUALS'), findsNothing);
       await dismiss(tester, RitualSettingsSheet);
     });
   });

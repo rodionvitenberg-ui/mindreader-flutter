@@ -20,9 +20,14 @@ import 'slotted_divination_card.dart';
 /// Elemental Fate Threads). No inner scrolling, no placeholders: the
 /// screen's single scroll controller moves deck + pillar as one canvas.
 class BoardPillarView extends StatelessWidget {
-  const BoardPillarView({super.key, required this.onTapFaceUp});
+  const BoardPillarView({
+    super.key,
+    required this.onTapFaceUp,
+    this.hiddenSlotIndex,
+  });
 
   final void Function(int slotIndex) onTapFaceUp;
+  final int? hiddenSlotIndex;
 
   static const cardWidth = deckWidth;
   static const cardHeight = deckHeight;
@@ -91,15 +96,22 @@ class BoardPillarView extends StatelessWidget {
   }
 
   Widget _buildCard(BuildContext context, DealtCardSlot slot) {
-    return GuideHighlight(slot:slot.index,child: SlottedDivinationCard(
-      // Key changes on state flip → the widget remounts with the face
-      // already revealed at rotateY(0), visually continuous with the flip.
-      slot: slot,
-      width: cardWidth,
-      height: cardHeight,
-      onFlip: () => context.read<SpreadController>().flipSlot(slot.index),
-      onTapFaceUp: () => onTapFaceUp(slot.index),
-    ));
+    final card = GuideHighlight(
+      slot: slot.index,
+      child: SlottedDivinationCard(
+        // Key changes on state flip → the widget remounts with the face
+        // already revealed at rotateY(0), visually continuous with the flip.
+        slot: slot,
+        width: cardWidth,
+        height: cardHeight,
+        onFlip: () => context.read<SpreadController>().flipSlot(slot.index),
+        onTapFaceUp: () => onTapFaceUp(slot.index),
+      ),
+    );
+    if (slot.index == hiddenSlotIndex) {
+      return Opacity(opacity: 0, child: card);
+    }
+    return card;
   }
 }
 

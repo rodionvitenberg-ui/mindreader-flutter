@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "pairs": [
+    { "id": "fool_magician", "a": 0, "b": 1, "meaningKey": "training.pair.fool_magician" },
+    { "id": "fool_tower", "a": 0, "b": 16, "meaningKey": "training.pair.fool_tower" },
+    { "id": "magician_empress", "a": 1, "b": 3, "meaningKey": "training.pair.magician_empress" },
+    { "id": "priestess_moon", "a": 2, "b": 18, "meaningKey": "training.pair.priestess_moon" },
+    { "id": "empress_emperor", "a": 3, "b": 4, "meaningKey": "training.pair.empress_emperor" },
+    { "id": "lovers_chariot", "a": 6, "b": 7, "meaningKey": "training.pair.lovers_chariot" },
+    { "id": "strength_hermit", "a": 8, "b": 9, "meaningKey": "training.pair.strength_hermit" },
+    { "id": "wheel_justice", "a": 10, "b": 11, "meaningKey": "training.pair.wheel_justice" },
+    { "id": "hanged_death", "a": 12, "b": 13, "meaningKey": "training.pair.hanged_death" },
+    { "id": "death_star", "a": 13, "b": 17, "meaningKey": "training.pair.death_star" },
+    { "id": "temperance_world", "a": 14, "b": 21, "meaningKey": "training.pair.temperance_world" },
+    { "id": "devil_tower", "a": 15, "b": 16, "meaningKey": "training.pair.devil_tower" },
+    { "id": "tower_sun", "a": 16, "b": 19, "meaningKey": "training.pair.tower_sun" },
+    { "id": "star_sun", "a": 17, "b": 19, "meaningKey": "training.pair.star_sun" },
+    { "id": "moon_judgement", "a": 18, "b": 20, "meaningKey": "training.pair.moon_judgement" },
+    { "id": "sun_world", "a": 19, "b": 21, "meaningKey": "training.pair.sun_world" },
+    { "id": "aceWands_acePentacles", "a": 22, "b": 64, "meaningKey": "training.pair.aceWands_acePentacles" },
+    { "id": "aceCups_lovers", "a": 36, "b": 6, "meaningKey": "training.pair.aceCups_lovers" },
+    { "id": "aceSwords_justice", "a": 50, "b": 11, "meaningKey": "training.pair.aceSwords_justice" },
+    { "id": "hermit_star", "a": 9, "b": 17, "meaningKey": "training.pair.hermit_star" }
+  ]
+}

@@ -11,20 +11,62 @@ class BackendAuthSession {
     required this.token,
     required this.expiresAt,
     this.email,
+    this.name,
+    this.emailConfirmed = false,
+    this.isPro = false,
+    this.proPlan,
+    this.proExpiresAt,
+    this.earlySupporterSlot,
   });
 
   final String id;
   final bool verified;
   final String? email;
+  final String? name;
+  final bool emailConfirmed;
+  final bool isPro;
+  final String? proPlan;
+  final DateTime? proExpiresAt;
+  final int? earlySupporterSlot;
   final String token;
   final DateTime expiresAt;
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
 
+  BackendAuthSession copyWithIdentity({
+    bool? verified,
+    String? email,
+    String? name,
+    bool? emailConfirmed,
+    bool? isPro,
+    String? proPlan,
+    DateTime? proExpiresAt,
+    int? earlySupporterSlot,
+  }) =>
+      BackendAuthSession(
+        id: id,
+        verified: verified ?? this.verified,
+        email: email ?? this.email,
+        name: name ?? this.name,
+        emailConfirmed: emailConfirmed ?? this.emailConfirmed,
+        isPro: isPro ?? this.isPro,
+        proPlan: proPlan ?? this.proPlan,
+        proExpiresAt: proExpiresAt ?? this.proExpiresAt,
+        earlySupporterSlot: earlySupporterSlot ?? this.earlySupporterSlot,
+        token: token,
+        expiresAt: expiresAt,
+      );
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'verified': verified,
         'email': email,
+        'name': name,
+        'emailConfirmed': emailConfirmed,
+        'isPro': isPro,
+        'proPlan': proPlan,
+        'proExpiresAt': proExpiresAt?.toIso8601String(),
+        'earlySupporterSlot': earlySupporterSlot,
         'token': token,
         'expiresAt': expiresAt.toIso8601String(),
       };
@@ -36,12 +78,62 @@ class BackendAuthSession {
     if (id is! String || token is! String || expiresRaw is! String) return null;
     final expires = DateTime.tryParse(expiresRaw);
     if (expires == null) return null;
+    final verified = json['verified'] == true;
+    final emailConfirmed = json.containsKey('emailConfirmed')
+        ? json['emailConfirmed'] == true
+        : verified;
+    final proExpRaw = json['proExpiresAt'];
     return BackendAuthSession(
       id: id,
-      verified: json['verified'] == true,
+      verified: verified,
       email: json['email'] is String ? json['email'] as String : null,
+      name: json['name'] is String ? json['name'] as String : null,
+      emailConfirmed: emailConfirmed,
+      isPro: json['isPro'] == true,
+      proPlan: json['proPlan'] is String ? json['proPlan'] as String : null,
+      proExpiresAt: proExpRaw is String ? DateTime.tryParse(proExpRaw) : null,
+      earlySupporterSlot: (json['earlySupporterSlot'] as num?)?.toInt(),
       token: token,
       expiresAt: expires,
+    );
+  }
+}
+
+class ProOfferConfig {
+  const ProOfferConfig({
+    this.earlySupporterTotal = 100,
+    this.earlySupporterRemaining = 100,
+    this.earlyMonthlyMinor = 499,
+    this.standardMonthlyMinor = 699,
+    this.annualMinor = 3999,
+    this.standardAnnualMinor = 5999,
+    this.solanaWallet = '7oF9eiHf9vYAeEPyQsVoMYhvoq4tt7cuLM2yMXt9yWpu',
+  });
+
+  final int earlySupporterTotal;
+  final int earlySupporterRemaining;
+  final int earlyMonthlyMinor;
+  final int standardMonthlyMinor;
+  final int annualMinor;
+  final int standardAnnualMinor;
+  final String solanaWallet;
+
+  bool get hasEarlySlots => earlySupporterRemaining > 0;
+
+  factory ProOfferConfig.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return const ProOfferConfig();
+    return ProOfferConfig(
+      earlySupporterTotal: (json['earlySupporterTotal'] as num?)?.toInt() ?? 100,
+      earlySupporterRemaining:
+          (json['earlySupporterRemaining'] as num?)?.toInt() ?? 100,
+      earlyMonthlyMinor: (json['earlyMonthlyMinor'] as num?)?.toInt() ?? 499,
+      standardMonthlyMinor:
+          (json['standardMonthlyMinor'] as num?)?.toInt() ?? 699,
+      annualMinor: (json['annualMinor'] as num?)?.toInt() ?? 3999,
+      standardAnnualMinor:
+          (json['standardAnnualMinor'] as num?)?.toInt() ?? 5999,
+      solanaWallet: json['solanaWallet'] as String? ??
+          '7oF9eiHf9vYAeEPyQsVoMYhvoq4tt7cuLM2yMXt9yWpu',
     );
   }
 }
@@ -51,17 +143,24 @@ class BackendPublicConfig {
     this.guestAccess = true,
     this.emailVerification = false,
     this.devPayments = false,
+    this.proOffer = const ProOfferConfig(),
   });
 
   final bool guestAccess;
   final bool emailVerification;
   final bool devPayments;
+  final ProOfferConfig proOffer;
 
   factory BackendPublicConfig.fromJson(Map<String, dynamic> json) =>
       BackendPublicConfig(
         guestAccess: json['guestAccess'] != false,
         emailVerification: json['emailVerification'] == true,
         devPayments: json['devPayments'] == true,
+        proOffer: ProOfferConfig.fromJson(
+          json['proOffer'] is Map<String, dynamic>
+              ? json['proOffer'] as Map<String, dynamic>
+              : null,
+        ),
       );
 }
 

@@ -139,6 +139,38 @@ void main() {
           201,
         );
       }
+      if (path == '/api/v1/auth/register/') {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        verified = true;
+        return http.Response(
+          jsonEncode({
+            'id': 'user-1',
+            'verified': true,
+            'email': body['email'],
+            'name': body['name'],
+            'emailConfirmed': false,
+            'token': 'verified-tok',
+            'expiresAt': DateTime.now().add(const Duration(days: 30)).toIso8601String(),
+          }),
+          201,
+        );
+      }
+      if (path == '/api/v1/auth/login/') {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        verified = true;
+        return http.Response(
+          jsonEncode({
+            'id': 'user-1',
+            'verified': true,
+            'email': body['email'],
+            'name': 'Reader',
+            'emailConfirmed': false,
+            'token': 'verified-tok',
+            'expiresAt': DateTime.now().add(const Duration(days: 30)).toIso8601String(),
+          }),
+          200,
+        );
+      }
       if (path == '/api/v1/auth/email/start/') {
         return http.Response(jsonEncode({'devCode': 'DEV12345'}), 202);
       }
@@ -149,6 +181,8 @@ void main() {
             'id': 'user-1',
             'verified': true,
             'email': 'reader@example.org',
+            'name': 'Reader',
+            'emailConfirmed': true,
             'token': 'verified-tok',
             'expiresAt': DateTime.now().add(const Duration(days: 30)).toIso8601String(),
           }),
@@ -269,7 +303,7 @@ void main() {
     },
   );
 
-  testWidgets('ProfileAccountCard completes 2-step email auth and builds handoff URL', (tester) async {
+  testWidgets('ProfileAccountCard registers with password, offers optional email verify and builds handoff URL', (tester) async {
     final zip = _birchZipBytes();
     final client = buildMockBackend(birchZip: zip);
     final auth = BackendAuthController(
@@ -286,6 +320,10 @@ void main() {
     await Future.wait([auth.initialLoad, decks.initialLoad, store.initialLoad, settings.initialLoad]);
     await store.refresh();
 
+    tester.view.physicalSize = const Size(900, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -301,16 +339,30 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byKey(const ValueKey('auth-email-input')), 'reader@example.org');
-    await tester.tap(find.byKey(const ValueKey('auth-send-code')));
+    expect(find.byKey(const ValueKey('profile-account-login')), findsOneWidget);
+    expect(find.byKey(const ValueKey('profile-account-register')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('profile-account-register')));
     await tester.pumpAndSettle();
 
-    // Dev code prefilled -> confirm sign in.
-    await tester.tap(find.byKey(const ValueKey('auth-verify-code')));
+    // Typo suggestion works and can be applied in one tap.
+    await tester.enterText(find.byKey(const ValueKey('auth-email-input')), 'reader@gamil.com');
+    await tester.pump();
+    expect(find.byKey(const ValueKey('auth-email-typo-fix')), findsOneWidget);
+    expect(find.byKey(const ValueKey('auth-email-notice')), findsOneWidget);
+
+    await tester.enterText(find.byKey(const ValueKey('auth-name-input')), 'Reader');
+    await tester.enterText(find.byKey(const ValueKey('auth-email-input')), 'reader@example.org');
+    await tester.enterText(find.byKey(const ValueKey('auth-password-input')), 'secret1234');
+    await tester.enterText(find.byKey(const ValueKey('auth-confirm-password-input')), 'secret1234');
+    await tester.tap(find.byKey(const ValueKey('auth-register-submit')));
     await tester.pumpAndSettle();
 
     expect(auth.isVerified, isTrue);
+    expect(auth.isEmailConfirmed, isFalse);
     expect(find.text('reader@example.org'), findsOneWidget);
+    // Post-factum optional verification button is visible until confirmed.
+    expect(find.byKey(const ValueKey('profile-verify-email')), findsOneWidget);
 
     // Verified account builds a handoff checkout URL pointing to promo website /shop/.
     final soimoi = store.allProducts.firstWhere((p) => p.slug == 'soimoi');

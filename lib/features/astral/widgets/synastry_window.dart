@@ -6,6 +6,7 @@ import '../../../core/models/oracle_handoff.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/services/natal_calculator_service.dart';
 import '../../../core/services/oracle_synthesis_service.dart';
+import '../../../design_system/components/element_icon.dart';
 import '../../../design_system/taro_tokens.dart';
 import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -434,14 +435,24 @@ class _ElementBar extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 66,
-            child: Text(
-              '${element.glyph} ${element.label.toUpperCase()}',
-              style: AppTypography.label(
-                fontSize: 9,
-                letterSpacing: 0.7,
-                color: element.accent,
-              ),
+            width: 72,
+            child: Row(
+              children: [
+                ElementIcon(element, size: 12),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    element.label.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.label(
+                      fontSize: 9,
+                      letterSpacing: 0.7,
+                      color: element.accent,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(

@@ -49,6 +49,7 @@ class SpreadDeckDock extends StatelessWidget {
     required this.wrapDeck,
     required this.topKey,
     required this.held,
+    this.topInset = 0,
     this.cardLongPx,
     this.cardShortPx,
     this.runeSwirl = 0,
@@ -59,6 +60,7 @@ class SpreadDeckDock extends StatelessWidget {
   final Widget Function(Widget) wrapDeck;
   final GlobalKey topKey;
   final bool held;
+  final double topInset;
 
   /// Rendered dimensions of the horizontal top card in the dock (matched 1:1
   /// to a card on the spread board: `deckHeight * fit` × `deckWidth * fit`).
@@ -76,85 +78,90 @@ class SpreadDeckDock extends StatelessWidget {
         border: const Border(bottom: BorderSide(color: TaroColors.border)),
       ),
       child: LayoutBuilder(
-        builder: (context, constraints) => Column(
-          children: [
-            SizedBox(
-              height: math.min(constraints.maxHeight, ProfileHeader.actionSize),
-              child: header,
-            ),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, dock) {
-                  final targetCardW = cardLongPx ?? overviewDeckWidth;
-                  final targetCardH = cardShortPx ?? overviewDeckHeight;
-                  final rawMetrics = overviewStackMetrics(targetCardH);
-                  final targetTotalW = targetCardW + rawMetrics.depthX * 2;
-                  final targetTotalH = targetCardH + rawMetrics.depthY;
-                  final scale = targetTotalH <= 0 || targetTotalW <= 0
-                      ? 0.0
-                      : math.min(
-                          1.0,
-                          math.min(
-                            (dock.maxHeight - 8).clamp(0.0, double.infinity) /
-                                targetTotalH,
-                            (dock.maxWidth - 16).clamp(0.0, double.infinity) /
-                                targetTotalW,
-                          ),
-                        );
-                  final cardW = targetCardW * scale;
-                  final cardH = targetCardH * scale;
-                  final stepX = rawMetrics.stepX * scale;
-                  final stepY = rawMetrics.stepY * scale;
-                  final depthX = rawMetrics.depthX * scale;
-                  final depthY = rawMetrics.depthY * scale;
-                  final badgeWidth = math.max(
-                    0.0,
-                    (dock.maxWidth - (cardW + depthX * 2)) / 2 - 8,
-                  );
-                  return Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Center(
-                        child: wrapDeck(
-                          Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              depthX,
-                              2,
-                              depthX,
-                              depthY + 2,
+        builder: (context, constraints) {
+          final padTop = math.min(constraints.maxHeight, topInset);
+          final remaining = constraints.maxHeight - padTop;
+          return Column(
+            children: [
+              if (padTop > 0) SizedBox(height: padTop),
+              SizedBox(
+                height: math.min(remaining, ProfileHeader.actionSize),
+                child: header,
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, dock) {
+                    final targetCardW = cardLongPx ?? overviewDeckWidth;
+                    final targetCardH = cardShortPx ?? overviewDeckHeight;
+                    final rawMetrics = overviewStackMetrics(targetCardH);
+                    final targetTotalW = targetCardW + rawMetrics.depthX * 2;
+                    final targetTotalH = targetCardH + rawMetrics.depthY;
+                    final scale = targetTotalH <= 0 || targetTotalW <= 0
+                        ? 0.0
+                        : math.min(
+                            1.0,
+                            math.min(
+                              (dock.maxHeight - 8).clamp(0.0, double.infinity) /
+                                  targetTotalH,
+                              (dock.maxWidth - 16).clamp(0.0, double.infinity) /
+                                  targetTotalW,
                             ),
-                            child: _OverviewDeck(
-                              topKey: topKey,
-                              held: held,
-                              cardWidth: cardW,
-                              cardHeight: cardH,
-                              stepX: stepX,
-                              stepY: stepY,
-                              runeSwirl: runeSwirl,
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (badgeWidth > 0)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: SizedBox(
-                            width: badgeWidth,
-                            child: Center(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: badge,
+                          );
+                    final cardW = targetCardW * scale;
+                    final cardH = targetCardH * scale;
+                    final stepX = rawMetrics.stepX * scale;
+                    final stepY = rawMetrics.stepY * scale;
+                    final depthX = rawMetrics.depthX * scale;
+                    final depthY = rawMetrics.depthY * scale;
+                    final badgeWidth = math.max(
+                      0.0,
+                      (dock.maxWidth - (cardW + depthX * 2)) / 2 - 8,
+                    );
+                    return Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Center(
+                          child: wrapDeck(
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                depthX,
+                                2,
+                                depthX,
+                                depthY + 2,
+                              ),
+                              child: _OverviewDeck(
+                                topKey: topKey,
+                                held: held,
+                                cardWidth: cardW,
+                                cardHeight: cardH,
+                                stepX: stepX,
+                                stepY: stepY,
+                                runeSwirl: runeSwirl,
                               ),
                             ),
                           ),
                         ),
-                    ],
-                  );
-                },
+                        if (badgeWidth > 0)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: SizedBox(
+                              width: badgeWidth,
+                              child: Center(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: badge,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
   }

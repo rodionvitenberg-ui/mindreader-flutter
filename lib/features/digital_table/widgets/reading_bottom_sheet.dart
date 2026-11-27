@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart' hide Element;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../core/data/guide_copy.dart';
 import '../../../core/models/dealt_card_slot.dart';
@@ -13,6 +12,7 @@ import '../../../core/models/divination_system.dart';
 import '../../../core/models/tarot_card_model.dart';
 import '../../../core/services/local_storage_service.dart';
 import '../../../core/services/oracle_synthesis_service.dart';
+import '../../../core/services/oracle_voice_service.dart';
 import '../../../core/services/reading_relationships.dart';
 import '../../../core/theme/element_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -20,7 +20,11 @@ import '../../../design_system/taro.dart';
 import '../../../state/app_settings_controller.dart';
 import '../../../state/guided_reading_controller.dart';
 import '../../../state/spread_controller.dart';
+import '../../../state/voice_input_controller.dart';
 import '../../../core/l10n/app_strings.dart';
+import 'voice_mic_button.dart';
+import 'wisp_mascot.dart';
+import 'wisp_mood.dart';
 
 /// Glassmorphic bottom sheet with two faces:
 /// * `cardIndex != null` — the CARDS INSPECTOR SHEET for a tapped face-up
@@ -73,8 +77,17 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
   /// The personal note for the tapped card — pre-filled from
   /// `slot.userContext` and auto-saved back on every change.
   late final TextEditingController _note;
-  SpeechToText? _speech;
-  bool _micListening = false;
+  VoiceInputController? _providedVoice;
+  VoiceInputController? _ownedVoice;
+
+  VoiceInputController _resolveVoice(BuildContext context) {
+    final provided = context.read<VoiceInputController?>();
+    if (provided != null) {
+      _providedVoice = provided;
+      return provided;
+    }
+    return _ownedVoice ??= VoiceInputController();
+  }
 
   DealtCardSlot? _slotOf(SpreadController ctrl) {
     final i = widget.cardIndex;
@@ -90,9 +103,20 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _providedVoice = context.read<VoiceInputController?>();
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
-    _speech?.stop();
+    final voice = _providedVoice ?? _ownedVoice;
+    if (voice != null && voice.isOwnedBy(this)) {
+      unawaited(voice.cancel(owner: this));
+    }
+    unawaited(_ownedVoice?.cancel());
+    _ownedVoice?.dispose();
     _note.dispose();
     super.dispose();
   }
@@ -117,41 +141,26 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
   }
 
   Future<void> _toggleNoteMic() async {
-    if (_micListening) {
-      await _speech?.stop();
-      setState(() => _micListening = false);
-      return;
-    }
-    _speech ??= SpeechToText();
-    bool ok;
-    try {
-      ok = await _speech!.initialize();
-    } catch (_) {
-      ok = false;
-    }
-    if (!ok) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppStrings.g('ui.reading_bottom_sheet.voice_input_is_not_available_here_type_your_note'),
-            ),
-          ),
-        );
+    final voice = _resolveVoice(context);
+    if (voice.isRecordingFor(this)) {
+      final result = await voice.stopAndTranscribe(owner: this);
+      if (!mounted) return;
+      if (result.isSuccess) {
+        final next = insertVoiceTranscript(_note, result.text!);
+        _saveNote(next);
+      } else {
+        showVoiceInputFeedback(context, result);
       }
       return;
     }
-    setState(() => _micListening = true);
-    await _speech!.listen(
-      onResult: (r) {
-        _note.text = r.recognizedWords;
-        _note.selection = TextSelection.collapsed(offset: _note.text.length);
-        _saveNote(_note.text);
-      },
-      listenOptions: SpeechListenOptions(
-        listenFor: const Duration(seconds: 20),
-      ),
+
+    unawaited(context.read<OracleVoiceService?>()?.stop());
+    final early = await voice.startRecording(
+      owner: this,
+      onAutoStop: () => unawaited(_toggleNoteMic()),
     );
-    if (mounted) setState(() => _micListening = false);
+    if (!mounted || early == null) return;
+    showVoiceInputFeedback(context, early);
   }
 
   void _pickContext(String chip) {
@@ -244,8 +253,64 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
             // ---- Card Inspector Sheet (tapped face-up card) ----
             _CardInspectorHeader(slot: slot, card: card),
             if (settings.enabled(ReadingAid.guide))
-              Padding(padding: const EdgeInsets.symmetric(vertical:8),
-                child: Text('${slot.role} · ${card.keywords.take(2).join(', ')}\n${card.reflection}')),
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 4),
+                child: Container(
+                  padding: const EdgeInsets.all(11),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: TaroColors.lavender.withValues(alpha: 0.09),
+                    border: Border.all(
+                      color: TaroColors.lavender.withValues(alpha: 0.24),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const WispMascot(
+                        size: 38,
+                        mood: WispMood.curious,
+                        gazeTarget: Offset(0.3, 0),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${GuideCopy.mascotName(lang)} · ${slot.role.toUpperCase()}',
+                              style: AppTypography.label(
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.3,
+                                color: TaroColors.lavender,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              card.keywords.take(2).join(', '),
+                              style: AppTypography.body(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: TaroColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              card.reflection,
+                              style: AppTypography.body(
+                                fontSize: 12,
+                                color: TaroColors.textSecondary,
+                                height: 1.42,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
             if (settings.enabled(ReadingAid.relationships))
               for (final link in ctrl.relationships.where((r) => r.includes(slot.index)))
@@ -330,7 +395,10 @@ class _ReadingBottomSheetState extends State<ReadingBottomSheet> {
             const SizedBox(height: 8),
             _CardNoteField(
               controller: _note,
-              micListening: _micListening,
+              voice: context.watch<VoiceInputController?>() ??
+                  (_ownedVoice ??= VoiceInputController()),
+              voiceOwner: this,
+              language: lang,
               onChanged: _saveNote,
               onMicTap: _toggleNoteMic,
             ),
@@ -468,7 +536,8 @@ class _CardInspectorHeader extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         TaroGlassPill(
-          label: '${card.element.label.toUpperCase()} ${card.element.glyph}',
+          label: card.element.label.toUpperCase(),
+          leading: ElementIcon(card.element, size: 13),
           accentColor: card.element.accent,
         ),
       ],
@@ -481,20 +550,24 @@ class _CardInspectorHeader extends StatelessWidget {
 class _CardNoteField extends StatelessWidget {
   const _CardNoteField({
     required this.controller,
-    required this.micListening,
+    required this.voice,
+    required this.voiceOwner,
+    required this.language,
     required this.onChanged,
     required this.onMicTap,
   });
 
   final TextEditingController controller;
-  final bool micListening;
+  final VoiceInputController voice;
+  final Object voiceOwner;
+  final AppLanguage language;
   final ValueChanged<String> onChanged;
   final VoidCallback onMicTap;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.only(left: 12, right: 4),
       decoration: BoxDecoration(
         color: TaroColors.surface.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(16),
@@ -526,19 +599,13 @@ class _CardNoteField extends StatelessWidget {
               ),
             ),
           ),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
+          VoiceMicButton(
+            key: const ValueKey('card-note-mic'),
+            controller: voice,
+            owner: voiceOwner,
+            variant: VoiceMicButtonVariant.inline,
+            language: language,
             onTap: onMicTap,
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Icon(
-                micListening ? Icons.mic : Icons.mic_none,
-                size: 20,
-                color: micListening
-                    ? TaroColors.rose
-                    : TaroColors.textSecondary,
-              ),
-            ),
           ),
         ],
       ),

@@ -11,17 +11,19 @@ import '../core/services/reading_relationships.dart';
 import 'app_settings_controller.dart';
 import 'spread_controller.dart';
 
-/// Computes the single most relevant educational hint for the Digital Table.
+/// Computes the single most relevant educational hint for Wisp on the Digital
+/// Table (both Step 1 spread picker and Step 2 active table).
 ///
 /// It is a pure observer of [SpreadController] and [AppSettingsController]: it
 /// never mutates cards or their order, never advances the deck, and never
-/// blocks the reader. The UI renders [currentHint] and can call
-/// [explainRelationship] when the reader taps an elemental/positional branch.
+/// blocks the reader. The UI renders [currentHint] in a floating speech bubble
+/// and can call [explainRelationship] when the reader taps an
+/// elemental/positional branch.
 ///
 /// Conceptual lessons ("what does this position mean") are taught once: a
 /// lesson is recorded as read when the reader opens the hint sheet
 /// ([learnCurrentLesson]) and is remembered across sessions in
-/// `guided_seen_v1` until [resetLearned].
+/// `guided_seen_v1` (using language-independent keys) until [resetLearned].
 class GuidedReadingController extends ChangeNotifier {
   GuidedReadingController({
     required this.spread,
@@ -58,12 +60,11 @@ class GuidedReadingController extends ChangeNotifier {
   int _lastRevision = -1;
 
   /// True when two face-up cards pull against each other (opposing elemental
-  /// dignities) — the companion's empathetic moment (G2.2). Read-only: it
-  /// never changes the table.
+  /// dignities) — Wisp's empathetic moment (G2.2). Read-only: it never changes
+  /// the table.
   bool get hasTension => spread.relationships.any((r) => r.isContradictory);
 
-  bool get _enabled =>
-      spread.isSpreadActive && settings.enabled(ReadingAid.guide);
+  bool get _enabled => settings.enabled(ReadingAid.guide);
 
   Future<void> _restoreLearned() async {
     try {
@@ -81,6 +82,7 @@ class GuidedReadingController extends ChangeNotifier {
       _lastRevision = revision;
       _relationship = null;
     }
+    if (!spread.isSpreadActive) _relationship = null;
     _phase = _derivePhase();
     _hint = _enabled ? _deriveHint() : null;
     notifyListeners();
@@ -96,6 +98,19 @@ class GuidedReadingController extends ChangeNotifier {
   }
 
   GuideHint? _deriveHint() {
+    final lang = settings.language;
+
+    // Step 1 — Choose Spread: Wisp welcomes the reader and gently introduces
+    // the active system and a beginner-friendly spread.
+    if (!spread.isSpreadActive) {
+      return _buildHint(
+        id: 'choose:${spread.system.name}',
+        type: GuideEventType.spreadSelected,
+        title: GuideCopy.chooseTitle(lang),
+        body: GuideCopy.chooseBody(lang, spread.system),
+      );
+    }
+
     if (_relationship != null) return _relationshipHint(_relationship!);
 
     final total = spread.spreadCardCount;
@@ -106,8 +121,8 @@ class GuidedReadingController extends ChangeNotifier {
       return _buildHint(
         id: 'completed',
         type: GuideEventType.spreadCompleted,
-        title: GuideCopy.completeTitle(settings.language),
-        body: GuideCopy.completeBody(settings.language),
+        title: GuideCopy.completeTitle(lang),
+        body: GuideCopy.completeBody(lang),
         lesson: lesson?.text,
         lessonId: lesson?.id,
       );
@@ -118,49 +133,84 @@ class GuidedReadingController extends ChangeNotifier {
 
     if (dealing) {
       final slot = recommended ?? spread.nextEmptySlotIndex!;
-      final role = slot < spread.slots.length ? spread.slots[slot].role : '';
+      final role = _slotRole(slot);
       final lesson = _freshLesson(slot);
+      final isFirst = spread.dealtCount == 0;
+      final isRunes = spread.system == DivinationSystem.runes;
       return _buildHint(
         id: 'dealing:$slot',
         type: GuideEventType.dealingStarted,
         anchor: GuideHintAnchorKind.slot,
         slotIndex: slot,
-        title: GuideCopy.dealTitle(
-          settings.language,
-          slot: slot + 1,
-          total: total,
-          role: role,
-        ),
-        body: GuideCopy.dealTip(
-          settings.language,
-          overview: spread.isSpreadOverview,
-          runes: spread.system == DivinationSystem.runes,
-        ),
+        title: isFirst
+            ? GuideCopy.dealFirstTitle(
+                lang,
+                slot: slot + 1,
+                total: total,
+                role: role,
+              )
+            : GuideCopy.dealTitle(
+                lang,
+                slot: slot + 1,
+                total: total,
+                role: role,
+              ),
+        body: isFirst
+            ? GuideCopy.dealFirstTip(
+                lang,
+                overview: spread.isSpreadOverview,
+                runes: isRunes,
+              )
+            : GuideCopy.dealTip(
+                lang,
+                overview: spread.isSpreadOverview,
+                runes: isRunes,
+              ),
         lesson: lesson?.text,
         lessonId: lesson?.id,
       );
     }
 
     if (recommended != null) {
-      final role = spread.slots[recommended].role;
+      final role = _slotRole(recommended);
       final lesson = _freshLesson(recommended);
+      final isFirstReveal = spread.faceUpCount == 0;
       return _buildHint(
         id: 'revealing:$recommended',
         type: GuideEventType.revealingStarted,
         anchor: GuideHintAnchorKind.slot,
         slotIndex: recommended,
-        title: GuideCopy.revealTitle(
-          settings.language,
-          slot: recommended + 1,
-          role: role,
-        ),
-        body: GuideCopy.revealBody(settings.language),
+        title: isFirstReveal
+            ? GuideCopy.revealFirstTitle(
+                lang,
+                slot: recommended + 1,
+                role: role,
+              )
+            : GuideCopy.revealTitle(
+                lang,
+                slot: recommended + 1,
+                role: role,
+              ),
+        body: isFirstReveal
+            ? GuideCopy.revealBody(lang)
+            : GuideCopy.revealNextBody(lang),
         lesson: lesson?.text,
         lessonId: lesson?.id,
       );
     }
 
     return null;
+  }
+
+  /// Always resolves the live localized role for [slot] (never stale startup
+  /// English cached on [DealtCardSlot.role]), preferring the concise short
+  /// label for preset spreads so Wisp's bubble headline stays clean.
+  String _slotRole(int slot) {
+    if (!spread.isCustomSpread) {
+      final shorts = spread.spreadSlotRoleShorts;
+      if (slot < shorts.length) return shorts[slot];
+    }
+    return slot < spread.slots.length ? spread.slots[slot].role : '';
   }
 
   /// Wraps authored copy as a once-only lesson: null in concise mode, null when
@@ -179,8 +229,11 @@ class GuidedReadingController extends ChangeNotifier {
   /// The conceptual lesson for [slot] — only while the reader asked for
   /// thorough guidance and has not read this lesson yet. Every preset spread of
   /// every system carries authored lessons (G4); custom spreads do not.
+  ///
+  /// Uses [SpreadController.spreadKey] (enum name), never the localized label,
+  /// so learned progress stays intact across language switches.
   ({String id, String text})? _freshLesson(int slot) => _freshLessonLine(
-    'slot:${spread.system.name}:${spread.spreadLabel}:${slot + 1}',
+    'slot:${spread.system.name}:${spread.spreadKey}:${slot + 1}',
     (lang) => spread.slotLesson(slot, lang),
   );
 

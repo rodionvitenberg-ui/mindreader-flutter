@@ -6,9 +6,18 @@ from .models import AccessToken, Principal
 
 @admin.register(Principal)
 class PrincipalAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "verified_email", "created_at")
-    search_fields = ("id", "verified_email")
-    readonly_fields = ("id", "user", "verified_email", "created_at")
+    list_display = (
+        "id",
+        "verified_email",
+        "is_pro",
+        "pro_plan",
+        "early_supporter_slot",
+        "pro_expires_at",
+        "created_at",
+    )
+    list_filter = ("is_pro", "pro_plan")
+    search_fields = ("id", "verified_email", "display_name")
+    readonly_fields = ("id", "user", "verified_email", "early_supporter_slot", "pro_since", "created_at")
 
     def has_add_permission(self, request):
         return False

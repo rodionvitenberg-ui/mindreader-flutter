@@ -221,18 +221,6 @@ class _PackTile extends StatelessWidget {
                 color: TaroColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              pack.license.toUpperCase(),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.label(
-                fontSize: 7,
-                letterSpacing: 1,
-                color: TaroColors.textSecondary.withValues(alpha: 0.7),
-              ),
-            ),
           ],
         ),
       ),

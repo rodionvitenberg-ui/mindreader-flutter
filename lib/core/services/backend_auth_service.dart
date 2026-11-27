@@ -20,7 +20,10 @@ class BackendAuthService {
   BackendAuthService({String? baseUrl, this.client})
       : _baseUrl = (baseUrl ?? defaultBackendUrl).trim();
 
-  static const defaultBackendUrl = String.fromEnvironment('TAROT_BACKEND_URL');
+  static const defaultBackendUrl = String.fromEnvironment(
+    'TAROT_BACKEND_URL',
+    defaultValue: 'https://soshallitbe.cyou',
+  );
 
   final String _baseUrl;
   final http.Client? client;
@@ -87,6 +90,77 @@ class BackendAuthService {
       final session = BackendAuthSession.fromJson(_decodeJson(res));
       if (session == null) {
         throw const BackendApiException('Invalid guest session response.');
+      }
+      return session;
+    });
+  }
+
+  /// Registers a new account with name, email and password without requiring
+  /// upfront email confirmation. Migrates guest free gifts if [guestToken] is supplied.
+  Future<BackendAuthSession> register({
+    required String name,
+    required String email,
+    required String password,
+    String? receiptNumber,
+    String? guestToken,
+  }) async {
+    return _withClient((c) async {
+      final headers = <String, String>{
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        if (guestToken != null && guestToken.isNotEmpty)
+          'Authorization': 'Bearer $guestToken',
+      };
+      final cleanReceipt = receiptNumber?.trim();
+      final res = await c
+          .post(
+            origin.resolve('/api/v1/auth/register/'),
+            headers: headers,
+            body: jsonEncode({
+              'name': name.trim(),
+              'email': email.trim(),
+              'password': password,
+              if (cleanReceipt != null && cleanReceipt.isNotEmpty)
+                'receiptNumber': cleanReceipt,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode != 201 && res.statusCode != 200) _throwFrom(res);
+      final session = BackendAuthSession.fromJson(_decodeJson(res));
+      if (session == null) {
+        throw const BackendApiException('Invalid registration response.');
+      }
+      return session;
+    });
+  }
+
+  /// Signs into an existing email+password account.
+  Future<BackendAuthSession> loginWithPassword({
+    required String email,
+    required String password,
+    String? guestToken,
+  }) async {
+    return _withClient((c) async {
+      final headers = <String, String>{
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        if (guestToken != null && guestToken.isNotEmpty)
+          'Authorization': 'Bearer $guestToken',
+      };
+      final res = await c
+          .post(
+            origin.resolve('/api/v1/auth/login/'),
+            headers: headers,
+            body: jsonEncode({
+              'email': email.trim(),
+              'password': password,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) _throwFrom(res);
+      final session = BackendAuthSession.fromJson(_decodeJson(res));
+      if (session == null) {
+        throw const BackendApiException('Invalid login response.');
       }
       return session;
     });
@@ -163,6 +237,37 @@ class BackendAuthService {
     });
   }
 
+  /// Fetches fresh account identity & live PRO subscription state from
+  /// `GET /api/v1/account/me/`.
+  Future<BackendAuthSession> fetchAccountMe(BackendAuthSession current) async {
+    return _withClient((c) async {
+      final res = await c
+          .get(
+            origin.resolve('/api/v1/account/me/'),
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': 'Bearer ${current.token}',
+            },
+          )
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) _throwFrom(res);
+      final data = _decodeJson(res);
+      final proExpRaw = data['proExpiresAt'];
+      return current.copyWithIdentity(
+        verified: data['verified'] == true,
+        email: data['email'] is String ? data['email'] as String : current.email,
+        name: data['name'] is String ? data['name'] as String : current.name,
+        emailConfirmed: data.containsKey('emailConfirmed')
+            ? data['emailConfirmed'] == true
+            : current.emailConfirmed,
+        isPro: data['isPro'] == true,
+        proPlan: data['proPlan'] is String ? data['proPlan'] as String : null,
+        proExpiresAt: proExpRaw is String ? DateTime.tryParse(proExpRaw) : null,
+        earlySupporterSlot: (data['earlySupporterSlot'] as num?)?.toInt(),
+      );
+    });
+  }
+
   Future<void> logout(String bearerToken) async {
     try {
       await _withClient((c) async {
@@ -176,5 +281,22 @@ class BackendAuthService {
     } catch (_) {
       // Best-effort revocation.
     }
+  }
+
+  /// Permanently deactivates the authenticated account and scrubs personal
+  /// identifiers on the server (`DELETE /api/v1/account/me/`).
+  Future<void> deleteAccount(String bearerToken) async {
+    await _withClient((c) async {
+      final res = await c
+          .delete(
+            origin.resolve('/api/v1/account/me/'),
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': 'Bearer $bearerToken',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode != 204 && res.statusCode != 200) _throwFrom(res);
+    });
   }
 }

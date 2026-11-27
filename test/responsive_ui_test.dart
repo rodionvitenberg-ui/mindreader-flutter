@@ -2,6 +2,7 @@ import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:mindreader/design_system/taro.dart';
 import 'package:mindreader/features/digital_table/widgets/gemini_input_capsule.dart';
 import 'package:mindreader/main.dart';
 import 'package:mindreader/state/spread_controller.dart';
@@ -44,7 +45,7 @@ void main() {
     expect(find.byIcon(Icons.camera_alt_outlined), findsOneWidget);
     expect(find.byIcon(Icons.style_outlined), findsOneWidget);
     expect(find.byIcon(Icons.menu_book_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
+    expect(find.byType(AstralZodiacIcon), findsOneWidget);
 
     // Check both Oracle layouts at each size.
     final pages = find.byType(PageView).first;
